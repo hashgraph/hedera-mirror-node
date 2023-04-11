@@ -41,69 +41,60 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {
-        log.debug("Create new file");
-        String memo = getMemo("Create file");
+        var memo = getMemo("Create file");
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(content)
                 .setFileMemo(memo)
                 .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                fileCreateTransaction,
-                KeyList.of(sdkClient.getExpandedOperatorAccountId().getPrivateKey()));
-        FileId fileId = networkTransactionResponse.getReceipt().fileId;
-        log.debug("Created new file {}", fileId);
+        var keyList = KeyList.of(sdkClient.getExpandedOperatorAccountId().getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(fileCreateTransaction, keyList);
 
-        return networkTransactionResponse;
+        var fileId = response.getReceipt().fileId;
+        log.info("Created new file {} with {} B via {}", fileId, content.length, memo, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
-        log.debug("Update file");
-        String memo = getMemo("Update file");
+    public NetworkTransactionResponse updateFile(FileId fileId, byte[] contents) {
+        var memo = getMemo("Update file");
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
                 .setFileId(fileId)
                 .setFileMemo(memo)
                 .setTransactionMemo(memo);
 
-        if (byteCode != null) {
-            fileUpdateTransaction.setContents(byteCode);
+        int count = 0;
+        if (contents != null) {
+            fileUpdateTransaction.setContents(contents);
+            count = contents.length;
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
-        log.debug("Updated file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
+        log.info("Updated file {} with {} B via {}", fileId, count, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse appendFile(FileId fileId, byte[] byteCode) {
-        String memo = "Append file";
-        log.debug(memo);
+    public NetworkTransactionResponse appendFile(FileId fileId, byte[] contents) {
+        var memo = getMemo("Append file");
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
-                .setContents(byteCode)
-                .setTransactionMemo(getMemo(memo));
+                .setContents(contents)
+                .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileAppendTransaction);
-        log.debug("Appended to file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileAppendTransaction);
+        log.info("Appended {} B to file {} via {}", contents.length, fileId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
-        String memo = "Delete file";
-        log.debug(memo);
+        var memo = getMemo("Delete file");
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
                 .setFileId(fileId)
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
-        log.debug("Deleted file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
+        log.info("Deleted file {} with memo '{}' via {}", fileId, memo, response.getTransactionId());
+        return response;
     }
 
     public FileInfo getFileInfo(FileId fileId) {

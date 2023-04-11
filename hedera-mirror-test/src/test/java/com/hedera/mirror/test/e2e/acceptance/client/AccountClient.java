@@ -20,6 +20,13 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import org.springframework.retry.support.RetryTemplate;
+
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -35,23 +42,26 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.retry.support.RetryTemplate;
-import javax.inject.Named;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Named
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
+    private static Supplier<Long> COST = () -> 0L;
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
+        final long initialBalance = getBalance();
+        log.info("Operator account {} initial balance is {}", sdkClient.getExpandedOperatorAccountId(), initialBalance);
+        COST = () -> initialBalance - getBalance();
+    }
+
+    // Prints the operator balance. Static because used only by the static @AfterAll.
+    public static long getCost() {
+        return COST.get();
     }
 
     public synchronized ExpandedAccountId getTokenTreasuryAccount() {
@@ -112,23 +122,13 @@ public class AccountClient extends AbstractNetworkClient {
     private NetworkTransactionResponse sendCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
                                                           Hbar hbarAmount,
                                                           boolean isApproval) {
-        log.debug(
-                "Send CryptoTransfer of {} tℏ from {} to {}. isApproval: {}", hbarAmount.toTinybars(),
-                sender.getAccountId(),
-                recipient,
-                isApproval);
-
         TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sender
-                        .getAccountId(), recipient, hbarAmount,
-                isApproval);
+                .getAccountId(), recipient, hbarAmount, isApproval);
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                cryptoTransferTransaction,
-                isApproval ? KeyList.of(sender.getPrivateKey()) : null);
-
-        log.debug("Sent CryptoTransfer");
-
-        return networkTransactionResponse;
+        var keyList = isApproval ? KeyList.of(sender.getPrivateKey()) : null;
+        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, keyList);
+        log.info("Transferred {} from {} to {} via {}", hbarAmount, sender, recipient, response.getTransactionId());
+        return response;
     }
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
@@ -184,81 +184,60 @@ public class AccountClient extends AbstractNetworkClient {
                 receiverSigRequired,
                 memo == null ? "" : memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(accountCreateTransaction,
-                        receiverSigRequired ? KeyList.of(privateKey) : null);
-        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
-
+        var response = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
+                receiverSigRequired ? KeyList.of(privateKey) : null);
+        TransactionReceipt receipt = response.getReceipt();
         AccountId newAccountId = receipt.accountId;
 
         // verify accountId
         if (receipt.accountId == null) {
             throw new NetworkException(String.format("Receipt for %s returned no accountId, receipt: %s",
-                    networkTransactionResponse.getTransactionId(),
+                    response.getTransactionId(),
                     receipt));
         }
 
-        log.info("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
-        return new ExpandedAccountId(newAccountId, privateKey, privateKey.getPublicKey());
+        log.info("Created new account {} with {} via {}", newAccountId, initialBalance, response.getTransactionId());
+        return new ExpandedAccountId(newAccountId, privateKey);
     }
 
     public NetworkTransactionResponse approveCryptoAllowance(AccountId spender, Hbar hbarAmount) {
-
-        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-        log.debug("Approve spender {} an allowance of {} tℏ on {}'s account", spender, hbarAmount.toTinybars(),
-                ownerAccountId);
-
-        var transaction = new AccountAllowanceApproveTransaction()
-                .approveHbarAllowance(null, spender, hbarAmount);
-
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Sent Account Allowance Approval");
-
-        return networkTransactionResponse;
+        var transaction = new AccountAllowanceApproveTransaction().approveHbarAllowance(null, spender, hbarAmount);
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Approved spender {} an allowance of {} via {}", spender, hbarAmount, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse approveNft(NftId nftId, AccountId spender) {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenNftAllowance(nftId, ownerAccountId, spender);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Sent Account Allowance Approval for Nft with id: {} and serialNumber: {}", nftId.tokenId, nftId.serial);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Approved spender {} a NFT allowance on {} and serial {} via {}",
+                spender, nftId.tokenId, nftId.serial, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse approveToken(TokenId tokenId, AccountId spender, long amount) {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenAllowance(tokenId, ownerAccountId, spender, amount);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Sent Account Allowance Approval for Token with id: {} and amount: {}", tokenId, amount);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Approved spender {} a token allowance on {} of {} via {}",
+                spender, tokenId, amount, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, AccountId spender) {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, spender);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Sent Account Allowance Approval for all serial numbers for Nft with id: {}", tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Approved spender {} an allowance for all serial numbers on {} via {}",
+                spender, tokenId, response.getTransactionId());
+        return response;
     }
 
     @RequiredArgsConstructor

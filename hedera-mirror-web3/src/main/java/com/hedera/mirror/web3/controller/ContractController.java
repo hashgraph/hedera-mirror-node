@@ -68,6 +68,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
+
     private final ContractCallService contractCallService;
     private final Bucket bucket;
 
@@ -80,27 +81,20 @@ class ContractController {
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final var params = constructServiceParameters(request);
 
-        final var callResponse =
-                new ContractCallResponse(
-                        contractCallService.processCall(params));
+        final var params = constructServiceParameters(request);
+        final var result = contractCallService.processCall(params);
+        final var callResponse = new ContractCallResponse(result);
 
         return Mono.just(callResponse);
-}
+    }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
-        final var fromAddress =
-                request.getFrom() != null
-                        ? Address.fromHexString(request.getFrom())
-                        : Address.ZERO;
+        final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
         final var receiver = Address.fromHexString(request.getTo());
-        final var data =
-                request.getData() != null
-                        ? Bytes.fromHexString(request.getData())
-                        : EMPTY;
+        final var data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
         final var isStaticCall = !request.isEstimate();
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
 
@@ -115,7 +109,7 @@ class ContractController {
                 .build();
     }
 
-    //This is temporary method till estimate_gas business logic got impl.
+    // This is temporary method till estimate_gas business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {
@@ -139,7 +133,7 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
-        log.warn("Address validation error");
+        log.warn("Address validation error: {}", e.getMessage());
         return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 
@@ -182,7 +176,8 @@ class ContractController {
         return Mono.just(new GenericErrorResponse(errorMessage));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
+    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage,
+                                                     final String hexErrorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage));
     }
 }

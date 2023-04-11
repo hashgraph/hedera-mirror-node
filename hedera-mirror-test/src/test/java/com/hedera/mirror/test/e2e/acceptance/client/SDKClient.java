@@ -146,7 +146,7 @@ public class SDKClient implements AutoCloseable {
                         .getReceipt(client)
                         .accountId;
                 log.info("Created operator account {} with public key {}", accountId, publicKey);
-                return new ExpandedAccountId(accountId, privateKey, publicKey);
+                return new ExpandedAccountId(accountId, privateKey);
             }
         } catch (Exception e) {
             log.warn("Unable to create a regular operator account. Falling back to existing operator", e);

@@ -29,13 +29,12 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
@@ -76,7 +75,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
@@ -451,7 +450,6 @@ public class TokenFeature {
         for (ExpandedAccountId accountId : accountIds) {
             try {
                 tokenClient.dissociate(accountId, tokenId);
-                log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
             } catch (Exception ex) {
                 log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
             }
@@ -539,9 +537,7 @@ public class TokenFeature {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
         long expectedBalance = startingBalance + amount - fractionalFee;
 
-        log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, amount);
-        log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, receiver);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -550,11 +546,8 @@ public class TokenFeature {
 
     private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
-
-        log.debug("Transfer serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient
                 .transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber));
-        log.debug("Transferred serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
