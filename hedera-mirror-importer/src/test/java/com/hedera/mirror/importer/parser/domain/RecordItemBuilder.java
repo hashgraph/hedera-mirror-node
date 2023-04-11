@@ -149,7 +149,6 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
  */
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@SuppressWarnings("unchecked")
 public class RecordItemBuilder {
 
     public static final ByteString EVM_ADDRESS = ByteString.fromHex("ebb9a1be370150759408cd7af48e9eda2b8ead57");
@@ -163,7 +162,8 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
-    private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
+    @SuppressWarnings("rawtypes")
+    private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
@@ -171,14 +171,13 @@ public class RecordItemBuilder {
 
     {
         // Dynamically lookup method references for every transaction body builder in this class
-        RecordItemBuilder.Builder<GeneratedMessageV3.Builder<?>> genericBuilder;
-        TestUtils.gettersByType(this, genericBuilder.getClass()).forEach(s -> {
-            builders.put(s.get().getType(), s);
+        TestUtils.gettersByType(this, Builder.class).forEach(s -> {
+            builders.put(s.get().type, s);
         });
     }
 
     @SuppressWarnings("rawtypes")
-    public Supplier<Builder<?>> lookup(TransactionType type) {
+    public Supplier<Builder> lookup(TransactionType type) {
         return builders.get(type);
     }
 
@@ -929,10 +928,6 @@ public class RecordItemBuilder {
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
                     .build();
-        }
-
-        public TransactionType getType() {
-            return type;
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {

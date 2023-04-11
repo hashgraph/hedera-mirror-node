@@ -192,7 +192,7 @@ public class RecordFileBuilder {
         }
 
         @SuppressWarnings("rawtypes")
-        private Supplier<RecordItemBuilder.Builder<?>> recordItem(TransactionType transactionType) {
+        private Supplier<RecordItemBuilder.Builder> recordItem(TransactionType transactionType) {
             var supplier = recordItemBuilder.lookup(transactionType);
             if (supplier == null) {
                 throw new UnsupportedOperationException("Transaction type not supported: " + transactionType);
