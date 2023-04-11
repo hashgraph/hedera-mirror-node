@@ -21,33 +21,12 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.file.FileData;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FileDataRepository extends CrudRepository<FileData, Long> {
-    @Query(
-            value =
-                    """
-                with latest_create as (
-                      select max(file_data.consensus_timestamp) as consensus_timestamp
-                      from file_data
-                      where file_data.entity_id = 112 and file_data.transaction_type in (17, 19)
-                      group by file_data.entity_id
-                      order by consensus_timestamp desc
-                    )
-                    select
-                    string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
-                    from file_data
-                    join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = 112 and file_data.transaction_type in (16, 17, 19)
-                      and ?1 >= l.consensus_timestamp
-                    group by file_data.entity_id""",
-            nativeQuery = true)
-    byte[] getExchangeRate(final long now);
-
     @Query(
             value =
                     """
@@ -62,9 +41,9 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
                     string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
                     from file_data
                     join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = 111 and file_data.transaction_type in (16, 17, 19)
-                      and ?1 >= l.consensus_timestamp
+                    where file_data.entity_id = ?1 and file_data.transaction_type in (16, 17, 19)
+                      and ?2 >= l.consensus_timestamp
                     group by file_data.entity_id""",
             nativeQuery = true)
-    byte[] getFeeSchedule(final long now);
+    byte[] getFileAtTimestamp(long fileId, long timestamp);
 }

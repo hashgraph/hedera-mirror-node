@@ -20,6 +20,8 @@
 
 package com.hedera.mirror.web3.evm.pricing;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_FEE;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -31,8 +33,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.cache.annotation.Cacheable;
-
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_FEE;
 
 @Named
 @RequiredArgsConstructor
@@ -48,7 +48,8 @@ public class RatesAndFeesLoader {
             key = "'now'",
             unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
-        final var ratesFile = fileDataRepository.getExchangeRate(nanoSeconds);
+        final var ratesFile =
+                fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getEntityNum(), nanoSeconds);
 
         try {
             return ExchangeRateSet.parseFrom(ratesFile);
@@ -66,7 +67,7 @@ public class RatesAndFeesLoader {
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         byte[] feeScheduleFile = ArrayUtils.EMPTY_BYTE_ARRAY;
         if (nanoSeconds > 0) {
-            feeScheduleFile = fileDataRepository.getFeeSchedule(nanoSeconds);
+            feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getEntityNum(), nanoSeconds);
         }
 
         try {
