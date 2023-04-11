@@ -22,7 +22,7 @@
     "@godaddy/terminus": "^4.11.2",
     "@hashgraph/proto": "^2.12.0",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1348.0",
+    "aws-sdk": "^2.1353.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.2",
     "compression": "^1.7.4",
@@ -37,7 +37,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "long": "^5.2.1",
-    "mathjs": "^11.7.0",
+    "mathjs": "^11.8.0",
     "mem": "^9.0.2",
     "parse-duration": "^1.0.3",
     "pg": "~8.10.0",
@@ -100,7 +100,7 @@
     "rewire": "^6.0.0",
     "sinon": "^15.0.3",
     "supertest": "^6.3.3",
-    "testcontainers": "^9.3.0"
+    "testcontainers": "^9.4.0"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
