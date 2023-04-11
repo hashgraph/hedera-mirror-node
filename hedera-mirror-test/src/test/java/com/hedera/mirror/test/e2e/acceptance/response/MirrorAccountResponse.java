@@ -37,7 +37,8 @@ public class MirrorAccountResponse {
     private MirrorAccountBalance balanceInfo;
     private List<MirrorTransaction> transactions;
     private String memo;
-
+    private String evmAddress;
+    private String alias;
     private MirrorAccountKeyResponse key;
 
     @Data

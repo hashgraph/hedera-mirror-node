@@ -39,6 +39,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Named
@@ -144,6 +145,15 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId createNewAccount(long initialBalance) {
         return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
+    }
+
+    public ExpandedAccountId createNewECDSAAccount(long initialBalance) {
+        PrivateKey newAccountPrivateKey = PrivateKey.generateECDSA();
+        AccountId newAccountId = newAccountPrivateKey.getPublicKey().toAccountId(0, 0);
+        sendCryptoTransfer(newAccountId, Hbar.fromTinybars(initialBalance));
+
+        MirrorAccountResponse accountInfo = sdkClient.getMirrorNodeClient().getAccountDetailsUsingAlias(newAccountId);
+        return new ExpandedAccountId(accountInfo.getAccount(), newAccountPrivateKey.toString());
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {

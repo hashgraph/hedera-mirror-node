@@ -30,6 +30,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
+    testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
     testImplementation("com.hedera.hashgraph:sdk")
     testImplementation("io.cucumber:cucumber-junit-platform-engine")
