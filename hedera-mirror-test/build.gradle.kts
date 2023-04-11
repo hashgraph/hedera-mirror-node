@@ -28,6 +28,7 @@ dependencies {
     implementation(platform("io.cucumber:cucumber-bom"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+    testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
     testImplementation("com.hedera.hashgraph:sdk")
     testImplementation("io.cucumber:cucumber-java")

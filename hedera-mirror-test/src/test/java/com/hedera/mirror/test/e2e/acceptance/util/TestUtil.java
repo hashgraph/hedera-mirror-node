@@ -35,10 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 @UtilityClass
 public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
-
-    public static String to32BytesString(String data) {
-        return StringUtils.leftPad(data, 64, '0');
-    }
+    public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
         if (key.isECDSA()) {
@@ -56,5 +53,18 @@ public class TestUtil {
         }
 
         throw new IllegalStateException("Unsupported key type");
+    }
+
+    public static String to32BytesString(String data) {
+        return StringUtils.leftPad(data.replace("0x", ""), 64, '0');
+    }
+
+    public static String hexToAscii(String hexStr) {
+        StringBuilder output = new StringBuilder("");
+        for (int i = 0; i < hexStr.length(); i += 2) {
+            String str = hexStr.substring(i, i + 2);
+            output.append((char) Integer.parseInt(str, 16));
+        }
+        return output.toString();
     }
 }
