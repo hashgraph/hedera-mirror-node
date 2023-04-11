@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 
 @Named
 @RequiredArgsConstructor
@@ -50,7 +51,7 @@ public class RatesAndFeesLoader {
     }
 
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
-        byte[] feeScheduleFile = new byte[0];
+        byte[] feeScheduleFile = ArrayUtils.EMPTY_BYTE_ARRAY;
         if (nanoSeconds > 0) {
             feeScheduleFile = fileDataRepository.getFeeSchedule(nanoSeconds);
         }
