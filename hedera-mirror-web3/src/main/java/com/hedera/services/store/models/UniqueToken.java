@@ -16,8 +16,6 @@
 package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
-import lombok.Builder;
-import lombok.Value;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -30,17 +28,60 @@ import com.hedera.services.state.submerkle.RichInstant;
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
  */
-@Value
-@Builder(toBuilder = true)
 public class UniqueToken {
-    private Id tokenId;
-    private Address address;
-    private long serialNumber;
-    private RichInstant creationTime;
-    private Id owner;
-    private Id spender;
-    private byte[] metadata;
-    private NftId nftId;
+    private final Id tokenId;
+
+    private final Address address;
+    private final long serialNumber;
+    private final RichInstant creationTime;
+    private final Id owner;
+    private final Id spender;
+    private final byte[] metadata;
+    private final NftId nftId;
+
+    public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, Id spender
+            , byte[] metadata) {
+        this.tokenId = tokenId;
+        this.address = tokenId.asEvmAddress();
+        this.serialNumber = serialNumber;
+        this.creationTime = creationTime;
+        this.owner = owner;
+        this.spender = spender;
+        this.metadata = metadata;
+        this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+    }
+
+    public NftId getNftId() {
+        return nftId;
+    }
+
+    public Id getTokenId() {
+        return tokenId;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public long getSerialNumber() {
+        return serialNumber;
+    }
+
+    public RichInstant getCreationTime() {
+        return creationTime;
+    }
+
+    public Id getOwner() {
+        return owner;
+    }
+
+    public Id getSpender() {
+        return spender;
+    }
+
+    public byte[] getMetadata() {
+        return metadata;
+    }
 
     @Override
     public String toString() {
