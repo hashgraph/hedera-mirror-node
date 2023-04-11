@@ -389,7 +389,6 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;
         assertNotNull(fileId);
-        log.info("Created file {} to hold contract init code", fileId);
 
         networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
         assertNotNull(networkTransactionResponse.getTransactionId());

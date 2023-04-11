@@ -22,6 +22,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Longs;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -50,6 +52,10 @@ public class SubscriptionResponse {
     }
 
     public void handleThrowable(Throwable err, TopicMessage topicMessage) {
+        if (err instanceof StatusRuntimeException sre && sre.getStatus().getCode() == Status.Code.CANCELLED) {
+            return;
+        }
+
         log.error("GRPC error on subscription : {}", err.getMessage());
         responseError = err;
     }

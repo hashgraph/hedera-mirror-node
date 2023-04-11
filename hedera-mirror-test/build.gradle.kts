@@ -26,12 +26,13 @@ plugins {
 
 dependencies {
     implementation(platform("io.cucumber:cucumber-bom"))
+    implementation("io.cucumber:cucumber-java")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("org.springframework.boot:spring-boot-starter-log4j2")
     testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
     testImplementation("com.hedera.hashgraph:sdk")
-    testImplementation("io.cucumber:cucumber-java")
     testImplementation("io.cucumber:cucumber-junit-platform-engine")
     testImplementation("io.cucumber:cucumber-spring")
     testImplementation("io.grpc:grpc-okhttp")
@@ -41,7 +42,6 @@ dependencies {
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.junit.platform:junit-platform-suite")
     testImplementation("org.springframework.boot:spring-boot-starter-aop")
-    testImplementation("org.springframework.boot:spring-boot-starter-log4j2")
     testImplementation("org.springframework.boot:spring-boot-starter-validation")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.retry:spring-retry")
@@ -57,7 +57,8 @@ tasks.named("test") {
 tasks.register<Test>("acceptance") {
     val maxParallelism = project.property("maxParallelism") as String
     jvmArgs = listOf("-Xmx1024m", "-Xms1024m")
-    maxParallelForks = if (maxParallelism.isNotBlank()) maxParallelism.toInt()!! else Runtime.getRuntime().availableProcessors()
+    maxParallelForks =
+        if (maxParallelism.isNotBlank()) maxParallelism.toInt()!! else Runtime.getRuntime().availableProcessors()
     useJUnitPlatform {}
 
     // Copy relevant system properties to the forked test process

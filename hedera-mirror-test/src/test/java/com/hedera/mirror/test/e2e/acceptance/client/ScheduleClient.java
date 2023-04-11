@@ -45,7 +45,7 @@ public class ScheduleClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction<?> transaction,
                                                      KeyList signatureKeyList) {
-        String memo = getMemo("Create schedule");
+        var memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setPayerAccountId(payerAccountId.getAccountId())
@@ -68,42 +68,32 @@ public class ScheduleClient extends AbstractNetworkClient {
             });
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
-        ScheduleId scheduleId = networkTransactionResponse.getReceipt().scheduleId;
-        log.debug("Created new schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
+        var scheduleId = response.getReceipt().scheduleId;
+        log.info("Created new schedule {} with memo '{}' via {}", scheduleId, memo, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
                                                    ScheduleId scheduleId) {
-
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setScheduleId(scheduleId)
                 .setTransactionMemo(getMemo("Sign schedule"));
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                scheduleSignTransaction,
-                KeyList.of(expandedAccountId.getPrivateKey())
-        );
-        log.debug("Signed schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(expandedAccountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(scheduleSignTransaction, keyList);
+        log.info("Signed schedule {} via {}", scheduleId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) {
-
-        log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setScheduleId(scheduleId)
                 .setTransactionMemo(getMemo("Delete schedule"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
-        log.debug("Deleted schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
+        log.info("Deleted schedule {} via {}", scheduleId, response.getTransactionId());
+        return response;
     }
 
     public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
