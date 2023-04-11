@@ -30,6 +30,9 @@ import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.cache.annotation.Cacheable;
+
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_FEE;
 
 @Named
 @RequiredArgsConstructor
@@ -39,6 +42,11 @@ public class RatesAndFeesLoader {
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
 
+    @Cacheable(
+            cacheNames = "rates_and_fee.exchange_rate",
+            cacheManager = CACHE_MANAGER_FEE,
+            key = "'now'",
+            unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         final var ratesFile = fileDataRepository.getExchangeRate(nanoSeconds);
 
@@ -50,6 +58,11 @@ public class RatesAndFeesLoader {
         }
     }
 
+    @Cacheable(
+            cacheNames = "rates_and_fee.fee_schedules",
+            cacheManager = CACHE_MANAGER_FEE,
+            key = "'now'",
+            unless = "#result == null")
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         byte[] feeScheduleFile = ArrayUtils.EMPTY_BYTE_ARRAY;
         if (nanoSeconds > 0) {
