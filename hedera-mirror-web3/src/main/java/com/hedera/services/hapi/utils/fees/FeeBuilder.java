@@ -31,6 +31,8 @@ import java.math.BigInteger;
  * calculate Fee for Crypto, File and Smart Contracts Transactions and Query
  */
 public class FeeBuilder {
+    private FeeBuilder() {}
+
     /**
      * Convert tinyCents to tinybars
      *

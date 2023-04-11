@@ -21,16 +21,12 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
-import java.util.concurrent.TimeUnit;
-
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
-
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -103,10 +99,8 @@ public class EvmConfiguration {
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
-            MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            BasicFcfsUsagePrices usagePricesProvider,
-            BasicHbarCentExchange hbarCentExchange) {
-        return new GasCalculatorHederaV22(mirrorNodeEvmProperties, usagePricesProvider, hbarCentExchange);
+            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
+        return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Bean
