@@ -50,9 +50,35 @@ following states:
 
 ### Important Usage Note: This _wants_ to be a cache of _values_ but in fact is a cache of _references_ - the user must be _cautious_!
 
-These caches cache _references_ to things. They should really, really only be used to cache _immutable value-like_ entities. Otherwise, if you actually _modify_ an entities' state you'll modify it not only in the top-level cache but in the lower-caches _which breaks the "commit" feature_. The implementation will attempt to detect, at runtime, that you're trying to update an entry with the same value (i.e., reference) that's already in the cache - which probably indicates that you modified the state and are attempting to update the cache with it.
+These caches cache _references_ to things. They should really, really only be used to cache _immutable value-like_ entities. Otherwise, if you actually _modify_ an entities' state you'll modify it not only in the top-level cache but in the lower-caches _which breaks the "commit/revert" feature_. The implementation will attempt to detect, at runtime, that you're trying to update an entry with the same value (i.e., reference) that's already in the cache - which probably indicates that you modified the state and are attempting to update the cache with it - but it can't prevent you from just modifying the thing in place and _not_ updating it in the cache.
 
 - An alternate solution would be to immediately _wrap_ underlying R/W entities in R/O wrappers and then use them exclusively.
+
+## A paragraph (or two) on the _type-safety_ of the cache and the use of Java generics
+
+The use case for the _stacked state frames_ includes _type-safe_ use of a cache capable of holding several hetrogenous (and unrelated-to-each-other) entity types. Further: that it be easy to expand the set of entity types as features are developed (or to _change_ one entity type out for another similar one).
+
+These use cases suggest the use of Java generics, however, Java generics have several limitations that make this far from seamless, in particular both implementation by _type erasure_ (which means that generic _type parameters_ are completely unknown at runtime) and lack of variadic type parameters for generics.
+  * To make matters more interesting, of the three operations done on entities in a cache - `get`, `set`, and
+    `delete`, only `set` provides a entity type on call.  `get` _returns_ an entity type but that isn't useful
+    for enforcing type safety and `delete` doesn't involve an entity type in its signature at all.
+
+After trying a large number of variations this is the solution I came up with:
+
+* All classes are parameterized on the _key_ type (typically, in this use case, some kind of _address_ or other identifier of an Hedera entity)
+* Each entity type is segregated into its own "cache" - an `UpdatableReferenceCache`.
+  * The `UpdatableReferenceCache` is actually holding `Objects` and relies on its users (owner classes) to make sure that only one kind of entity is stored in it.
+* A `CachingStateFrame` can hold multiple entity types - each one gets its own `UpdatableReferenceCache`.
+  * The entity types a `CachingStateFrame` can hold are specified at construction time by having the list of
+    entity classes passed in to it.
+    * It then creates the needed `UpdatableReferenceCache`s to hold those entity types, and holds them in a map
+      indexed by the `Class` instance.
+  * To ensure type-safety _all_ accesses (`get`, `set`, and `delete` are done by _accessors_ available from the
+    `CachingStateFrame`.  You ask for one of those for the specific type you're interested in accessing (by
+    giving its `Class` instance) and then you have fully type-safe access to `get`, `set`, and `delete` on those
+    kinds of entities in that frame.
+    * It's inexpensive to get one of these accessors because they're created when the `CachingStateFrame` is
+      constructed and then those instances are just used and reused whenever asked for.
 
 ## A few diagrams to help this description out
 
