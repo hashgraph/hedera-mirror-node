@@ -22,13 +22,12 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.time.Instant;
 import java.util.function.Supplier;
+
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
@@ -62,11 +61,6 @@ public abstract class AbstractNetworkClient {
         this.sdkClient = sdkClient;
         this.client = sdkClient.getClient();
         this.retryTemplate = retryTemplate;
-
-        // Suppress verbose receipt query retry logs
-        if (!log.isDebugEnabled()) {
-            Configurator.setLevel(LogManager.getLogger(TransactionReceiptQuery.class), Level.ERROR);
-        }
     }
 
     @SneakyThrows
@@ -101,35 +95,40 @@ public abstract class AbstractNetworkClient {
         transaction.setGrpcDeadline(sdkProperties.getGrpcDeadline());
         transaction.setMaxAttempts(sdkProperties.getMaxAttempts());
 
-        var transactionResponse = (TransactionResponse) retryTemplate.execute(x -> transaction.execute(client));
+        var transactionResponse = retryTemplate.execute(x -> transaction.execute(client));
         var transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {} with {} signatures.", transactionId, numSignatures);
 
         return transactionId;
     }
 
-    public TransactionId executeTransaction(Transaction<?> transaction, KeyList keyList) {
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
         return executeTransaction(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList,
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
+        long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
         var transactionId = executeTransaction(transaction, keyList, payer);
         var transactionReceipt = getTransactionReceipt(transactionId);
-        log.debug("Executed {} {}", transaction.getClass().getSimpleName(), transactionId);
+
+        if (log.isTraceEnabled()) {
+            log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
+        }
+
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
         return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction,
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
                                                                            ExpandedAccountId payer) {
         return executeTransactionAndRetrieveReceipt(transaction, null, payer);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {
         return executeTransactionAndRetrieveReceipt(transaction, null, null);
     }
 
@@ -176,7 +175,7 @@ public abstract class AbstractNetworkClient {
         // AccountBalanceQuery is free
         var query = new AccountBalanceQuery().setAccountId(accountId.getAccountId());
         var balance = executeQuery(() -> query).hbars;
-        log.debug("Account {} balance is {}", accountId, balance);
+        log.info("{} balance is {}", accountId, balance);
         return balance.toTinybars();
     }
 
