@@ -30,6 +30,9 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -78,6 +81,17 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
+    @ParameterizedTest
+    @EnumSource(UnsupportedContractFunctions.class)
+    void unsupportedErcPrecompileOperationsTest(UnsupportedContractFunctions ercFunction) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage(ercFunction.expectedExceptionMessage);
+    }
+
     @Test
     void metadataOf() {
         final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ABI_PATH, NFT_ADDRESS, 1L);
@@ -88,10 +102,6 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
 
     @RequiredArgsConstructor
     public enum ContractFunctions {
-        GET_APPROVED_EMPTY_SPENDER("getApproved",new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
-        IS_APPROVE_FOR_ALL        ("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true}),
-        ALLOWANCE_OF              ("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Long[] {13L}),
-        GET_APPROVED              ("getApproved",new Object[] {NFT_ADDRESS, 1L},new Address[] {RECEIVER_ADDRESS}),
         ERC_DECIMALS              ("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
         TOTAL_SUPPLY              ("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
         ERC_SYMBOL                ("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"HBAR"}),
@@ -100,10 +110,21 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         OWNER_OF                  ("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {SENDER_ADDRESS}),
         EMPTY_OWNER_OF            ("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO});
 
-
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    public enum UnsupportedContractFunctions {
+        GET_APPROVED_EMPTY_SPENDER("getApproved",new Object[] {NFT_ADDRESS, 2L}, "getApproved(uint256 tokenId) is not supported."),
+        IS_APPROVE_FOR_ALL        ("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, "isApprovedForAll(address owner, address operator) is not supported."),
+        ALLOWANCE_OF              ("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, "allowance(address owner, address spender) is not supported."),
+        GET_APPROVED              ("getApproved",new Object[] {NFT_ADDRESS, 1L}, "getApproved(uint256 tokenId) is not supported.");
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final String expectedExceptionMessage;
     }
 
     private CallServiceParameters serviceParameters(Bytes callData) {

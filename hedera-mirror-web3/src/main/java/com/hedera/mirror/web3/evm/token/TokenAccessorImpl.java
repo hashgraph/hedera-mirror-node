@@ -218,34 +218,17 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
-        final var tokenAllowanceId = new AbstractTokenAllowance.Id();
-        tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
-        tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
-        tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
-
-        return tokenAllowanceRepository.findById(tokenAllowanceId).map(TokenAllowance::getAmount).orElse(0L);
+        throw new UnsupportedOperationException("allowance(address owner, address spender) is not supported.");
     }
 
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var spenderEntity = nftRepository.findById(nftId).map(Nft::getSpender);
-
-        if (spenderEntity.isEmpty()) {
-            return Address.ZERO;
-        }
-
-        return evmAddressFromId(spenderEntity.get());
+        throw new UnsupportedOperationException("getApproved(uint256 tokenId) is not supported.");
     }
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
-        final var nftAllowanceId = new AbstractNftAllowance.Id();
-        nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
-        nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
-        nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
-
-        return nftAllowanceRepository.findById(nftAllowanceId).map(NftAllowance::isApprovedForAll).orElse(false);
+        throw new UnsupportedOperationException("isApprovedForAll(address owner, address operator) is not supported.");
     }
 
     @Override
