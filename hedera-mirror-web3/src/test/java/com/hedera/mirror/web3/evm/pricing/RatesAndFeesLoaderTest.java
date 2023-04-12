@@ -28,9 +28,9 @@ import static org.mockito.Mockito.when;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,12 +39,8 @@ class RatesAndFeesLoaderTest {
     @Mock
     private FileDataRepository fileDataRepository;
 
+    @InjectMocks
     private RatesAndFeesLoader subject;
-
-    @BeforeEach
-    void setup() {
-        subject = new RatesAndFeesLoader(fileDataRepository);
-    }
 
     @Test
     void loadExchangeRates() {
