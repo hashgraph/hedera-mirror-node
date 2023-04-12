@@ -218,16 +218,16 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
-        if(properties.isAllowanceEnabled()) {
-            final var tokenAllowanceId = new AbstractTokenAllowance.Id();
-            tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
-            tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
-            tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
-
-            return tokenAllowanceRepository.findById(tokenAllowanceId).map(TokenAllowance::getAmount).orElse(0L);
-        } else {
+        if (!properties.isAllowanceEnabled()) {
             throw new UnsupportedOperationException("allowance(address owner, address spender) is not supported.");
         }
+
+        final var tokenAllowanceId = new AbstractTokenAllowance.Id();
+        tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
+        tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
+        tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
+
+        return tokenAllowanceRepository.findById(tokenAllowanceId).map(TokenAllowance::getAmount).orElse(0L);
     }
 
     @Override

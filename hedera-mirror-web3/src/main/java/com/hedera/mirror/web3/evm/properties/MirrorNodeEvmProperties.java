@@ -44,6 +44,9 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+    @Getter
+    private boolean allowanceEnabled = false;
+    
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;
@@ -71,9 +74,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
-
-    @Getter
-    private boolean isAllowanceEnabled = false;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {

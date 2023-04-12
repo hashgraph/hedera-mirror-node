@@ -32,6 +32,8 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -65,10 +67,13 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     private static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder functionEncodeDecoder;
+    private final MirrorNodeEvmProperties properties;
 
     @ParameterizedTest
     @EnumSource(ContractFunctions.class)
     void ercPrecompileOperationsTest(ContractFunctions ercFunction) {
+        properties.setAllowanceEnabled(true);
+
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParameters(functionHash);
@@ -100,6 +105,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     public enum ContractFunctions {
         GET_APPROVED_EMPTY_SPENDER("getApproved",new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL        ("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true}),
+        ALLOWANCE_OF              ("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Long[] {13L}),
         GET_APPROVED              ("getApproved",new Object[] {NFT_ADDRESS, 1L},new Address[] {RECEIVER_ADDRESS}),
         ERC_DECIMALS              ("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
         TOTAL_SUPPLY              ("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
