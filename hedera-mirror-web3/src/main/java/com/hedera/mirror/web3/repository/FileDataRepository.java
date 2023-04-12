@@ -33,7 +33,7 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
                 with latest_create as (
                       select max(file_data.consensus_timestamp) as consensus_timestamp
                       from file_data
-                      where file_data.entity_id = 111 and file_data.transaction_type in (17, 19)
+                      where file_data.entity_id = ?1 and file_data.transaction_type in (17, 19)
                       group by file_data.entity_id
                       order by consensus_timestamp desc
                     )
