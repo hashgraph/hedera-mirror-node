@@ -43,6 +43,7 @@ jobs:
 
       - name: Build
         uses: gradle/gradle-build-action@v2
+        if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
         with:
           arguments: build -x test
 

@@ -21,31 +21,33 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  */
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.ToString;
+import lombok.Value;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 
-@Data
+@Value
 @AllArgsConstructor
 public class ExpandedAccountId {
+
     private final AccountId accountId;
-    @ToString.Exclude
     private final PrivateKey privateKey;
-    @ToString.Exclude
-    private final PublicKey publicKey;
 
     public ExpandedAccountId(String operatorId, String operatorKey) {
-        accountId = AccountId.fromString(operatorId);
-        privateKey = PrivateKey.fromString(operatorKey);
-        publicKey = privateKey.getPublicKey();
+        this(AccountId.fromString(operatorId), PrivateKey.fromString(operatorKey));
     }
 
     public ExpandedAccountId(AccountId account) {
-        accountId = account;
-        privateKey = null;
-        publicKey = null;
+        this(account, null);
+    }
+
+    public PublicKey getPublicKey() {
+        return privateKey != null ? privateKey.getPublicKey() : null;
+    }
+
+    @Override
+    public String toString() {
+        return accountId.toString();
     }
 }

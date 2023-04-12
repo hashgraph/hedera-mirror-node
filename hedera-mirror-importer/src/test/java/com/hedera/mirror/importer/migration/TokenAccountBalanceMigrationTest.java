@@ -142,6 +142,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccountBalanceMigration.doMigrate();
 
         // then
+        deletedEntityTokenAccount4.setBalance(0L);
         tokenAccount.setBalance(0L);
         tokenAccount2.setBalance(0L);
         tokenAccount3.setBalance(0L);
@@ -163,6 +164,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount.setBalance(0L);
         tokenAccount2.setBalance(0L);
         tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
@@ -181,6 +183,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount.setBalance(0L);
         tokenAccount2.setBalance(0L);
         tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
@@ -198,6 +201,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // then
         tokenAccount.setBalance(100L);
         tokenAccount2.setBalance(33L);
+        deletedEntityTokenAccount4.setBalance(999999L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
@@ -333,7 +337,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount.setBalance(tokenBalance1Amount);
         tokenAccount2.setBalance(tokenBalance2Amount + tokenTransfer2Amount);
         tokenAccount3.setBalance(tokenBalance3Amount);
-        deletedEntityTokenAccount4.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(1009875L);
         disassociatedTokenAccount5.setBalance(0L);
 
         // Second record file
