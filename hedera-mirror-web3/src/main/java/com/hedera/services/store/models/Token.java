@@ -1,0 +1,650 @@
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.hedera.services.store.models;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+
+import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.state.submerkle.RichInstant;
+
+/**
+ * Encapsulates the state and operations of a Hedera token.
+ *
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
+ *
+ * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
+ * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
+ * signature for a {@code NON_FUNGIBLE_UNIQUE} is
+ * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ */
+public class Token {
+    private final Id id;
+    private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
+    private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
+    private final Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
+    private final boolean supplyHasChanged;
+    private final TokenType type;
+    private final TokenSupplyType supplyType;
+    private final long totalSupply;
+    private final long maxSupply;
+    private final JKey kycKey;
+    private final JKey freezeKey;
+    private final JKey supplyKey;
+    private final JKey wipeKey;
+    private final JKey adminKey;
+    private final JKey feeScheduleKey;
+    private final JKey pauseKey;
+    private final boolean frozenByDefault;
+    private final Account treasury;
+    private final Account autoRenewAccount;
+    private final boolean deleted;
+    private final boolean paused;
+    private final boolean autoRemoved = false;
+    private final long expiry;
+    private final boolean isNew;
+    private final String memo;
+    private final String name;
+    private final String symbol;
+    private final int decimals;
+    private final long autoRenewPeriod;
+    private final long lastUsedSerialNumber;
+    private final List<FcCustomFee> customFees;
+
+    public Token(Id id, boolean supplyHasChanged, TokenType type, TokenSupplyType supplyType, long totalSupply,
+                 long maxSupply, JKey kycKey, JKey freezeKey, JKey supplyKey, JKey wipeKey, JKey adminKey,
+                 JKey feeScheduleKey, JKey pauseKey, boolean frozenByDefault, Account treasury,
+                 Account autoRenewAccount, boolean deleted, boolean paused, long expiry, boolean isNew, String memo,
+                 String name, String symbol, int decimals, long autoRenewPeriod, long lastUsedSerialNumber,
+                 List<FcCustomFee> customFees) {
+        this.id = id;
+        this.supplyHasChanged = supplyHasChanged;
+        this.type = type;
+        this.supplyType = supplyType;
+        this.totalSupply = totalSupply;
+        this.maxSupply = maxSupply;
+        this.kycKey = kycKey;
+        this.freezeKey = freezeKey;
+        this.supplyKey = supplyKey;
+        this.wipeKey = wipeKey;
+        this.adminKey = adminKey;
+        this.feeScheduleKey = feeScheduleKey;
+        this.pauseKey = pauseKey;
+        this.frozenByDefault = frozenByDefault;
+        this.treasury = treasury;
+        this.autoRenewAccount = autoRenewAccount;
+        this.deleted = deleted;
+        this.paused = paused;
+        this.expiry = expiry;
+        this.isNew = isNew;
+        this.memo = memo;
+        this.name = name;
+        this.symbol = symbol;
+        this.decimals = decimals;
+        this.autoRenewPeriod = autoRenewPeriod;
+        this.lastUsedSerialNumber = lastUsedSerialNumber;
+        this.customFees = customFees;
+    }
+
+    private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType, totalSupply,
+                oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey, oldToken.wipeKey,
+                oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey, oldToken.frozenByDefault,
+                oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted, oldToken.paused, oldToken.expiry,
+                oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol, oldToken.decimals,
+                oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+    }
+
+    private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+    }
+
+    private Token createNewDeletedToken(Token oldToken) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, true,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+    }
+
+    /**
+     * Creates a new instance of the model token, which is later persisted in state.
+     *
+     * @param tokenId            the new token id
+     * @param op                 the transaction body containing the necessary data for token creation
+     * @param treasury           treasury of the token
+     * @param autoRenewAccount   optional(nullable) account used for auto-renewal
+     * @param consensusTimestamp the consensus time of the token create transaction
+     * @return a new instance of the {@link Token} class
+     */
+    public static Token fromGrpcOpAndMeta(
+            final Id tokenId,
+            final TokenCreateTransactionBody op,
+            final Account treasury,
+            @Nullable final Account autoRenewAccount,
+            final long consensusTimestamp) {
+        final var tokenExpiry = op.hasAutoRenewAccount()
+                ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
+                : op.getExpiry().getSeconds();
+
+        final var freezeKey = asUsableFcKey(op.getFreezeKey());
+        final var adminKey = asUsableFcKey(op.getAdminKey());
+        final var kycKey = asUsableFcKey(op.getKycKey());
+        final var wipeKey = asUsableFcKey(op.getWipeKey());
+        final var supplyKey = asUsableFcKey(op.getSupplyKey());
+        final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
+        final var pauseKey = asUsableFcKey(op.getPauseKey());
+        final var token = new Token(tokenId, false, mapToDomain(op.getTokenType()), op.getSupplyType(), null,
+                op.getMaxSupply(), kycKey.get(), freezeKey.get(), supplyKey.get(), wipeKey.get(), adminKey.get(),
+                feeScheduleKey.get(), pauseKey.get(), op.getFreezeDefault(), treasury, autoRenewAccount, false, false
+                , tokenExpiry, true, op.getMemo(), op.getName(), op.getSymbol(), op.getDecimals(),
+                op.getAutoRenewPeriod()
+                        .getSeconds(), null, op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
+        return token;
+    }
+
+    private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
+        if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
+            return TokenType.NON_FUNGIBLE_UNIQUE;
+        }
+        return TokenType.FUNGIBLE_COMMON;
+    }
+
+    public void mint(final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
+        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
+        validateTrue(
+                type == TokenType.FUNGIBLE_COMMON,
+                FAIL_INVALID,
+                "Fungible mint can be invoked only on fungible token type");
+
+        changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
+    }
+
+    /**
+     * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
+     * given base unique token, and assigns each of the numbers to each new unique token instance.
+     *
+     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
+     * @param treasuryRel      - the relationship between the treasury account and the token
+     * @param metadata         - a list of user-defined metadata, related to the nft instances.
+     * @param creationTime     - the consensus time of the token mint transaction
+     */
+    public Token mint(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship treasuryRel,
+            final List<ByteString> metadata,
+            final RichInstant creationTime) {
+        final var metadataCount = metadata.size();
+        validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
+        validateTrue(
+                type == TokenType.NON_FUNGIBLE_UNIQUE,
+                FAIL_INVALID,
+                "Non-fungible mint can be invoked only on non-fungible token type");
+        validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
+
+        changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
+        long lastUsedSerialNumber = this.lastUsedSerialNumber;
+
+        for (final ByteString m : metadata) {
+            lastUsedSerialNumber++;
+            // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
+            // Treasury
+            final var uniqueToken =
+                    new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
+            mintedUniqueTokens.add(uniqueToken);
+            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
+        }
+        treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
+        return new Token(this.id, this.supplyHasChanged, this.type, this.supplyType, this.totalSupply, this.maxSupply,
+                this.kycKey, this.freezeKey, this.supplyKey, this.wipeKey, this.adminKey, this.feeScheduleKey,
+                this.pauseKey, this.frozenByDefault, this.treasury, this.autoRenewAccount, this.deleted,
+                this.paused, this.expiry, this.isNew, this.memo, this.name, this.symbol, this.decimals,
+                this.autoRenewPeriod, lastUsedSerialNumber, this.customFees);
+    }
+
+    public Token burn(final TokenRelationship treasuryRel, final long amount) {
+        validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
+        return changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
+    }
+
+    /**
+     * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
+     *
+     * @param ownershipTracker     - a tracker of changes made to the nft ownership
+     * @param treasuryRelationship - the relationship between the treasury account and the token
+     * @param serialNumbers        - the serial numbers, representing the unique tokens which will be destroyed.
+     */
+    public Token burn(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship treasuryRelationship,
+            final List<Long> serialNumbers) {
+        validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
+        validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
+        final var treasuryId = treasury.getId();
+        for (final long serialNum : serialNumbers) {
+            final var uniqueToken = loadedUniqueTokens.get(serialNum);
+            validateTrue(uniqueToken != null, FAIL_INVALID);
+
+            final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
+            validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
+            ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
+            removedUniqueTokens.add(new UniqueToken(id, serialNum, treasuryId));
+        }
+        final var numBurned = serialNumbers.size();
+        treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
+        return changeSupply(treasuryRelationship, -numBurned, FAIL_INVALID, false);
+    }
+
+    /**
+     * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
+     *
+     * @param accountRel - the relationship between the account which owns the tokens and the token
+     * @param amount     - amount to be wiped
+     */
+    public Token wipe(final TokenRelationship accountRel, final long amount) {
+        validateTrue(
+                type == TokenType.FUNGIBLE_COMMON,
+                FAIL_INVALID,
+                "Fungible wipe can be invoked only on Fungible token type.");
+
+        baseWipeValidations(accountRel);
+        amountWipeValidations(accountRel, amount);
+        final var newTotalSupply = totalSupply - amount;
+        final var newAccBalance = accountRel.getBalance() - amount;
+
+        if (newAccBalance == 0) {
+            final var currentNumPositiveBalances = accountRel.getAccount().getNumPositiveBalances();
+            accountRel.getAccount().setNumPositiveBalances(currentNumPositiveBalances - 1);
+        }
+
+        accountRel.setBalance(newAccBalance);
+        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+    }
+
+    /**
+     * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the
+     * total supply.
+     *
+     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
+     * @param accountRel       - the relationship between the account, which owns the tokens, and the token
+     * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     */
+    public Token wipe(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship accountRel,
+            final List<Long> serialNumbers) {
+        validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
+        validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
+
+        baseWipeValidations(accountRel);
+        for (final var serialNum : serialNumbers) {
+            final var uniqueToken = loadedUniqueTokens.get(serialNum);
+            validateTrue(uniqueToken != null, FAIL_INVALID);
+            final var wipeAccountIsOwner =
+                    uniqueToken.getOwner().equals(accountRel.getAccount().getId());
+            validateTrue(wipeAccountIsOwner, ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
+        }
+
+        final var newTotalSupply = totalSupply - serialNumbers.size();
+        final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
+        final var account = accountRel.getAccount();
+        for (final long serialNum : serialNumbers) {
+            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
+            removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
+        }
+
+        if (newAccountBalance == 0) {
+            final var currentNumPositiveBalances = account.getNumPositiveBalances();
+            account.setNumPositiveBalances(currentNumPositiveBalances - 1);
+        }
+
+        account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
+        accountRel.setBalance(newAccountBalance);
+        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+    }
+
+    /**
+     * Performs a check if the target token has an admin key. If the admin key is not present throws an exception and
+     * does not mutate the token. If the admin key is present, marks it as deleted.
+     */
+    public Token delete() {
+        validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
+        return createNewDeletedToken(this);
+    }
+
+    public boolean hasAdminKey() {
+        return adminKey != null;
+    }
+
+    public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
+        final var newRel = new TokenRelationship(this, account);
+        if (hasFreezeKey() && frozenByDefault) {
+            newRel.setFrozen(true);
+        }
+        newRel.setKycGranted(!hasKycKey());
+        newRel.setAutomaticAssociation(automaticAssociation);
+        return newRel;
+    }
+
+    /**
+     * Creates new {@link TokenRelationship} for the specified {@link Account} IMPORTANT: The provided account is set to
+     * KYC granted and unfrozen by default
+     *
+     * @param account the Account for which to create the relationship
+     * @return newly created {@link TokenRelationship}
+     */
+    public TokenRelationship newEnabledRelationship(final Account account) {
+        final var rel = new TokenRelationship(this, account);
+        rel.setKycGranted(true);
+        rel.setFrozen(false);
+        return rel;
+    }
+
+    private Token changeSupply(
+            final TokenRelationship treasuryRel,
+            final long amount,
+            final ResponseCodeEnum negSupplyCode,
+            final boolean ignoreSupplyKey) {
+        validateTrue(treasuryRel != null, FAIL_INVALID, "Cannot mint with a null treasuryRel");
+        validateTrue(
+                treasuryRel.hasInvolvedIds(id, treasury.getId()),
+                FAIL_INVALID,
+                "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
+        if (!ignoreSupplyKey) {
+            validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
+        }
+        final long newTotalSupply = totalSupply + amount;
+        validateTrue(newTotalSupply >= 0, negSupplyCode);
+        if (supplyType == TokenSupplyType.FINITE) {
+            validateTrue(
+                    maxSupply >= newTotalSupply,
+                    TOKEN_MAX_SUPPLY_REACHED,
+                    "Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+        }
+        final var treasuryAccount = treasuryRel.getAccount();
+        final long newTreasuryBalance = treasuryRel.getBalance() + amount;
+        validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+        if (treasuryRel.getBalance() == 0 && amount > 0) {
+            // for mint op
+            treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
+        } else if (newTreasuryBalance == 0 && amount < 0) {
+            // for burn op
+            treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
+        }
+        treasuryRel.setBalance(newTreasuryBalance);
+        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+    }
+
+    private void baseWipeValidations(final TokenRelationship accountRel) {
+        validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, "Cannot wipe Tokens without wipe key.");
+
+        validateFalse(
+                treasury.getId().equals(accountRel.getAccount().getId()),
+                CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
+                "Cannot wipe treasury account of token.");
+    }
+
+    private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
+        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
+
+        final var newTotalSupply = totalSupply - amount;
+        validateTrue(
+                newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
+
+        final var newAccountBalance = accountRel.getBalance() - amount;
+        validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate account balance");
+    }
+
+    private String errorMessage(final String op, final long amount, final TokenRelationship rel) {
+        return "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
+    }
+
+    public Account getTreasury() {
+        return treasury;
+    }
+
+    public Account getAutoRenewAccount() {
+        return autoRenewAccount;
+    }
+
+    public long getTotalSupply() {
+        return totalSupply;
+    }
+
+    public long getMaxSupply() {
+        return maxSupply;
+    }
+
+    public JKey getSupplyKey() {
+        return supplyKey;
+    }
+
+    public void setFreezeKey(final JKey freezeKey) {
+        this.freezeKey = freezeKey;
+    }
+
+    public boolean hasFreezeKey() {
+        return freezeKey != null;
+    }
+
+    public boolean hasKycKey() {
+        return kycKey != null;
+    }
+
+    private boolean hasWipeKey() {
+        return wipeKey != null;
+    }
+
+    public JKey getWipeKey() {
+        return wipeKey;
+    }
+
+    public JKey getKycKey() {
+        return kycKey;
+    }
+
+    public JKey getFreezeKey() {
+        return freezeKey;
+    }
+
+    public JKey getPauseKey() {
+        return pauseKey;
+    }
+
+    public boolean hasPauseKey() {
+        return pauseKey != null;
+    }
+
+    /* supply is changed only after the token is created */
+    public boolean hasChangedSupply() {
+        return supplyHasChanged && !isNew;
+    }
+
+    public boolean isFrozenByDefault() {
+        return frozenByDefault;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public Id getId() {
+        return id;
+    }
+
+    public TokenType getType() {
+        return type;
+    }
+
+    public boolean isFungibleCommon() {
+        return type == TokenType.FUNGIBLE_COMMON;
+    }
+
+    public boolean isNonFungibleUnique() {
+        return type == TokenType.NON_FUNGIBLE_UNIQUE;
+    }
+
+    public long getLastUsedSerialNumber() {
+        return lastUsedSerialNumber;
+    }
+
+    public boolean hasMintedUniqueTokens() {
+        return !mintedUniqueTokens.isEmpty();
+    }
+
+    public List<UniqueToken> mintedUniqueTokens() {
+        return mintedUniqueTokens;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public long getExpiry() {
+        return expiry;
+    }
+
+    public boolean hasRemovedUniqueTokens() {
+        return !removedUniqueTokens.isEmpty();
+    }
+
+    public List<UniqueToken> removedUniqueTokens() {
+        return removedUniqueTokens;
+    }
+
+    public Map<Long, UniqueToken> getLoadedUniqueTokens() {
+        return loadedUniqueTokens;
+    }
+
+    public boolean isBelievedToHaveBeenAutoRemoved() {
+        return autoRemoved;
+    }
+
+    public JKey getAdminKey() {
+        return adminKey;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    public boolean isNew() {
+        return isNew;
+    }
+
+    public TokenSupplyType getSupplyType() {
+        return supplyType;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public int getDecimals() {
+        return decimals;
+    }
+
+    public long getAutoRenewPeriod() {
+        return autoRenewPeriod;
+    }
+
+    /* NOTE: The object methods below are only overridden to improve
+    readability of unit tests; this model object is not used in hash-based
+    collections, so the performance of these methods doesn't matter. */
+    @Override
+    public boolean equals(final Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(Token.class)
+                .add("id", id)
+                .add("type", type)
+                .add("deleted", deleted)
+                .add("autoRemoved", autoRemoved)
+                .add("treasury", treasury)
+                .add("autoRenewAccount", autoRenewAccount)
+                .add("kycKey", describe(kycKey))
+                .add("freezeKey", describe(freezeKey))
+                .add("frozenByDefault", frozenByDefault)
+                .add("supplyKey", describe(supplyKey))
+                .add("currentSerialNumber", lastUsedSerialNumber)
+                .add("pauseKey", describe(pauseKey))
+                .add("paused", paused)
+                .toString();
+    }
+
+    public boolean hasFeeScheduleKey() {
+        return feeScheduleKey != null;
+    }
+
+    public JKey getFeeScheduleKey() {
+        return feeScheduleKey;
+    }
+
+    public List<FcCustomFee> getCustomFees() {
+        return customFees;
+    }
+}
