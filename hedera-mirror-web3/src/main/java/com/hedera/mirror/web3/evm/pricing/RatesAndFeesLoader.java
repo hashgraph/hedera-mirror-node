@@ -34,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.cache.annotation.Cacheable;
 
+/**
+ * Rates and fees loader, currently working only with current timestamp.
+ */
 @Named
 @RequiredArgsConstructor
 @CustomLog
@@ -42,6 +45,11 @@ public class RatesAndFeesLoader {
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
 
+    /**
+     * Loads the exchange rates for a given time. Currently, works only with current timestamp.
+     * @param nanoSeconds timestamp
+     * @return exchange rates set
+     */
     @Cacheable(
             cacheNames = "rates_and_fee.exchange_rate",
             cacheManager = CACHE_MANAGER_FEE,
@@ -59,6 +67,11 @@ public class RatesAndFeesLoader {
         }
     }
 
+    /**
+     * Load the fee schedules for a given time. Currently, works only with current timestamp.
+     * @param nanoSeconds timestamp
+     * @return current and next fee schedules
+     */
     @Cacheable(
             cacheNames = "rates_and_fee.fee_schedules",
             cacheManager = CACHE_MANAGER_FEE,
