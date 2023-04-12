@@ -72,6 +72,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    @Getter
+    private boolean isAllowanceEnabled = false;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
