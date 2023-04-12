@@ -72,6 +72,22 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    @Getter
+    @Min(25_000)
+    @Max(15_000_000)
+    private long maxGasToUseLimit = 15_000_000L;
+
+    @Getter
+    @Min(25_000)
+    @Max(15_000_000)
+    private long minGasToUseLimit = 25_000L;
+
+/**
+ * The gas value difference between consecutive iterations in the binary search performed during gas estimation
+ */
+    @Getter
+    private long diffBetweenIterations = 1200L;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
