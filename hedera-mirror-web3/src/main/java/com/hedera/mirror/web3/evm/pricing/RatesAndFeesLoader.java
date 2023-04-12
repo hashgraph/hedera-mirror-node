@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.cache.annotation.Cacheable;
 
 /**
@@ -76,10 +75,7 @@ public class RatesAndFeesLoader {
             key = "'now'",
             unless = "#result == null")
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
-        byte[] feeScheduleFile = ArrayUtils.EMPTY_BYTE_ARRAY;
-        if (nanoSeconds > 0) {
-            feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds);
-        }
+        final var feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds);
 
         try {
             return CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile);
