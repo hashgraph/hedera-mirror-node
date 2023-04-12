@@ -130,20 +130,17 @@ public class TokenClient extends AbstractNetworkClient {
                                                           int kycStatus, ExpandedAccountId treasuryAccount,
                                                           int initialSupply, TokenSupplyType tokenSupplyType,
                                                           long maxSupply, List<CustomFee> customFees) {
-        log.debug("Create new fungible token {}", symbol);
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(expandedAccountId, symbol,
                 freezeStatus, kycStatus, treasuryAccount, TokenType.FUNGIBLE_COMMON, tokenSupplyType, maxSupply,
                 customFees)
                 .setDecimals(10)
                 .setInitialSupply(initialSupply);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenCreateTransaction,
-                        KeyList.of(treasuryAccount.getPrivateKey()));
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-        log.debug("Created new fungible token {}", tokenId);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(treasuryAccount.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
+        var tokenId = response.getReceipt().tokenId;
+        log.info("Created new fungible token {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse createNonFungibleToken(ExpandedAccountId expandedAccountId, String symbol,
@@ -156,29 +153,23 @@ public class TokenClient extends AbstractNetworkClient {
                 freezeStatus, kycStatus, treasuryAccount, TokenType.NON_FUNGIBLE_UNIQUE, tokenSupplyType, maxSupply,
                 customFees);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenCreateTransaction,
-                        KeyList.of(treasuryAccount.getPrivateKey()));
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-        log.debug("Created new non-fungible token {}", tokenId);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(treasuryAccount.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
+        var tokenId = response.getReceipt().tokenId;
+        log.info("Created new NFT {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
-        log.debug("Associate account {} with token {}", accountId.getAccountId(), token);
         TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
                 .setAccountId(accountId.getAccountId())
                 .setTokenIds((List.of(token)))
                 .setTransactionMemo(getMemo("Associate w token"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
-
-        log.debug("Associated {} with token {}", accountId, token);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(accountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
+        log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse mint(TokenId tokenId, long amount) {
@@ -186,12 +177,10 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse mint(TokenId tokenId, byte[] metadata) {
-        return mint(tokenId, 0, metadata);
+        return mint(tokenId, 1, metadata);
     }
 
-    public NetworkTransactionResponse mint(TokenId tokenId, long amount, byte[] metadata) {
-
-        log.debug("Mint {} tokens from {}", amount, tokenId);
+    private NetworkTransactionResponse mint(TokenId tokenId, long amount, byte[] metadata) {
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Mint token"));
@@ -202,12 +191,9 @@ public class TokenClient extends AbstractNetworkClient {
             tokenMintTransaction.setAmount(amount);
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenMintTransaction);
-
-        log.debug("Minted {} extra tokens for token {}", amount, tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenMintTransaction);
+        log.info("Minted {} tokens to {} via {}", amount, tokenId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId) {
@@ -216,10 +202,8 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Freeze token account"));
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction);
-
-        log.debug("Freeze account {} with token {}", accountId, tokenId);
-
+        var response = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction);
+        log.info("Froze account {} with token {} via {}", accountId, tokenId, response.getTransactionId());
         return response;
     }
 
@@ -229,69 +213,51 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Unfreeze token account"));
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction);
-
-        log.debug("Unfreeze account {} with token {}", accountId, tokenId);
-
+        var response = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction);
+        log.info("Unfroze account {} with token {} via {}", accountId, tokenId, response.getTransactionId());
         return response;
     }
 
     public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId) {
-        log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         TokenGrantKycTransaction tokenGrantKycTransaction = new TokenGrantKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Grant kyc for token"));
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenGrantKycTransaction);
-
-        log.debug("Granted Kyc for account {} with token {}", accountId, tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction);
+        log.info("Granted KYC for account {} with token {} via {}", accountId, tokenId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId) {
-        log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         TokenRevokeKycTransaction tokenRevokeKycTransaction = new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Revoke kyc for token"));
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenRevokeKycTransaction);
-
-        log.debug("Revoked Kyc for account {} with token {}", accountId, tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenRevokeKycTransaction);
+        log.info("Revoked KYC for account {} with token {} via {}", accountId, tokenId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse pause(TokenId tokenId) {
-        log.debug("Pausing token {}", tokenId);
         TokenPauseTransaction tokenPauseTransaction = new TokenPauseTransaction()
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Pause token"));
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenPauseTransaction);
-
-        log.debug("Paused token {}", tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenPauseTransaction);
+        log.info("Paused token {} via {}", tokenId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse unpause(TokenId tokenId) {
-        log.debug("Unpausing token {}", tokenId);
         TokenUnpauseTransaction tokenUnpauseTransaction = new TokenUnpauseTransaction()
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Unpause token"));
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenUnpauseTransaction);
-
-        log.debug("Unpaused token {}", tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenUnpauseTransaction);
+        log.info("Un-paused token {} via {}", tokenId, response.getTransactionId());
+        return response;
     }
 
     public TransferTransaction getFungibleTokenTransferTransaction(TokenId tokenId, AccountId sender,
@@ -317,18 +283,21 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse transferFungibleToken(TokenId tokenId, ExpandedAccountId sender,
                                                             AccountId recipient, long amount) {
-        TransferTransaction transaction = getFungibleTokenTransferTransaction(tokenId, sender
-                .getAccountId(), recipient, amount);
-        return executeTransactionAndRetrieveReceipt(transaction, sender);
+        var transaction = getFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, amount);
+        var response = executeTransactionAndRetrieveReceipt(transaction, sender);
+        log.info("Transferred {} tokens of {} from {} to {} via {}",
+                amount, tokenId, sender, recipient, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse transferNonFungibleToken(TokenId tokenId, ExpandedAccountId sender,
-                                                               AccountId recipient,
-                                                               List<Long> serialNumbers) {
-
-        TransferTransaction transaction = getNonFungibleTokenTransferTransaction(tokenId, sender
-                .getAccountId(), recipient, serialNumbers);
-        return executeTransactionAndRetrieveReceipt(transaction, sender);
+                                                               AccountId recipient, List<Long> serialNumbers) {
+        var transaction = getNonFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient,
+                serialNumbers);
+        var response = executeTransactionAndRetrieveReceipt(transaction, sender);
+        log.info("Transferred serial numbers {} of token {} from {} to {} via {}",
+                serialNumbers, tokenId, sender, recipient, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
@@ -348,12 +317,9 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTreasuryAccountId(client.getOperatorAccountId())
                 .setWipeKey(publicKey);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
-
-        log.debug("Updated token {}.", tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
+        log.info("Updated token {} with new symbol '{}' via {}", tokenId, newSymbol, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse updateTokenTreasury(TokenId tokenId, ExpandedAccountId newTreasuryId) {
@@ -366,12 +332,10 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
 
         KeyList keyList = KeyList.of(newTreasuryId.getPrivateKey());
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
-
-        log.debug("Updated token {} treasury account {}.", tokenId, treasuryAccountId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
+        log.info("Updated token {} treasury account {} via {}", tokenId, treasuryAccountId,
+                response.getTransactionId());
+        return response;
     }
 
     private TokenBurnTransaction getTokenBurnTransaction(TokenId tokenId) {
@@ -381,31 +345,23 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse burnFungible(TokenId tokenId, long amount) {
-        log.debug("Burn {} tokens from {}", amount, tokenId);
         TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
                 .setAmount(amount)
                 .setTransactionMemo(getMemo("Token burn"));
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
 
-        log.debug("Burned {} extra tokens for token {}", amount, tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
+        log.info("Burned amount {} from token {} via {}", amount, tokenId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse burnNonFungible(TokenId tokenId, long serialNumber) {
-
-        log.debug("Burn serial number {} from token {}", serialNumber, tokenId);
         TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
                 .addSerial(serialNumber)
                 .setTransactionMemo(getMemo("Token burn"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
-
-        log.debug("Burned serial number {} from token {}", serialNumber, tokenId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
+        log.info("Burned serial number {} from token {} via {}", serialNumber, tokenId, response.getTransactionId());
+        return response;
     }
 
     private TokenWipeTransaction getTokenWipeTransaction(TokenId tokenId, ExpandedAccountId expandedAccountId) {
@@ -416,67 +372,46 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse wipeFungible(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) {
-        log.debug("Wipe {} tokens from {}", amount, tokenId);
         TokenWipeTransaction transaction = getTokenWipeTransaction(tokenId, expandedAccountId)
                 .setAmount(amount);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Wiped {} tokens from account {}", amount, expandedAccountId.getAccountId());
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Wiped {} tokens from account {} via {}", amount, expandedAccountId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse wipeNonFungible(TokenId tokenId, long serialNumber,
                                                       ExpandedAccountId expandedAccountId) {
-
-        log.debug("Wipe serial number {} from token {}, account id {}", serialNumber, tokenId, expandedAccountId
-                .getAccountId());
-
         TokenWipeTransaction transaction = getTokenWipeTransaction(tokenId, expandedAccountId)
                 .addSerial(serialNumber);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Wiped serial number {} from token {}, account id {}", serialNumber, tokenId, expandedAccountId
-                .getAccountId());
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info("Wiped serial {} from token {} account {} via {}",
+                serialNumber, tokenId, expandedAccountId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse dissociate(ExpandedAccountId accountId, TokenId token) {
-
-        log.debug("Dissociate account {} with token {}", accountId.getAccountId(), token);
         TokenDissociateTransaction tokenDissociateTransaction = new TokenDissociateTransaction()
                 .setAccountId(accountId.getAccountId())
                 .setTokenIds(List.of(token))
                 .setTransactionMemo(getMemo("Dissociate token"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
-
-        log.debug("Dissociated {} with token {}", accountId, token);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(accountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
+        log.info("Dissociated account {} from token {} via {}", accountId, token, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) {
-
-        log.debug("Delete token {}", token);
         TokenDeleteTransaction tokenDissociateTransaction = new TokenDeleteTransaction()
                 .setTokenId(token)
                 .setTransactionMemo(getMemo("Delete token"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
-
-        log.debug("Deleted token {}", token);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(accountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
+        log.info("Deleted token {} via {}", token, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse updateTokenFeeSchedule(TokenId tokenId, ExpandedAccountId expandedAccountId,
@@ -486,10 +421,8 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Update token fee schedule"));
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(transaction,
-                KeyList.of(expandedAccountId.getPrivateKey()));
-
-        log.debug("Updated custom fees schedule for token {}", tokenId);
+        var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(expandedAccountId.getPrivateKey()));
+        log.info("Updated custom fees schedule for token {} via {}", tokenId, response.getTransactionId());
         return response;
     }
 

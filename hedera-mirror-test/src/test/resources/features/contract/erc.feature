@@ -1,4 +1,4 @@
-@acceptance @contractbase @fullsuite
+@contractbase @fullsuite
 Feature: ERC Contract Base Coverage Feature
 
     @web3 @erc
@@ -7,6 +7,7 @@ Feature: ERC Contract Base Coverage Feature
         Then I create a new token with freeze status 2 and kyc status 1
         Then I create a new nft with supplyType <supplyType>
         Then I mint a serial number
+        Then the mirror node REST API should return status 200 for the mint transaction
         And I call the erc contract via the mirror node REST API for token name
         And I call the erc contract via the mirror node REST API for token symbol
         And I call the erc contract via the mirror node REST API for token decimals

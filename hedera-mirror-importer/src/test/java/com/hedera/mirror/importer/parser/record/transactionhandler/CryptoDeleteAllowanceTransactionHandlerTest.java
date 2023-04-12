@@ -36,7 +36,7 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoDeleteAllowanceTransactionHandler(entityListener);
+        return new CryptoDeleteAllowanceTransactionHandler(entityListener, syntheticContractLogService);
     }
 
     @Override

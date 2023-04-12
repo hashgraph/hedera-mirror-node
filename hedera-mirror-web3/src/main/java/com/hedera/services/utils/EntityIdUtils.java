@@ -16,6 +16,7 @@
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
+import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
@@ -23,14 +24,16 @@ import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public final class EntityIdUtils {
+import com.hedera.services.store.models.Id;
 
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
+public final class EntityIdUtils {
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
     private EntityIdUtils() {
@@ -54,6 +57,7 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    // copied from IdUtils
     public static ContractID asContract(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ContractID.newBuilder()
@@ -63,6 +67,7 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    // copied from IdUtils
     public static TokenID asToken(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return TokenID.newBuilder()
@@ -70,6 +75,22 @@ public final class EntityIdUtils {
                 .setRealmNum(nativeParts[1])
                 .setTokenNum(nativeParts[2])
                 .build();
+    }
+
+    // copied from IdUtils
+    public static TopicID asTopic(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return TopicID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setTopicNum(nativeParts[2])
+                .build();
+    }
+
+    // copied from IdUtils
+    public static Id asModelId(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
@@ -168,19 +189,12 @@ public final class EntityIdUtils {
         }
     }
 
+    // copied from IdUtils
     public static AccountID toGrpcAccountId(final int code) {
         return AccountID.newBuilder()
                 .setShardNum(0L)
                 .setRealmNum(0L)
                 .setAccountNum(numFromCode(code))
-                .build();
-    }
-
-    public static TokenID asGrpcToken(final int num) {
-        return TokenID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setTokenNum(num)
                 .build();
     }
 
@@ -208,7 +222,7 @@ public final class EntityIdUtils {
         return triple;
     }
 
-    public static long numFromCode(int code) {
-        return code & MASK_INT_AS_UNSIGNED_LONG;
+    public static String asHexedEvmAddress(final Id id) {
+        return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
 }

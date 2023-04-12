@@ -197,7 +197,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
@@ -317,6 +317,12 @@ paths:
                 $ref: '#/components/schemas/ContractCallResponse'
         400:
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Not found error
           content:
             application/json:
               schema:
@@ -557,7 +563,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
@@ -612,7 +618,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |

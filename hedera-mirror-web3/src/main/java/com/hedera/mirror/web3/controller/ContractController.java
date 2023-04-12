@@ -26,9 +26,12 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 
 import io.github.bucket4j.Bucket;
 import javax.validation.Valid;
@@ -65,6 +68,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
+
     private final ContractCallService contractCallService;
     private final Bucket bucket;
 
@@ -77,27 +81,20 @@ class ContractController {
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final var params = constructServiceParameters(request);
 
-        final var callResponse =
-                new ContractCallResponse(
-                        contractCallService.processCall(params));
+        final var params = constructServiceParameters(request);
+        final var result = contractCallService.processCall(params);
+        final var callResponse = new ContractCallResponse(result);
 
         return Mono.just(callResponse);
-}
+    }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
-        final var fromAddress =
-                request.getFrom() != null
-                        ? Address.fromHexString(request.getFrom())
-                        : Address.ZERO;
+        final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
         final var receiver = Address.fromHexString(request.getTo());
-        final var data =
-                request.getData() != null
-                        ? Bytes.fromHexString(request.getData())
-                        : EMPTY;
+        final var data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
         final var isStaticCall = !request.isEstimate();
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
 
@@ -112,7 +109,7 @@ class ContractController {
                 .build();
     }
 
-    //This is temporary method till estimate_gas business logic got impl.
+    // This is temporary method till estimate_gas business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {
@@ -136,7 +133,7 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
-        log.warn("Address validation error");
+        log.warn("Address validation error: {}", e.getMessage());
         return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 
@@ -152,6 +149,13 @@ class ContractController {
     private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage(), StringUtils.EMPTY);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(NOT_FOUND)
+    private Mono<GenericErrorResponse> notFound(final EntityNotFoundException e) {
+        log.warn("Not found: {}", e.getMessage());
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
@@ -172,7 +176,8 @@ class ContractController {
         return Mono.just(new GenericErrorResponse(errorMessage));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
+    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage,
+                                                     final String hexErrorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage));
     }
 }

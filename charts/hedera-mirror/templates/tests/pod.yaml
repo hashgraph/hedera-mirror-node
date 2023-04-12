@@ -22,7 +22,7 @@ spec:
           apk add -qu git openjdk17-jre
           git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" $branch }}v{{end}}{{ $branch }} --depth 1 https://github.com/{{ .Values.test.git.repository }}
           cd hedera-mirror-node
-          ./gradlew :test:acceptance --info -Dcucumber.filter.tags="{{ .Values.test.cucumberTags }}" -Dspring.config.additional-location=/etc/secrets/ -PmaxParallelism=1
+          ./gradlew :test:acceptance --info -Dcucumber.filter.tags="{{ .Values.test.cucumberTags }}" -Dspring.config.additional-location=/etc/secrets/ {{ .Values.test.extraArgs }}
       resources: {{ toYaml .Values.test.resources | nindent 8 }}
       volumeMounts:
         - name: acceptance-tests

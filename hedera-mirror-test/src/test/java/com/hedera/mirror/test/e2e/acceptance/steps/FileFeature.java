@@ -27,8 +27,8 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
@@ -40,7 +40,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class FileFeature {
     private final static String originalFileContents = "Mirror Node v1";
@@ -152,7 +152,6 @@ public class FileFeature {
 
     @Then("the mirror node REST API should return status {int} for the file transaction")
     public void verifyMirrorAPIResponses(int status) {
-        log.info("Verify file transaction");
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 

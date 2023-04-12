@@ -84,7 +84,7 @@ npm test
 #### Prerequisites
 
 ``
-Go 1.19+
+Go 1.20+
 ``
 
 To start the Rosetta API ensure you have the necessary [configuration](configuration.md#rosetta-api) populated and run:
