@@ -40,6 +40,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
+
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,6 +52,7 @@ import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -219,12 +223,24 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        throw new UnsupportedOperationException("getApproved(uint256 tokenId) is not supported.");
+        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var spenderEntity = nftRepository.findById(nftId).map(Nft::getSpender);
+
+        if (spenderEntity.isEmpty()) {
+            return Address.ZERO;
+        }
+
+        return evmAddressFromId(spenderEntity.get());
     }
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
-        throw new UnsupportedOperationException("isApprovedForAll(address owner, address operator) is not supported.");
+        final var nftAllowanceId = new AbstractNftAllowance.Id();
+        nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
+        nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
+        nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
+
+        return nftAllowanceRepository.findById(nftAllowanceId).map(NftAllowance::isApprovedForAll).orElse(false);
     }
 
     @Override
