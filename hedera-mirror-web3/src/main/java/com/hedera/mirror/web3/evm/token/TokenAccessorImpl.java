@@ -218,6 +218,10 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
+        if (!properties.isAllowanceEnabled()) {
+            throw new UnsupportedOperationException("allowance(address owner, address spender) is not supported.");
+        }
+
         final var tokenAllowanceId = new AbstractTokenAllowance.Id();
         tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
         tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
