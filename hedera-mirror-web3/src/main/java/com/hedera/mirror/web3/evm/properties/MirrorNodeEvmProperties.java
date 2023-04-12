@@ -44,6 +44,9 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+    @Getter
+    private boolean allowanceEnabled = false;
+    
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;
