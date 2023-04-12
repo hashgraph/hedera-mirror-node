@@ -20,15 +20,20 @@
 
 package com.hedera.mirror.web3.repository;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -54,6 +59,20 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                     .build())
             .build();
 
+    private static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+            .setCurrentFeeSchedule(FeeSchedule.newBuilder()
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder().build())))
+            .setNextFeeSchedule(FeeSchedule.newBuilder()
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder().build())))
+            .build();
+
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
 
     @Test
@@ -67,5 +86,18 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
 
         final var actualBytes = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), expiry);
         assertThat(ExchangeRateSet.parseFrom(actualBytes)).isEqualTo(exchangeRatesSet);
+    }
+
+    @Test
+    void getFileForFeeSchedules() throws InvalidProtocolBufferException {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(feeSchedules.toByteArray())
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(expiry))
+                .persist();
+
+        final var actualBytes = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), expiry);
+        assertThat(CurrentAndNextFeeSchedule.parseFrom(actualBytes)).isEqualTo(feeSchedules);
     }
 }
