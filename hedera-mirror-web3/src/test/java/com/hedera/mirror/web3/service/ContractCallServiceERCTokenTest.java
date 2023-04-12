@@ -30,6 +30,7 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -37,7 +38,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -86,11 +86,20 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
     }
 
+    @Test
+    void unsupportedApprovePrecompileTest() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("allowance", ABI_PATH, new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS});
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage("allowance(address owner, address spender) is not supported.");
+    }
+
     @RequiredArgsConstructor
     public enum ContractFunctions {
         GET_APPROVED_EMPTY_SPENDER("getApproved",new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL        ("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true}),
-        ALLOWANCE_OF              ("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Long[] {13L}),
         GET_APPROVED              ("getApproved",new Object[] {NFT_ADDRESS, 1L},new Address[] {RECEIVER_ADDRESS}),
         ERC_DECIMALS              ("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
         TOTAL_SUPPLY              ("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
