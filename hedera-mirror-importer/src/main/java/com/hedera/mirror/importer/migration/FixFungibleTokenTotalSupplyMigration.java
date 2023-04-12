@@ -36,7 +36,7 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
 
     private static final String SQL = """
             with snapshot_timestamp as (
-              select max(consensus_timestamp) timestamp
+              select max(consensus_timestamp) as timestamp
               from account_balance_file
               where consensus_timestamp <= (select max(consensus_end) from record_file)
             ), token_balance_sum as (
