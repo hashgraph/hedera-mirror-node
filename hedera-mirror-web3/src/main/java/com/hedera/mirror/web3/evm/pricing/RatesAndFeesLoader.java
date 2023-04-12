@@ -49,7 +49,7 @@ public class RatesAndFeesLoader {
             unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         final var ratesFile =
-                fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getEntityNum(), nanoSeconds);
+                fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds);
 
         try {
             return ExchangeRateSet.parseFrom(ratesFile);
@@ -67,7 +67,7 @@ public class RatesAndFeesLoader {
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         byte[] feeScheduleFile = ArrayUtils.EMPTY_BYTE_ARRAY;
         if (nanoSeconds > 0) {
-            feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getEntityNum(), nanoSeconds);
+            feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds);
         }
 
         try {
