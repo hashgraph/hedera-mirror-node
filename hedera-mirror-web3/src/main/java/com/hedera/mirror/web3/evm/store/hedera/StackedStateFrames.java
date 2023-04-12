@@ -17,11 +17,10 @@
 package com.hedera.mirror.web3.evm.store.hedera;
 
 import com.google.common.annotations.VisibleForTesting;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 
 @SuppressWarnings(
         "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
@@ -48,8 +47,6 @@ public class StackedStateFrames<K> {
      * types this cache will hold.
      */
     public StackedStateFrames(@NonNull final List<GroundTruthAccessor<K, ?>> accessors) {
-        Objects.requireNonNull(accessors, "accessors");
-
         this.accessors = accessors;
         this.valueClasses = accessors.stream()
                 .map(GroundTruthAccessor::getVClass)
@@ -132,7 +129,6 @@ public class StackedStateFrames<K> {
      */
     @NonNull
     public CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
-        Objects.requireNonNull(frame, "frame");
         if (!frame.getUpstream().equals(Optional.of(stack)))
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         stack = frame;
@@ -146,7 +142,6 @@ public class StackedStateFrames<K> {
     @VisibleForTesting
     @NonNull
     public CachingStateFrame<K> replaceEntireStack(@NonNull final CachingStateFrame<K> frame) {
-        Objects.requireNonNull(frame, "frame");
         stack = stackBase = frame;
         return stack;
     }

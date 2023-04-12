@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Serial;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 
 /** One "level" of the stacked cache: cached entries for a particular state that can be thrown away
  * when you're done, or "committed" to the upstream frame to accumulate the latest values. Entities
@@ -52,7 +50,6 @@ public abstract class CachingStateFrame<K> {
      */
     protected CachingStateFrame(
             @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
-        requireAllNonNull(upstreamFrame, "upstreamFrame", klassesToCache, "klassesToCache");
         if (klassesToCache.length < 1)
             throw new IllegalArgumentException("Must be caching for at least one value class");
 
@@ -92,8 +89,6 @@ public abstract class CachingStateFrame<K> {
     @SuppressWarnings("unchecked")
     @NonNull
     <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
-        Objects.requireNonNull(klass, "klass");
-
         final var accessor = (AccessorImpl<V>) accessors.get(klass);
         if (null != accessor) return accessor;
         throw new CacheAccessIncorrectType("%s values aren't cached here".formatted(klass.getName()));
@@ -154,8 +149,6 @@ public abstract class CachingStateFrame<K> {
         private final UpdatableReferenceCache<K> cache;
 
         private AccessorImpl(@NonNull final Class<V> klass, @NonNull final UpdatableReferenceCache<K> cache) {
-            requireAllNonNull(klass, "klass", cache, "cache");
-
             this.klass = klass;
             this.cache = cache;
         }
@@ -163,7 +156,6 @@ public abstract class CachingStateFrame<K> {
         /** Get a value from this level of the cache */
         @Override
         public Optional<V> get(@NonNull final K key) {
-            Objects.requireNonNull(key, "key");
             final var oe = getValue(klass, cache, key);
             try {
                 return oe.flatMap(o -> Optional.of(klass.cast(o)));
@@ -179,7 +171,6 @@ public abstract class CachingStateFrame<K> {
         /** Set a new value for a value (in this level of the cache) */
         @Override
         public void set(@NonNull final K key, @NonNull V value) {
-            requireAllNonNull(key, "key", value, "value");
             if (!klass.isInstance(value))
                 throw new CacheAccessIncorrectType("Trying to store %s in accessor for class %s"
                         .formatted(value.getClass().getTypeName(), klass.getTypeName()));
@@ -189,7 +180,6 @@ public abstract class CachingStateFrame<K> {
         /** Delete a value (from in this level of the cache) */
         @Override
         public void delete(@NonNull final K key) {
-            Objects.requireNonNull(key, "key");
             // Can't check type of value matches because we don't have one
             deleteValue(klass, cache, key);
         }
@@ -203,12 +193,10 @@ public abstract class CachingStateFrame<K> {
 
         public CacheAccessIncorrectType(@NonNull final String message) {
             super(message);
-            Objects.requireNonNull(message);
         }
 
         public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
             super(message, cause);
-            requireAllNonNull(message, "message", cause, "cause");
         }
     }
 }

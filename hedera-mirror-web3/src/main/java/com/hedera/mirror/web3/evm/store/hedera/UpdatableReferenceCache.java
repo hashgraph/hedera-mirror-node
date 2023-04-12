@@ -16,15 +16,11 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
 import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState;
 import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.Entry;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+import lombok.NonNull;
 
 /**
  * Runs a cache for references but treated as values, for use as part of a
@@ -66,17 +62,13 @@ public class UpdatableReferenceCache<K> {
      * Get from the cache
      */
     public Entry get(@NonNull final K key) {
-        Objects.requireNonNull(key, "key");
-
         return getCacheLineState(key);
     }
 
     /**
      * Fill cache with a read from a lower level - used only in response to NOT_YET_FETCHED.
      */
-    public void fill(@NonNull final K key, final @Nullable Object value) {
-        Objects.requireNonNull(key, "key");
-
+    public void fill(@NonNull final K key, final Object value) {
         switch (getCacheLineState(key).state()) {
             case NOT_YET_FETCHED -> original.put(key, value);
             case MISSING, PRESENT -> throw new IllegalArgumentException("Trying to override a lower-level entry");
@@ -94,8 +86,6 @@ public class UpdatableReferenceCache<K> {
     @SuppressWarnings({"fallthrough", "java:S1301"
     }) // "replace this `switch` by an `if` to improve readability" - no: wrong advice here
     public void update(@NonNull final K key, @NonNull final Object value) {
-        requireAllNonNull(key, "key", value, "value");
-
         final var currentState = getCacheLineState(key);
         switch (currentState.state()) {
             case PRESENT:
@@ -117,8 +107,6 @@ public class UpdatableReferenceCache<K> {
      * a cache miss.
      */
     public void delete(@NonNull final K key) {
-        Objects.requireNonNull(key, "key");
-
         switch (getCacheLineState(key).state()) {
             case PRESENT -> current.put(key, null);
             case UPDATED -> current.remove(key);
@@ -137,8 +125,6 @@ public class UpdatableReferenceCache<K> {
      * (such as this one, being coalesced _into_) already have those entries.
      */
     public void coalesceFrom(@NonNull final UpdatableReferenceCache<K> source) {
-        Objects.requireNonNull(source, "source");
-
         current.putAll(source.current);
     }
 

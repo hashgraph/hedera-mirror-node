@@ -16,11 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and disallows updates/deletes. */
 @SuppressWarnings(
@@ -37,8 +34,6 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
     @NonNull
     public Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
-
         final var entry = cache.get(key);
         return switch (entry.state()) {
             case NOT_YET_FETCHED -> upstreamFrame.flatMap(upstreamFrame -> {
@@ -59,20 +54,17 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
         throw new UnsupportedOperationException("Cannot write value to a R/O cache");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         throw new UnsupportedOperationException("Cannot delete value from a R/O cache");
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
-        Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("Cannot commit to a R/O cache");
     }
 }

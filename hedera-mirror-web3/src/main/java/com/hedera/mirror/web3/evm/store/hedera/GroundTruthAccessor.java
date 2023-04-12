@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
+import lombok.NonNull;
 
 /** Interface for a database accessor to get some domain type V with primary key K from the database */
 public interface GroundTruthAccessor<K, V> {

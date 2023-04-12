@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -24,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import com.hedera.mirror.web3.evm.store.hedera.CachingStateFrame.CacheAccessIncorrectType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -45,15 +43,12 @@ class CachingStateFrameTest {
         }
 
         @Override
-        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
-            Objects.requireNonNull(childFrame, "childFrame");
-        }
+        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {}
 
         @NonNull
         @Override
         protected Optional<Object> getValue(
                 @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key");
             return Optional.empty();
         }
 
@@ -62,15 +57,11 @@ class CachingStateFrameTest {
                 @NonNull final Class<?> klass,
                 @NonNull final UpdatableReferenceCache<K> cache,
                 @NonNull final K key,
-                @NonNull final Object value) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
-        }
+                @NonNull final Object value) {}
 
         @Override
         protected void deleteValue(
-                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key");
-        }
+                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {}
     }
 
     @Test
@@ -151,7 +142,6 @@ class CachingStateFrameTest {
 
         @Override
         public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
-            Objects.requireNonNull(childFrame, "childFrame");
             spy.append("U;");
         }
 
@@ -159,7 +149,6 @@ class CachingStateFrameTest {
         @Override
         protected Optional<Object> getValue(
                 @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key");
             spy.append("%s-%s-%s;".formatted("G", klass.getSimpleName().charAt(0), key.toString()));
             return Optional.empty();
         }
@@ -170,7 +159,6 @@ class CachingStateFrameTest {
                 @NonNull final UpdatableReferenceCache<K> cache,
                 @NonNull final K key,
                 @NonNull final Object value) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
             spy.append(
                     "%s-%s-%s-%s;".formatted("S", klass.getSimpleName().charAt(0), key.toString(), value.toString()));
         }
@@ -178,7 +166,6 @@ class CachingStateFrameTest {
         @Override
         protected void deleteValue(
                 @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-            requireAllNonNull(klass, "klass", cache, "cache", key, "key");
             spy.append("%s-%s-%s;".formatted("D", klass.getSimpleName().charAt(0), key.toString()));
         }
     }

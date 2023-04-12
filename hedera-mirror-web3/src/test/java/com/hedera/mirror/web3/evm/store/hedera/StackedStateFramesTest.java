@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -36,7 +35,6 @@ class StackedStateFramesTest {
         final Class<V> klassV;
 
         public BareGroundTruthAccessor(@NonNull Class<K> klassK, @NonNull Class<V> klassV) {
-            requireAllNonNull(klassK, "klassK", klassV, "klassV");
             this.klassK = klassK;
             this.klassV = klassV;
         }

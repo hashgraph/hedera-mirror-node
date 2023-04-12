@@ -16,11 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and local updates/deletes. */
 @SuppressWarnings(
@@ -39,20 +36,17 @@ public class RWCachingStateFrame<K> extends ROCachingStateFrame<K> {
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
         cache.update(key, value);
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         cache.delete(key);
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> downstreamFrame) {
-        Objects.requireNonNull(downstreamFrame, "downstreamFrame");
         final var thisCaches = this.getInternalCaches();
         final var downstreamCaches = downstreamFrame.getInternalCaches();
         if (thisCaches.size() != downstreamCaches.size())

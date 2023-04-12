@@ -16,14 +16,11 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 
 /** A CachingStateFrame that answers reads by getting entities from some other source - a database! - and
  * disallows all local updates/deletes. */
@@ -48,8 +45,6 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
     @NonNull
     public Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
-
         return databaseAccessors.get(klass).get(key).flatMap(o -> Optional.of(klass.cast(o)));
     }
 
@@ -59,20 +54,17 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
         throw new UnsupportedOperationException("Cannot add/update a value in a database-backed StateFrame");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         throw new UnsupportedOperationException("Cannot delete a value in a database-backed StateFrame");
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
-        Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
     }
 

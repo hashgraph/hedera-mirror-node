@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,7 +37,6 @@ public class BottomCachingStateFrame<K> extends CachingStateFrame<K> {
     @Override
     public @NonNull Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         return Optional.empty();
     }
 
@@ -49,14 +46,12 @@ public class BottomCachingStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
         throw new UnsupportedOperationException("cannot write to a bottom cache");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         throw new UnsupportedOperationException("cannot delete from a bottom cache");
     }
 

@@ -16,12 +16,10 @@
 
 package com.hedera.mirror.web3.evm.store.hedera.impl;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BinaryOperator;
+import lombok.NonNull;
 
 /** Utility class to compute the state of a cache line.
  *
@@ -57,8 +55,6 @@ public class UpdatableReferenceCacheLineState<K> {
      * the caller! */
     public Entry get(
             @NonNull final Map<K, Object> original, @NonNull final Map<K, Object> current, @NonNull final K key) {
-        Objects.requireNonNull(key, "key");
-
         final var valueO = original.get(key);
         final var kindO = determineKind(original, key, valueO).rank();
         final var valueC = current.get(key);
@@ -94,7 +90,7 @@ public class UpdatableReferenceCacheLineState<K> {
     }
 
     /** For a given key return the state, as `Kind` enum, of that entry in this cache */
-    private Kind determineKind(@NonNull final Map<K, Object> map, @NonNull final K key, @Nullable final Object value) {
+    private Kind determineKind(@NonNull final Map<K, Object> map, @NonNull final K key, final Object value) {
         // Java's `Map` doesn't let you find out in a single call if the value was in the map but `null` or not in the
         // map. So if the value turns out to be null you've got to do a second call to distinguish that.
         if (null != value) return Kind.NON_NULL;

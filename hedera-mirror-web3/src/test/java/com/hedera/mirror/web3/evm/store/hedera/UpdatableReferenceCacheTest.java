@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store.hedera;
 
 import static com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.ValueState;
-import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -328,8 +327,6 @@ class UpdatableReferenceCacheTest {
     @NonNull
     <K, V> Map<K, V> makeMapOf(
             @NonNull final Class<K> klassK, @NonNull final Class<V> klassV, final Object... kvPairs) {
-        requireAllNonNull(klassK, "klassK", klassV, "klassV");
-
         if (0 != kvPairs.length % 2) throw new IllegalArgumentException("Must have even #arguments");
         final var r = new HashMap<K, V>(kvPairs.length / 2);
         for (int i = 0; i < kvPairs.length; i += 2) {
@@ -348,8 +345,6 @@ class UpdatableReferenceCacheTest {
     @SuppressWarnings("unchecked") // OK because unchecked cast is immediately preceded by type check
     <T> T verifyIsCorrectTypeOrNull(
             @NonNull final Class<T> klass, @Nullable final Object obj, @NonNull final String customMessage) {
-        requireAllNonNull(klass, "klass", customMessage, "customMessage");
-
         return null == obj
                 ? null
                 : klass.isInstance(obj)
@@ -368,8 +363,6 @@ class UpdatableReferenceCacheTest {
      */
     // TODO: Move to utils class
     <T> T throwException(@NonNull final Class<?> exceptionKlass, @NonNull final String message) {
-        requireAllNonNull(exceptionKlass, "exceptionKlass", message, "message");
-
         if (!(RuntimeException.class.isAssignableFrom(exceptionKlass)))
             throw new IllegalArgumentException(
                     "%s is not a RuntimeException type".formatted(exceptionKlass.getTypeName()));
