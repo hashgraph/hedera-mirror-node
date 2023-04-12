@@ -22,6 +22,8 @@ package com.hedera.mirror.web3.service.model;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Setter;
+import lombok.Value;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 

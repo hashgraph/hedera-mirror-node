@@ -32,29 +32,38 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import javax.inject.Named;
+import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
+@CustomLog
 @Named
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
     private final Map<CallType, Counter> gasPerSecondMetricMap;
+    private final MirrorNodeEvmProperties properties;
 
-    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
+    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade,
+                               final MeterRegistry meterRegistry, MirrorNodeEvmProperties properties) {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
+        this.properties = properties;
 
         final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Counter>(CallType.class);
         Arrays.stream(CallType.values()).forEach(type ->
                 gasPerSecondMetricEnumMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
-                .description("The amount of gas consumed by the EVM")
-                .tag("type", type.toString())
-                .register(meterRegistry)));
+                        .description("The amount of gas consumed by the EVM")
+                        .tag("type", type.toString())
+                        .register(meterRegistry)));
 
         gasPerSecondMetricMap = Collections.unmodifiableMap(gasPerSecondMetricEnumMap);
     }
@@ -63,8 +72,7 @@ public class ContractCallService {
         if (params.isEstimate()) {
             return estimateGas(params);
         }
-
-        final var ethCallTxnResult = processEthTxn(params);
+        final var ethCallTxnResult = doProcessCall(params, 0L);
         validateTxnResult(ethCallTxnResult, params.getCallType());
 
         final var callResult = ethCallTxnResult.getOutput() != null
@@ -74,57 +82,68 @@ public class ContractCallService {
     }
 
     private String estimateGas(final CallServiceParameters params) {
-        final var providedGasLimit = params.getGas();
-        long lo = 0;
-        long hi = providedGasLimit;
+        if (params.getGas() > properties.getMaxGasToUseLimit() || params.getGas() < properties.getMinGasToUseLimit()) {
+            throw new InvalidParametersException("Invalid gas value");
+        }
+        LongFunction<HederaEvmTransactionProcessingResult> callProcessor = (gas) -> doProcessCall(params, gas);
 
-        int minDiffBetweenIterations = 1200;
-        long prevGasLimit = providedGasLimit;
-        HederaEvmTransactionProcessingResult txnResult;
-        do {
-            // Take a guess at the gas, and check transaction validity
-            long mid = (hi + lo) / 2;
-            params.setGas(mid);
-            txnResult = processEthTxn(params);
+        HederaEvmTransactionProcessingResult initialCallResult = callProcessor.apply(params.getGas());
+        validateTxnResult(initialCallResult, ETH_ESTIMATE_GAS);
+        final long gasUsedByInitialCall = initialCallResult.getGasUsed();
 
-            boolean err = !txnResult.isSuccessful() || txnResult.getGasUsed() < 0;
-            updateGasMetric(err ? ERROR : ETH_ESTIMATE_GAS, txnResult);
-            long gasUsed = err ? providedGasLimit : txnResult.getGasUsed();
+        long estimatedGas =
+                binarySearch(
+                        gas -> doProcessCall(params, gas),
+                        properties.getMinGasToUseLimit(),
+                        gasUsedByInitialCall,
+                        properties.getDiffBetweenIterations());
+
+        HederaEvmTransactionProcessingResult transactionResult = callProcessor.apply(estimatedGas);
+        validateTxnResult(transactionResult, params.getCallType());
+
+        return Long.toHexString(estimatedGas);
+    }
+
+    private long binarySearch(Function<Long, HederaEvmTransactionProcessingResult> processTxn, long lo, long hi,
+                              long minDiffBetweenIterations) {
+        long prevGasLimit = hi;
+        HederaEvmTransactionProcessingResult transactionResult;
+        while (lo + 1 < hi) {
+            long mid = (hi + lo) >>> 1;
+            transactionResult = processTxn.apply(mid);
+
+            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
+            long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
 
             if (err || gasUsed == 0) {
                 lo = mid;
             } else {
                 hi = mid;
-                // Perf improvement: stop the binary search when the difference in gas between two iterations
-                // is less then `minDiffBetweenIterations`. Doing this cuts the number of iterations from 23
-                // to 12, with only a ~1000 gas loss in precision.
                 if (Math.abs(prevGasLimit - mid) < minDiffBetweenIterations) {
                     lo = hi;
                 }
             }
             prevGasLimit = mid;
-        } while (lo + 1 < hi);
-        validateTxnResult(txnResult, params.getCallType());
-
-        return Long.toHexString(hi);
+        }
+        return hi;
     }
 
-    private HederaEvmTransactionProcessingResult processEthTxn(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult txnResult;
-
+    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters params, final long estimatedGas) {
+        HederaEvmTransactionProcessingResult transactionResult;
+        final var gasLimit = (params.isEstimate() && estimatedGas > 0) ? estimatedGas : params.getGas();
         try {
-            txnResult =
+            transactionResult =
                     mirrorEvmTxProcessorFacade.execute(
                             params.getSender(),
                             params.getReceiver(),
-                            params.getGas(),
+                            gasLimit,
                             params.getValue(),
                             params.getCallData(),
                             params.isStatic());
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
-        return txnResult;
+        return transactionResult;
     }
 
     private void validateTxnResult(final HederaEvmTransactionProcessingResult txnResult,

@@ -22,6 +22,7 @@ package com.hedera.mirror.web3.viewmodel;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -53,7 +54,7 @@ public class ContractCallRequest {
     private String from;
 
     @Min(0)
-    private long gas = 120_000_000L;
+    private long gas = 15_000_000L;
 
     @Min(0)
     private long gasPrice;
