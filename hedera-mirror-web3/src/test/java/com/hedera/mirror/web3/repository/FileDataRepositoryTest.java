@@ -43,7 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class FileDataRepositoryTest extends Web3IntegrationTest {
 
     @Resource
-    private FileDataRepository fileDataRepository;
+    private final FileDataRepository fileDataRepository;
 
     private static final long expiry = 1_234_567_890L;
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()

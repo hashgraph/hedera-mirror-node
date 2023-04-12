@@ -35,6 +35,7 @@ public class CacheProperties {
 
     @NotBlank
     private String fee = "expireAfterWrite=10m,maximumSize=20,recordStats";
+
     @NotBlank
     private String entity = "expireAfterWrite=30s,maximumSize=10000,recordStats";
 
