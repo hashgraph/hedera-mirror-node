@@ -20,7 +20,7 @@
 
 package com.hedera.mirror.web3.evm.pricing;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -53,7 +53,7 @@ class RatesAndFeesLoaderTest {
 
         final var actual = subject.loadExchangeRates(1L);
 
-        assertEquals(exchangeRates, actual);
+        assertThat(actual).isEqualTo(exchangeRates);
     }
 
     @Test
@@ -63,6 +63,6 @@ class RatesAndFeesLoaderTest {
 
         final var actual = subject.loadFeeSchedules(1L);
 
-        assertEquals(feeSchedules, actual);
+        assertThat(actual).isEqualTo(feeSchedules);
     }
 }
