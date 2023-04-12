@@ -46,13 +46,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
