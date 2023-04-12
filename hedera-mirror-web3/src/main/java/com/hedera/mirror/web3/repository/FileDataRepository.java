@@ -34,16 +34,13 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
                       select max(file_data.consensus_timestamp) as consensus_timestamp
                       from file_data
                       where file_data.entity_id = ?1 and file_data.transaction_type in (17, 19)
-                      group by file_data.entity_id
-                      order by consensus_timestamp desc
                     )
                     select
                     string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
                     from file_data
                     join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
                     where file_data.entity_id = ?1 and file_data.transaction_type in (16, 17, 19)
-                      and ?2 >= l.consensus_timestamp
-                    group by file_data.entity_id""",
+                      and ?2 >= l.consensus_timestamp""",
             nativeQuery = true)
     byte[] getFileAtTimestamp(long fileId, long timestamp);
 }
