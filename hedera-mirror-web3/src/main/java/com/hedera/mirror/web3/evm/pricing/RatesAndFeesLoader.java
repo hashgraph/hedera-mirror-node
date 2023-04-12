@@ -56,9 +56,7 @@ public class RatesAndFeesLoader {
             key = "'now'",
             unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
-        final var ratesFile =
-                fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds);
-
+        final var ratesFile = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds);
         try {
             return ExchangeRateSet.parseFrom(ratesFile);
         } catch (InvalidProtocolBufferException e) {
