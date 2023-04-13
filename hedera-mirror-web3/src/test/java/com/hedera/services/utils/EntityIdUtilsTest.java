@@ -122,6 +122,7 @@ class EntityIdUtilsTest {
         final var actual = asEvmAddress(shard, realm, num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
+        final var typedContract = EntityIdUtils.asTypedEvmAddress(equivContract);
         final var anotherActual = asEvmAddress(equivContract);
         final var create2Actual = asEvmAddress(create2Contract);
 
@@ -129,6 +130,7 @@ class EntityIdUtilsTest {
         assertArrayEquals(expected, anotherActual);
         assertArrayEquals(expected, typedActual.toArray());
         assertArrayEquals(expected, typedToken.toArray());
+        assertArrayEquals(expected, typedContract.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
         assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
         assertEquals(equivContract, contractIdFromEvmAddress(actual));
