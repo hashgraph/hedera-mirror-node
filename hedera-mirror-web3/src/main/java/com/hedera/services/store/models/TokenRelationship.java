@@ -68,23 +68,23 @@ public class TokenRelationship {
         this.balanceChange = balanceChange;
     }
 
-    private TokenRelationship createCreateNewTokenRelationshipWithNewBalance(TokenRelationship trel,
+    private TokenRelationship createCreateNewTokenRelationshipWithNewBalance(TokenRelationship tokenRel,
                                                                              long balanceChange, long balance) {
-        return new TokenRelationship(trel.token, trel.account, balance,
-                trel.frozen, trel.kycGranted, trel.destroyed, trel.notYetPersisted,
-                trel.automaticAssociation, balanceChange);
+        return new TokenRelationship(tokenRel.token, tokenRel.account, balance,
+                tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, tokenRel.notYetPersisted,
+                tokenRel.automaticAssociation, balanceChange);
     }
 
-    private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship trel) {
-        return new TokenRelationship(trel.token, trel.account, trel.balance,
-                trel.frozen, trel.kycGranted, true, trel.notYetPersisted,
-                trel.automaticAssociation, balanceChange);
+    private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship tokenRel) {
+        return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
+                tokenRel.frozen, tokenRel.kycGranted, true, tokenRel.notYetPersisted,
+                tokenRel.automaticAssociation, balanceChange);
     }
 
-    private TokenRelationship createCreateNewPersistedTokenRelationship(TokenRelationship trel) {
-        return new TokenRelationship(trel.token, trel.account, trel.balance,
-                trel.frozen, trel.kycGranted, trel.destroyed, false,
-                trel.automaticAssociation, balanceChange);
+    private TokenRelationship createCreateNewPersistedTokenRelationship(TokenRelationship tokenRel) {
+        return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
+                tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, false,
+                tokenRel.automaticAssociation, balanceChange);
     }
 
     public FcTokenAssociation asAutoAssociation() {
