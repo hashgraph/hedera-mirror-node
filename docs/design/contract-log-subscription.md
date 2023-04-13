@@ -21,7 +21,7 @@ in order to provide contract log notifications in almost real time.
 - Ensure performance is within reasonable bounds (reasonable bounds TBD via experimentation)
 
 ## Architecture
-
+![Architecture](images/contract-log-subscription-architecture.png)
 ### Importer
 
 1. Update RedisEntityListener (or create new listener) to send contract logs to contract_logs topic
@@ -32,7 +32,7 @@ in order to provide contract log notifications in almost real time.
 
 - Use reactive websockets
 - We should implement rate limiting in the load balancer
-- Use bucket4j to enforce global max subscriptions
+- Use AtomicLong to track active subscriptions
 - Uses msgpack for topic message serialization
 
 1. Create GraphQL schema for Input / Output
@@ -40,10 +40,86 @@ in order to provide contract log notifications in almost real time.
 3. Create Controller with @SubscriptionMapping
 4. Create RedisConfiguration to configure msgpack serializer
 5. Create a Redis Subscriber to listen for messages on contract_logs topic
-6. Capture metrics
+6. Capture metrics (Some of these may already be provided by Redis or GraphQL)
 - subscriber consumption rate
 - Active subscriptions counter
 - Messages received (From redis topic) rate
+
+#### GraphQL Schema
+
+```graphql
+
+"Represents a Hedera Contract Log event"
+type ContractLogEvent {
+  "The address from which this log originated in the account-num alias format"
+  address: String!
+
+  "The hash of the block in which the transaction was included"
+  blockHash: String!
+
+  "The number of the block in which the transaction was included"
+  blockNumber: Int64!
+
+  "The contract entity id"
+  contractId: EntityId!
+
+  "Contains one or more 32 Bytes non-indexed arguments of the log"
+  data: String!
+
+  "The index or position of the log entry within the block"
+  logIndex: Int64!
+
+  """
+  An array of 0 to 4 32 bytes topic hashes of indexed log arguments.
+  """
+  topics: [String!]!
+
+  "The hash of the transaction"
+  transactionHash: String!
+
+  "The index or position of the transaction within the block"
+  transactionIndex: Int64!
+}
+
+"Represents addresses and topics a subscriber wishes to subscribe to"
+input ContractLogSubscription {
+  "Only logs created from one of these EVM addresses will be emitted."
+  addresses: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+
+  """
+  Topic specifier for position 0
+  null indicates any value allowed in this position
+  [A,B] indicates A or B at this position
+  """
+  topic0: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
+
+  """
+  Topic specifier for position 1
+  null indicates any value allowed in this position
+  [A,B] indicates A or B at this position
+  """
+  topic1: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
+
+  """
+  Topic specifier for position 2
+  null indicates any value allowed in this position
+  [A,B] indicates A or B at this position
+  """
+  topic2: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
+
+  """
+  Topic specifier for position 3
+  null indicates any value allowed in this position
+  [A,B] indicates A or B at this position
+  """
+  topic3: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
+}
+
+"Subscription root of the Hedera GraphQL API"
+type Subscription {
+  contractLogs(subscription: ContractLogSubscription!): ContractLogEvent
+}
+```
 
 #### Class Defs
 
@@ -77,7 +153,7 @@ public class ContractLogTopicListener {
   }
 
   /**
-   * Can get token from rate limiter
+   * Checks subscriber count is less than maxActiveSubscriptions
    * contract with evm address in filter exists
    * we detect if this address input is account-num alias or evm address
    * alias and query the entity table for the latter to map it to its account-num alias.
@@ -87,7 +163,7 @@ public class ContractLogTopicListener {
 
   /**
    * Remove entry from cached listeners
-   * Resupply token to rate limiter
+   * Decrement subscription count
    */
   private void unsubscribe() {
   }
@@ -98,12 +174,6 @@ public class ContractLogTopicListener {
 #### application.yml
 
 ```yaml
-spring:
-  rsocket:
-    server:
-      port: 9191
-      mapping: subscribe
-
 hedera:
   mirror:
     graphql:
@@ -113,55 +183,6 @@ hedera:
           maxBufferSize: 16384
           keepAlive: 1m
 
-```
-
-#### GraphQL Schema
-
-```graphql
-
-type ContractLogEvent {
-  "The contract entity id"
-  contractId: EntityId!
-  "The address from which this log originated in the account-num alias format"
-  address: String!
-  "The hash of the block in which the transaction was included"
-  blockHash: String!
-  "The number of the block in which the transaction was included"
-  blockNumber: Int64!
-  "Contains one or more 32 Bytes non-indexed arguments of the log"
-  data: String!
-  "The index or position of the log entry within the block"
-  logIndex: Int64!
-  """
-  An array of 0 to 4 32 bytes topic hashes of indexed log arguments.
-  We should preserve null values in their correct index (i.e contract_log.[topic0...topic3])
-  """
-  topics: [String]!
-  "The hash of the transaction"
-  transactionHash: String!
-  "The index or position of the transaction within the block"
-  transactionIndex: Int64!
-}
-
-type ContractLogSubscription {
-  "The addresses we want to stream logs for (Pattern may not work this way)"
-  addresses: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
-  """
-  An array of topic specifiers.
-  Each topic specifier is either null, or an array of strings.
-  For every non null topic, a log will be emitted when activity associated with that topic occurs.
-  []: Any topics allowed.
-  [[A]]: A in first position (and anything after).
-  [null, [B]]: Anything in first position and B in second position (and anything after).
-  [[A], [B]]: A in first position and B in second position (and anything after).
-  [[A, B], [A, B]]: (A or B) in first position and (A or B) in second position (and anything after).
-  """
-  topics: [[String]] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
-}
-
-type Subscription {
-  contractLogs(subscription: ContractLogSubscription!): ContractLogEvent
-}
 ```
 
 #### Example Request Body
@@ -195,14 +216,14 @@ Addresses and topics are both optional filters
   "data": {
     "address": "0x000000000000000000000000000000000000000f",
     "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
-    "blockNumber": "0x29e87",
+    "blockNumber": 1000,
     "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
-    "logIndex": "0x0",
+    "logIndex": 0,
     "topics": [
       "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
     ],
     "transactionHash": "0xe044554a0a55067caafd07f8020ab9f2af60bdfe337e395ecd84b4877a3d1ab4",
-    "transactionIndex": "0x0"
+    "transactionIndex": 0
   }
 }
 ```
