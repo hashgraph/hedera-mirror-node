@@ -44,7 +44,7 @@ import org.springframework.validation.annotation.Validated;
 public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean allowanceEnabled = false;
-    
+
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;

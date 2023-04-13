@@ -27,14 +27,15 @@ import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import java.time.Instant;
 import javax.inject.Named;
@@ -61,7 +62,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
-            final GasCalculatorHederaV22 gasCalculator) {
+            final GasCalculatorHederaV22 gasCalculator,
+            final EntityRepository entityRepository) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
@@ -72,8 +74,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        this.worldState =
-                new HederaEvmWorldState(entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor);
+        this.worldState = new HederaEvmWorldState(
+                entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityRepository);
     }
 
     @Override

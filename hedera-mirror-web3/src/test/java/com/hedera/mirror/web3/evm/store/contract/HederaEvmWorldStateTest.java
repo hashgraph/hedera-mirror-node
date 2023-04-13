@@ -1,18 +1,22 @@
-/*
-* Copyright (C) 2022-2023 Hedera Hashgraph, LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 package com.hedera.mirror.web3.evm.store.contract;
 
@@ -24,14 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,16 +63,20 @@ class HederaEvmWorldStateTest {
     @Mock
     TokenAccessor tokenAccessor;
 
-    private HederaEvmWorldState subject;
+    @Mock
+    EntityRepository entityRepository;
 
-    private HederaEvmWorldState subject2;
+    private HederaEvmWorldState subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
-
-        subject2 = new HederaEvmWorldState(
-                hederaEvmEntityAccess, evmProperties, abstractCodeCache, accountAccessor, tokenAccessor);
+        subject = new HederaEvmWorldState(
+                hederaEvmEntityAccess,
+                evmProperties,
+                abstractCodeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityRepository);
     }
 
     @Test
@@ -133,7 +139,7 @@ class HederaEvmWorldStateTest {
 
     @Test
     void updater() {
-        var actualSubject = subject2.updater();
+        var actualSubject = subject.updater();
         assertEquals(0, actualSubject.getSbhRefund());
         assertNull(actualSubject.updater().get(Address.RIPEMD160));
     }
