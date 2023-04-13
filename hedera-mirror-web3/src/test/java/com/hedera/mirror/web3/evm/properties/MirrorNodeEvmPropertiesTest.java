@@ -45,5 +45,9 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.maxGasRefundPercentage()).isEqualTo(MAX_REFUND_PERCENT);
         assertThat(properties.fundingAccountAddress()).isEqualTo(FUNDING_ADDRESS);
         assertThat(properties.isRedirectTokenCallsEnabled()).isTrue();
+        assertThat(properties.isLazyCreationEnabled()).isTrue();
+        assertThat(properties.isCreate2Enabled()).isTrue();
+        assertThat(properties.chainIdBytes32()).isNull();
+
     }
 }
