@@ -72,7 +72,7 @@ public class ContractCallService {
         if (params.isEstimate()) {
             return estimateGas(params);
         }
-        final var ethCallTxnResult = doProcessCall(params, 0L);
+        final var ethCallTxnResult = doProcessCall(params, params.getGas());
         validateTxnResult(ethCallTxnResult, params.getCallType());
 
         final var callResult = ethCallTxnResult.getOutput() != null
@@ -98,12 +98,11 @@ public class ContractCallService {
                         gasUsedByInitialCall,
                         properties.getDiffBetweenIterations());
 
-        HederaEvmTransactionProcessingResult transactionResult = callProcessor.apply(estimatedGas);
-        validateTxnResult(transactionResult, params.getCallType());
-
         return Long.toHexString(estimatedGas);
     }
 
+    /**Feature work: move to another class and compare performance with interpolation algo.
+     */
     private long binarySearch(Function<Long, HederaEvmTransactionProcessingResult> processTxn, long lo, long hi,
                               long minDiffBetweenIterations) {
         long prevGasLimit = hi;
@@ -130,13 +129,12 @@ public class ContractCallService {
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters params, final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
-        final var gasLimit = (params.isEstimate() && estimatedGas > 0) ? estimatedGas : params.getGas();
         try {
             transactionResult =
                     mirrorEvmTxProcessorFacade.execute(
                             params.getSender(),
                             params.getReceiver(),
-                            gasLimit,
+                            params.isEstimate() ? estimatedGas : params.getGas(),
                             params.getValue(),
                             params.getCallData(),
                             params.isStatic());

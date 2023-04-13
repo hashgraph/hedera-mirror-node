@@ -33,6 +33,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -101,7 +103,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForPureCall() {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var expectedGasUsed = "543a";
+        final var expectedGasUsed = "6482";
+        gas =15_000_000L;
         final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
@@ -134,7 +137,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForViewCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var viewFuncHash = "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
-        final var expectedGasUsed = "5b8d";
+        final var expectedGasUsed = "65fd";
         final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
@@ -180,7 +183,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForBalanceCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
-        final var expectedGasUsed = "560f";
+        final var expectedGasUsed = "65fd";
         final var params = serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
@@ -201,7 +204,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() ->
                 contractCallService.processCall(params))
-                .isInstanceOf(InvalidTransactionException.class).hasMessage("INSUFFICIENT_GAS");
+                .isInstanceOf(InvalidParametersException.class).hasMessage("Invalid gas value");
     }
 
     @Test
@@ -292,7 +295,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("7186");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("70d2");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
