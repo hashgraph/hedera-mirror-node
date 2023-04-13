@@ -87,5 +87,40 @@ respectively.
 The database name to be used by citus can be provided using an environment variable as follows:
 
 ```console
-docker build --build-arg DB=mirror_node --platform linux/arm64 -t xinatswirlds/citus:11.1.4-alpine .
+docker build --build-arg DB=mirror_node --platform linux/arm64 -t mirrornodeswirldslabs/citus:11.2.0-alpine .
 ```
+
+## Publishing the citus docker image
+The shared `mirrornode` 1Password vault contains the credentials for the Docker Hub `mirrornodeswirldslabs` user. This includes
+an access token for the CLI as well as the TOTP configuration for MFA. You can use this to authenticate with
+Docker Hub:
+
+```console
+docker login --username mirrornodeswirldslabs                                                                                                                  1 ↵
+Password:
+```
+Copy and paste the token from 1Password.
+```console
+Login Succeeded
+
+Logging in with your password grants your terminal complete access to your account.
+For better security, log in with a limited-privilege personal access token. Learn more at https://docs.docker.com/go/access-tokens/
+```
+**NOTE:** Not sure why it still issues the above message when using the token instead of the password. It is a complete
+access token though.
+
+If you instead see this:
+```console
+Error saving credentials: error storing credentials - err: exit status 1, out: `ID hub token does not contain email`
+```
+You may need to restart Docker Desktop according to this [forum post](https://forums.docker.com/t/id-hub-token-does-not-contain-email/134608/2).
+
+Push the build image to Docker Hub.  For alpine:
+```console
+docker push mirrornodeswirldslabs/citus:11.2.0-alpine
+```
+And debian:
+```console
+docker push mirrornodeswirldslabs/citus:11.2.0
+```
+You can then see that the images have been updated in [the repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).

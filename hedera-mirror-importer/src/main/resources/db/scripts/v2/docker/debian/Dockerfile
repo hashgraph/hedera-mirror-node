@@ -1,4 +1,4 @@
-FROM citusdata/citus:11.2.0-pg14
+FROM citusdata/citus:11.2.0
 ARG PG_CRON_DB='mirror_node'
 
 # install pg cron and partman
