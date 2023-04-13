@@ -20,6 +20,9 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -44,27 +47,24 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
 
-    private AccountAccessor accountAccessor;
-    private TokenAccessor tokenAccessor;
+    private final AccountAccessor accountAccessor;
+    private final TokenAccessor tokenAccessor;
 
-    public HederaEvmWorldState(
-            final HederaEvmEntityAccess hederaEvmEntityAccess,
-            final EvmProperties evmProperties,
-            final AbstractCodeCache abstractCodeCache) {
-        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
-        this.evmProperties = evmProperties;
-        this.abstractCodeCache = abstractCodeCache;
-    }
+    private final EntityAddressSequencer contractAddressState;
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
             final AbstractCodeCache abstractCodeCache,
             final AccountAccessor accountAccessor,
-            final TokenAccessor tokenAccessor) {
-        this(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
+            final TokenAccessor tokenAccessor,
+            final EntityRepository entityRepository) {
+        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+        this.evmProperties = evmProperties;
+        this.abstractCodeCache = abstractCodeCache;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
+        this.contractAddressState = new EntityAddressSequencer(entityRepository);
     }
 
     public Account get(final Address address) {
@@ -98,30 +98,34 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
+        return new Updater(
+                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, contractAddressState);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
-
         private final HederaEvmEntityAccess hederaEvmEntityAccess;
         private final TokenAccessor tokenAccessor;
         private final EvmProperties evmProperties;
+
+        private final EntityAddressSequencer contractAddressState;
 
         protected Updater(
                 final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,
                 final HederaEvmEntityAccess hederaEvmEntityAccess,
                 final TokenAccessor tokenAccessor,
-                final EvmProperties evmProperties) {
+                final EvmProperties evmProperties,
+                final EntityAddressSequencer contractAddressState) {
             super(world, accountAccessor);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
+            this.contractAddressState = contractAddressState;
         }
 
         public Address newContractAddress(Address address) {
-            return null;
+            return asTypedEvmAddress(contractAddressState.getNewContractId(address));
         }
 
         @Override
@@ -140,5 +144,10 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             return new HederaEvmStackedWorldStateUpdater(
                     this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
         }
+    }
+
+    @Override
+    public void close() {
+        // default no-op
     }
 }

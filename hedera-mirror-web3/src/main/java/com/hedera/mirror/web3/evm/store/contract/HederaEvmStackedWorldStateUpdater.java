@@ -49,6 +49,7 @@ public class HederaEvmStackedWorldStateUpdater
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
     }
+
     @Override
     public Account get(final Address address) {
         if (isTokenRedirect(address)) {
