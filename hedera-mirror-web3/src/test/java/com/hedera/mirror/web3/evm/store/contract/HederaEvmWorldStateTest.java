@@ -20,6 +20,8 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,6 +35,7 @@ import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,5 +144,17 @@ class HederaEvmWorldStateTest {
         var actualSubject = subject.updater();
         assertEquals(0, actualSubject.getSbhRefund());
         assertNull(actualSubject.updater().get(Address.RIPEMD160));
+    }
+
+    @Test
+    void newContractAddressReturnsSequencerValueAsTypedAddress() {
+        var actualSubject = subject.updater();
+        final Address sponsor = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+        final ContractID contractID = ContractID.newBuilder().build();
+
+        given(entityAddressSequencer.getNewContractId(sponsor)).willReturn(contractID);
+
+        final var actual = actualSubject.newContractAddress(sponsor);
+        assertThat(actual).isEqualTo(asTypedEvmAddress(contractID));
     }
 }
