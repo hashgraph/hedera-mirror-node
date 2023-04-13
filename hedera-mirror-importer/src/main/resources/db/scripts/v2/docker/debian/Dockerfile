@@ -4,7 +4,7 @@ ARG PG_CRON_DB='mirror_node'
 # install pg cron and partman
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y postgresql-14-cron postgresql-14-partman \
+    && apt-get install -y postgresql-15-cron postgresql-15-partman \
     && rm -rf /var/lib/apt/lists/*
 
 # add citus, pg_cron and partman to default PostgreSQL config
