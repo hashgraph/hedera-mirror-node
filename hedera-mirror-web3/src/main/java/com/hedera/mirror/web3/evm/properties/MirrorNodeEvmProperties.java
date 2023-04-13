@@ -43,7 +43,7 @@ import org.springframework.validation.annotation.Validated;
 public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean allowanceEnabled = false;
-    
+
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;
@@ -73,14 +73,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
-    @Min(25_000)
+    @Min(21_000)
     @Max(15_000_000)
     private long maxGasToUseLimit = 15_000_000L;
 
     @Getter
-    @Min(25_000)
+    @Min(21_000)
     @Max(15_000_000)
-    private long minGasToUseLimit = 25_000L;
+    private long minGasToUseLimit = 21_000L;
 
 /**
  * The gas value difference between consecutive iterations in the binary search performed during gas estimation

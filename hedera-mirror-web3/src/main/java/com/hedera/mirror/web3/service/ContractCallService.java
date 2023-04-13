@@ -33,11 +33,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.LongFunction;
 import javax.inject.Named;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -90,8 +88,7 @@ public class ContractCallService {
         if (params.getGas() > properties.getMaxGasToUseLimit() || params.getGas() < properties.getMinGasToUseLimit()) {
             throw new InvalidParametersException("Invalid gas value");
         }
-        LongFunction<HederaEvmTransactionProcessingResult> callProcessor = (gas) -> doProcessCall(params, gas);
-
+        LongFunction<HederaEvmTransactionProcessingResult> callProcessor = gas -> doProcessCall(params, gas);
         HederaEvmTransactionProcessingResult initialCallResult = callProcessor.apply(params.getGas());
         validateTxnResult(initialCallResult, ETH_ESTIMATE_GAS);
         final long gasUsedByInitialCall = initialCallResult.getGasUsed();
@@ -99,8 +96,8 @@ public class ContractCallService {
         long estimatedGas =
                 binarySearch(
                         gas -> doProcessCall(params, gas),
-                        properties.getMinGasToUseLimit(),
                         gasUsedByInitialCall,
+                        params.getGas(),
                         properties.getDiffBetweenIterations());
 
         return Long.toHexString(estimatedGas);
@@ -108,13 +105,12 @@ public class ContractCallService {
 
     /**Feature work: move to another class and compare performance with interpolation algo.
      */
-    private long binarySearch(Function<Long, HederaEvmTransactionProcessingResult> processTxn, long lo, long hi,
+    private long binarySearch(LongFunction<HederaEvmTransactionProcessingResult> CallProcessor, long lo, long hi,
                               long minDiffBetweenIterations) {
-        long prevGasLimit = hi;
-        HederaEvmTransactionProcessingResult transactionResult;
+        long prevGasLimit = lo;
         while (lo + 1 < hi) {
-            long mid = (hi + lo) >>> 1;
-            transactionResult = processTxn.apply(mid);
+            long mid = (hi + lo) / 2;
+            HederaEvmTransactionProcessingResult transactionResult = CallProcessor.apply(mid);
 
             boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
