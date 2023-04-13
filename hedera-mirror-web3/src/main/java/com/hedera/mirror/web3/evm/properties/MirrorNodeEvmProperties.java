@@ -46,7 +46,10 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean allowanceEnabled = false;
-    
+
+    @Getter
+    private boolean approvedForAllEnabled = false;
+
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;
