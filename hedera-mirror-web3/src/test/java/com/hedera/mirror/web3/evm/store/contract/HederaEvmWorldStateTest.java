@@ -22,13 +22,9 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -46,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
-
     @Mock
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
@@ -83,12 +78,12 @@ class HederaEvmWorldStateTest {
 
     @Test
     void rootHash() {
-        assertEquals(Hash.EMPTY, subject.rootHash());
+        assertThat(subject.rootHash()).isEqualTo(Hash.EMPTY);
     }
 
     @Test
     void frontierRootHash() {
-        assertEquals(Hash.EMPTY, subject.frontierRootHash());
+        assertThat(subject.frontierRootHash()).isEqualTo(Hash.EMPTY);
     }
 
     @Test
@@ -98,52 +93,52 @@ class HederaEvmWorldStateTest {
 
     @Test
     void returnsNullForNull() {
-        assertNull(subject.get(null));
+        assertThat(subject.get(null)).isNull();
     }
 
     @Test
     void returnsNull() {
-        assertNull(subject.get(address));
+        assertThat(subject.get(address)).isNull();
     }
 
     @Test
     void returnsWorldStateAccount() {
         final var address = Address.RIPEMD160;
-        given(hederaEvmEntityAccess.getBalance(address)).willReturn(balance);
-        given(hederaEvmEntityAccess.isUsable(any())).willReturn(true);
+        when(hederaEvmEntityAccess.getBalance(address)).thenReturn(balance);
+        when(hederaEvmEntityAccess.isUsable(any())).thenReturn(true);
 
         final var account = subject.get(address);
 
-        assertTrue(account.getCode().isEmpty());
-        assertFalse(account.hasCode());
+        assertThat(account.getCode().isEmpty()).isTrue();
+        assertThat(account.hasCode()).isFalse();
     }
 
     @Test
     void returnsHederaEvmWorldStateTokenAccount() {
         final var address = Address.RIPEMD160;
-        given(hederaEvmEntityAccess.isTokenAccount(address)).willReturn(true);
-        given(evmProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+        when(hederaEvmEntityAccess.isTokenAccount(address)).thenReturn(true);
+        when(evmProperties.isRedirectTokenCallsEnabled()).thenReturn(true);
 
         final var account = subject.get(address);
 
-        assertFalse(account.getCode().isEmpty());
-        assertTrue(account.hasCode());
+        assertThat(account.getCode().isEmpty()).isFalse();
+        assertThat(account.hasCode()).isTrue();
     }
 
     @Test
     void returnsNull2() {
         final var address = Address.RIPEMD160;
-        given(hederaEvmEntityAccess.isTokenAccount(address)).willReturn(true);
-        given(evmProperties.isRedirectTokenCallsEnabled()).willReturn(false);
+        when(hederaEvmEntityAccess.isTokenAccount(address)).thenReturn(true);
+        when(evmProperties.isRedirectTokenCallsEnabled()).thenReturn(false);
 
-        assertNull(subject.get(address));
+        assertThat(subject.get(address)).isNull();
     }
 
     @Test
     void updater() {
         var actualSubject = subject.updater();
-        assertEquals(0, actualSubject.getSbhRefund());
-        assertNull(actualSubject.updater().get(Address.RIPEMD160));
+        assertThat(actualSubject.getSbhRefund()).isEqualTo(0);
+        assertThat(actualSubject.updater().get(Address.RIPEMD160)).isNull();
     }
 
     @Test
@@ -152,7 +147,7 @@ class HederaEvmWorldStateTest {
         final Address sponsor = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
         final ContractID contractID = ContractID.newBuilder().build();
 
-        given(entityAddressSequencer.getNewContractId(sponsor)).willReturn(contractID);
+        when(entityAddressSequencer.getNewContractId(sponsor)).thenReturn(contractID);
 
         final var actual = actualSubject.newContractAddress(sponsor);
         assertThat(actual).isEqualTo(asTypedEvmAddress(contractID));
