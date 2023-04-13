@@ -18,6 +18,8 @@ hedera:
           checksum: 4
         errataMigration:
           checksum: 6
+        fixFungibleTokenTotalSupplyMigration:
+          checksum: 2
         historicalAccountInfoMigration:
           checksum: 3
         initializeEntityBalanceMigration:

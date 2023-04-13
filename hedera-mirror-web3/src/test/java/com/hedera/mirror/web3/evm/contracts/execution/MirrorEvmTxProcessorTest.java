@@ -40,10 +40,10 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -103,8 +103,7 @@ class MirrorEvmTxProcessorTest {
     private HederaEvmWorldState.Updater updater;
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater stackedUpdater;
-
+    private HederaEvmStackedWorldStateUpdater stackedUpdater;
     @Mock
     private MirrorEvmContractAliases hederaEvmContractAliases;
 
@@ -130,8 +129,8 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(),
-                ccps(),
+                mcps(gasCalculator),
+                ccps(gasCalculator),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess));
