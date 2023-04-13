@@ -49,7 +49,7 @@ public class AcceptanceTestProperties {
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
-    private boolean createOperatorAccount = true;
+    private boolean createOperatorAccount = false;
 
     private boolean emitBackgroundMessages = false;
     private boolean contractTraceability = false;

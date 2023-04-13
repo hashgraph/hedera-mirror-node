@@ -553,6 +553,7 @@ Name                                                        | Default           
 `hedera.mirror.web3.db.port`                                | 5432                                       | The port used to connect to the database
 `hedera.mirror.web3.db.sslMode`                             | DISABLE                                    | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
 `hedera.mirror.web3.db.username`                            | mirror_web3                                | The username used to connect to the database
+`hedera.mirror.web3.evm.allowanceEnabled`                   | false                                      | Flag enabling ERC approve precompile
 `hedera.mirror.web3.evm.directTokenCall`                    | true                                       | Flag enabling contract like calls to tokens
 `hedera.mirror.web3.evm.dynamicEvmVersion`                  | false                                      | Flag indicating whether a dynamic evm version to be used
 `hedera.mirror.web3.evm.evmVersion`                         | v0.32                                      | The besu EVM version to be used as dynamic one
@@ -561,5 +562,6 @@ Name                                                        | Default           
 `hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                        | Maximum time for contract bytecode's caching
 `hedera.mirror.web3.cache.contractState`                    | expireAfterWrite=5s,maximumSize=10000,recordStats | Cache configuration for contract state
 `hedera.mirror.web3.cache.entity `                          | expireAfterWrite=30s,maximumSize=10000,recordStats | Cache configuration for entity
+`hedera.mirror.web3.cache.fee`                              | expireAfterWrite=10m,maximumSize=20,recordStats  | Cache configuration for fee related info
 `hedera.mirror.web3.cache.token`                            | expireAfterWrite=2s,maximumSize=10000,recordStats  | Cache configuration for token related info
 `hedera.mirror.web3.evm.rateLimit`                          | 100s                                       | Maximum RPS limit

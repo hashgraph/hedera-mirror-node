@@ -24,6 +24,9 @@ spec:
         name: TEST_REPORTS_DIR
         type: basic
         value: /share
+      {{- if .Values.testkube.test.extraExecutionRequestVariables }}
+      {{- toYaml .Values.testkube.test.extraExecutionRequestVariables | nindent 6 }}
+      {{- end }}
   {{- if .Values.testkube.test.schedule }}
   schedule: {{ quote .Values.testkube.test.schedule }}
   {{- end }}

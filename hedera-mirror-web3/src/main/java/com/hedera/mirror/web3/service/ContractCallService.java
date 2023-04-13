@@ -26,6 +26,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
+import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 import javax.inject.Named;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -49,6 +51,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 @CustomLog
 @Named
 public class ContractCallService {
+
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
     private final Map<CallType, Counter> gasPerSecondMetricMap;
     private final MirrorNodeEvmProperties properties;
@@ -69,6 +72,7 @@ public class ContractCallService {
     }
 
     public String processCall(final CallServiceParameters params) {
+        var stopwatch = Stopwatch.createStarted();
         if (params.isEstimate()) {
             return estimateGas(params);
         }
@@ -77,8 +81,9 @@ public class ContractCallService {
 
         final var callResult = ethCallTxnResult.getOutput() != null
                 ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
-
-        return callResult.toHexString();
+        final var stringResult = callResult.toHexString();
+        log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
+        return stringResult;
     }
 
     private String estimateGas(final CallServiceParameters params) {

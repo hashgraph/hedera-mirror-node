@@ -30,6 +30,9 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -37,7 +40,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -65,10 +67,13 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     private static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder functionEncodeDecoder;
+    private final MirrorNodeEvmProperties properties;
 
     @ParameterizedTest
     @EnumSource(ContractFunctions.class)
     void ercPrecompileOperationsTest(ContractFunctions ercFunction) {
+        properties.setAllowanceEnabled(true);
+
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParameters(functionHash);
@@ -84,6 +89,16 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
+    }
+
+    @Test
+    void unsupportedApprovePrecompileTest() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("allowance", ABI_PATH, new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS});
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage("allowance(address owner, address spender) is not supported.");
     }
 
     @RequiredArgsConstructor

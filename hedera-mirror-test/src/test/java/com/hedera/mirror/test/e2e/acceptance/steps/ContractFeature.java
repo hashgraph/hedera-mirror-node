@@ -39,7 +39,6 @@ import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -65,7 +64,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
-@Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
 
@@ -80,26 +78,16 @@ public class ContractFeature extends AbstractFeature {
     private static final String WRONG_SELECTOR = "000000";
     private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
     private static final int EVM_ADDRESS_SALT = 42;
-
-    /*
-     * Static state to persist across contract Cucumber scenarios.
-     */
-    private record DeployedContract(FileId fileId, ContractId contractId,
-                                    CompiledSolidityArtifact compiledSolidityArtifact) {
-    }
     private static DeployedContract deployedParentContract;
-
-    private String create2ChildContractEvmAddress;
-    private String create2ChildContractEntityId;
-    private AccountId create2ChildContractAccountId;
-    private ContractId create2ChildContractContractId;
-
     private final AccountClient accountClient;
     private final ContractClient contractClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AcceptanceTestProperties acceptanceTestProperties;
-
+    private String create2ChildContractEvmAddress;
+    private String create2ChildContractEntityId;
+    private AccountId create2ChildContractAccountId;
+    private ContractId create2ChildContractContractId;
     @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
     private Path parentContract;
     private byte[] childContractBytecodeFromParent;
@@ -146,21 +134,18 @@ public class ContractFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should return status {int} for the contract transaction")
     public void verifyMirrorAPIContractResponses(int status) {
-        log.info("Verify contract transaction");
         var mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(deployedParentContract.contractId().toString());
     }
 
     @Then("the mirror node REST API should return status {int} for the self destruct transaction")
     public void verifyMirrorAPIContractChildSelfDestructResponses(int status) {
-        log.info("Verify contract transaction");
         var mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(create2ChildContractEntityId);
     }
 
     @And("the mirror node REST API should return status {int} for the account transaction")
     public void verifyMirrorAPIAccountResponses(int status) {
-        log.info("Verify account transaction");
         verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
@@ -231,7 +216,8 @@ public class ContractFeature extends AbstractFeature {
 
     @And("I create a hollow account using CryptoTransfer of {int} to the evm address")
     public void createHollowAccountWithCryptoTransfertoEvmAddress(int amount) {
-        networkTransactionResponse = accountClient.sendCryptoTransfer(create2ChildContractAccountId, Hbar.fromTinybars(amount));
+        networkTransactionResponse = accountClient.sendCryptoTransfer(create2ChildContractAccountId,
+                Hbar.fromTinybars(amount));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -239,7 +225,6 @@ public class ContractFeature extends AbstractFeature {
 
     @And("the mirror node REST API should verify the account receiving {int} is hollow")
     public void verifyMirrorAPIHollowAccountResponse(int amount) {
-        log.info("Verify cryptotransfer to evm address account is hollow");
         var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(create2ChildContractAccountId);
         create2ChildContractEntityId = mirrorAccountResponse.getAccount();
 
@@ -261,7 +246,6 @@ public class ContractFeature extends AbstractFeature {
 
     @And("the mirror node REST API should indicate not found when using evm address to retrieve as a contract")
     public void verifyMirrorAPIContractNotFoundResponse() {
-        log.info("Verify contract at the hollow account evm address does not exist");
         try {
             mirrorClient.getContractInfoWithNotFound(create2ChildContractEvmAddress);
             fail("Did not expect to find contract at EVM address");
@@ -277,7 +261,6 @@ public class ContractFeature extends AbstractFeature {
 
     @And("the mirror node REST API should retrieve the child contract when using evm address")
     public void verifyMirrorAPIContractFoundResponse() {
-        log.info("Verify contract at the now full account evm address does now exist");
         var mirrorContractResponse = mirrorClient.getContractInfo(create2ChildContractEvmAddress);
         var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
                 .getTransactions()
@@ -299,7 +282,6 @@ public class ContractFeature extends AbstractFeature {
 
     @And("the mirror node REST API should verify the account is no longer hollow")
     public void verifyMirrorAPIFullAccountResponse() {
-        log.info("Verify cryptotransfer to evm address account is no longer hollow");
         var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(create2ChildContractAccountId);
         assertNotNull(mirrorAccountResponse.getAccount());
         assertNotEquals(ACCOUNT_EMPTY_KEYLIST, mirrorAccountResponse.getKey().getKey());
@@ -310,7 +292,7 @@ public class ContractFeature extends AbstractFeature {
         executeSelfDestructTransaction();
     }
 
-    private ContractId  verifyCreateContractNetworkResponse() {
+    private ContractId verifyCreateContractNetworkResponse() {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var contractId = networkTransactionResponse.getReceipt().contractId;
@@ -325,7 +307,6 @@ public class ContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
         assertNotNull(fileId);
-        log.info("Created file {} to hold contract init code", fileId);
 
         networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -369,7 +350,8 @@ public class ContractFeature extends AbstractFeature {
             assertThat(mirrorContract.getRuntimeBytecode()).isNotNull();
         }
 
-        assertThat(mirrorContract.getBytecode()).isEqualTo(deployedParentContract.compiledSolidityArtifact().getBytecode());
+        assertThat(mirrorContract.getBytecode()).isEqualTo(deployedParentContract.compiledSolidityArtifact()
+                .getBytecode());
 
         if (isDeleted) {
             assertThat(mirrorContract.getObtainerId())
@@ -382,8 +364,10 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void verifyContractExecutionResultsById() {
-        List<MirrorContractResult> contractResults = mirrorClient.getContractResultsById(deployedParentContract.contractId().toString())
-                .getResults();
+        List<MirrorContractResult> contractResults =
+                mirrorClient.getContractResultsById(deployedParentContract.contractId()
+                                .toString())
+                        .getResults();
 
         assertThat(contractResults).isNotEmpty().allSatisfy(this::verifyContractExecutionResults);
     }
@@ -481,7 +465,8 @@ public class ContractFeature extends AbstractFeature {
 
         ExecuteContractResult executeContractResult = contractClient.executeContract(
                 contractId,
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties().getMaxContractFunctionGas(),
+                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                        .getMaxContractFunctionGas(),
                 functionName,
                 parameters,
                 payableAmount);
@@ -497,5 +482,12 @@ public class ContractFeature extends AbstractFeature {
     private enum ContractExecutionStage {
         CREATION,
         CALL
+    }
+
+    /*
+     * Static state to persist across contract Cucumber scenarios.
+     */
+    private record DeployedContract(FileId fileId, ContractId contractId,
+                                    CompiledSolidityArtifact compiledSolidityArtifact) {
     }
 }
