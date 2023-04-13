@@ -40,6 +40,6 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
 
     @Cacheable(cacheNames = "entity_repository.max_id", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
-    @Query("select max(c.id) from Contract c")
+    @Query("select max(e.id) from Entity e")
     Long findMaxId();
 }
