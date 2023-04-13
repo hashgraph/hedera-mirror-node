@@ -73,6 +73,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     @EnumSource(ContractFunctions.class)
     void ercPrecompileOperationsTest(ContractFunctions ercFunction) {
         properties.setAllowanceEnabled(true);
+        properties.setApprovedForAllEnabled(true);
 
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
@@ -99,6 +100,16 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
                 isInstanceOf(UnsupportedOperationException.class).hasMessage("allowance(address owner, address spender) is not supported.");
+    }
+
+    @Test
+    void unsupportedIsApprovedForAllPrecompileTest() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("isApprovedForAll", ABI_PATH, new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS});
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage("isApprovedForAll(address owner, address operator) is not supported.");
     }
 
     @RequiredArgsConstructor
