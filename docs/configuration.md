@@ -554,6 +554,7 @@ Name                                                        | Default           
 `hedera.mirror.web3.db.sslMode`                             | DISABLE                                    | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
 `hedera.mirror.web3.db.username`                            | mirror_web3                                | The username used to connect to the database
 `hedera.mirror.web3.evm.allowanceEnabled`                   | false                                      | Flag enabling ERC approve precompile
+`hedera.mirror.web3.evm.approvedForAllEnabled`              | false                                      | Flag enabling ERC isApprovedForAll precompile
 `hedera.mirror.web3.evm.directTokenCall`                    | true                                       | Flag enabling contract like calls to tokens
 `hedera.mirror.web3.evm.dynamicEvmVersion`                  | false                                      | Flag indicating whether a dynamic evm version to be used
 `hedera.mirror.web3.evm.evmVersion`                         | v0.32                                      | The besu EVM version to be used as dynamic one
