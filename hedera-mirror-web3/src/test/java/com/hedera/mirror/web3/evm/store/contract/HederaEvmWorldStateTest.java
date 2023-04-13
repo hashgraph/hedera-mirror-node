@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -64,7 +63,7 @@ class HederaEvmWorldStateTest {
     TokenAccessor tokenAccessor;
 
     @Mock
-    EntityRepository entityRepository;
+    EntityAddressSequencer entityAddressSequencer;
 
     private HederaEvmWorldState subject;
 
@@ -76,7 +75,7 @@ class HederaEvmWorldStateTest {
                 abstractCodeCache,
                 accountAccessor,
                 tokenAccessor,
-                entityRepository);
+                entityAddressSequencer);
     }
 
     @Test
