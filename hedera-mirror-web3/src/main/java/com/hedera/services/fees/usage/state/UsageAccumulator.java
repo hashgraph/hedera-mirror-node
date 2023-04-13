@@ -1,11 +1,23 @@
 package com.hedera.services.fees.usage.state;
 
 import static com.hedera.services.fees.pricing.UsableResource.BPT;
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_TX_BODY_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.HRS_DIVISOR;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.INT_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 
 import com.google.common.base.MoreObjects;
 
 import com.hedera.services.fees.pricing.ResourceProvider;
 import com.hedera.services.fees.pricing.UsableResource;
+
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+
+import com.hedera.services.hapi.fees.usage.SigUsage;
 
 import com.hederahashgraph.api.proto.java.FeeData;
 import org.apache.commons.lang3.builder.EqualsBuilder;

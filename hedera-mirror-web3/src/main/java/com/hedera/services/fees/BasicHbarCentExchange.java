@@ -24,6 +24,7 @@ import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -41,6 +42,11 @@ public final class BasicHbarCentExchange implements HbarCentExchange {
     public ExchangeRate rate(final Timestamp now) {
         exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
         return rateAt(now.getSeconds());
+    }
+
+    @Override
+    public ExchangeRate activeRate(final Instant now) {
+        return rateAt(now.getEpochSecond());
     }
 
     private ExchangeRate rateAt(final long now) {

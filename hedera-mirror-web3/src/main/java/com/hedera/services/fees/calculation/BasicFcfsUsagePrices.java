@@ -24,6 +24,8 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
+import com.hedera.services.utils.accessors.TxnAccessor;
+
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -90,6 +92,16 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(at.getSeconds());
         this.setFeeSchedules(feeSchedules);
         return pricesGiven(function, at).get(DEFAULT);
+    }
+
+    @Override
+    public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
+        try {
+            return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
+        } catch (final Exception e) {
+            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+        }
+        return DEFAULT_RESOURCE_PRICES;
     }
 
     public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {

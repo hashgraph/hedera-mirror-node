@@ -1,5 +1,6 @@
 package com.hedera.services.fees.pricing;
 
+import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -8,6 +9,30 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.services.fees.usage.state.UsageAccumulator;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.contract.ExtantContractContext;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
+
+import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.hapi.fees.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.hapi.fees.usage.file.FileAppendMeta;
+import com.hedera.services.hapi.fees.usage.file.FileOpsUsage;
+
+import com.hedera.services.hapi.fees.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
+
+import com.hedera.services.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.hapi.fees.usage.util.UtilOpsUsage;
+
+import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;

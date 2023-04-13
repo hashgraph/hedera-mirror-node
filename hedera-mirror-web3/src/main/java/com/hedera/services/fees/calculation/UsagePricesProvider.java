@@ -20,6 +20,8 @@
 
 package com.hedera.services.fees.calculation;
 
+import com.hedera.services.utils.accessors.TxnAccessor;
+
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -46,4 +48,13 @@ public interface UsagePricesProvider {
      * @return the estimated prices
      */
     FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
+
+    /**
+     * Returns the prices in a map SubType keys and FeeData values in 1/1000th of a tinyCent that
+     * must be paid to consume various resources while processing the active transaction.
+     *
+     * @param accessor the active transaction
+     * @return the prices for the active transaction
+     */
+    Map<SubType, FeeData> activePrices(TxnAccessor accessor);
 }
