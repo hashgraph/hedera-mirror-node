@@ -137,7 +137,7 @@ class HederaEvmWorldStateTest {
     @Test
     void updater() {
         var actualSubject = subject.updater();
-        assertThat(actualSubject.getSbhRefund()).isEqualTo(0);
+        assertThat(actualSubject.getSbhRefund()).isZero();
         assertThat(actualSubject.updater().get(Address.RIPEMD160)).isNull();
     }
 
