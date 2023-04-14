@@ -117,11 +117,9 @@ You may need to restart Docker Desktop according to this [forum post](https://fo
 ### Debian
 
 The `debian` subdirectory contains the `Dockerfile` which defines the image used in production and other GCP based environments.
-In this case the base Citus image is used and some additional extensions are installed on top of it.
-
 The Debian image is based directly on the Citus Debian image with a couple of additional Postgres extensions installed;
-cron and partman. The resultant image is built only for the amd64 platform architecture, and is used in production and
-other environments hosted in GCP. The standard `docker build` command can be used to accomplish this.
+cron and partman. The resultant image is built only for the amd64 platform architecture. The standard `docker build`
+command can be used to accomplish this.
 
 The database name to be used by citus can be provided using an environment variable as follows:
 
