@@ -21,12 +21,14 @@ in order to provide contract log notifications in almost real time.
 - Ensure performance is within reasonable bounds (reasonable bounds TBD via experimentation)
 
 ## Architecture
+
 ![Architecture](images/contract-log-subscription-architecture.png)
+
 ### Importer
 
 1. Update RedisEntityListener (or create new listener) to send contract logs to contract_logs topic
-- Populate the ContractLogEvent for topic message submission
-- Messages will be serialized via RedisSerializer using msgpack
+ - Populate the ContractLogEvent for topic message submission
+ - Messages will be serialized via RedisSerializer using msgpack
 
 ### GraphQL
 
@@ -41,9 +43,9 @@ in order to provide contract log notifications in almost real time.
 4. Create RedisConfiguration to configure msgpack serializer
 5. Create a Redis Subscriber to listen for messages on contract_logs topic
 6. Capture metrics (Some of these may already be provided by Redis or GraphQL)
-- subscriber consumption rate
-- Active subscriptions counter
-- Messages received (From redis topic) rate
+ - subscriber consumption rate
+ - Active subscriptions counter
+ - Messages received (From redis topic) rate
 
 #### GraphQL Schema
 
@@ -74,7 +76,7 @@ type ContractLogEvent {
   """
   topics: [String!]!
 
-  "The hash of the transaction"
+  "The hash of the transaction (first 32-byte of the 48-byte HAPI transaction hash)"
   transactionHash: String!
 
   "The index or position of the transaction within the block"
@@ -87,30 +89,26 @@ input ContractLogSubscription {
   addresses: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
 
   """
-  Topic specifier for position 0
-  null indicates any value allowed in this position
-  [A,B] indicates A or B at this position
+  Topic specifier for position 0. An empty array indicates any value is allowed for this position.
+  [A,B] indicates a log will be emitted when either A or B is in that position
   """
   topic0: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
 
   """
-  Topic specifier for position 1
-  null indicates any value allowed in this position
-  [A,B] indicates A or B at this position
+  Topic specifier for position 1. An empty array indicates any value is allowed for this position.
+  [A,B] indicates a log will be emitted when either A or B is in that position
   """
   topic1: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
 
   """
-  Topic specifier for position 2
-  null indicates any value allowed in this position
-  [A,B] indicates A or B at this position
+  Topic specifier for position 0. An empty array indicates any value is allowed for this position.
+  [A,B] indicates a log will be emitted when either A or B is in that position
   """
   topic2: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
 
   """
-  Topic specifier for position 3
-  null indicates any value allowed in this position
-  [A,B] indicates A or B at this position
+  Topic specifier for position 0. An empty array indicates any value is allowed for this position.
+  [A,B] indicates a log will be emitted when either A or B is in that position
   """
   topic3: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
 }
@@ -230,15 +228,15 @@ Addresses and topics are both optional filters
 
 #### Event Response DB Mapping
 
-| Response Field   | Source Field                                                                                              |
-|------------------|-----------------------------------------------------------------------------------------------------------|
-| address          | account_num alias for contract entity                                                                     |
-| blockHash        | record_file.hash                                                                                          |
-| blockNumber      | record_file.index                                                                                         |
-| data             | contract_log.data                                                                                         |
-| logIndex         | contract_log.index                                                                                        |
-| topics           | [contract_log.topic0, contract_log.topic1, contract_log.topic2, contract_log.topic3, contract_log.topic4] |
-| transactionHash  | contract_log.transaction_hash                                                                             |
-| transactionIndex | contract_log.transaction_index                                                                            |
+| Response Field   | Source Field                                                                         |
+|------------------|--------------------------------------------------------------------------------------|
+| address          | account_num alias for contract entity                                                |
+| blockHash        | record_file.hash                                                                     |
+| blockNumber      | record_file.index                                                                    |
+| data             | contract_log.data                                                                    |
+| logIndex         | contract_log.index                                                                   |
+| topics           | [contract_log.topic0, contract_log.topic1, contract_log.topic2, contract_log.topic3] |
+| transactionHash  | contract_log.transaction_hash                                                        |
+| transactionIndex | contract_log.transaction_index                                                       |
 
 
