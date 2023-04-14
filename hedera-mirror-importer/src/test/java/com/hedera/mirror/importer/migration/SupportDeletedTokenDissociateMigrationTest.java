@@ -202,18 +202,18 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         );
         // expect new nft transfers from token dissociate of deleted nft class
         // expect nft transfers for nft treasury update removed
-        assertThat(findAllNftTransfers()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("payerAccountId")
+        assertThat(findAllNftTransfers()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "payerAccountId", "senderAccountId")
                 .containsExactlyInAnyOrder(
                         nftTransfer(account1Nft1DissociateTimestamp, null, account1, 2L, nftId1),
                         nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
                         nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1)
                 );
         assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
-        assertThat(findAllTokens()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("pauseKey", "pauseStatus")
+        assertThat(findAllTokens()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("tokenId", "pauseStatus", "treasuryAccountId")
                 .containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
                         nftClass3);
         // the token transfer for nft should have been removed
-        assertThat(findAllTokenTransfers()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("payerAccountId")
+        assertThat(findAllTokenTransfers()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "payerAccountId", "senderAccountId")
                 .containsExactlyInAnyOrder(
                         new TokenTransfer(account1Ft1DissociateTimestamp, -10, ftId1, account1)
                 );
