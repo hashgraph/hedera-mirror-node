@@ -68,12 +68,12 @@ class CompositeBatchPersisterTest extends IntegrationTest {
         assertThat(contractResultRepository.findAll()).containsExactly(contractResult);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void persistEmpty() {
         compositeBatchInserter.persist(null);
 
-        var items = spy(Collection.class);
+        Collection<Integer> itemCollection = new ArrayList<Integer>();
+        var items = spy(itemCollection);
         when(items.isEmpty()).thenReturn(true);
         compositeBatchInserter.persist(items);
         var it = verify(items, never()).iterator();

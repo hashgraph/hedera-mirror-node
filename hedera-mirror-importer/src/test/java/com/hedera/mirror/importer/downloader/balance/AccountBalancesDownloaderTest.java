@@ -29,6 +29,10 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
@@ -41,7 +45,7 @@ import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 
-class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
+class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanceFile> {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -49,7 +53,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Override
-    protected Downloader<?, ?> getDownloader() {
+    protected Downloader<AccountBalanceFile, AccountBalance> getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(),
                 new AccountBalanceLineParserV1(mirrorProperties));
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);

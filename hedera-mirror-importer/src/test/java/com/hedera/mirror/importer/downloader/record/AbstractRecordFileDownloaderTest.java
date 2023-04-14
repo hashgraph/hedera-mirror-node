@@ -41,6 +41,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -53,7 +54,7 @@ import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
 import com.hedera.mirror.importer.reader.record.sidecar.SidecarFileReaderImpl;
 
-abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest<RecordFile> {
 
     protected Map<String, RecordFile> recordFileMap;
 
@@ -74,13 +75,11 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    protected Downloader<?, ?> getDownloader() {
+    protected Downloader<RecordFile, RecordItem> getDownloader() {
         return getDownloader(s3AsyncClient);
     }
 
-    @SuppressWarnings("rawtypes")
-    private Downloader getDownloader(S3AsyncClient s3AsyncClient) {
+    private Downloader<RecordFile, RecordItem> getDownloader(S3AsyncClient s3AsyncClient) {
 
         var recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
@@ -98,8 +97,8 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
+    @SuppressWarnings("unchecked")
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
         extraAsserts = ArrayUtils.add(extraAsserts, s -> {
             var recordFile = (RecordFile) s;
             var expected = recordFileMap.get(recordFile.getName());

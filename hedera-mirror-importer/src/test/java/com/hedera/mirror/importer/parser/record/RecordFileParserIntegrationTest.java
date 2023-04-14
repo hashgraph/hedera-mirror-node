@@ -110,7 +110,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertThat(retryRecorder.getRetries(ParserException.class)).isEqualTo(2);
     }
 
-    @SuppressWarnings("deprecation")
     void verifyFinalDatabaseState(RecordFileDescriptor... recordFileDescriptors) {
         int cryptoTransferCount = 0;
         int entityCount = 0;
@@ -128,7 +127,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertEquals(entityCount, entityRepository.count());
 
         Iterable<RecordFile> recordFiles = recordFileRepository.findAll();
-        assertThat(recordFiles).usingElementComparatorOnFields("name").
+        assertThat(recordFiles).usingRecursiveFieldByFieldElementComparatorOnFields("name").
                 containsExactlyInAnyOrderElementsOf(
                         Arrays.stream(recordFileDescriptors).map(RecordFileDescriptor::getRecordFile).collect(
                                 Collectors.toList()))

@@ -68,7 +68,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ConsensusCreateTopicTransactionSupplier.class;
     }
 }

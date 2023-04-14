@@ -87,8 +87,6 @@ public class ScheduleFeature {
     }
 
     private void createNewSchedule(Transaction<?> transaction, KeyList innerSignatureKeyList) {
-        log.debug("Schedule creation ");
-
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),

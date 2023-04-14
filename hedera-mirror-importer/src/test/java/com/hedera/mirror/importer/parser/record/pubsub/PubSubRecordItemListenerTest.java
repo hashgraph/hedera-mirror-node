@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -137,11 +138,14 @@ class PubSubRecordItemListenerTest {
                 transactionRecord, null);
     }
 
-    @SuppressWarnings("deprecation")
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        ServiceEndpoint defaultServiceEndpoint = ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 1}))
+                .setPort(443)
+                .build();
         for (int i = 0; i < size; ++i) {
-            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
+            builder.addNodeAddress(NodeAddress.newBuilder().addServiceEndpoint(defaultServiceEndpoint).build());
         }
         return builder.build();
     }
@@ -160,7 +164,7 @@ class PubSubRecordItemListenerTest {
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Test
     void testPubSubMessage() throws Exception {
         // given
@@ -179,7 +183,7 @@ class PubSubRecordItemListenerTest {
         when(pubSubTemplate.publish(any(), any(), any()))
                 .thenReturn(successFuture);
         doAnswer(invocationOnMock -> {
-            ListenableFutureCallback callback = invocationOnMock.getArgument(0);
+            ListenableFutureCallback<String> callback = invocationOnMock.getArgument(0);
             callback.onSuccess("success");
             return null;
         }).when(successFuture).addCallback(any(ListenableFutureCallback.class));
@@ -262,7 +266,7 @@ class PubSubRecordItemListenerTest {
         verify(pubSubTemplate, times(1)).publish(any(), any(), any());
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Test
     void testSendRetries() throws Exception {
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
@@ -276,7 +280,7 @@ class PubSubRecordItemListenerTest {
         when(pubSubTemplate.publish(any(), any(), any()))
                 .thenReturn(failFuture);
         doAnswer(invocationOnMock -> {
-            ListenableFutureCallback callback = invocationOnMock.getArgument(0);
+            ListenableFutureCallback<String> callback = invocationOnMock.getArgument(0);
             callback.onFailure(new RuntimeException("error"));
             return null;
         }).when(failFuture).addCallback(any(ListenableFutureCallback.class));
@@ -334,12 +338,12 @@ class PubSubRecordItemListenerTest {
         verify(addressBookService).update(fileData);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     private PubSubMessage assertPubSubMessage(PubSubMessage pubSubMessage, int numSendTries) {
         Map<String, String> header = Map.of("consensusTimestamp", CONSENSUS_TIMESTAMP.toString());
         ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<PubSubMessage> pubSubMessageCaptor = ArgumentCaptor.forClass(PubSubMessage.class);
-        ArgumentCaptor<Map> headerCaptor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, String>> headerCaptor = ArgumentCaptor.forClass(Map.class);
         verify(pubSubTemplate, times(numSendTries)).publish(topicCaptor.capture(), pubSubMessageCaptor.capture(),
                 headerCaptor.capture());
 

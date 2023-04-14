@@ -53,7 +53,7 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ScheduleDeleteTransactionSupplier.class;
     }
 }

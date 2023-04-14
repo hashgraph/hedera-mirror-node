@@ -68,7 +68,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return AccountCreateTransactionSupplier.class;
     }
 }

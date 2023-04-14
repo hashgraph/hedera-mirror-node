@@ -78,7 +78,6 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         assertThat(transactionRepository.count()).isZero();
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     void verifyEntityTimestampMigration() throws Exception {
         // given
@@ -124,7 +123,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
         // then
         assertThat(retrieveEntities())
-                .usingElementComparatorOnFields("id", "createdTimestamp", "deleted", "modifiedTimestamp")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "createdTimestamp", "deleted", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 

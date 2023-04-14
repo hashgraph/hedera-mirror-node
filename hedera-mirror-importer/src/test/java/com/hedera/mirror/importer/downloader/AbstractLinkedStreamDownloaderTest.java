@@ -36,7 +36,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
-public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {
+public abstract class AbstractLinkedStreamDownloaderTest<T extends StreamFile<?>> extends AbstractDownloaderTest<T> {
 
     @Test
     @DisplayName("Doesn't match last valid hash")
@@ -59,7 +59,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         verifyStreamFiles(List.of(file2));
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @ParameterizedTest(name = "verifyHashChain {5}")
     @CsvSource({
             // @formatter:off
@@ -77,7 +77,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
                          Instant verifyHashAfter, Instant fileInstant,
                          Boolean expectedResult, String testName) {
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        var streamFile = streamType.newStreamFile();
+        var streamFile = (T) streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));
         streamFile.setPreviousHash(actualPrevFileHash);

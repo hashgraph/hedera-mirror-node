@@ -631,7 +631,6 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAllowance);
     }
 
-    @SuppressWarnings({"deprecation", "unchecked"})
     @Test
     void tokenDissociateTransfer() {
         // given
@@ -686,8 +685,9 @@ class BatchUpserterTest extends IntegrationTest {
         serial3Transfer.setPayerAccountId(payerId);
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
 
+        fungibleTokenTransfer.setDeletedTokenDissociate(false);
         assertThat(tokenTransferRepository.findAll())
-                .usingElementComparatorIgnoringFields("deletedTokenDissociate")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("deletedTokenDissociate")
                 .containsOnly(fungibleTokenTransfer);
     }
 

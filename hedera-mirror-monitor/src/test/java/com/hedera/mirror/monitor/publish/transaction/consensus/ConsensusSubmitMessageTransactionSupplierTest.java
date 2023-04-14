@@ -82,7 +82,7 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ConsensusSubmitMessageTransactionSupplier.class;
     }
 }

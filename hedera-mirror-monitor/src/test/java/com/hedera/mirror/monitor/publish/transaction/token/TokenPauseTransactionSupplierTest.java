@@ -54,7 +54,7 @@ class TokenPauseTransactionSupplierTest extends AbstractTransactionSupplierTest 
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenFreezeTransactionSupplier.class;
     }
 }

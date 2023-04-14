@@ -120,7 +120,6 @@ class TransactionPublisherTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publish() {
@@ -142,7 +141,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithLogResponse() {
@@ -156,7 +154,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithReceipt() {
@@ -174,7 +171,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithRecord() {
@@ -192,7 +188,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishPreCheckError() {
@@ -207,7 +202,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetrySuccessful() {
@@ -221,7 +215,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetryError() {
@@ -239,7 +232,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(2L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetrySameRequest() {
@@ -265,7 +257,6 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishTimeout() {
@@ -347,14 +338,14 @@ class TransactionPublisherTest {
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
 
-        @SuppressWarnings("unchecked")
-        void addQueries(Mono<Response>... query) {
+        CryptoServiceStub addQueries(Mono<Response>... query) {
             queries.addAll(Arrays.asList(query));
+            return this;
         }
 
-        @SuppressWarnings("unchecked")
-        void addTransactions(Mono<TransactionResponse>... transaction) {
+        CryptoServiceStub addTransactions(Mono<TransactionResponse>... transaction) {
             transactions.addAll(Arrays.asList(transaction));
+            return this;
         }
 
         @Override

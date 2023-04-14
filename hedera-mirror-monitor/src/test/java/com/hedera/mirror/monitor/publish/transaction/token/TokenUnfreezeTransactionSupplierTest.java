@@ -57,7 +57,7 @@ class TokenUnfreezeTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenUnfreezeTransactionSupplier.class;
     }
 }

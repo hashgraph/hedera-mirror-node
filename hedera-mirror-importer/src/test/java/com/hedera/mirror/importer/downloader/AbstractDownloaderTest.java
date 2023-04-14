@@ -81,6 +81,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -102,7 +103,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 
 @CustomLog
 @ExtendWith(MockitoExtension.class)
-public abstract class AbstractDownloaderTest {
+public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
     private static final int S3_PROXY_PORT = 8001;
     private static final Pattern STREAM_FILENAME_INSTANT_PATTERN = Pattern.compile(
@@ -126,8 +127,7 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    @SuppressWarnings("rawtypes")
-    protected Downloader downloader;
+    protected Downloader<T, ?> downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
@@ -208,8 +208,7 @@ public abstract class AbstractDownloaderTest {
         return Collections.emptyMap();
     }
 
-    @SuppressWarnings("rawtypes")
-    protected abstract Downloader getDownloader();
+    protected abstract Downloader<T, ?> getDownloader();
 
     protected abstract Path getTestDataDir();
 
@@ -707,8 +706,8 @@ public abstract class AbstractDownloaderTest {
         });
     }
 
-    @SuppressWarnings({"java:S6103", "rawtypes", "unchecked"})
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
+    @SuppressWarnings({"java:S6103", "unchecked"})
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
         var captor = ArgumentCaptor.forClass(StreamFile.class);
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
@@ -731,7 +730,7 @@ public abstract class AbstractDownloaderTest {
 
         if (!files.isEmpty()) {
             var lastFilename = files.get(files.size() - 1);
-            var lastStreamFile = (Optional<StreamFile>) downloader.lastStreamFile.get();
+            var lastStreamFile = downloader.lastStreamFile.get();
             assertThat(lastStreamFile)
                     .isNotEmpty()
                     .get()
@@ -772,8 +771,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
-        @SuppressWarnings("rawtypes")
-        StreamFile streamFile = streamType.newStreamFile();
+        var streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);

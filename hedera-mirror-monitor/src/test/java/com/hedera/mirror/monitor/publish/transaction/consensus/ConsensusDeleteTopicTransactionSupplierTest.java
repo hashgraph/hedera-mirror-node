@@ -55,7 +55,7 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ConsensusDeleteTopicTransactionSupplier.class;
     }
 }

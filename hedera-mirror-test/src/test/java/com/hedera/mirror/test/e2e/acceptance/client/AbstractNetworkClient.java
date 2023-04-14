@@ -61,6 +61,10 @@ public abstract class AbstractNetworkClient {
         this.sdkClient = sdkClient;
         this.client = sdkClient.getClient();
         this.retryTemplate = retryTemplate;
+        // Suppress verbose receipt query retry logs
+        if (!log.isDebugEnabled()) {
+            Configurator.setLevel(LogManager.getLogger(TransactionReceiptQuery.class), Level.ERROR);
+        }
     }
 
     @SneakyThrows
@@ -108,13 +112,9 @@ public abstract class AbstractNetworkClient {
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
-        long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
         var transactionId = executeTransaction(transaction, keyList, payer);
         var transactionReceipt = getTransactionReceipt(transactionId);
-
-        if (log.isTraceEnabled()) {
-            log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
-        }
+        log.debug("Executed {} {}", transaction.getClass().getSimpleName(), transactionId);
 
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
@@ -175,7 +175,7 @@ public abstract class AbstractNetworkClient {
         // AccountBalanceQuery is free
         var query = new AccountBalanceQuery().setAccountId(accountId.getAccountId());
         var balance = executeQuery(() -> query).hbars;
-        log.info("{} balance is {}", accountId, balance);
+        log.debug("{Account } balance is {}", accountId, balance);
         return balance.toTinybars();
     }
 

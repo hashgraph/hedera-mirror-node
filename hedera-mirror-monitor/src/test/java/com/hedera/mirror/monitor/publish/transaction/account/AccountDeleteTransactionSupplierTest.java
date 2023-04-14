@@ -57,7 +57,7 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return AccountDeleteTransactionSupplier.class;
     }
 }

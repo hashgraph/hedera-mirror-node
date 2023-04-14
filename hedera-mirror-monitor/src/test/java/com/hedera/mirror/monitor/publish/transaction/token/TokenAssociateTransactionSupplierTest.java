@@ -58,7 +58,7 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class<?> getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenAssociateTransactionSupplier.class;
     }
 }

@@ -196,9 +196,9 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                 .collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Override
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
         extraAsserts = ArrayUtils.add(extraAsserts, s -> {
             var recordFile = (RecordFile) s;
             var recordItems = recordFile.getItems().collectList().block();

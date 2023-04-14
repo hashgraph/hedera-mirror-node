@@ -83,11 +83,10 @@ public abstract class PerformanceIntegrationTest {
     private static final String restoreClientImagePrefix = "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" +
             "-client:";
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     protected GenericContainer<?> createRestoreContainer(String dockerImageTag) {
         log.debug("Creating restore container to connect to {}", dbProperties);
         Consumer<OutputFrame> logConsumer = o -> log.info("Restore container: {}", o::getUtf8String);
-        return new GenericContainer (restoreClientImagePrefix + dockerImageTag)
+        GenericContainer<?> container = new GenericContainer<>(restoreClientImagePrefix + dockerImageTag)
                 .withEnv("DB_NAME", dbProperties.getName())
                 .withEnv("DB_USER", dbProperties.getUsername())
                 .withEnv("DB_PASS", dbProperties.getPassword())
@@ -97,6 +96,7 @@ public abstract class PerformanceIntegrationTest {
                 .withStartupCheckStrategy(
                         new IndefiniteWaitOneShotStartupCheckStrategy()
                 );
+        return container;
     }
 
     void parse() throws Exception {
