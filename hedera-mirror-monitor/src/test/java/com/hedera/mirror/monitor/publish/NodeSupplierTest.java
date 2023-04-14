@@ -123,6 +123,7 @@ class NodeSupplierTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void get() {
         monitorProperties.getNodeValidation().setEnabled(false);
@@ -137,6 +138,7 @@ class NodeSupplierTest {
                 .hasMessageContaining("No valid nodes available");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void init() {
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
@@ -146,6 +148,7 @@ class NodeSupplierTest {
         assertThat(nodeSupplier.get()).isEqualTo(node);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void initWithRetry() {
         monitorProperties.getNodeValidation().setRetryBackoff(Duration.ofMillis(100L));
@@ -227,6 +230,7 @@ class NodeSupplierTest {
                 .verify(WAIT);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void validationRecovers() {
@@ -246,6 +250,7 @@ class NodeSupplierTest {
         assertThat(nodeSupplier.get()).isEqualTo(node);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void someValidNodes() throws Exception {
@@ -282,6 +287,7 @@ class NodeSupplierTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void validationSucceeds() {
@@ -314,11 +320,13 @@ class NodeSupplierTest {
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
 
+        @SuppressWarnings("unchecked") // due to parameterized vararg
         CryptoServiceStub addQueries(Mono<Response>... query) {
             queries.addAll(Arrays.asList(query));
             return this;
         }
 
+        @SuppressWarnings("unchecked") // due to parameterized vararg
         CryptoServiceStub addTransactions(Mono<TransactionResponse>... transaction) {
             transactions.addAll(Arrays.asList(transaction));
             return this;
