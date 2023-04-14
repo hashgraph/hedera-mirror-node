@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
