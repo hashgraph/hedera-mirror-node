@@ -314,13 +314,11 @@ class NodeSupplierTest {
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
 
-        // due to parameterized vararg
         CryptoServiceStub addQuery(Mono<Response> query) {
             queries.add(query);
             return this;
         }
 
-        // due to parameterized vararg
         CryptoServiceStub addTransaction(Mono<TransactionResponse> transaction) {
             transactions.add(transaction);
             return this;
