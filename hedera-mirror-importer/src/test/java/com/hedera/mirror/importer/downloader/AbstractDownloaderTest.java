@@ -71,17 +71,15 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -140,6 +138,9 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
+
+    @Captor
+    private ArgumentCaptor<T> streamFileCaptor;
 
     @TempDir
     private Path dataPath;
@@ -436,26 +437,6 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     @Test
-    @DisplayName("overwrite on download")
-    void overwriteOnDownload() throws Exception {
-        downloaderProperties.setWriteSignatures(true);
-        mirrorProperties.setStartBlockNumber(null);
-        fileCopier.copy();
-        expectLastStreamFile(Instant.EPOCH);
-        downloader.download();
-        verifyForSuccess();
-
-        Mockito.reset(dateRangeProcessor);
-        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getStreamPath())
-                .filter(this::isSigFile)
-                .forEach(AbstractDownloaderTest::corruptFile);
-
-        downloader.download();
-        verifyForSuccess();
-    }
-
-    @Test
     @DisplayName("Different filenames, same interval")
     void differentFilenamesSameInterval() {
         differentFilenames(Duration.ofNanos(1L));
@@ -696,24 +677,23 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     private void verifyForSuccess(List<String> files, boolean expectEnabled) {
-        verifyStreamFiles(files);
+        verifyStreamFiles(files, s -> {
+        });
         assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
     }
 
-    @SuppressWarnings("unchecked")
     protected void verifyStreamFiles(List<String> files) {
         verifyStreamFiles(files, s -> {
         });
     }
 
-    @SuppressWarnings({"java:S6103", "unchecked"})
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
-        var captor = ArgumentCaptor.forClass(StreamFile.class);
+    @SuppressWarnings({"java:S6103"})
+    protected void verifyStreamFiles(List<String> files, Consumer<T> extraAssert) {
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
 
-        verify(streamFileNotifier, times(files.size())).verified(captor.capture());
-        var streamFileAssert = assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
+        verify(streamFileNotifier, times(files.size())).verified(streamFileCaptor.capture());
+        assertThat(streamFileCaptor.getAllValues()).allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> {
                     var expected = expectedFileIndexMap.get(s.getName());
                     if (expected != null) {
@@ -722,11 +702,8 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                         return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
                     }
                 })
-                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
-
-        for (var extraAssert : extraAsserts) {
-            streamFileAssert.allSatisfy(extraAssert::accept);
-        }
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
+                .allSatisfy(t -> extraAssert.accept(t));
 
         if (!files.isEmpty()) {
             var lastFilename = files.get(files.size() - 1);

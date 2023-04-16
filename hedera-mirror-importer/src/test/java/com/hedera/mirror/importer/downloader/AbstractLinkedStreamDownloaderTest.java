@@ -28,10 +28,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
@@ -59,7 +57,6 @@ public abstract class AbstractLinkedStreamDownloaderTest<T extends StreamFile<?>
         verifyStreamFiles(List.of(file2));
     }
 
-    @SuppressWarnings("unchecked")
     @ParameterizedTest(name = "verifyHashChain {5}")
     @CsvSource({
             // @formatter:off
@@ -77,7 +74,7 @@ public abstract class AbstractLinkedStreamDownloaderTest<T extends StreamFile<?>
                          Instant verifyHashAfter, Instant fileInstant,
                          Boolean expectedResult, String testName) {
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        var streamFile = (T) streamType.newStreamFile();
+        T streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));
         streamFile.setPreviousHash(actualPrevFileHash);

@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.time.Instant;
 import java.util.function.Supplier;
-
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,6 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
-import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -63,6 +61,7 @@ public abstract class AbstractNetworkClient {
         this.sdkClient = sdkClient;
         this.client = sdkClient.getClient();
         this.retryTemplate = retryTemplate;
+
         // Suppress verbose receipt query retry logs
         if (!log.isDebugEnabled()) {
             Configurator.setLevel(LogManager.getLogger(TransactionReceiptQuery.class), Level.ERROR);
@@ -121,7 +120,8 @@ public abstract class AbstractNetworkClient {
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction,
+                                                                           KeyList keyList) {
         return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
     }
 
@@ -177,7 +177,7 @@ public abstract class AbstractNetworkClient {
         // AccountBalanceQuery is free
         var query = new AccountBalanceQuery().setAccountId(accountId.getAccountId());
         var balance = executeQuery(() -> query).hbars;
-        log.debug("{Account } balance is {}", accountId, balance);
+        log.debug("Account {} balance is {}", accountId, balance);
         return balance.toTinybars();
     }
 

@@ -38,12 +38,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -63,7 +61,6 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         loadAddressBook("test-v6-sidecar-4n.bin");
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void sidecarDisabled() {
         sidecarProperties.setEnabled(false);
@@ -84,7 +81,6 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void sidecarTypesFilter() {
         // The test sidecar file has CONTRACT_BYTECODE and CONTRACT_STATE_CHANGE
@@ -101,8 +97,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
-        super.verifyStreamFiles(List.of(file1, file2), s -> {
-            var actual = (RecordFile) s;
+        super.verifyStreamFiles(List.of(file1, file2), actual -> {
             var transactionSidecarRecords = actual.getItems()
                     .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
                     .collectList()
@@ -112,7 +107,6 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void sidecarTypesFilterSome() {
         sidecarProperties.setPersistBytes(true);
@@ -121,8 +115,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
-        verifyStreamFiles(List.of(file1, file2), s -> {
-            var recordFile = (RecordFile) s;
+        verifyStreamFiles(List.of(file1, file2), recordFile -> {
             var sidecarTypes = recordFile.getItems()
                     .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
                     .map(TransactionSidecarRecord::getSidecarRecordsCase)
@@ -196,11 +189,9 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                 .collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
-        extraAsserts = ArrayUtils.add(extraAsserts, s -> {
-            var recordFile = (RecordFile) s;
+    protected void verifyStreamFiles(List<String> files, Consumer<RecordFile> extraAssert) {
+        Consumer<RecordFile> recordAssert = recordFile -> {
             var recordItems = recordFile.getItems().collectList().block();
             if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
                 assertThat(recordItems)
@@ -222,7 +213,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
             } else {
                 assertThat(recordItems).flatMap(RecordItem::getSidecarRecords).isEmpty();
             }
-        });
-        super.verifyStreamFiles(files, extraAsserts);
+        };
+        super.verifyStreamFiles(files, recordAssert.andThen(extraAssert));
     }
 }

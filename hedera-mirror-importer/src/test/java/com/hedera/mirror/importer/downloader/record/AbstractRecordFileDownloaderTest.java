@@ -33,13 +33,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 
-import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
@@ -97,10 +95,8 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile<?>>... extraAsserts) {
-        extraAsserts = ArrayUtils.add(extraAsserts, s -> {
-            var recordFile = (RecordFile) s;
+    protected void verifyStreamFiles(List<String> files, Consumer<RecordFile> extraAssert) {
+        Consumer<RecordFile> recordAssert = recordFile -> {
             var expected = recordFileMap.get(recordFile.getName());
             assertAll(
                     () -> assertThat(recordFile)
@@ -110,8 +106,8 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
                             .containsExactlyInAnyOrderElementsOf(expected.getSidecars())
                             .allMatch(sidecar -> sidecarProperties.isPersistBytes() ^ (sidecar.getBytes() == null))
             );
-        });
-        super.verifyStreamFiles(files, extraAsserts);
+        };
+        super.verifyStreamFiles(files, recordAssert.andThen(extraAssert));
     }
 
     @Test

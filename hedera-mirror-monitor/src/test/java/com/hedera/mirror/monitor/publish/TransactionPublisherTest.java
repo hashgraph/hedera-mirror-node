@@ -31,13 +31,12 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
+import lombok.CustomLog;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +68,7 @@ import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
-@Log4j2
+@CustomLog
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TransactionPublisherTest {
@@ -120,12 +119,11 @@ class TransactionPublisherTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publish() {
         PublishRequest request = request().build();
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
         transactionPublisher.publish(request)
                 .as(StepVerifier::create)
@@ -142,12 +140,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithLogResponse() {
         publishScenarioProperties.setLogResponse(true);
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -156,12 +153,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithReceipt() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().receipt(true).build())
                 .as(StepVerifier::create)
@@ -174,12 +170,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishWithRecord() {
-        cryptoServiceStub.addQueries(Mono.just(record(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(record(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().sendRecord(true).build())
                 .as(StepVerifier::create)
@@ -192,12 +187,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishPreCheckError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)));
+        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -207,12 +201,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetrySuccessful() {
-        cryptoServiceStub.addTransactions(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)),
-                Mono.just(response(ResponseCodeEnum.OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)))
+                .addTransaction(Mono.just(response(ResponseCodeEnum.OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -221,13 +214,12 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
-                Mono.just(response(errorResponseCode)));
+        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)))
+                .addTransaction(Mono.just(response(errorResponseCode)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -239,13 +231,12 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(2L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishRetrySameRequest() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
-                Mono.just(response(errorResponseCode)));
+        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)))
+                .addTransaction(Mono.just(response(errorResponseCode)));
 
         var request = request().build();
         transactionPublisher.publish(request)
@@ -257,7 +248,7 @@ class TransactionPublisherTest {
                         .hasMessageContaining(errorResponseCode.toString()))
                 .verify(Duration.ofSeconds(2L));
 
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         transactionPublisher.publish(request)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -265,12 +256,11 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     @Timeout(3)
     void publishTimeout() {
         publishScenarioProperties.setTimeout(Duration.ofMillis(100L));
-        cryptoServiceStub.addTransactions(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -289,7 +279,8 @@ class TransactionPublisherTest {
 
         transactionPublisher.publish(request)
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertThat(t).isInstanceOf(PublishException.class).hasCauseInstanceOf(IllegalArgumentException.class))
+                .expectErrorSatisfies(t -> assertThat(t).isInstanceOf(PublishException.class)
+                        .hasCauseInstanceOf(IllegalArgumentException.class))
                 .verify(Duration.ofSeconds(1L));
     }
 
@@ -347,15 +338,13 @@ class TransactionPublisherTest {
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
 
-        @SuppressWarnings("unchecked") // due to parameterized vararg
-        CryptoServiceStub addQueries(Mono<Response>... query) {
-            queries.addAll(Arrays.asList(query));
+        CryptoServiceStub addQuery(Mono<Response> query) {
+            queries.add(query);
             return this;
         }
 
-        @SuppressWarnings("unchecked") // due to parameterized vararg
-        CryptoServiceStub addTransactions(Mono<TransactionResponse>... transaction) {
-            transactions.addAll(Arrays.asList(transaction));
+        CryptoServiceStub addTransaction(Mono<TransactionResponse> transaction) {
+            transactions.add(transaction);
             return this;
         }
 
