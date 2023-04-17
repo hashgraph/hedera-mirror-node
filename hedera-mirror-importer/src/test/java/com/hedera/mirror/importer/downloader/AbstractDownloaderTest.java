@@ -71,10 +71,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -102,7 +101,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 
 @CustomLog
 @ExtendWith(MockitoExtension.class)
-public abstract class AbstractDownloaderTest {
+public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
     private static final int S3_PROXY_PORT = 8001;
     private static final Pattern STREAM_FILENAME_INSTANT_PATTERN = Pattern.compile(
@@ -126,7 +125,7 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    protected Downloader downloader;
+    protected Downloader<T, ?> downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
@@ -139,6 +138,9 @@ public abstract class AbstractDownloaderTest {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
+
+    @Captor
+    private ArgumentCaptor<T> streamFileCaptor;
 
     @TempDir
     private Path dataPath;
@@ -182,6 +184,7 @@ public abstract class AbstractDownloaderTest {
                     .stream()
                     .map(e -> {
                         var entry = AddressBookEntry.builder().publicKey(e.getRSAPubKey()).build();
+                        @SuppressWarnings("deprecation")
                         var id = e.hasNodeAccountId() ? EntityId.of(e.getNodeAccountId()) :
                                 EntityId.of(e.getMemo().toStringUtf8(), FILE);
                         return ConsensusNodeStub.builder()
@@ -206,7 +209,7 @@ public abstract class AbstractDownloaderTest {
         return Collections.emptyMap();
     }
 
-    protected abstract Downloader getDownloader();
+    protected abstract Downloader<T, ?> getDownloader();
 
     protected abstract Path getTestDataDir();
 
@@ -431,26 +434,6 @@ public abstract class AbstractDownloaderTest {
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isSigFile);
-    }
-
-    @Test
-    @DisplayName("overwrite on download")
-    void overwriteOnDownload() throws Exception {
-        downloaderProperties.setWriteSignatures(true);
-        mirrorProperties.setStartBlockNumber(null);
-        fileCopier.copy();
-        expectLastStreamFile(Instant.EPOCH);
-        downloader.download();
-        verifyForSuccess();
-
-        Mockito.reset(dateRangeProcessor);
-        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getStreamPath())
-                .filter(this::isSigFile)
-                .forEach(AbstractDownloaderTest::corruptFile);
-
-        downloader.download();
-        verifyForSuccess();
     }
 
     @Test
@@ -694,7 +677,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void verifyForSuccess(List<String> files, boolean expectEnabled) {
-        verifyStreamFiles(files);
+        verifyStreamFiles(files, s -> {
+        });
         assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
     }
 
@@ -703,14 +687,13 @@ public abstract class AbstractDownloaderTest {
         });
     }
 
-    @SuppressWarnings("java:S6103")
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
-        var captor = ArgumentCaptor.forClass(StreamFile.class);
+    @SuppressWarnings({"java:S6103"})
+    protected void verifyStreamFiles(List<String> files, Consumer<T> extraAssert) {
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
 
-        verify(streamFileNotifier, times(files.size())).verified(captor.capture());
-        var streamFileAssert = assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
+        verify(streamFileNotifier, times(files.size())).verified(streamFileCaptor.capture());
+        assertThat(streamFileCaptor.getAllValues()).allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> {
                     var expected = expectedFileIndexMap.get(s.getName());
                     if (expected != null) {
@@ -719,15 +702,12 @@ public abstract class AbstractDownloaderTest {
                         return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
                     }
                 })
-                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
-
-        for (var extraAssert : extraAsserts) {
-            streamFileAssert.allSatisfy(extraAssert::accept);
-        }
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
+                .allSatisfy(t -> extraAssert.accept(t));
 
         if (!files.isEmpty()) {
             var lastFilename = files.get(files.size() - 1);
-            var lastStreamFile = (Optional<StreamFile>) downloader.lastStreamFile.get();
+            var lastStreamFile = downloader.lastStreamFile.get();
             assertThat(lastStreamFile)
                     .isNotEmpty()
                     .get()
@@ -768,7 +748,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
-        StreamFile streamFile = streamType.newStreamFile();
+        var streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);

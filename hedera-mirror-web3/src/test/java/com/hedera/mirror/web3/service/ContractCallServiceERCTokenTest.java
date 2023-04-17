@@ -95,7 +95,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     @Test
     void unsupportedApprovePrecompileTest() {
         final var functionHash =
-                functionEncodeDecoder.functionHashFor("allowance", ABI_PATH, new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS});
+                functionEncodeDecoder.functionHashFor("allowance", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
@@ -105,7 +105,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     @Test
     void unsupportedIsApprovedForAllPrecompileTest() {
         final var functionHash =
-                functionEncodeDecoder.functionHashFor("isApprovedForAll", ABI_PATH, new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS});
+                functionEncodeDecoder.functionHashFor("isApprovedForAll", ABI_PATH, NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).

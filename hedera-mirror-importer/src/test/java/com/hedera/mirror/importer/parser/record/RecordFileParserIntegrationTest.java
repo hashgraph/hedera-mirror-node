@@ -127,7 +127,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertEquals(entityCount, entityRepository.count());
 
         Iterable<RecordFile> recordFiles = recordFileRepository.findAll();
-        assertThat(recordFiles).usingElementComparatorOnFields("name").
+        assertThat(recordFiles).usingRecursiveFieldByFieldElementComparatorOnFields("name").
                 containsExactlyInAnyOrderElementsOf(
                         Arrays.stream(recordFileDescriptors).map(RecordFileDescriptor::getRecordFile).collect(
                                 Collectors.toList()))

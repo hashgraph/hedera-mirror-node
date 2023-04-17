@@ -119,6 +119,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
         return RecordItem.builder().transactionRecord(createRecord).transaction(updateTransaction).build();
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoCreateTransaction() {
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
@@ -134,6 +135,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
                 .setSendRecordThreshold(3000L));
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoUpdateTransaction(AccountID accountNum) {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
                 .setAccountIDToUpdate(accountNum)

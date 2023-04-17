@@ -214,6 +214,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         return fileDataRepository.save(fileData);
     }
 
+    @SuppressWarnings("deprecation")
     private void assertAddressBook(AddressBook actual, NodeAddressBook expected) {
         ListAssert<AddressBookEntry> listAssert = assertThat(actual.getEntries())
                 .hasSize(expected.getNodeAddressCount());

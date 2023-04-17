@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -167,7 +168,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return CryptoTransferTransactionSupplier.class;
     }
 }

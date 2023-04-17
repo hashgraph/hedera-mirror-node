@@ -80,13 +80,12 @@ public class ScheduleFeature {
                 .getCryptoTransferTransaction(
                         accountClient.getTokenTreasuryAccount().getAccountId(),
                         recipient.getAccountId(),
-                        Hbar.fromTinybars(DEFAULT_TINY_HBAR),
-                        false);
+                        Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
         createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) {
+    private void createNewSchedule(Transaction<?> transaction, KeyList innerSignatureKeyList) {
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),

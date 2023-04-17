@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -53,7 +54,7 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ScheduleDeleteTransactionSupplier.class;
     }
 }

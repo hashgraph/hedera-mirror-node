@@ -116,7 +116,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
 
         // then
         assertThat(retrieveEntities())
-                .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 

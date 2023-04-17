@@ -2296,7 +2296,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private TokenAccount getTokenAccount(EntityId tokenId, EntityId accountId, Long createdTimestamp,
                                          Boolean associated, Boolean autoAssociated, long balance,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
-                                         Range timestampRange) {
+                                         Range<Long> timestampRange) {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(accountId.getId());
         tokenAccount.setAssociated(associated);
