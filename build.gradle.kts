@@ -33,7 +33,7 @@ extra.apply {
     set("mapStructVersion", "1.5.3.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.22.2")
-    set("reactorGrpcVersion", "1.2.3")
+    set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.1")
