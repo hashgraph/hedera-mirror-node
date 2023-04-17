@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import javax.inject.Named;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
 @Data
 @Named
@@ -55,5 +56,12 @@ public class ContractCallResponse {
     public String getResultAsText() {
         var bytes = getResultAsBytes().toArrayUnsafe();
         return new String(bytes, StandardCharsets.UTF_8).trim();
+    }
+
+    public String getResultAsAsciiString() {
+        // 1st 32 bytes - string info
+        // 2nd 32 bytes - data length in the last 32 bytes
+        // 3rd 32 bytes - actual string suffixed with zeroes
+        return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
 }

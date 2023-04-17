@@ -27,7 +27,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +35,12 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.retry.annotation.EnableRetry;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
@@ -109,8 +107,11 @@ public class ClientConfiguration {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setCacheControl(CacheControl.noStore());
                 })
-                .filter((request, next) -> next.exchange(request).doOnNext(response ->
-                        logger.info("{} {}: {}", request.method(), request.url(), response.statusCode()))
+                .filter((request, next) -> next.exchange(request).doOnNext(response -> {
+                            if (logger.isDebugEnabled() || response.statusCode() != HttpStatus.NOT_FOUND) {
+                                logger.info("{} {}: {}", request.method(), request.url(), response.statusCode());
+                            }
+                        })
                 )
                 .build();
     }

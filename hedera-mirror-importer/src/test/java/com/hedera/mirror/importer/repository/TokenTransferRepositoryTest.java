@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 class TokenTransferRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenTransferRepository tokenTransferRepository;
+
+    @Test
+    void findByConsensusTimestamp() {
+        var tokenTransfer1 = domainBuilder.tokenTransfer().persist();
+        var tokenTransfer2 = domainBuilder.tokenTransfer()
+                .customize(t -> {
+                    var id = tokenTransfer1.getId().toBuilder()
+                            .accountId(domainBuilder.entityId(EntityType.ACCOUNT)).build();
+                    t.id(id);
+                })
+                .persist();
+        var tokenTransfer3 = domainBuilder.tokenTransfer().persist();
+
+        assertThat(tokenTransferRepository.findByConsensusTimestamp(tokenTransfer1.getId().getConsensusTimestamp()))
+                .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2);
+        assertThat(tokenTransferRepository.findByConsensusTimestamp(tokenTransfer3.getId().getConsensusTimestamp()))
+                .containsExactly(tokenTransfer3);
+        assertThat(tokenTransferRepository.findByConsensusTimestamp(tokenTransfer3.getId().getConsensusTimestamp() + 1))
+                .isEmpty();
+    }
 
     @Test
     void prune() {

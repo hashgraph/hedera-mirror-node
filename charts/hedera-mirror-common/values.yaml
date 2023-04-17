@@ -368,13 +368,16 @@ testkube:
   enabled: false
   namespace: testkube
   test:
-    duration: 600s
+    duration: 300s
+    extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
     target:
       namespace: ""
       release: mirror
     vus: 500
+  trigger:
+    enabled: false
 
 traefik:
   affinity:

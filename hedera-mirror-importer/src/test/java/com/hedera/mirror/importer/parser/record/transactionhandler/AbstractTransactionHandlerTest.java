@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.BoolValue;
@@ -31,6 +33,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -79,6 +84,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -107,6 +113,7 @@ abstract class AbstractTransactionHandlerTest {
     protected final Logger log = LogManager.getLogger(getClass());
 
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
+    protected final EntityProperties entityProperties = new EntityProperties();
 
     protected TransactionHandler transactionHandler;
 
@@ -119,11 +126,18 @@ abstract class AbstractTransactionHandlerTest {
     @Mock
     protected EntityRepository entityRepository;
 
+    @Mock
+    protected SyntheticContractLogService syntheticContractLogService;
+
     @Captor
     protected ArgumentCaptor<Entity> entityCaptor;
 
     protected static Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
+    }
+
+    protected static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
     }
 
     protected final <T> T assertArg(Consumer<T> asserter) {
@@ -227,6 +241,7 @@ abstract class AbstractTransactionHandlerTest {
                     // when
                     var transaction = new com.hedera.mirror.common.domain.transaction.Transaction();
                     transaction.setEntityId(testSpec.getExpected().toEntityId());
+                    transaction.setConsensusTimestamp(CREATED_TIMESTAMP_NS);
                     Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
                     verify(entityListener).onEntity(entityCaptor.capture());
@@ -235,6 +250,21 @@ abstract class AbstractTransactionHandlerTest {
                     assertThat(entityCaptor.getValue()).isEqualTo(testSpec.getExpected());
                 }
         );
+    }
+
+    @Test
+    void updateTransactionUnsuccessful() {
+        // Given
+        var transactionRecord = getDefaultTransactionRecord();
+        transactionRecord.getReceiptBuilder().setStatus(INSUFFICIENT_PAYER_BALANCE);
+        var recordItem = getRecordItem(getDefaultTransactionBody().build(), transactionRecord.build());
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 
     protected void testGetEntityIdHelper(
@@ -548,9 +578,5 @@ abstract class AbstractTransactionHandlerTest {
         String description;
         AbstractEntity expected;
         RecordItem recordItem;
-    }
-
-    protected static Stream<EntityId> provideEntities() {
-        return Stream.of(null, EntityId.EMPTY);
     }
 }

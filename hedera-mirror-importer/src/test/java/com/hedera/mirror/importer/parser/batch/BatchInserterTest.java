@@ -220,7 +220,7 @@ class BatchInserterTest extends IntegrationTest {
                 .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(0L, 1L, 4L, EntityType.TOKEN), EntityId
                         .of(0L, 1L, 2L, EntityType.ACCOUNT)))
                 .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
-                .tokenDissociate(false)).get();
+                .deletedTokenDissociate(false)).get();
     }
 
     private Transaction transaction(long consensusNs) {

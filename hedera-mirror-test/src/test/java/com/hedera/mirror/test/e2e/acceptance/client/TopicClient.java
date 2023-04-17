@@ -72,13 +72,11 @@ public class TopicClient extends AbstractNetworkClient {
             consensusTopicCreateTransaction.setSubmitKey(submitKey);
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
-                        KeyList.of(adminAccount.getPrivateKey()));
-        TopicId topicId = networkTransactionResponse.getReceipt().topicId;
-        log.debug("Created new topic {}", topicId);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(adminAccount.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, keyList);
+        var topicId = response.getReceipt().topicId;
+        log.info("Created new topic {} with memo '{}' via {}", topicId, memo, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse updateTopic(TopicId topicId) {
@@ -92,11 +90,9 @@ public class TopicClient extends AbstractNetworkClient {
                 .clearAutoRenewAccountId()
                 .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
-
-        log.debug("Updated topic '{}'.", topicId);
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
+        log.info("Updated topic {} with memo '{}' via {}", topicId, memo, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse deleteTopic(TopicId topicId) {
@@ -104,12 +100,9 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId)
                 .setTransactionMemo(getMemo("Delete Topic"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
-
-        log.debug("Deleted topic : '{}'.", topicId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
+        log.info("Deleted topic {} via {}", topicId, response.getTransactionId());
+        return response;
     }
 
     public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
