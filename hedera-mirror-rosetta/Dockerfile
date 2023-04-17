@@ -1,10 +1,12 @@
-FROM golang:1.20.2-bullseye as build
+FROM --platform=$BUILDPLATFORM golang:1.20.2-bullseye as build
+ARG TARGETARCH
+ARG TARGETOS
 ARG VERSION=development
 WORKDIR /app
 COPY go.* ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
 
 FROM debian:bullseye-slim
 ENV DEBIAN_FRONTEND=noninteractive
