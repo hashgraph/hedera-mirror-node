@@ -24,21 +24,18 @@ import lombok.NonNull;
 
 /** A CachingStateFrame that answers reads by getting entities from some other source - a database! - and
  * disallows all local updates/deletes. */
-@SuppressWarnings(
-        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
-// literals
 public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
 
     @NonNull
-    final Map<Class<?>, GroundTruthAccessor<K, ?>> databaseAccessors;
+    final Map<Class<?>, DatabaseAccessor<K, ?>> databaseAccessors;
 
     public DatabaseBackedStateFrame(
-            @NonNull final List<GroundTruthAccessor<K, ?>> accessors, @NonNull final Class<?>[] valueClasses) {
+            @NonNull final List<DatabaseAccessor<K, ?>> accessors, @NonNull final Class<?>[] valueClasses) {
         super(
                 Optional.empty(),
                 valueClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
 
-        databaseAccessors = accessors.stream().collect(Collectors.toMap(GroundTruthAccessor::getVClass, a -> a));
+        databaseAccessors = accessors.stream().collect(Collectors.toMap(DatabaseAccessor::getValueClass, a -> a));
     }
 
     @Override
