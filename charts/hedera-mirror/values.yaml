@@ -64,8 +64,8 @@ citus:
   architecture: replication
   enabled: false
   image:
-    repository: xinatswirlds/citus
-    tag: 11.2.0-pg14
+    repository: mirrornodeswirldslabs/citus
+    tag: 11.2.0
   nameOverride: citus
   primary:
     args:
