@@ -39,9 +39,7 @@ import lombok.NonNull;
  *
  * @param <K> key type
  */
-@SuppressWarnings(
-        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
-// literals
+
 public class UpdatableReferenceCache<K> {
 
     @NonNull
