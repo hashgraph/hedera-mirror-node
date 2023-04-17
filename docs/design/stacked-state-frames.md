@@ -16,7 +16,7 @@ A _stacked state frames_ is a multi-level cache that provides "layered" "frame-b
 
 The most **up**stream cache is simply a pass-through-only accessor of
 ground truth - usually to a database. Given a key it will call the
-ground truth provider and return whatever is the there - either an actual
+accessor and return whatever is the there - either an actual
 value, or "missing".
 
 The database layer does no _caching_ at all, but stacked on top of it is

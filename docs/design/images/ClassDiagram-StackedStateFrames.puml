@@ -47,7 +47,7 @@ interface Accessor<K,V> {
   +delete(key)
 }
 
-interface GroundTruthAccessor<K,V> {
+interface DatabaseAccessor<K,V> {
   +Optional<V> get(key)
 }
 
@@ -67,7 +67,7 @@ ROCachingStateFrame <|-- RWCachingStateFrame
 CachingStateFrame <|-- ROCachingStateFrame
 CachingStateFrame <|-- DatabaseBackedStateFrame
 CachingStateFrame o-left- Accessor : gets //strongly-typed//\nvalues for
-StackedStateFrames::StackedStateFrames o-left- GroundTruthAccessor : gets database\nvalues for
+StackedStateFrames::StackedStateFrames o-left- DatabaseAccessor : gets database\nvalues for
 
 skinparam groupInheritance 2
 @enduml
