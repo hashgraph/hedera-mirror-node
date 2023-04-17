@@ -75,7 +75,7 @@ class RWCachingStateFrameTest {
             thisS,
             downC,
             downS
-        };
+        }
 
         final EnumMap<CacheKind, UpdatableReferenceCache<Integer>> caches = new EnumMap<>(CacheKind.class);
 
