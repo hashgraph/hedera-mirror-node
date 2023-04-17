@@ -30,7 +30,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("mapStructVersion", "1.5.3.Final")
+    set("mapStructVersion", "1.5.4.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.4")
