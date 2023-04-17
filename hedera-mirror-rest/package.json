@@ -19,7 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@godaddy/terminus": "^4.11.2",
+    "@godaddy/terminus": "^4.12.0",
     "@hashgraph/proto": "^2.12.0",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1353.0",
