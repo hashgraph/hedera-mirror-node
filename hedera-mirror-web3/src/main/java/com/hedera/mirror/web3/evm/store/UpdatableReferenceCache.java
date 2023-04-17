@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.hedera;
+package com.hedera.mirror.web3.evm.store;
 
-import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState;
-import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.Entry;
+import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState;
+import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.NonNull;
@@ -39,7 +39,6 @@ import lombok.NonNull;
  *
  * @param <K> key type
  */
-
 public class UpdatableReferenceCache<K> {
 
     @NonNull
@@ -71,7 +70,7 @@ public class UpdatableReferenceCache<K> {
             case NOT_YET_FETCHED -> original.put(key, value);
             case MISSING, PRESENT -> throw new IllegalArgumentException("Trying to override a lower-level entry");
             case UPDATED, DELETED -> throw new IllegalArgumentException("Trying to override an updated entry");
-            case INVALID -> throw new IllegalArgumentException("Trying to do something in an invalid state");
+            case INVALID -> throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -96,7 +95,7 @@ public class UpdatableReferenceCache<K> {
                 current.put(key, value);
                 break;
             case INVALID:
-                throw new IllegalArgumentException("Trying to do something in an invalid state");
+                throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -112,7 +111,7 @@ public class UpdatableReferenceCache<K> {
                     "Trying to delete a value that hasn't been fetched");
             case MISSING, DELETED -> throw new IllegalArgumentException(
                     "Trying to delete a missing/already deleted value");
-            case INVALID -> throw new IllegalArgumentException("Trying to do something in an invalid state");
+            case INVALID -> throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -130,4 +129,6 @@ public class UpdatableReferenceCache<K> {
     protected Entry getCacheLineState(@NonNull final K key) {
         return cacheLineStateIdentification.get(original, current, key);
     }
+
+    private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
 }

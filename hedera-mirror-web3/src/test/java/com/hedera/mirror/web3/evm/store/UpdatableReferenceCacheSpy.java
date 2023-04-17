@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.hedera;
+package com.hedera.mirror.web3.evm.store;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -80,7 +80,7 @@ public class UpdatableReferenceCacheSpy extends UpdatableReferenceCache<String> 
         return current;
     }
 
-    public static record Counts(int read, int updated, int deleted) {
+    public record Counts(int read, int updated, int deleted) {
         public static Counts of(int r, int u, int d) {
             return new Counts(r, u, d);
         }

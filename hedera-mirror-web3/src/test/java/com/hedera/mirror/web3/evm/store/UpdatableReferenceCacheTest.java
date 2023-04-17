@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.hedera;
+package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.ValueState;
+import static com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.ValueState;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.Entry;
+import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -177,8 +177,7 @@ class UpdatableReferenceCacheTest {
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
         sut.update(THIS_KEY, NEW_VALUE);
-        softly.assertThat(sut.get(THIS_KEY))
-                .isEqualTo(new Entry(ValueState.UPDATED, NEW_VALUE));
+        softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(ValueState.UPDATED, NEW_VALUE));
         softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
     }
 
@@ -339,8 +338,7 @@ class UpdatableReferenceCacheTest {
     }
 
     /** Verify that some object is either null or of some specific type, returning that object cast appropriately (or
-     * else throwing IllegalArgumentException. */
-    // TODO: Move to utils class
+     * else throwing IllegalArgumentException). */
     @SuppressWarnings("unchecked") // OK because unchecked cast is immediately preceded by type check
     <T> T verifyIsCorrectTypeOrNull(
             @NonNull final Class<T> klass, @Nullable final Object obj, @NonNull final String customMessage) {
@@ -360,7 +358,6 @@ class UpdatableReferenceCacheTest {
     /** Throw an exception (with message) in the context of an _expression_ (where a `throw` statement by itself is
      * not acceptable).
      */
-    // TODO: Move to utils class
     <T> T throwException(@NonNull final Class<?> exceptionKlass, @NonNull final String message) {
         if (!(RuntimeException.class.isAssignableFrom(exceptionKlass)))
             throw new IllegalArgumentException(

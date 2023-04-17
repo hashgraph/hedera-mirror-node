@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.hedera.impl;
+package com.hedera.mirror.web3.evm.store.impl;
 
 import java.util.List;
 import java.util.Map;
