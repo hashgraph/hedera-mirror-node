@@ -44,6 +44,7 @@ import {
 const baseUrl = __ENV.BASE_URL;
 const baseUrlPrefix = __ENV.BASE_URL_PREFIX;
 
+setEnvDefault('DEFAULT_BALANCE_TIMESTAMP', Date.now() / 1000);
 setEnvDefault('DEFAULT_START_ACCOUNT', 0);
 
 const restUrlFromNext = (next) => next && `${baseUrl}${next}`;
@@ -365,6 +366,7 @@ const allHandlers = [
 const setupTestParameters = (requiredParameters) => {
   const testParameters = {
     BASE_URL_PREFIX: baseUrlPrefix,
+    DEFAULT_BALANCE_TIMESTAMP: __ENV['DEFAULT_BALANCE_TIMESTAMP'],
     DEFAULT_LIMIT: __ENV['DEFAULT_LIMIT'],
   };
   Object.assign(testParameters, computeTestParameters(requiredParameters, allHandlers));

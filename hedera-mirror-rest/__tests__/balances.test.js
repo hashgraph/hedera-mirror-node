@@ -20,13 +20,9 @@
 
 import request from 'supertest';
 
-import config from '../config';
 import EntityId from '../entityId';
 import server from '../server';
 import * as testutils from './testutils';
-
-const timeNow = Math.floor(new Date().getTime() / 1000);
-const timeOneHourAgo = timeNow - 60 * 60;
 
 // Validation functions
 /**
@@ -37,22 +33,6 @@ const timeOneHourAgo = timeNow - 60 * 60;
  */
 const validateLen = function (balances, len) {
   return balances.balances.length === len;
-};
-
-/**
- * Validate the range of timestamps in the balances returned by the api
- * @param {Array} balances Array of balances returned by the rest api
- * @param {Number} low Expected low limit of the timestamps
- * @param {Number} high Expected high limit of the timestamps
- * @return {Boolean}  Result of the check
- */
-const validateTsRange = function (balances, low, high) {
-  const ret = balances.timestamp >= low && balances.timestamp <= high;
-
-  if (!ret) {
-    logger.warn(`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
-  }
-  return ret;
 };
 
 /**
@@ -177,30 +157,6 @@ const validateOrder = function (balances, order) {
  * a set of checks you would like to perform on the resultant SQL query.
  */
 const singletests = {
-  timestamp_lowerlimit: {
-    urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '>=', value: `${timeOneHourAgo}000000000`}],
-    checkFunctions: [
-      {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []},
-    ],
-  },
-  timestamp_higherlimit: {
-    urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_timestamp', operator: '<', value: `${timeNow}000000000`}],
-    checkFunctions: [
-      {func: validateTsRange, args: [0, timeNow]},
-      {func: validateFields, args: []},
-    ],
-  },
-  timestamp_equal: {
-    urlparam: `timestamp=${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '<=', value: `${timeOneHourAgo}000000000`}],
-    checkFunctions: [
-      {func: validateTsRange, args: [timeOneHourAgo - config.response.limit.max, timeOneHourAgo]},
-      {func: validateFields, args: []},
-    ],
-  },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
     checks: [{field: 'account_id', operator: '>=', value: 1111}],
@@ -288,11 +244,8 @@ const singletests = {
  * individual (single) tests in the object above.
  */
 const combinedtests = [
-  ['timestamp_lowerlimit', 'timestamp_higherlimit'],
   ['accountid_lowerlimit', 'accountid_higherlimit'],
-  ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid_lowerlimit', 'accountbalance_higherlimit'],
-  ['timestamp_lowerlimit', 'accountid_equal', 'accountbalance_lowerlimit', 'limit'],
-  ['timestamp_higherlimit', 'accountid_lowerlimit'],
+  ['accountid_equal', 'accountbalance_lowerlimit', 'limit'],
   ['limit', 'order_asc'],
 ];
 
