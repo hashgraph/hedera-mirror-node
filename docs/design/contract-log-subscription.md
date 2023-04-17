@@ -53,7 +53,7 @@ in order to provide contract log notifications in almost real time.
 
 "Represents a Hedera Contract Log event"
 type ContractLogEvent {
-  "The address from which this log originated in the account-num alias format"
+  "The evm address (if available, otherwise the account-num alias) from which this log originated"
   address: String!
 
   "The hash of the block in which the transaction was included"
@@ -133,37 +133,48 @@ public class ContractController {
 @Service
 public class ContractLogTopicListener {
   private final Flux<ContractLogEvent> contractLogs;
+  private final AtomicLong subscriberCount;
+  // LRU Cache of 1000
+  private final CacheLoader<EntityId, String> contractIdToOutputAddress;
 
   /**
    * Verifies can subscribe and returns error response if not
    * Uses shared lazy subscription to contractLogs
    * On backpressure overflow, drop messages
    * Filter events via addresses and/or topics param
+   * Maps address to output address using contractIdToOutputAddress
    * calls unsubscribe on termination.
    * */
   public Flux<ContractLogEvent> listen(ContractLogSubscription subscription) {
   }
 
   /**
-   * Filters messages by addresses and topics
+   * Filters messages by address and topics.
+   * Addresses should be filtered using account-num alias format
    * */
   private boolean filterMessage(ContractLogEvent contractLogEvent, ContractLogSubscription subscription) {
   }
 
   /**
-   * Checks subscriber count is less than maxActiveSubscriptions
+   * Checks subscriberCount is less than maxActiveSubscriptions
    * contract with evm address in filter exists
    * we detect if this address input is account-num alias or evm address
    * alias and query the entity table for the latter to map it to its account-num alias.
+   * Add entry to contractIdToOutputAddress
    * */
   private boolean canSubscribe(ContractLogSubscription subscription) {
   }
 
   /**
-   * Remove entry from cached listeners
-   * Decrement subscription count
+   * Decrement subscriberCount
    */
   private void unsubscribe() {
+  }
+
+  /**
+   * Increment subscriberCount
+   */
+  private void onSubscribe(ContractLogSubscription subscription) {
   }
 
 }
@@ -191,8 +202,17 @@ Addresses and topics are both optional filters
 {
   contractLogs(subscription: {
     addresses: ["EVM_ADDRESS_ALIAS OR ACCOUNT_NUM_ALIAS"],
-    topics: [
-      "ARRAY_OF_CONTRACT_TOPIC_IDS"
+    topic0: [
+      "ARRAY_OF_CONTRACT_TOPICS"
+    ],
+    topic1: [
+      "ARRAY_OF_CONTRACT_TOPICS"
+    ],
+    topic2: [
+      "ARRAY_OF_CONTRACT_TOPICS"
+    ],
+    topic3: [
+      "ARRAY_OF_CONTRACT_TOPICS"
     ]
   }) {
     address
