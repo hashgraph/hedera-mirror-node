@@ -33,14 +33,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.LongFunction;
 import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -94,22 +92,18 @@ public class ContractCallService {
         validateTxnResult(initialCallResult, ETH_ESTIMATE_GAS);
         final long gasUsedByInitialCall = initialCallResult.getGasUsed();
 
-        long estimatedGas =
-                binarySearch(
-                        gas -> doProcessCall(params, gas),
-                        gasUsedByInitialCall,
-                        params.getGas());
+        long estimatedGas = binarySearch(params, gasUsedByInitialCall, params.getGas());
 
         return Long.toHexString(estimatedGas);
     }
 
     /**Feature work: move to another class and compare performance with interpolation algo.
      */
-    private long binarySearch(LongFunction<HederaEvmTransactionProcessingResult> callProcessor, long lo, long hi) {
+    private long binarySearch(final CallServiceParameters params, long lo, long hi) {
         long prevGasLimit = lo;
         while (lo + 1 < hi) {
             long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = callProcessor.apply(mid);
+            HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params ,mid);
 
             boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();

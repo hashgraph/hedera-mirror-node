@@ -21,18 +21,14 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
-import static org.mockito.BDDMockito.given;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
-
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
@@ -51,6 +47,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
@@ -61,8 +60,6 @@ import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
-
     @Resource
     private WebTestClient webClient;
 
@@ -93,6 +90,8 @@ class ContractControllerTest {
     @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
     @ParameterizedTest
     void estimateGasWithInvalidGasParameter(long gas) {
+        final var errorString = gas < 21000L ? numberErrorString("gas", "greater", 21000L) :
+                numberErrorString("gas", "less", 15_000_000L);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
@@ -102,7 +101,9 @@ class ContractControllerTest {
                 .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(BAD_REQUEST);
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
@@ -282,25 +283,8 @@ class ContractControllerTest {
     }
 
     @Test
-    void callInvalidGas() {
-        final var errorString = negativeNumberErrorFrom("gas");
-        final var request = request();
-        request.setGas(-1L);
-
-        webClient.post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
-    }
-
-    @Test
     void callInvalidGasPrice() {
-        final var errorString = negativeNumberErrorFrom("gasPrice");
+        final var errorString = numberErrorString("gasPrice", "greater", 0);
         final var request = request();
         request.setGasPrice(-1L);
 
@@ -384,7 +368,7 @@ class ContractControllerTest {
         return request;
     }
 
-    private String negativeNumberErrorFrom(String field) {
-        return NEGATIVE_NUMBER_ERROR.replace("{}", field);
+    private String numberErrorString(String field, String direction ,long num) {
+        return String.format("%s field must be %s than or equal to %d", field, direction, num);
     }
 }

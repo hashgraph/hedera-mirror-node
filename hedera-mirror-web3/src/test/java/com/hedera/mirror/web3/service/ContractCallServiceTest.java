@@ -113,7 +113,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
-
     @Test
     void viewCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
@@ -203,7 +202,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() ->
                 contractCallService.processCall(params))
-                .isInstanceOf(InvalidParametersException.class).hasMessage("Invalid gas value");
+                .isInstanceOf(InvalidTransactionException.class).hasMessage("INSUFFICIENT_GAS");
     }
 
     @Test
