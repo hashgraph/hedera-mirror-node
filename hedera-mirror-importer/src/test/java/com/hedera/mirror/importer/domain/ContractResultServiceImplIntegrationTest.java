@@ -446,6 +446,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractResult(recordItem, false);
     }
 
+    @SuppressWarnings("deprecation")
     private void assertContractResult(RecordItem recordItem, boolean ethereum) {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList()

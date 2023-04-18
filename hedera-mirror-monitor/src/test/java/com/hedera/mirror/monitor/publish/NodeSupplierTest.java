@@ -34,7 +34,6 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -139,8 +138,8 @@ class NodeSupplierTest {
 
     @Test
     void init() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         nodeSupplier.init();
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         assertThat(nodeSupplier.get()).isEqualTo(node);
@@ -149,9 +148,10 @@ class NodeSupplierTest {
     @Test
     void initWithRetry() {
         monitorProperties.getNodeValidation().setRetryBackoff(Duration.ofMillis(100L));
-        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)),
-                Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)), Mono.just(response(OK)));
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
+                .addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
+                .addTransaction(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
         nodeSupplier.init();
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         assertThat(nodeSupplier.get()).isEqualTo(node);
@@ -231,15 +231,15 @@ class NodeSupplierTest {
     @Timeout(3)
     void validationRecovers() {
         // Given node validated as bad
-        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
         assertThat(nodeSupplier.validateNode(node)).isFalse();
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
 
         // When it recovers
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         assertThat(nodeSupplier.validateNode(node)).isTrue();
 
         // Then it is marked as healthy
@@ -262,13 +262,13 @@ class NodeSupplierTest {
             monitorProperties.setNodes(Set.of(node, node2));
 
             // Validate good node
-            cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-            cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+            cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+            cryptoServiceStub.addTransaction(Mono.just(response(OK)));
             assertThat(nodeSupplier.validateNode(node)).isTrue();
 
             // Validate bad node
-            cryptoServiceStub2.addQueries(Mono.just(receipt(FREEZE_UPGRADE_IN_PROGRESS)));
-            cryptoServiceStub2.addTransactions(Mono.just(response(OK)));
+            cryptoServiceStub2.addQuery(Mono.just(receipt(FREEZE_UPGRADE_IN_PROGRESS)));
+            cryptoServiceStub2.addTransaction(Mono.just(response(OK)));
             assertThat(nodeSupplier.validateNode(node2)).isFalse();
 
             // Then only good node returned
@@ -285,8 +285,8 @@ class NodeSupplierTest {
     @Test
     @Timeout(3)
     void validationSucceeds() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         assertThat(nodeSupplier.validateNode(node)).isTrue();
     }
 
@@ -314,12 +314,14 @@ class NodeSupplierTest {
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
 
-        void addQueries(Mono<Response>... query) {
-            queries.addAll(Arrays.asList(query));
+        CryptoServiceStub addQuery(Mono<Response> query) {
+            queries.add(query);
+            return this;
         }
 
-        void addTransactions(Mono<TransactionResponse>... transaction) {
-            transactions.addAll(Arrays.asList(transaction));
+        CryptoServiceStub addTransaction(Mono<TransactionResponse> transaction) {
+            transactions.add(transaction);
+            return this;
         }
 
         @Override

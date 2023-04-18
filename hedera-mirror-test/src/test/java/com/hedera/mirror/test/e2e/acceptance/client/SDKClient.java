@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import static com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork.OTHER;
 
+import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -158,6 +159,7 @@ public class SDKClient implements AutoCloseable {
     private void validateClient() throws InterruptedException, TimeoutException {
         var network = client.getNetwork();
         Map<String, AccountId> validNodes = new LinkedHashMap<>();
+        var stopwatch = Stopwatch.createStarted();
 
         for (var nodeEntry : network.entrySet()) {
             var endpoint = nodeEntry.getKey();
@@ -167,9 +169,13 @@ public class SDKClient implements AutoCloseable {
                 validNodes.putIfAbsent(endpoint, nodeAccountId);
                 log.trace("Added node {} at endpoint {} to list of valid nodes", nodeAccountId, endpoint);
             }
+
+            if (validNodes.size() >= acceptanceTestProperties.getMaxNodes()) {
+                break;
+            }
         }
 
-        log.info("Validated {} of {} nodes", validNodes.size(), network.size());
+        log.info("Validated {} of {} endpoints in {}", validNodes.size(), network.size(), stopwatch);
         if (validNodes.size() == 0) {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
@@ -191,6 +197,8 @@ public class SDKClient implements AutoCloseable {
                     .setAccountId(nodeAccountId)
                     .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
+                    .setMaxAttempts(3)
+                    .setMaxBackoff(Duration.ofSeconds(2))
                     .execute(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", nodeAccountId);
             valid = true;

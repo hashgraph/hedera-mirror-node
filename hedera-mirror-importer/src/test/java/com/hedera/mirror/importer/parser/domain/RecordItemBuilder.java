@@ -114,6 +114,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,20 +163,18 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
-    private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
+    private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
     private Instant now = Instant.now();
-
     {
         // Dynamically lookup method references for every transaction body builder in this class
-        TestUtils.gettersByType(this, Builder.class).forEach(s -> {
-            builders.put(s.get().type, s);
-        });
+        Collection<Supplier<Builder<?>>> suppliers = TestUtils.gettersByType(this, Builder.class);
+        suppliers.forEach(s -> builders.put(s.get().type, s));
     }
 
-    public Supplier<Builder> lookup(TransactionType type) {
+    public Supplier<Builder<?>> lookup(TransactionType type) {
         return builders.get(type);
     }
 
@@ -213,6 +212,7 @@ public class RecordItemBuilder {
         return contractCall(contractId());
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
@@ -231,6 +231,7 @@ public class RecordItemBuilder {
         return contractCreate(contractId());
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
@@ -278,6 +279,7 @@ public class RecordItemBuilder {
         return contractFunctionResult(contractId());
     }
 
+    @SuppressWarnings("deprecation")
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
                 .setAmount(5_000L)
@@ -310,6 +312,7 @@ public class RecordItemBuilder {
                 .setSenderId(accountId());
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
         var contractId = contractId();
         ContractUpdateTransactionBody.Builder transactionBody = ContractUpdateTransactionBody.newBuilder()
@@ -380,6 +383,7 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
         var builder = CryptoCreateTransactionBody.newBuilder()
                 .setAlias(bytes(20))
@@ -424,6 +428,7 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTOTRANSFER, cryptoTransferTransactionBody());
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<CryptoUpdateTransactionBody.Builder> cryptoUpdate() {
         var accountId = accountId();
         var builder = CryptoUpdateTransactionBody.newBuilder()
@@ -884,7 +889,7 @@ public class RecordItemBuilder {
         return TopicID.newBuilder().setTopicNum(id()).build();
     }
 
-    public class Builder<T extends GeneratedMessageV3.Builder> {
+    public class Builder<T extends GeneratedMessageV3.Builder<T>> {
 
         private final TransactionType type;
         private final T transactionBody;

@@ -23,6 +23,7 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -36,14 +37,15 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-
 @Setter
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean allowanceEnabled = false;
+
+    @Getter
+    private boolean approvedForAllEnabled = false;
 
     private boolean directTokenCall = true;
 

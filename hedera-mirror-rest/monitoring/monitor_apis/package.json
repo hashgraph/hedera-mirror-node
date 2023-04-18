@@ -33,7 +33,7 @@
   "devDependencies": {
     "jest": "^29.5.0",
     "nodemon": "^2.0.22",
-    "jest-junit": "^15.0.0",
+    "jest-junit": "^16.0.0",
     "jest-standard-reporter": "^2.0.0"
   },
   "jest-junit": {

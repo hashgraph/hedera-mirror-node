@@ -75,10 +75,10 @@ abstract class CsvBalanceFileReaderTest {
         balanceParserProperties = new BalanceParserProperties();
         balanceFile = TestUtils.getResource(balanceFilePath);
         parser = (AccountBalanceLineParser) ReflectUtils.newInstance(accountBalanceLineParserClass,
-                new Class[] {MirrorProperties.class},
+                new Class<?>[] {MirrorProperties.class},
                 new Object[] {mirrorProperties});
         balanceFileReader = (CsvBalanceFileReader) ReflectUtils.newInstance(balanceFileReaderClass,
-                new Class[] {BalanceParserProperties.class, accountBalanceLineParserClass},
+                new Class<?>[] {BalanceParserProperties.class, accountBalanceLineParserClass},
                 new Object[] {balanceParserProperties, parser});
         this.expectedCount = expectedCount;
     }

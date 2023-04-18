@@ -460,6 +460,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     @SneakyThrows
     protected void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
         builder.setAmount(10);

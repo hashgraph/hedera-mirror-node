@@ -26,13 +26,15 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
 
-class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest<EventFile> {
 
     @Override
     @BeforeEach
@@ -49,7 +51,7 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected Downloader<EventFile, EventItem> getDownloader() {
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         return new EventFileDownloader(consensusNodeService, (EventDownloaderProperties) downloaderProperties,
                 meterRegistry, dateRangeProcessor, nodeSignatureVerifier, signatureFileReader, streamFileNotifier,

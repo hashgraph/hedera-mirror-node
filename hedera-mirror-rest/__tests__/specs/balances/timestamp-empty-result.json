@@ -1,0 +1,13 @@
+{
+  "description": "Balance api calls with timestamp param and empty balance tables",
+  "setup": {},
+  "url": "/api/v1/balances?timestamp=1566560004.000000000",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": null,
+    "balances": [],
+    "links": {
+      "next": null
+    }
+  }
+}

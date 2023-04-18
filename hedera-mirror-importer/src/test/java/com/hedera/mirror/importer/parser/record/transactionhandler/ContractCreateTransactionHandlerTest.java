@@ -125,6 +125,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         return testSpecs;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         return super.getDefaultTransactionRecord()

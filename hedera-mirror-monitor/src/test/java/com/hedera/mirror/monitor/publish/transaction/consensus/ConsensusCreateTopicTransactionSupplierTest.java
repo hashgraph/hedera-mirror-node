@@ -29,6 +29,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -49,7 +50,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         ConsensusCreateTopicTransactionSupplier consensusCreateTopicTransactionSupplier =
                 new ConsensusCreateTopicTransactionSupplier();
@@ -68,7 +69,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ConsensusCreateTopicTransactionSupplier.class;
     }
 }

@@ -34,6 +34,7 @@ class ScenarioPropertiesAggregatorImplTest {
 
     private final ScenarioPropertiesAggregator scenarioPropertiesAggregator = new ScenarioPropertiesAggregatorImpl();
 
+    @SuppressWarnings("unchecked")
     @Test
     void propertiesWithLists() {
         Map<String, String> properties = new HashMap<>();
