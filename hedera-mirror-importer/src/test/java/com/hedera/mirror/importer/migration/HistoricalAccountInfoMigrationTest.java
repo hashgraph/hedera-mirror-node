@@ -184,6 +184,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void create() {
         AccountInfo.Builder accountInfo = accountInfo();
@@ -203,6 +204,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entity::getProxyAccountId));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void update() {
         createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
@@ -277,6 +279,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(historicalAccountInfoMigration.skipMigration(null)).isFalse();
     }
 
+    @SuppressWarnings("deprecation")
     private AccountInfo.Builder accountInfo() {
         return AccountInfo.newBuilder()
                 .setAccountID(AccountID.newBuilder().setAccountNum(ACCOUNT_ID1).build())

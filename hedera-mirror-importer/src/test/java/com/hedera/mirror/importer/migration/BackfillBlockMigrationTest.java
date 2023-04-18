@@ -174,8 +174,8 @@ class BackfillBlockMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expectedTransactions);
     }
 
-    private Consumer<ContractResult.ContractResultBuilder> customizeContractResult(long consensusTimestamp, byte[] bloom,
-                                                                                   long gasUsed) {
+    private Consumer<ContractResult.ContractResultBuilder<?, ?>> customizeContractResult(long consensusTimestamp,
+                                                                                         byte[] bloom, long gasUsed) {
         return b -> b.consensusTimestamp(consensusTimestamp).bloom(bloom).gasUsed(gasUsed);
     }
 

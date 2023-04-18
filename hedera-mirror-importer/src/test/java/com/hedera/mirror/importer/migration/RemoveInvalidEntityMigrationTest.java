@@ -345,7 +345,6 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     private Entity findEntityById(long id) {
         return jdbcOperations.queryForObject(
                 "select * from t_entities where id = ?",
-                new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
                     entity.setAutoRenewAccountId(rs.getLong("auto_renew_account_id"));
@@ -363,6 +362,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setSubmitKey(rs.getBytes("submit_key"));
                     entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;
-                });
+                },
+                new Object[] {id});
     }
 }

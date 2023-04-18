@@ -102,6 +102,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Value("classpath:addressbook")
     private Path testPath;
 
+    @SuppressWarnings("deprecation")
     private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
@@ -506,6 +507,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .satisfies(a -> assertAddressBook(a, FINAL));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
         Map<String, Integer> memoToNodeIdMap = Map.of(
@@ -1049,6 +1051,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     private NodeAddress getNodeAddress(int accountNum, String deprecatedMemo, String deprecatedIp,
                                        List<String> serviceEndpoints) throws UnknownHostException {
         NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
@@ -1081,6 +1084,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 
+    @SuppressWarnings("deprecation")
     private void assertAddressBook(AddressBook actual, NodeAddressBook expected) {
         ListAssert<AddressBookEntry> listAssert = assertThat(actual.getEntries())
                 .hasSize(expected.getNodeAddressCount());

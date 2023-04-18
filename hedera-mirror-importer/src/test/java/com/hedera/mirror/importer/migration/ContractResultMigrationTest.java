@@ -128,6 +128,7 @@ class ContractResultMigrationTest extends IntegrationTest {
                         .toArray(Long[]::new), MigrationContractResult::getCreatedContractIds);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void migrateWhenEmptyContractIDs() throws Exception {
         ContractFunctionResult.Builder functionResult = contractFunctionResult()
@@ -178,6 +179,7 @@ class ContractResultMigrationTest extends IntegrationTest {
         return migrationContractResult;
     }
 
+    @SuppressWarnings("deprecation")
     private ContractFunctionResult.Builder contractFunctionResult() {
         long contractNum = ++id;
         ContractID contractID = ContractID.newBuilder().setContractNum(contractNum).build();

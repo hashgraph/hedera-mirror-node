@@ -59,7 +59,7 @@ public class RestPollingProperties {
     private Duration minBackoff = Duration.ofMillis(500L);
 
     @NotNull
-    private Set<Class> retryableExceptions = Set.of(Exception.class);
+    private Set<Class<?>> retryableExceptions = Set.of(Exception.class);
 
     public boolean shouldRetry(Throwable t) {
         // Don't retry negative test cases

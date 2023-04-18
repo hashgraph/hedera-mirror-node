@@ -915,23 +915,16 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     private void persistContractBytes(String contractContents) {
-        // The maximum file size is 1024 kB
-        int MAX_CREATE_FILE_SIZE = 1_024_000;
-        String initialBytecodeChunk = contractContents
-                .substring(0, Math.min(contractContents.length(), MAX_CREATE_FILE_SIZE));
-        networkTransactionResponse = fileClient.createFile(initialBytecodeChunk.getBytes(StandardCharsets.UTF_8));
+        // rely on SDK chunking feature to upload larger files
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;
         assertNotNull(fileId);
 
-        if (contractContents.length() > MAX_CREATE_FILE_SIZE) {
-            networkTransactionResponse = fileClient
-                    .appendFile(fileId, contractContents.substring(MAX_CREATE_FILE_SIZE)
-                            .getBytes(StandardCharsets.UTF_8));
-            assertNotNull(networkTransactionResponse.getTransactionId());
-            assertNotNull(networkTransactionResponse.getReceipt());
-        }
+        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     private void verifyCreateContractNetworkResponse() {

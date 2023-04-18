@@ -31,6 +31,7 @@ import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -64,7 +65,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithCustomFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setAdminKey(key.toString());
@@ -101,7 +102,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithNonFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setTreasuryAccountId(ACCOUNT_ID.toString());
@@ -129,7 +130,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenCreateTransactionSupplier.class;
     }
 }

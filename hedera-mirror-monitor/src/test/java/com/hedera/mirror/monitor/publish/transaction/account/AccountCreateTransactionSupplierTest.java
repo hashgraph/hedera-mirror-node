@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -49,7 +50,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         AccountCreateTransactionSupplier accountCreateTransactionSupplier = new AccountCreateTransactionSupplier();
         accountCreateTransactionSupplier.setInitialBalance(1);
@@ -68,7 +69,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return AccountCreateTransactionSupplier.class;
     }
 }

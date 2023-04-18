@@ -43,6 +43,11 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
     private final TokenRepository tokenRepository;
 
     @Test
+    void checksum() {
+        assertThat(migration.getChecksum()).isEqualTo(2);
+    }
+
+    @Test
     void empty() {
         runMigration();
         assertThat(tokenRepository.findAll()).isEmpty();

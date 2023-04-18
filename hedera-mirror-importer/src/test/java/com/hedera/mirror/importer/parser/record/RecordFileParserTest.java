@@ -66,7 +66,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
-class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
+class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, RecordFileParser> {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
@@ -88,10 +88,10 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     private RecordItem recordItem;
 
     @Override
-    protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
+    protected void assertParsed(RecordFile streamFile, boolean parsed, boolean dbError) {
         super.assertParsed(streamFile, parsed, dbError);
 
-        RecordFile recordFile = (RecordFile) streamFile;
+        RecordFile recordFile = streamFile;
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
@@ -116,14 +116,14 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     @Override
-    protected StreamFile getStreamFile() {
+    protected RecordFile getStreamFile() {
         long id = ++count * 100;
         recordItem = cryptoTransferRecordItem(id);
         return getStreamFile(Flux.just(recordItem), id);
     }
 
     @Override
-    protected StreamFileRepository getStreamFileRepository() {
+    protected StreamFileRepository<RecordFile, ?> getStreamFileRepository() {
         return recordFileRepository;
     }
 
@@ -134,7 +134,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Test
     void allFiltered() {
-        RecordFile recordFile = (RecordFile) getStreamFile();
+        RecordFile recordFile = getStreamFile();
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.empty());
         parser.parse(recordFile);
@@ -146,7 +146,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @CsvSource({"-1", "0", "1"})
     void endDate(long offset) {
         // given
-        RecordFile recordFile = (RecordFile) getStreamFile();
+        RecordFile recordFile = getStreamFile();
         RecordItem firstItem = recordFile.getItems().blockFirst();
         long end = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
@@ -214,7 +214,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @CsvSource({"-1", "0", "1"})
     void startDate(long offset) {
         // given
-        RecordFile recordFile = (RecordFile) getStreamFile();
+        RecordFile recordFile = getStreamFile();
         RecordItem firstItem = recordFile.getItems().blockFirst();
         long start = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
@@ -235,8 +235,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     void blockNumberMigration() {
         // given
         int offset = 2;
-        var streamFile1 = (RecordFile) getStreamFile();
-        var streamFile2 = (RecordFile) getStreamFile();
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - offset);
         streamFile1.setVersion(5);
         streamFile2.setPreviousHash(streamFile1.getHash());
@@ -254,8 +254,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Test
     void hashMismatch() {
         // given
-        var streamFile1 = (RecordFile) getStreamFile();
-        var streamFile2 = (RecordFile) getStreamFile();
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - 2);
         streamFile1.setVersion(5);
         when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
@@ -268,7 +268,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     void noExistingRecordFile() {
         // given
         int offset = 2;
-        var streamFile = (RecordFile) getStreamFile();
+        var streamFile = getStreamFile();
         streamFile.setIndex(3L);
         streamFile.setVersion(5);
         when(recordFileRepository.findLatest()).thenReturn(Optional.empty());
@@ -284,8 +284,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     void blockNumberMigrationOnStartup() {
         // given
         int offset = 2;
-        var streamFile1 = (RecordFile) getStreamFile();
-        var streamFile2 = (RecordFile) getStreamFile();
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - offset);
         streamFile1.setVersion(5);
         streamFile2.setPreviousHash(streamFile1.getHash());
@@ -302,8 +302,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Test
     void blockNumberMigrationNotV6() {
         // given
-        var streamFile1 = (RecordFile) getStreamFile();
-        var streamFile2 = (RecordFile) getStreamFile();
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - 2);
         streamFile1.setVersion(5);
         streamFile2.setVersion(5);
@@ -322,8 +322,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Test
     void blockNumberMigrationUnnecessary() {
         // given
-        var streamFile1 = (RecordFile) getStreamFile();
-        var streamFile2 = (RecordFile) getStreamFile();
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - 1);
         streamFile2.setPreviousHash(streamFile1.getHash());
 

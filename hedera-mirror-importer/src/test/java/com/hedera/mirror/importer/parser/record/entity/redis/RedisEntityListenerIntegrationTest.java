@@ -41,7 +41,7 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
     public RedisEntityListenerIntegrationTest(RedisEntityListener entityListener,
                                               RedisProperties properties,
                                               ReactiveRedisConnectionFactory reactiveRedisConnectionFactory,
-                                              RedisSerializer redisSerializer) {
+                                              RedisSerializer<?> redisSerializer) {
         super(entityListener, properties);
         var serializationContext =
                 RedisSerializationContext.<String, TopicMessage>newSerializationContext(redisSerializer)

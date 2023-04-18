@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.inject.Named;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -54,11 +55,16 @@ public class AcceptanceTestProperties {
     private boolean emitBackgroundMessages = false;
     private boolean contractTraceability = false;
 
+    @Min(1)
+    private int maxNodes = 10;
+
     @Max(5)
     private int maxRetries = 2;
 
+    @Min(1L)
     private long maxTinyBarTransactionFee = Hbar.from(50).toTinybars();
 
+    @DurationMin(seconds = 1)
     @NotNull
     private Duration messageTimeout = Duration.ofSeconds(20);
 
@@ -68,8 +74,10 @@ public class AcceptanceTestProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    @NotNull
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
+    @Min(100_000_000L)
     private long operatorBalance = Hbar.from(260).toTinybars();
 
     @NotBlank
