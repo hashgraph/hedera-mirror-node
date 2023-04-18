@@ -17,8 +17,6 @@ package com.hedera.services.store.models;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -27,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 
 class TokenRelationshipTest {
     private final Id tokenId = new Id(0, 0, 1234);
@@ -74,13 +71,6 @@ class TokenRelationshipTest {
 
         subject = subject.setBalance(balance - 1);
         assertTrue(subject.hasChangesForRecord());
-    }
-
-    @Test
-    void asAssociationWorks() {
-        final var expected = new FcTokenAssociation(1234, 4321);
-
-        assertEquals(expected, subject.asAutoAssociation());
     }
 
     @Test

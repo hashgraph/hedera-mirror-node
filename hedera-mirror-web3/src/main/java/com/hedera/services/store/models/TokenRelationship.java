@@ -27,7 +27,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -44,7 +43,6 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 public class TokenRelationship {
     private final Token token;
     private final Account account;
-
     private final long balance;
     private final boolean frozen;
     private final boolean kycGranted;
@@ -85,10 +83,6 @@ public class TokenRelationship {
         return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
                 tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, false,
                 tokenRel.automaticAssociation, balanceChange);
-    }
-
-    public FcTokenAssociation asAutoAssociation() {
-        return new FcTokenAssociation(token.getId().num(), account.getId().num());
     }
 
     public long getBalance() {
