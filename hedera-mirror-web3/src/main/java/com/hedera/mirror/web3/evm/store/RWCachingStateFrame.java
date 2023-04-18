@@ -46,8 +46,9 @@ public class RWCachingStateFrame<K> extends ROCachingStateFrame<K> {
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> downstreamFrame) {
         final var thisCaches = this.getInternalCaches();
         final var downstreamCaches = downstreamFrame.getInternalCaches();
-        if (thisCaches.size() != downstreamCaches.size())
+        if (thisCaches.size() != downstreamCaches.size()) {
             throw new IllegalStateException("This frame and downstream frame have different klasses registered");
+        }
         for (final var kv : thisCaches.entrySet()) {
             if (!downstreamCaches.containsKey(kv.getKey()))
                 throw new IllegalStateException("This frame and downstream frame have different klasses registered");

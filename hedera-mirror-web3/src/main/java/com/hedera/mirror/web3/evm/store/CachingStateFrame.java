@@ -47,8 +47,9 @@ public abstract class CachingStateFrame<K> {
      */
     protected CachingStateFrame(
             @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
-        if (klassesToCache.length < 1)
+        if (klassesToCache.length < 1) {
             throw new IllegalArgumentException("Must be caching for at least one value class");
+        }
 
         this.upstreamFrame = upstreamFrame;
         this.accessors = new HashMap<>(klassesToCache.length);
@@ -87,7 +88,9 @@ public abstract class CachingStateFrame<K> {
     @NonNull
     <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
         final var accessor = (AccessorImpl<V>) accessors.get(klass);
-        if (null != accessor) return accessor;
+        if (accessor != null) {
+            return accessor;
+        }
         throw new CacheAccessIncorrectType("%s values aren't cached here".formatted(klass.getName()));
     }
 
@@ -168,9 +171,10 @@ public abstract class CachingStateFrame<K> {
         /** Set a new value for a value (in this level of the cache) */
         @Override
         public void set(@NonNull final K key, @NonNull V value) {
-            if (!klass.isInstance(value))
+            if (!klass.isInstance(value)) {
                 throw new CacheAccessIncorrectType("Trying to store %s in accessor for class %s"
                         .formatted(value.getClass().getTypeName(), klass.getTypeName()));
+            }
             setValue(klass, cache, key, value);
         }
 
