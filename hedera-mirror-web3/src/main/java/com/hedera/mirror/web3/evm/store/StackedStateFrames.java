@@ -50,14 +50,17 @@ public class StackedStateFrames<K> {
                 .distinct()
                 .toArray(Class[]::new);
 
-        if (valueClasses.length != accessors.size())
+        if (valueClasses.length != accessors.size()) {
             throw new IllegalArgumentException("Accessors must be for distinct types");
-        if (1
-                != accessors.stream()
-                        .map(DatabaseAccessor::getKeyClass)
-                        .map(Class::getTypeName)
-                        .distinct()
-                        .count()) throw new IllegalArgumentException("Key types for all accessors must be the same");
+        }
+        final var nUniqueAccessors = accessors.stream()
+                .map(DatabaseAccessor::getKeyClass)
+                .map(Class::getTypeName)
+                .distinct()
+                .count();
+        if (nUniqueAccessors != 1) {
+            throw new IllegalArgumentException("Key types for all accessors must be the same");
+        }
 
         // TODO: probably takes the database connection thing/abstraction as a parameter and saves it away;
         // alternatively, maybe that's hidden inside the GroundTruthAccessors.
@@ -98,7 +101,9 @@ public class StackedStateFrames<K> {
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        if (stack == stackBase) throw new EmptyStackException();
+        if (stack == stackBase) {
+            throw new EmptyStackException();
+        }
         stack = stack.getUpstream().orElseThrow(EmptyStackException::new);
     }
 
@@ -126,8 +131,9 @@ public class StackedStateFrames<K> {
      */
     @NonNull
     public CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
-        if (!frame.getUpstream().equals(Optional.of(stack)))
+        if (!frame.getUpstream().equals(Optional.of(stack))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
+        }
         stack = frame;
         return stack;
     }
