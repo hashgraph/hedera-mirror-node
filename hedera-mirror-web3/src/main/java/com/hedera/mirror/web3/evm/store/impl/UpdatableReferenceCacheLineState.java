@@ -93,7 +93,7 @@ public class UpdatableReferenceCacheLineState<K> {
     private Kind determineKind(@NonNull final Map<K, Object> map, @NonNull final K key, final Object value) {
         // Java's `Map` doesn't let you find out in a single call if the value was in the map but `null` or not in the
         // map. So if the value turns out to be null you've got to do a second call to distinguish that.
-        if (null != value) return Kind.NON_NULL;
+        if (value != null) return Kind.NON_NULL;
         if (map.containsKey(key)) return Kind.NULL;
         return Kind.MISSING;
     }

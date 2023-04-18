@@ -18,9 +18,10 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.ValueState;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
+import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -146,7 +147,9 @@ class UpdatableReferenceCacheTest {
 
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
-        assertThatIllegalArgumentException().isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
+        assertThatExceptionOfType(
+                        state == ValueState.INVALID ? IllegalStateException.class : UpdatableCacheUsageException.class)
+                .isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
     }
 
     @Test
@@ -188,7 +191,7 @@ class UpdatableReferenceCacheTest {
         sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.update(THIS_KEY, 10L))
                 .as("INVALID state")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("invalid");
 
         // present with same value is rejected (that's not an update at all, it's probably a user error
@@ -197,7 +200,7 @@ class UpdatableReferenceCacheTest {
         sut.clearOriginal().clearCurrent().addToOriginal(THIS_KEY, ORIGINAL_VALUE);
         softly.assertThatThrownBy(() -> sut.update(THIS_KEY, ORIGINAL_VALUE))
                 .as("PRESENT, overwriting with same value")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("Trying to update");
         softly.assertThat(sut.getOriginal())
                 .as("PRESENT, overwriting with same value didn't change k/v")
@@ -239,21 +242,21 @@ class UpdatableReferenceCacheTest {
         sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("INVALID state")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("invalid");
 
         // not-yet-fetched state is rejected
         sut.clearOriginal().clearCurrent();
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("NOT_YET_FETCHED")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("fetched");
 
         // missing state is rejected
         sut.clearOriginal().clearCurrent().addNullToOriginal(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("MISSING")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("missing");
 
         // deleted state is rejected
@@ -263,7 +266,7 @@ class UpdatableReferenceCacheTest {
                 .addNullToOriginal(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("DELETED")
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("deleted");
     }
 
@@ -325,7 +328,9 @@ class UpdatableReferenceCacheTest {
     @NonNull
     <K, V> Map<K, V> makeMapOf(
             @NonNull final Class<K> klassK, @NonNull final Class<V> klassV, final Object... kvPairs) {
-        if (0 != kvPairs.length % 2) throw new IllegalArgumentException("Must have even #arguments");
+        if (kvPairs.length % 2 != 0) {
+            throw new IllegalArgumentException("Must have even #arguments");
+        }
         final var r = new HashMap<K, V>(kvPairs.length / 2);
         for (int i = 0; i < kvPairs.length; i += 2) {
 
@@ -342,7 +347,7 @@ class UpdatableReferenceCacheTest {
     @SuppressWarnings("unchecked") // OK because unchecked cast is immediately preceded by type check
     <T> T verifyIsCorrectTypeOrNull(
             @NonNull final Class<T> klass, @Nullable final Object obj, @NonNull final String customMessage) {
-        return null == obj
+        return obj == null
                 ? null
                 : klass.isInstance(obj)
                         ? (T) obj
@@ -359,9 +364,10 @@ class UpdatableReferenceCacheTest {
      * not acceptable).
      */
     <T> T throwException(@NonNull final Class<?> exceptionKlass, @NonNull final String message) {
-        if (!(RuntimeException.class.isAssignableFrom(exceptionKlass)))
+        if (!(RuntimeException.class.isAssignableFrom(exceptionKlass))) {
             throw new IllegalArgumentException(
                     "%s is not a RuntimeException type".formatted(exceptionKlass.getTypeName()));
+        }
 
         try {
             throw (RuntimeException)

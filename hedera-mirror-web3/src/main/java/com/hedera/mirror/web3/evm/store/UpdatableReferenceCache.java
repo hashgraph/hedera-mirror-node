@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store;
 
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState;
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.NonNull;
@@ -68,9 +69,9 @@ public class UpdatableReferenceCache<K> {
     public void fill(@NonNull final K key, final Object value) {
         switch (getCacheLineState(key).state()) {
             case NOT_YET_FETCHED -> original.put(key, value);
-            case MISSING, PRESENT -> throw new IllegalArgumentException("Trying to override a lower-level entry");
-            case UPDATED, DELETED -> throw new IllegalArgumentException("Trying to override an updated entry");
-            case INVALID -> throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
+            case MISSING, PRESENT -> throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
+            case UPDATED, DELETED -> throw new UpdatableCacheUsageException("Trying to override an updated entry");
+            case INVALID -> throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -87,15 +88,15 @@ public class UpdatableReferenceCache<K> {
         switch (currentState.state()) {
             case PRESENT:
                 if (currentState.value() == value) {
-                    throw new IllegalArgumentException("Trying to update a value with exact same reference - probably "
-                            + "indicates an error where the value was modified");
+                    throw new UpdatableCacheUsageException("Trying to update a value with exact same reference - "
+                            + "probably indicates an error where the value was modified");
                 }
                 // fallthrough
             case NOT_YET_FETCHED, MISSING, UPDATED, DELETED:
                 current.put(key, value);
                 break;
             case INVALID:
-                throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
+                throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -107,11 +108,11 @@ public class UpdatableReferenceCache<K> {
         switch (getCacheLineState(key).state()) {
             case PRESENT -> current.put(key, null);
             case UPDATED -> current.remove(key);
-            case NOT_YET_FETCHED -> throw new IllegalArgumentException(
+            case NOT_YET_FETCHED -> throw new UpdatableCacheUsageException(
                     "Trying to delete a value that hasn't been fetched");
-            case MISSING, DELETED -> throw new IllegalArgumentException(
+            case MISSING, DELETED -> throw new UpdatableCacheUsageException(
                     "Trying to delete a missing/already deleted value");
-            case INVALID -> throw new IllegalArgumentException(INVALID_STATE_MESSAGE);
+            case INVALID -> throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }
     }
 
@@ -128,6 +129,16 @@ public class UpdatableReferenceCache<K> {
     @NonNull
     protected Entry getCacheLineState(@NonNull final K key) {
         return cacheLineStateIdentification.get(original, current, key);
+    }
+
+    public static class UpdatableCacheUsageException extends RuntimeException {
+
+        @Serial
+        private static final long serialVersionUID = 6722692540537834117L;
+
+        UpdatableCacheUsageException(@NonNull final String message) {
+            super(message);
+        }
     }
 
     private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
