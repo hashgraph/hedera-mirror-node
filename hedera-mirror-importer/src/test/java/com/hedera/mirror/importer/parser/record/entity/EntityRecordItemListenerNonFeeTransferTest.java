@@ -263,6 +263,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     private void contractCreateWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCreate();
         var transactionBody = getTransactionBody(transaction);
@@ -275,6 +276,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoCreate() {
         var inner = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))

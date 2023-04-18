@@ -74,7 +74,7 @@ class ExpressionConverterImplTest {
     @BeforeEach
     void setup() {
         monitorProperties.getOperator().setAccountId("0.0.2");
-        monitorProperties.getOperator().setPrivateKey(PrivateKey.generate().toString());
+        monitorProperties.getOperator().setPrivateKey(PrivateKey.generateED25519().toString());
     }
 
     @Test

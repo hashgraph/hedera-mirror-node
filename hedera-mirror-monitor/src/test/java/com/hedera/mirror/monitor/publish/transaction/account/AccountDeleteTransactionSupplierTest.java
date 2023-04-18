@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -57,7 +58,7 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return AccountDeleteTransactionSupplier.class;
     }
 }

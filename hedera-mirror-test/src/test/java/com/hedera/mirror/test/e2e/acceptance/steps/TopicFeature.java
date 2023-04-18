@@ -79,7 +79,7 @@ public class TopicFeature {
     public void createNewTopic() {
         testInstantReference = Instant.now();
 
-        submitKey = PrivateKey.generate();
+        submitKey = PrivateKey.generateED25519();
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 

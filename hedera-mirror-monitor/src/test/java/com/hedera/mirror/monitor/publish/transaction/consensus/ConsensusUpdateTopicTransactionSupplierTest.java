@@ -31,6 +31,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -54,7 +55,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
         Duration autoRenewPeriod = Duration.ofSeconds(1);
 
         ConsensusUpdateTopicTransactionSupplier consensusUpdateTopicTransactionSupplier =
@@ -78,7 +79,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return ConsensusUpdateTopicTransactionSupplier.class;
     }
 }

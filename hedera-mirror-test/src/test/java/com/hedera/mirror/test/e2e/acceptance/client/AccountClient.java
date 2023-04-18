@@ -97,36 +97,35 @@ public class AccountClient extends AbstractNetworkClient {
         return accountId;
     }
 
-    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount,
-                                                            boolean isApproval) {
+    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount) {
         TransferTransaction transferTransaction = new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
-                .setTransactionMemo(getMemo("Crypto transfer"))
-                .setHbarTransferApproval(
-                        sdkClient.getExpandedOperatorAccountId().getAccountId(),
-                        isApproval);
-
+                .setTransactionMemo(getMemo("Crypto transfer"));
         return transferTransaction;
     }
 
     public NetworkTransactionResponse sendApprovedCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
                                                                  Hbar hbarAmount) {
-        return sendCryptoTransfer(sender, recipient, hbarAmount, true);
+        var transferTransaction = new TransferTransaction()
+                .addHbarTransfer(sender.getAccountId(), hbarAmount.negated())
+                .addApprovedHbarTransfer(recipient, hbarAmount)
+                .setTransactionMemo(getMemo("Approved transfer"));
+        var keyList = KeyList.of(sender.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(transferTransaction, keyList);
+        log.info("Approved transfer {} from {} to {} via {}", hbarAmount, sender, recipient,
+                response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
-        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount, false);
+        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount);
     }
 
     private NetworkTransactionResponse sendCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
-                                                          Hbar hbarAmount,
-                                                          boolean isApproval) {
-        TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sender
-                .getAccountId(), recipient, hbarAmount, isApproval);
-
-        var keyList = isApproval ? KeyList.of(sender.getPrivateKey()) : null;
-        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, keyList);
+                                                          Hbar hbarAmount) {
+        var cryptoTransferTransaction = getCryptoTransferTransaction(sender.getAccountId(), recipient, hbarAmount);
+        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction);
         log.info("Transferred {} from {} to {} via {}", hbarAmount, sender, recipient, response.getTransactionId());
         return response;
     }

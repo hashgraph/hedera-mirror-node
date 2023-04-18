@@ -358,6 +358,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void cryptoUpdateSuccessfulTransaction() {
         createAccount();
@@ -548,6 +549,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     // Transactions in production have proxyAccountID explicitly set to '0.0.0'. Test is to prevent code regression
     // in handling this weird case.
+    @SuppressWarnings("deprecation")
     @Test
     void proxyAccountIdSetTo0() {
         // given
@@ -1181,6 +1183,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         testRawBytes(transaction, null);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void finalizeHollowAccountToContract() {
         // given
@@ -1226,6 +1229,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .returns(expectedFileId, Contract::getFileId);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void finalizeHollowAccountToContractInTwoRecordFiles() {
         // given
@@ -1320,6 +1324,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntity(actualAccount));
     }
 
+    @SuppressWarnings("deprecation")
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, long expectedBalance,
                                     Timestamp consensusTimestamp) {
         Entity actualAccount = getTransactionEntity(consensusTimestamp);
@@ -1436,6 +1441,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(RecordItem.builder().transactionRecord(createRecord).transaction(createTransaction).build());
     }
 
+    @SuppressWarnings("deprecation")
     private CryptoCreateTransactionBody.Builder cryptoCreateAccountBuilderWithDefaults() {
         return CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
@@ -1482,6 +1488,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         });
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoUpdateTransaction(AccountID accountNum,
                                                 Consumer<CryptoUpdateTransactionBody.Builder> custom) {
         return buildTransaction(builder -> {

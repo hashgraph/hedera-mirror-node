@@ -244,6 +244,10 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
+        if (!properties.isApprovedForAllEnabled()) {
+            throw new UnsupportedOperationException("isApprovedForAll(address owner, address operator) is not supported.");
+        }
+
         final var nftAllowanceId = new AbstractNftAllowance.Id();
         nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
         nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));

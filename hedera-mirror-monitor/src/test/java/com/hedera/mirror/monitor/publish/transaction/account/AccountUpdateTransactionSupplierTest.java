@@ -31,6 +31,7 @@ import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -54,7 +55,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
     @Test
     void createWithCustomData() {
         Instant expirationTime = Instant.now().plus(1, ChronoUnit.DAYS);
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         AccountUpdateTransactionSupplier accountUpdateTransactionSupplier = new AccountUpdateTransactionSupplier();
         accountUpdateTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
@@ -77,7 +78,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return AccountUpdateTransactionSupplier.class;
     }
 }
