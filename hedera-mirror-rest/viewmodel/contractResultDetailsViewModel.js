@@ -19,7 +19,7 @@
  */
 
 import _ from 'lodash';
-import {toBigIntBE} from 'bigint-buffer';
+import {toBigIntBE} from '@trufflesuite/bigint-buffer';
 
 import ContractLogResultsViewModel from './contractResultLogViewModel';
 import ContractResultStateChangeViewModel from './contractResultStateChangeViewModel';
