@@ -23,7 +23,6 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -36,6 +35,8 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 
 @Setter
 @Validated
@@ -72,19 +73,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
-    @Getter
-    @Min(21_000)
-    @Max(15_000_000)
-    private long maxGasToUseLimit = 15_000_000L;
-
-    @Getter
-    @Min(21_000)
-    @Max(15_000_000)
-    private long minGasToUseLimit = 21_000L;
-
-/**
- * The gas value difference between consecutive iterations in the binary search performed during gas estimation
- */
     @Getter
     private long diffBetweenIterations = 1200L;
 

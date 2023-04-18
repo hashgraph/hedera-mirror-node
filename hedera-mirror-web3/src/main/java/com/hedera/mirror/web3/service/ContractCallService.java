@@ -71,25 +71,26 @@ public class ContractCallService {
 
     public String processCall(final CallServiceParameters params) {
         var stopwatch = Stopwatch.createStarted();
-        if (params.isEstimate()) {
-            return estimateGas(params);
-        }
-        final var ethCallTxnResult = doProcessCall(params, params.getGas());
-        validateTxnResult(ethCallTxnResult, params.getCallType());
+        String stringResult = "";
+        try {
+            if (params.isEstimate()) {
+                stringResult = estimateGas(params);
+                return stringResult;
+            }
+            final var ethCallTxnResult = doProcessCall(params, params.getGas());
+            validateTxnResult(ethCallTxnResult, params.getCallType());
 
-        final var callResult = ethCallTxnResult.getOutput() != null
-                ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
-        final var stringResult = callResult.toHexString();
-        log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
-        return stringResult;
+            final var callResult = ethCallTxnResult.getOutput() != null
+                    ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
+            stringResult = callResult.toHexString();
+            return stringResult;
+        }finally {
+            log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
+        }
     }
 
     private String estimateGas(final CallServiceParameters params) {
-        if (params.getGas() > properties.getMaxGasToUseLimit() || params.getGas() < properties.getMinGasToUseLimit()) {
-            throw new InvalidParametersException("Invalid gas value");
-        }
-        LongFunction<HederaEvmTransactionProcessingResult> callProcessor = gas -> doProcessCall(params, gas);
-        HederaEvmTransactionProcessingResult initialCallResult = callProcessor.apply(params.getGas());
+        HederaEvmTransactionProcessingResult initialCallResult = doProcessCall(params, params.getGas());
         validateTxnResult(initialCallResult, ETH_ESTIMATE_GAS);
         final long gasUsedByInitialCall = initialCallResult.getGasUsed();
 
@@ -97,20 +98,18 @@ public class ContractCallService {
                 binarySearch(
                         gas -> doProcessCall(params, gas),
                         gasUsedByInitialCall,
-                        params.getGas(),
-                        properties.getDiffBetweenIterations());
+                        params.getGas());
 
         return Long.toHexString(estimatedGas);
     }
 
     /**Feature work: move to another class and compare performance with interpolation algo.
      */
-    private long binarySearch(LongFunction<HederaEvmTransactionProcessingResult> CallProcessor, long lo, long hi,
-                              long minDiffBetweenIterations) {
+    private long binarySearch(LongFunction<HederaEvmTransactionProcessingResult> callProcessor, long lo, long hi) {
         long prevGasLimit = lo;
         while (lo + 1 < hi) {
             long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = CallProcessor.apply(mid);
+            HederaEvmTransactionProcessingResult transactionResult = callProcessor.apply(mid);
 
             boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
@@ -119,7 +118,7 @@ public class ContractCallService {
                 lo = mid;
             } else {
                 hi = mid;
-                if (Math.abs(prevGasLimit - mid) < minDiffBetweenIterations) {
+                if (Math.abs(prevGasLimit - mid) < properties.getDiffBetweenIterations()) {
                     lo = hi;
                 }
             }

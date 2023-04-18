@@ -90,6 +90,21 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
+    @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
+    @ParameterizedTest
+    void estimateGasWithInvalidGasParameter(long gas) {
+        final var request = request();
+        request.setEstimate(true);
+        request.setGas(gas);
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST);
+    }
+
     @Test
     void exceedingRateLimit() {
         for (var i = 0; i < 3; i++) {
