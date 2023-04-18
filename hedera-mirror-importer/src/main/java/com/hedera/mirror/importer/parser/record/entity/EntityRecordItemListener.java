@@ -352,7 +352,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
 
         boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
         boolean isSingleTransfer = tokenTransferCount == 2;
 
         for (int i = 0; i < tokenTransferCount; i++) {
@@ -391,7 +391,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
             EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
             syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId,
-                    Math.abs(amount)));
+                    Math.abs(amount), false));
         }
     }
 
@@ -399,7 +399,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                                    boolean isSingleTransfer, int i, EntityId accountId, long amount) {
         if (isSingleTransfer && amount > 0) {
             EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
-            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount, false));
         }
     }
 
@@ -482,7 +482,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
             syntheticContractLogService
-                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
+                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber, true));
         }
     }
 

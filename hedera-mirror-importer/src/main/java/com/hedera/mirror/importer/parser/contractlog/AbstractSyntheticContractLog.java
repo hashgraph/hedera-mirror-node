@@ -32,14 +32,16 @@ public abstract class AbstractSyntheticContractLog implements SyntheticContractL
     private final byte[] topic0;
     private final byte[] topic1;
     private final byte[] topic2;
+    private final byte[] topic3;
     private final byte[] data;
 
-    AbstractSyntheticContractLog(RecordItem recordItem, EntityId tokenId, byte[] topic0, byte[] topic1, byte[] topic2, byte[] data) {
+    AbstractSyntheticContractLog(RecordItem recordItem, EntityId tokenId, byte[] topic0, byte[] topic1, byte[] topic2, byte[] topic3, byte[] data) {
         this.recordItem = recordItem;
         this.entityId = tokenId;
         this.topic0 = topic0;
         this.topic1 = topic1;
         this.topic2 = topic2;
+        this.topic3 = topic3;
         this.data = data;
     }
     static final byte[] TRANSFER_SIGNATURE = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").toArray();

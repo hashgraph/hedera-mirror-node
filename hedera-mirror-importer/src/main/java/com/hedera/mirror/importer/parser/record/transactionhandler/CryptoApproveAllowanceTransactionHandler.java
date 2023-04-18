@@ -148,7 +148,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 if (nftSerialAllowanceState.putIfAbsent(nft.getId(), nft) == null) {
                     entityListener.onNft(nft);
                     if (!hasApprovedForAll) {
-                        syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spender, serialNumber));
+                        syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spender, serialNumber, true));
                     }
                 }
             }
@@ -207,7 +207,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
             if (tokenAllowanceState.putIfAbsent(tokenAllowance.getId(), tokenAllowance) == null) {
                 entityListener.onTokenAllowance(tokenAllowance);
-                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
+                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount(), false));
             }
         }
     }
