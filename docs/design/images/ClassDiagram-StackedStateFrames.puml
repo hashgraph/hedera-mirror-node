@@ -53,7 +53,7 @@ interface DatabaseAccessor<K,V> {
 
 class StackedStateFrames<K> {
   -stack
-  +StackedStateFrames(GroundTruthAccessor...)
+  +StackedStateFrames(DatabaseAccessor...)
 }
 
 Entry::state o-right- ValueState
