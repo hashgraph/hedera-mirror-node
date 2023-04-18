@@ -85,18 +85,21 @@ class UpdatableReferenceCacheTest {
     }
 
     @ParameterizedTest(name = "original {0} ✕ current {1} ⟶ (state {2}, with value from {3})")
-    @CsvSource({
-        // original current exp. state      exp. value
-        " MISSING, MISSING, NOT_YET_FETCHED,NOWHERE",
-        " MISSING, NULL,    INVALID,        NOWHERE",
-        " MISSING, NON_NULL,UPDATED,        CURRENT",
-        " NULL,    MISSING, MISSING,        NOWHERE",
-        " NULL,    NULL,    INVALID,        NOWHERE",
-        " NULL,    NON_NULL,UPDATED,        CURRENT",
-        " NON_NULL,MISSING, PRESENT,        ORIGINAL",
-        " NON_NULL,NULL,    DELETED,        NOWHERE",
-        " NON_NULL,NON_NULL,UPDATED,        CURRENT"
-    })
+    @CsvSource(
+            useHeadersInDisplayName = true,
+            textBlock =
+                    """
+        original, current, expected state,  expected value
+        MISSING,  MISSING, NOT_YET_FETCHED, NOWHERE
+        MISSING,  NULL,    INVALID,         NOWHERE
+        MISSING,  NON_NULL,UPDATED,         CURRENT
+        NULL,     MISSING, MISSING,         NOWHERE
+        NULL,     NULL,    INVALID,         NOWHERE
+        NULL,     NON_NULL,UPDATED,         CURRENT
+        NON_NULL, MISSING, PRESENT,         ORIGINAL
+        NON_NULL, NULL,    DELETED,         NOWHERE
+        NON_NULL, NON_NULL,UPDATED,         CURRENT
+    """)
     void getCurrentStateTestExhaustive(
             @NonNull final ValueIs originalValueIs,
             @NonNull final ValueIs currentValueIs,
@@ -132,14 +135,17 @@ class UpdatableReferenceCacheTest {
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2})")
-    @CsvSource({
-        // state via: original current
-        "MISSING, NULL,     MISSING",
-        "PRESENT, NON_NULL, MISSING",
-        "UPDATED, NON_NULL, NON_NULL",
-        "DELETED, NON_NULL, NULL",
-        "INVALID, MISSING,  NULL"
-    })
+    @CsvSource(
+            useHeadersInDisplayName = true,
+            textBlock =
+                    """
+        state,   original, current
+        MISSING, NULL,     MISSING
+        PRESENT, NON_NULL, MISSING
+        UPDATED, NON_NULL, NON_NULL
+        DELETED, NON_NULL, NULL
+        INVALID, MISSING,  NULL
+    """)
     void fillWhileInBadStateTest(
             @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
@@ -163,15 +169,18 @@ class UpdatableReferenceCacheTest {
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2})")
-    @CsvSource({
-        // state via: original current
-        "NOT_YET_FETCHED, MISSING,  MISSING",
-        "MISSING,         NULL,     MISSING",
-        "PRESENT,         NON_NULL, MISSING",
-        "UPDATED,         NULL,     NON_NULL",
-        "UPDATED,         NON_NULL, NON_NULL",
-        "DELETED,         NON_NULL, NULL"
-    })
+    @CsvSource(
+            useHeadersInDisplayName = true,
+            textBlock =
+                    """
+        state,           original, current
+        NOT_YET_FETCHED, MISSING,  MISSING
+        MISSING,         NULL,     MISSING
+        PRESENT,         NON_NULL, MISSING
+        UPDATED,         NULL,     NON_NULL
+        UPDATED,         NON_NULL, NON_NULL
+        DELETED,         NON_NULL, NULL
+    """)
     void updateInAllowableScenariosTest(
             @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
@@ -214,11 +223,14 @@ class UpdatableReferenceCacheTest {
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2}) ⟶ result (state {3}, key exists? {4})")
-    @CsvSource({
-        // state via: original current   result  key exists
-        "  PRESENT,   NON_NULL,MISSING, DELETED,true",
-        "  UPDATED,   NULL,    NON_NULL,MISSING,false"
-    })
+    @CsvSource(
+            useHeadersInDisplayName = true,
+            textBlock =
+                    """
+        state,   original, current,  result,  key exists
+        PRESENT, NON_NULL, MISSING,  DELETED, true
+        UPDATED, NULL,     NON_NULL, MISSING, false
+    """)
     void deleteInAllowableScenariosTest(
             @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
@@ -294,21 +306,16 @@ class UpdatableReferenceCacheTest {
                 .addNullToCurrent("BOTH NULL VALUE C");
 
         final var expectedOriginal = new HashMap<>(sut.getOriginal());
+        // spotless:off
         final var expectedCurrent = makeMapOf(
-                String.class,
-                Object.class,
-                "SUT NOT NULL VALUE C",
-                -30L,
-                "BOTH NOT NULL VALUE C",
-                40L,
-                "SUT NULL VALUE C",
-                null,
-                "BOTH NULL VALUE C",
-                null,
-                "SRC NOT NULL VALUE C",
-                30L,
-                "SRC NULL VALUE C",
-                null);
+                String.class, Object.class,
+                "SUT NOT NULL VALUE C", -30L,
+                "BOTH NOT NULL VALUE C", 40L,
+                "SUT NULL VALUE C",      null,
+                "BOTH NULL VALUE C",     null,
+                "SRC NOT NULL VALUE C",  30L,
+                "SRC NULL VALUE C",      null);
+        //spotless:on
 
         sut.coalesceFrom(src);
 
