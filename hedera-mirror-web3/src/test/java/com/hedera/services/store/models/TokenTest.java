@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
@@ -75,18 +74,11 @@ class TokenTest {
 
     @BeforeEach
     void setUp() {
-        subject = new Token(tokenId);
-        subject.initTotalSupply(initialSupply);
-        subject.setTreasury(treasuryAccount);
-
-        treasuryAccount.setNumPositiveBalances(numPositiveBalances);
-        treasuryAccount.setNumAssociations(numAssociations);
-        nonTreasuryAccount.setNumPositiveBalances(numPositiveBalances);
-        nonTreasuryAccount.setNumAssociations(numAssociations);
+        subject = new Token(tokenId, false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE, initialSupply,
+                21_000_000, null, null, null, null, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
+                , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
 
         treasuryRel = new TokenRelationship(subject, treasuryAccount);
-        treasuryRel.initBalance(initialTreasuryBalance);
-        treasuryRel.setAutomaticAssociation(true);
         nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
     }
 
@@ -94,31 +86,20 @@ class TokenTest {
     void deleteAsExpected() {
         assertDoesNotThrow(() -> subject.delete());
     }
+
     @Test
     void constructsOkToken() {
         final var feeScheduleKey = Key.newBuilder().getDefaultInstanceForType();
         final var pauseKey = Key.newBuilder().getDefaultInstanceForType();
-        final var op = TransactionBody.newBuilder()
-                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
-                        .setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
-                        .setInitialSupply(25)
-                        .setMaxSupply(21_000_000)
-                        .setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
-                        .setDecimals(10)
-                        .setFreezeDefault(false)
-                        .setMemo("the mother")
-                        .setName("bitcoin")
-                        .setSymbol("BTC")
-                        .setFeeScheduleKey(feeScheduleKey)
-                        .setPauseKey(pauseKey)
-                        .addAllCustomFees(List.of(CustomFee.newBuilder()
-                                .setFixedFee(FixedFee.newBuilder().setAmount(10).build())
-                                .setFeeCollectorAccountId(asAccount("1.2.3"))
-                                .build()))
-                        .setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
-                        .setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
-                        .build())
-                .build();
+        final var op = TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                .setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON).setInitialSupply(25)
+                .setMaxSupply(21_000_000).setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE)
+                .setDecimals(10).setFreezeDefault(false).setMemo("the mother").setName("bitcoin").setSymbol("BTC")
+                .setFeeScheduleKey(feeScheduleKey).setPauseKey(pauseKey).addAllCustomFees(List.of(CustomFee.newBuilder()
+                        .setFixedFee(FixedFee.newBuilder().setAmount(10).build())
+                        .setFeeCollectorAccountId(asAccount("1.2.3")).build()))
+                .setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
+                .setExpiry(Timestamp.newBuilder().setSeconds(1000L).build()).build()).build();
 
         subject = Token.fromGrpcOpAndMeta(tokenId, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
 
@@ -130,12 +111,13 @@ class TokenTest {
         assertFalse(subject.isPaused());
     }
 
+
     @Test
     void okCreationRelationship() {
         final var frzKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
         final var kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
-        subject.setFreezeKey(frzKey);
-        subject.setKycKey(kycKey);
+        subject = subject.setFreezeKey(frzKey);
+        subject = subject.setKycKey(kycKey);
         final var rel = subject.newEnabledRelationship(treasuryAccount);
         assertNotNull(rel);
         assertFalse(rel.isFrozen());
@@ -144,7 +126,7 @@ class TokenTest {
 
     @Test
     void constructsTreasuryRelationShipAsExpected() {
-        subject.setKycKey(someKey);
+        subject = subject.setKycKey(someKey);
         final var newRel = subject.newRelationshipWith(treasuryAccount, true);
         newRel.initBalance(initialTreasuryBalance);
 
@@ -164,27 +146,16 @@ class TokenTest {
     }
 
     @Test
-    void markAutoRemovedWorks() {
-        // expect:
-        assertFalse(subject.isBelievedToHaveBeenAutoRemoved());
-
-        // when:
-        subject.markAutoRemoved();
-
-        // then:
-        assertTrue(subject.isBelievedToHaveBeenAutoRemoved());
-    }
-
-    @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
         nonTreasuryRel.setFrozen(true);
         nonTreasuryRel.setKycGranted(true);
 
         // given:
-        subject.setFreezeKey(someKey);
-        subject.setFrozenByDefault(true);
 
+        subject = new Token(tokenId, false, TokenType.NON_FUNGIBLE_UNIQUE, TokenSupplyType.FINITE, initialSupply,
+                20000L, null, someKey, someKey, null, null, null, null, true, treasuryAccount, new Account(Id.DEFAULT)
+                , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
@@ -198,8 +169,7 @@ class TokenTest {
         nonTreasuryRel.setKycGranted(true);
 
         // given:
-        subject.setFreezeKey(someKey);
-        subject.setFrozenByDefault(false);
+        subject = subject.setFreezeKey(someKey);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -211,7 +181,7 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithKycKeyOnly() {
         // given:
-        subject.setKycKey(someKey);
+        subject = subject.setKycKey(someKey);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -234,13 +204,10 @@ class TokenTest {
 
     @Test
     void burnsUniqueAsExpected() {
+        subject = subject.setSupplyKey(someKey);
         treasuryRel.initBalance(2);
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
-        subject.setSupplyKey(someKey);
-        subject.setLoadedUniqueTokens(Map.of(
-                10L, new UniqueToken(subject.getId(), 10L, treasuryId),
-                11L, new UniqueToken(subject.getId(), 11L, treasuryId)));
+        subject.getLoadedUniqueTokens().putAll(Map.of(10L, new UniqueToken(subject.getId(), 10L, treasuryId), 11L,
+                new UniqueToken(subject.getId(), 11L, treasuryId)));
         final var ownershipTracker = mock(OwnershipTracker.class);
         final long serialNumber0 = 10L;
         final long serialNumber1 = 11L;
@@ -261,16 +228,10 @@ class TokenTest {
 
     @Test
     void mintsUniqueAsExpected() {
+        subject = subject.setSupplyKey(someKey);
         treasuryRel.initBalance(0);
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
-        subject.setSupplyKey(someKey);
-
         final var ownershipTracker = mock(OwnershipTracker.class);
-        subject.mint(
-                ownershipTracker,
-                treasuryRel,
-                List.of(ByteString.copyFromUtf8("memo")),
+        subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("memo")),
                 RichInstant.fromJava(Instant.now()));
         assertEquals(initialSupply + 1, subject.getTotalSupply());
         assertEquals(1, treasuryRel.getBalanceChange());
@@ -285,10 +246,7 @@ class TokenTest {
     @Test
     void mintsAsExpected() {
         final long mintAmount = 100L;
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        // given:
-        subject.setSupplyKey(someKey);
+        subject = subject.setSupplyKey(someKey);
 
         // when:
         subject.mint(treasuryRel, mintAmount, false);
@@ -301,10 +259,8 @@ class TokenTest {
 
     @Test
     void wipesCommonAsExpected() {
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
-        subject.setWipeKey(someKey);
+        subject = subject.setSupplyKey(someKey);
+        subject = subject.setWipeKey(someKey);
         nonTreasuryRel.setBalance(100);
 
         subject.wipe(nonTreasuryRel, 10);
@@ -323,13 +279,12 @@ class TokenTest {
     @Test
     void failsWipingCommonAsExpected() {
         // common setup
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
+        subject = subject.setSupplyKey(someKey);
         // no wipe key
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 10));
 
-        subject.setWipeKey(someKey);
+        // set wipe key
+        subject = subject.setWipeKey(someKey);
         // negative amount
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, -10));
 
@@ -337,30 +292,30 @@ class TokenTest {
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(treasuryRel, 10));
 
         // negate total supply
-        subject.setTotalSupply(10);
+        subject = new Token(tokenId, false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE, 10,
+                20000L, null, null, someKey, someKey, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
+                , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 11));
 
         // negate account balance
+
         nonTreasuryRel.setBalance(0);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
-
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
     }
 
     @Test
     void wipesUniqueAsExpected() {
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
-        subject.setWipeKey(someKey);
+        subject = subject.setSupplyKey(someKey);
+        subject = subject.setWipeKey(someKey);
 
         final var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
         final var uniqueToken = mock(UniqueToken.class);
         final var owner = nonTreasuryAccount.getId();
         given(uniqueToken.getOwner()).willReturn(owner);
         given(loadedUniqueTokensMap.get(any())).willReturn(uniqueToken);
-        subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
+        subject.getLoadedUniqueTokens().putAll(loadedUniqueTokensMap);
 
         nonTreasuryRel.setBalance(100);
 
@@ -391,12 +346,10 @@ class TokenTest {
 
     @Test
     void uniqueWipeFailsAsExpected() {
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
+        subject = subject.setSupplyKey(someKey);
 
         final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
-        subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
+        subject.getLoadedUniqueTokens().putAll(loadedUniqueTokensMap);
 
         final var ownershipTracker = mock(OwnershipTracker.class);
         final var singleSerialNumber = List.of(1L);
@@ -404,23 +357,19 @@ class TokenTest {
         /* Invalid to wipe serial numbers for a FUNGIBLE_COMMON token */
         assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber), FAIL_INVALID);
 
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         /* Must have a wipe key */
         assertFailsWith(() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber), TOKEN_HAS_NO_WIPE_KEY);
 
+        subject = subject.setWipeKey(someKey);
         /* Not allowed to wipe treasury */
-        subject.setWipeKey(someKey);
-        assertFailsWith(
-                () -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
+        assertFailsWith(() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
                 CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
     }
 
     @Test
     void uniqueBurnFailsAsExpected() {
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
+        subject = subject.setSupplyKey(someKey);
         final var ownershipTracker = mock(OwnershipTracker.class);
         final List<Long> emptySerialNumber = List.of();
         final var singleSerialNumber = List.of(1L);
@@ -429,47 +378,49 @@ class TokenTest {
             subject.burn(ownershipTracker, treasuryRel, singleSerialNumber);
         });
 
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertFailsWith(
-                () -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber), INVALID_TOKEN_BURN_METADATA);
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        assertFailsWith(() -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber),
+                INVALID_TOKEN_BURN_METADATA);
     }
 
     @Test
     void canOnlyBurnTokensOwnedByTreasury() {
         // setup:
         final var ownershipTracker = mock(OwnershipTracker.class);
-        final var oneToBurn = new UniqueToken(subject.getId(), 1L, nonTreasuryId);
+        var oneToBurn = new UniqueToken(subject.getId(), 1L, null, nonTreasuryId, null, new byte[] {});
 
         // given:
-        subject.setSupplyKey(someKey);
-        subject.setLoadedUniqueTokens(Map.of(1L, oneToBurn));
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        subject = subject.setSupplyKey(someKey);
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
 
         // expect:
         assertFailsWith(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)), TREASURY_MUST_OWN_BURNED_NFT);
 
         // and when:
-        oneToBurn.setOwner(treasuryId);
+
+        oneToBurn = new UniqueToken(subject.getId(), 1L, null, treasuryId, null, new byte[] {});
+        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
         assertDoesNotThrow(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)));
     }
 
     @Test
     void cannotMintPastSerialNoLimit() {
         // setup:
+        subject = subject.setSupplyKey(someKey);
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         final var twoMeta = List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("Z"));
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.setLastUsedSerialNumber(MAX_NUM_ALLOWED - 1);
+        subject = subject.setLastUsedSerialNumber(MAX_NUM_ALLOWED - 1);
 
-        assertFailsWith(
-                () -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
+        assertFailsWith(() -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
                 SERIAL_NUMBER_LIMIT_REACHED);
     }
 
     @Test
     void uniqueMintFailsAsExpected() {
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
-        subject.setSupplyKey(someKey);
+        subject = new Token(tokenId, false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE, 100000,
+                20000L, null, null, someKey, null, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
+                , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
         final var ownershipTracker = mock(OwnershipTracker.class);
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
@@ -485,39 +436,10 @@ class TokenTest {
     }
 
     @Test
-    void objectContractWorks() {
-        subject.setLastUsedSerialNumber(1);
-        assertEquals(1, subject.getLastUsedSerialNumber());
-        subject.setFrozenByDefault(false);
-        assertFalse(subject.isFrozenByDefault());
-
-        final var wipeKey = TxnHandlingScenario.TOKEN_WIPE_KT.asJKeyUnchecked();
-        subject.setWipeKey(wipeKey);
-        assertEquals(wipeKey, subject.getWipeKey());
-
-        final var account = new Account(Id.DEFAULT);
-        subject.setTreasury(account);
-        assertEquals(account, subject.getTreasury());
-
-        subject.setAutoRenewAccount(account);
-        assertEquals(account, subject.getAutoRenewAccount());
-
-        final var hmap = new HashMap<Long, UniqueToken>();
-        hmap.put(1L, new UniqueToken(new Id(1, 2, 3), 4));
-        subject.setLoadedUniqueTokens(hmap);
-        assertEquals(hmap, subject.getLoadedUniqueTokens());
-
-        subject.setType(TokenType.FUNGIBLE_COMMON);
-        assertTrue(subject.isFungibleCommon());
-        assertFalse(subject.isNonFungibleUnique());
-
-        subject.setNew(true);
-        assertTrue(subject.isNew());
-    }
-
-    @Test
     void reflectionObjectHelpersWork() {
-        final var otherToken = new Token(new Id(1, 2, 3));
+        final var otherToken = new Token(new Id(1,2, 3), false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE, 100000,
+                20000L, null, null, someKey, null, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
+                , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
 
         assertNotEquals(subject, otherToken);
         assertNotEquals(subject.hashCode(), otherToken.hashCode());
@@ -525,14 +447,12 @@ class TokenTest {
 
     @Test
     void toStringWorks() {
-        final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false,"
-                + " treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, ownedNfts=0,"
-                + " alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=,"
-                + " cryptoAllowances=null, fungibleTokenAllowances=null,"
-                + " approveForAllNfts=null, numAssociations=2, numPositiveBalances=1,"
-                + " ethereumNonce=0}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>,"
-                + " frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0,"
-                + " pauseKey=<N/A>, paused=false}";
+        final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false," + " treasury=Account{id=0" +
+                ".0.0, expiry=0, balance=0, deleted=false, ownedNfts=0," + " alreadyUsedAutoAssociations=0, " +
+                "maxAutoAssociations=0, alias=," + " cryptoAllowances=null, fungibleTokenAllowances=null," + " " +
+                "approveForAllNfts=null, numAssociations=2, numPositiveBalances=1," + " ethereumNonce=0}, " +
+                "autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>," + " frozenByDefault=false, supplyKey=<N/A>, " +
+                "currentSerialNumber=0," + " pauseKey=<N/A>, paused=false}";
 
         assertEquals(desired, subject.toString());
     }

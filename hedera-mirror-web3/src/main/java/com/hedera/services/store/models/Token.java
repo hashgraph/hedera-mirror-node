@@ -159,6 +159,48 @@ public class Token {
                 oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
     }
 
+    private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, tokenType, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+    }
+
+    private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+    }
+    private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, kycKey, freezeKey, oldToken.supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+    }
+    private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, supplyKey,
+                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+    }
+
+    private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
+        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
+                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
+                wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
+                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
+                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+    }
     /**
      * Creates a new instance of the model token, which is later persisted in state.
      *
@@ -355,19 +397,6 @@ public class Token {
         return createNewTokenWithNewTotalSupply(this, newTotalSupply);
     }
 
-    /**
-     * Performs a check if the target token has an admin key. If the admin key is not present throws an exception and
-     * does not mutate the token. If the admin key is present, marks it as deleted.
-     */
-    public Token delete() {
-        validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        return createNewDeletedToken(this);
-    }
-
-    public boolean hasAdminKey() {
-        return adminKey != null;
-    }
-
     public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
         final var newRel = new TokenRelationship(this, account);
         if (hasFreezeKey() && frozenByDefault) {
@@ -451,6 +480,36 @@ public class Token {
         return "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
     }
 
+    public Token delete() {
+        validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
+        return createNewDeletedToken(this);
+    }
+
+    public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {
+        return createNewTokenWithNewLastUsedSerialNumber(this, lastUsedSerialNumber);
+    }
+
+    public Token setType(TokenType tokenType) {
+        return createNewTokenWithTokenType(this, tokenType);
+    }
+
+    public Token setKycKey(JKey kycKey) {
+        return createNewTokenWithKycKey(this, kycKey);
+    }
+
+    public Token setFreezeKey(JKey freezeKey) {
+        return createNewTokenWithFreezeKey(this, freezeKey);
+    }
+    public Token setWipeKey(JKey wipeKey) {
+        return createNewTokenWithWipeKey(this, wipeKey);
+    }
+    public Token setSupplyKey(JKey supplyKey) {
+        return createNewTokenWithSupplyKey(this, supplyKey);
+    }
+    public boolean hasAdminKey() {
+        return adminKey != null;
+    }
+
     public Account getTreasury() {
         return treasury;
     }
@@ -469,10 +528,6 @@ public class Token {
 
     public JKey getSupplyKey() {
         return supplyKey;
-    }
-
-    public void setFreezeKey(final JKey freezeKey) {
-        this.freezeKey = freezeKey;
     }
 
     public boolean hasFreezeKey() {
