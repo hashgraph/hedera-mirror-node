@@ -24,7 +24,6 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
 
 import lombok.RequiredArgsConstructor;
 
