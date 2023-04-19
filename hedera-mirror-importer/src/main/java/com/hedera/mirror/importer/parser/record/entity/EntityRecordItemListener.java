@@ -29,6 +29,8 @@ import com.google.protobuf.UnknownFieldSet;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 
+import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -391,7 +393,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
             EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
             syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId,
-                    Math.abs(amount), false));
+                    Math.abs(amount)));
         }
     }
 
@@ -399,7 +401,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                                    boolean isSingleTransfer, int i, EntityId accountId, long amount) {
         if (isSingleTransfer && amount > 0) {
             EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
-            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount, false));
+            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
         }
     }
 
@@ -482,7 +484,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
             syntheticContractLogService
-                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber, true));
+                    .create(new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
     }
 

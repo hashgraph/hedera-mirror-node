@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
+import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
 
@@ -67,7 +68,7 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
                 var nft = new Nft(serialNumber, tokenId);
                 nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
                 entityListener.onNft(nft);
-                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber, false));
+                syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
             }
         }
     }

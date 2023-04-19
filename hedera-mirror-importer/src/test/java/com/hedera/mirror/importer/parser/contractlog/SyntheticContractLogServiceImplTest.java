@@ -67,14 +67,14 @@ class SyntheticContractLogServiceImplTest {
     @Test
     @DisplayName("Should be able to create valid synthetic contract log")
     void createValid() {
-        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount, false));
+        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount));
         verify(entityListener, times(1)).onContractLog(any());
     }
 
     @Test
     @DisplayName("Should be able to create valid synthetic contract log with indexed value")
     void createValidIndexed() {
-        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount, true));
+        syntheticContractLogService.create(new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, amount));
         verify(entityListener, times(1)).onContractLog(any());
     }
 
@@ -82,7 +82,7 @@ class SyntheticContractLogServiceImplTest {
     @DisplayName("Should not create synthetic contract log with contract")
     void createWithContract() {
         recordItem = recordItemBuilder.contractCall().build();
-        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount, false));
+        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount));
         verify(entityListener, times(0)).onContractLog(any());
     }
 
@@ -90,7 +90,7 @@ class SyntheticContractLogServiceImplTest {
     @DisplayName("Should not create synthetic contract log with entity property turned off")
     void createTurnedOff() {
         entityProperties.getPersist().setSyntheticContractLogs(false);
-        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount, false));
+        syntheticContractLogService.create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, amount));
         verify(entityListener, times(0)).onContractLog(any());
     }
 }

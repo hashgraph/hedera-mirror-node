@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
+import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
@@ -148,7 +149,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 if (nftSerialAllowanceState.putIfAbsent(nft.getId(), nft) == null) {
                     entityListener.onNft(nft);
                     if (!hasApprovedForAll) {
-                        syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spender, serialNumber, true));
+                        syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(recordItem, tokenId, ownerAccountId, spender, serialNumber));
                     }
                 }
             }
@@ -207,7 +208,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
             if (tokenAllowanceState.putIfAbsent(tokenAllowance.getId(), tokenAllowance) == null) {
                 entityListener.onTokenAllowance(tokenAllowance);
-                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount(), false));
+                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
             }
         }
     }
