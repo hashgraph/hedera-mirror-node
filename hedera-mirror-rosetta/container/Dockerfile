@@ -2,7 +2,7 @@
 # Importer, Rosetta and PostgreSQL into one image
 # and run the services using supervisord
 
-FROM ubuntu:22.04 as builder
+FROM ubuntu:kinetic as builder
 ENV LANG=C.UTF-8
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --no-install-recommends && apt-get install -y gcc git openjdk-17-jdk-headless wget
@@ -26,7 +26,7 @@ RUN mkdir importer rosetta scripts \
 # --------------------------- Runner Container --------------------------- #
 # ######################################################################## #
 
-FROM ubuntu:22.04 as runner
+FROM ubuntu:kinetic as runner
 
 # ---------------------- Install Deps & PostgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
