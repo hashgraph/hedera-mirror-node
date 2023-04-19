@@ -24,6 +24,11 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    loki:
+      singleBinary:
+        resources:
+          limits:
+            memory: 384Mi
     prometheus:
       prometheus:
         prometheusSpec:
@@ -47,6 +52,12 @@ spec:
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
+      resources:
+        limits:
+          cpu: 1500m
+          memory: 2000Mi
+        requests:
+          cpu: "1"
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
