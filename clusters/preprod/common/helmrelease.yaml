@@ -69,10 +69,7 @@ spec:
     traefik:
       resources:
         limits:
-          cpu: 1500m
           memory: 2000Mi
-        requests:
-          cpu: "1"
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod"} } }'
