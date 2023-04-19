@@ -27,6 +27,11 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    loki:
+      singleBinary:
+        resources:
+          limits:
+            memory: 512Mi
     prometheus:
       prometheus:
         prometheusSpec:
