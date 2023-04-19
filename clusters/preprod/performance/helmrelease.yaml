@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.78.0-rc1'
+      version: '0.79.0-beta1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -34,6 +34,9 @@ spec:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
+      resources:
+        limits:
+          memory: 6Gi
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
@@ -46,20 +49,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
-    rest:
-      hpa:
-        metrics:
-          - type: Resource
-            resource:
-              name: cpu
-              target:
-                type: Utilization
-                averageUtilization: 80
-      resources:
-        limits:
-          cpu: 1150m
-        requests:
-          cpu: 700m
     test:
       enabled: true
       config:

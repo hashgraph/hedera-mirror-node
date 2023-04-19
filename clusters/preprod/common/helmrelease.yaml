@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.78.0-beta1'
+      version: '0.79.0-beta1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -52,12 +52,6 @@ spec:
                   regex: (dev|integration|integration-docker|staging-lg|staging-sm)
                   sourceLabels: [namespace]
           replicaExternalLabelName: __replica__
-          storageSpec:
-            volumeClaimTemplate:
-              spec:
-                resources:
-                  requests:
-                    storage: 100Gi
     promtail:
       config:
         snippets:
@@ -75,7 +69,10 @@ spec:
     traefik:
       resources:
         limits:
+          cpu: 1500m
           memory: 2000Mi
+        requests:
+          cpu: "1"
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod"} } }'
