@@ -82,32 +82,43 @@ public class ContractCallService {
                     ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
             stringResult = callResult.toHexString();
             return stringResult;
-        }finally {
+        } finally {
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }
 
+    /**
+     * This method estimates the amount of gas required to execute a smart contract function.
+     * The estimation process involves three steps:
+     * 1. Firstly, a call is made with the maximum gas value of 15 million to determine if the call
+     *    estimation is possible. This step is intended to quickly identify any issues that would
+     *    prevent the estimation from succeeding.
+     *
+     * 2. Finally, if the first step is successful, a binary search is initiated.
+     *    The lower bound of the search is the gas used in the first step, while the upper bound
+     *    is half of the maximum gas value .
+     */
     private String estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult initialCallResult = doProcessCall(params, params.getGas());
-        validateTxnResult(initialCallResult, ETH_ESTIMATE_GAS);
-        final long gasUsedByInitialCall = initialCallResult.getGasUsed();
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, properties.getMaxGasToUseLimit());
+        validateTxnResult(processingResult, ETH_ESTIMATE_GAS);
 
-        long estimatedGas = binarySearch(params, gasUsedByInitialCall, params.getGas());
+        final var gasUsedByInitialCall = processingResult.getGasUsed();
+        final var estimatedGas = binarySearch(params, gasUsedByInitialCall, properties.getMaxGasToUseLimit() / 2);
 
         return Long.toHexString(estimatedGas);
     }
 
-    /**Feature work: move to another class and compare performance with interpolation algo.
+    /**
+     * Future work: move to another class and compare performance with interpolation algo.
      */
     private long binarySearch(final CallServiceParameters params, long lo, long hi) {
         long prevGasLimit = lo;
-        while (lo + 1 < hi) {
-            long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params ,mid);
+       do {
+           long mid = (hi + lo) / 2 ;
+           HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params, mid);
 
-            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
+           boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
-
             if (err || gasUsed == 0) {
                 lo = mid;
             } else {
@@ -117,11 +128,12 @@ public class ContractCallService {
                 }
             }
             prevGasLimit = mid;
-        }
+        } while (lo + 1 < hi);
         return hi;
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters params, final long estimatedGas) {
+    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters params,
+                                                               final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
             transactionResult =

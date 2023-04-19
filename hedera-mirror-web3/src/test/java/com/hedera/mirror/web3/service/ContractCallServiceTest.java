@@ -136,6 +136,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var viewFuncHash = "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var expectedGasUsed = "179ee";
+        gas = 15_000_000L;
         final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
