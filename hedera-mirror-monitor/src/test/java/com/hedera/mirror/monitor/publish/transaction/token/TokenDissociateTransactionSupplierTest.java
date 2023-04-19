@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.TokenDissociateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -60,7 +61,7 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenDissociateTransactionSupplier.class;
     }
 }

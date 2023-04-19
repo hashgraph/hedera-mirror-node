@@ -25,11 +25,12 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Data;
 
+import com.hedera.mirror.monitor.ScenarioProperties;
 import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.ScenarioStatus;
 
 @Data
-public class TestScenario implements Scenario {
+public class TestScenario implements Scenario<ScenarioProperties, Object> {
 
     private long count = 1;
     private Duration elapsed = Duration.ofSeconds(1L);

@@ -22,7 +22,6 @@ package com.hedera.services.contracts.gascalculator;
 
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -41,17 +40,13 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
  */
 @SuppressWarnings("java:S110")
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
+    private static final long LOG_STORAGE_DURATION_SEC = 180L;
 
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final UsagePricesProvider usagePrices;
     private final HbarCentExchange exchange;
 
     @Inject
-    public GasCalculatorHederaV19(
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final UsagePricesProvider usagePrices,
-            final HbarCentExchange exchange) {
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+    public GasCalculatorHederaV19(final UsagePricesProvider usagePrices, final HbarCentExchange exchange) {
         this.usagePrices = usagePrices;
         this.exchange = exchange;
     }
@@ -101,6 +96,6 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
     }
 
     long getLogStorageDuration() {
-        return mirrorNodeEvmProperties.cacheRecordsTtl();
+        return LOG_STORAGE_DURATION_SEC;
     }
 }

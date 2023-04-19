@@ -20,11 +20,11 @@
 
 package com.hedera.services.fees;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.time.Instant;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -34,22 +34,15 @@ import lombok.RequiredArgsConstructor;
 @Named
 @RequiredArgsConstructor
 public final class BasicHbarCentExchange implements HbarCentExchange {
-    private ExchangeRateSet exchangeRates;
-
     private final RatesAndFeesLoader ratesAndFeesLoader;
 
     @Override
     public ExchangeRate rate(final Timestamp now) {
-        exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
-        return rateAt(now.getSeconds());
+        final var exchangeRates = ratesAndFeesLoader.loadExchangeRates(DomainUtils.timestampInNanosMax(now));
+        return rateAt(now.getSeconds(), exchangeRates);
     }
 
-    @Override
-    public ExchangeRate activeRate(final Instant now) {
-        return rateAt(now.getEpochSecond());
-    }
-
-    private ExchangeRate rateAt(final long now) {
+    private ExchangeRate rateAt(final long now, final ExchangeRateSet exchangeRates) {
         final var currentRate = exchangeRates.getCurrentRate();
         final var currentExpiry = currentRate.getExpirationTime().getSeconds();
         return (now < currentExpiry) ? currentRate : exchangeRates.getNextRate();

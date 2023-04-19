@@ -65,6 +65,7 @@ The following parameters can be used to configure a rest test:
 - DEFAULT_ACCOUNT_ID_TOKEN
 - DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
 - DEFAULT_ACCOUNT_BALANCE
+- DEFAULT_BALANCE_TIMESTAMP
 - DEFAULT_BLOCK_NUMBER
 - DEFAULT_BLOCK_HASH
 - DEFAULT_CONTRACT_ID
@@ -94,8 +95,8 @@ The following parameters can be used to configure a web3 test:
 - ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (Parent contract should be deployed)
-- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts should be deployed)
-- HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ViewContract contract in web3/reference should be deployed)
+- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/ErcTestContract.sol should be deployed)
+- HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (PrecompileTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/PrecompileTestContract.sol should be deployed)
 - KEY_TYPE - 64 character hex encoded key type without `0x` prefix
 - OPERATOR_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - SERIAL_NUMBER - 64 character hex encoded nft serial number without `0x` prefix

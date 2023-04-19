@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -57,7 +57,7 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TopicFeature {
 
@@ -79,7 +79,7 @@ public class TopicFeature {
     public void createNewTopic() {
         testInstantReference = Instant.now();
 
-        submitKey = PrivateKey.generate();
+        submitKey = PrivateKey.generateED25519();
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
@@ -93,8 +93,6 @@ public class TopicFeature {
         topicMessageQuery = new TopicMessageQuery()
                 .setTopicId(consensusTopicId)
                 .setStartTime(Instant.EPOCH);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
     }
 
     @Given("I successfully create a new open topic")
@@ -111,8 +109,6 @@ public class TopicFeature {
         topicMessageQuery = new TopicMessageQuery()
                 .setTopicId(consensusTopicId)
                 .setStartTime(Instant.EPOCH);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
     }
 
     @When("I successfully update an existing topic")
@@ -139,8 +135,6 @@ public class TopicFeature {
             consensusTopicId = new TopicId(0, 0, Long.parseLong(topicId));
             topicMessageQuery.setTopicId(consensusTopicId);
         }
-
-        log.debug("Set TopicMessageQuery with topic: {}, StartTime: {}", consensusTopicId, Instant.EPOCH);
         messageSubscribeCount = 0;
     }
 
@@ -165,11 +159,7 @@ public class TopicFeature {
         messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
-        log.debug("Subscribe TopicMessageQuery startTime : {}", startTime);
-
         topicMessageQuery.setStartTime(startTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
     }
 
     @Given("I provide a starting timestamp {string} and ending timestamp {string} and a number of messages {int} I " +
@@ -179,8 +169,6 @@ public class TopicFeature {
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp, Instant.now());
-        log.trace("Set TopicMessageQuery with topic: {}, startTime : {}. endTime : {}", consensusTopicId,
-                startTime, endTime);
 
         topicMessageQuery
                 .setStartTime(startTime)
@@ -193,14 +181,7 @@ public class TopicFeature {
 
         Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
         Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
-        log.trace("Subscribe TopicMessageQuery startTime : {}. endTime : {}", startTime, endTime);
-
-        topicMessageQuery
-                .setStartTime(startTime)
-                .setEndTime(endTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}",
-                consensusTopicId, startTime, endTime);
+        topicMessageQuery.setStartTime(startTime).setEndTime(endTime);
     }
 
     @Given("I provide a starting timestamp {string} and ending timestamp {string} and a limit of {int} messages I " +
@@ -214,9 +195,6 @@ public class TopicFeature {
                 .setStartTime(startTime)
                 .setEndTime(endTime)
                 .setLimit(limit);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}, limit: {}",
-                consensusTopicId, startTime, endTime, limit);
     }
 
     @When("I subscribe to the topic")
@@ -306,9 +284,6 @@ public class TopicFeature {
         }
 
         topicMessageQuery.setStartTime(startTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
-
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
 

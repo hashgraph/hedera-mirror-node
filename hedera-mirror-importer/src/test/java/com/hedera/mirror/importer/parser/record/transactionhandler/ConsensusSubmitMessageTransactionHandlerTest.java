@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,23 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 
 class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusSubmitMessageTransactionHandler();
+        return new ConsensusSubmitMessageTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
@@ -42,5 +49,47 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.TOPIC;
+    }
+
+    @Test
+    void updateTransaction() {
+        // Given
+        var recordItem = recordItemBuilder.consensusSubmitMessage().build();
+        var transaction = domainBuilder.transaction().get();
+        var topicMessage = ArgumentCaptor.forClass(TopicMessage.class);
+        var transactionBody = recordItem.getTransactionBody().getConsensusSubmitMessage();
+        var receipt = recordItem.getTransactionRecord().getReceipt();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verify(entityListener).onTopicMessage(topicMessage.capture());
+        assertThat(topicMessage.getValue())
+                .returns(transactionBody.getChunkInfo().getNumber(), TopicMessage::getChunkNum)
+                .returns(transactionBody.getChunkInfo().getTotal(), TopicMessage::getChunkTotal)
+                .returns(transaction.getConsensusTimestamp(), TopicMessage::getConsensusTimestamp)
+                .returns(transactionBody.getChunkInfo().getInitialTransactionID()
+                        .toByteArray(), TopicMessage::getInitialTransactionId)
+                .returns(transactionBody.getMessage().toByteArray(), TopicMessage::getMessage)
+                .returns(recordItem.getPayerAccountId(), TopicMessage::getPayerAccountId)
+                .returns(receipt.getTopicRunningHash().toByteArray(), TopicMessage::getRunningHash)
+                .returns((int) receipt.getTopicRunningHashVersion(), TopicMessage::getRunningHashVersion)
+                .returns(receipt.getTopicSequenceNumber(), TopicMessage::getSequenceNumber)
+                .returns(transaction.getEntityId(), TopicMessage::getTopicId);
+    }
+
+    @Test
+    void updateTransactionDisabled() {
+        // Given
+        entityProperties.getPersist().setTopics(false);
+        var recordItem = recordItemBuilder.consensusSubmitMessage().build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 }

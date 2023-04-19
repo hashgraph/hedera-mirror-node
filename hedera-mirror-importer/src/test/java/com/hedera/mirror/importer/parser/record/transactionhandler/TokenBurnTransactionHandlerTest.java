@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,15 +20,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.Token;
 
 class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenBurnTransactionHandler();
+        return new TokenBurnTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
@@ -41,5 +50,48 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.TOKEN;
+    }
+
+    @Test
+    void updateTransaction() {
+        // Given
+        var recordItem = recordItemBuilder.tokenBurn().build();
+        var transaction = domainBuilder.transaction().get();
+        var token = ArgumentCaptor.forClass(Token.class);
+        var nft = ArgumentCaptor.forClass(Nft.class);
+        var transactionBody = recordItem.getTransactionBody().getTokenBurn();
+        var receipt = recordItem.getTransactionRecord().getReceipt();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verify(entityListener).onToken(token.capture());
+        verify(entityListener).onNft(nft.capture());
+
+        assertThat(token.getValue())
+                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId())
+                .returns(receipt.getNewTotalSupply(), Token::getTotalSupply)
+                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp);
+
+        assertThat(nft.getValue())
+                .returns(true, Nft::getDeleted)
+                .returns(recordItem.getConsensusTimestamp(), Nft::getModifiedTimestamp)
+                .returns(transactionBody.getSerialNumbers(0), n -> n.getId().getSerialNumber())
+                .returns(transaction.getEntityId(), n -> n.getId().getTokenId());
+    }
+
+    @Test
+    void updateTransactionDisabled() {
+        // Given
+        entityProperties.getPersist().setTokens(false);
+        var recordItem = recordItemBuilder.tokenBurn().build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 }

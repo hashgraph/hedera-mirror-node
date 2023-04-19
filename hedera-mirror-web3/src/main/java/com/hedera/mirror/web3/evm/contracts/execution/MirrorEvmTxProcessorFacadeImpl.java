@@ -42,6 +42,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Named
+@SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;

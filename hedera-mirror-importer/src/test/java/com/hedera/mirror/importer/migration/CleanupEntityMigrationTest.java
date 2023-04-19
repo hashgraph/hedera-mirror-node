@@ -133,7 +133,6 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     private Optional<Entity> retrieveEntity(Long id) {
         return Optional.of(jdbcOperations.queryForObject(
                 "select * from entity where id = ?",
-                new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
                     entity.setAutoRenewAccountId(rs.getLong("auto_renew_account_id"));
@@ -151,9 +150,9 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                     entity.setShard(rs.getLong("shard"));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
                     entity.setType(EntityType.fromId(rs.getInt("type")));
-
                     return entity;
-                }));
+                },
+                new Object[] {id}));
     }
 
     @Test

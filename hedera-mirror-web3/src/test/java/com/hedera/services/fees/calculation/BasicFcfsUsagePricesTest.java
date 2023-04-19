@@ -20,13 +20,16 @@
 
 package com.hedera.services.fees.calculation;
 
+import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -107,13 +110,12 @@ class BasicFcfsUsagePricesTest {
     @BeforeEach
     void setup() {
         subject = new BasicFcfsUsagePrices(ratesAndFeesLoader);
-
-        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
     }
 
     @Test
     void updatesPricesWhenDefaultCalled() {
         // given:
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
 
@@ -121,12 +123,13 @@ class BasicFcfsUsagePricesTest {
         subject.defaultPricesGiven(ContractCall, at);
 
         // then:
-        verify(ratesAndFeesLoader).loadFeeSchedules(at.getSeconds());
+        verify(ratesAndFeesLoader).loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
     }
 
     @Test
     void getsTransferUsagePricesAtCurrent() {
         // given:
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
 
@@ -140,6 +143,7 @@ class BasicFcfsUsagePricesTest {
     @Test
     void getsTransferUsagePricesAtNext() {
         // given:
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry + 1).build();
 
@@ -148,5 +152,17 @@ class BasicFcfsUsagePricesTest {
 
         // then:
         assertEquals(nextUsagePrices, actual);
+    }
+
+    @Test
+    void usesDefaultPricesForNoFunctionUsagePrices() {
+        final Timestamp at =
+                Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
+
+        // when:
+        final var prices = subject.pricesGiven(ContractCreate, at, feeSchedules);
+
+        // then:
+        assertEquals(DEFAULT_RESOURCE_PRICES, prices);
     }
 }

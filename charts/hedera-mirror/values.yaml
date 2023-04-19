@@ -64,11 +64,15 @@ citus:
   architecture: replication
   enabled: false
   image:
-    repository: xinatswirlds/citus
-    tag: 11.2.0-pg14
+    repository: mirrornodeswirldslabs/citus
+    tag: 11.2.0
   nameOverride: citus
   primary:
-    args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
+    args:
+    - "-c"
+    - "config_file=/bitnami/postgresql/conf/postgresql.conf"
+    - "-c"
+    - "hba_file=/bitnami/postgresql/conf/pg_hba.conf"
     configuration: |
       checkpoint_timeout = 1800
       citus.executor_slow_start_interval = 100ms
@@ -92,6 +96,15 @@ citus:
     initdb:
       scriptsConfigMap: "{{ .Release.Name }}-init"
     name: coordinator
+    pgHbaConfiguration: |
+      local   all             all                                     trust
+      host    all             all             127.0.0.1/32            trust
+      host    all             all             ::1/128                 trust
+      local   replication     all                                     trust
+      host    replication     all             127.0.0.1/32            trust
+      host    replication     all             ::1/128                 trust
+      host    replication     all             all                     scram-sha-256
+      host    all             all             all                     scram-sha-256
     startupProbe:
       enabled: true
       failureThreshold: 60
@@ -411,6 +424,7 @@ test:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
+  extraArgs: "-Dcucumber.ansi-colors.disabled=true"
   git:
     branch: ""  # Default to Chart app version
     repository: hashgraph/hedera-mirror-node
@@ -420,10 +434,10 @@ test:
     tag: latest
   resources:
     limits:
-      cpu: 1
+      cpu: 3
       memory: 4096Mi
     requests:
-      cpu: 500m
+      cpu: 1
       memory: 2048Mi
 
 web3:

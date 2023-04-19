@@ -36,14 +36,14 @@ const processRow = (row) => {
     row.balance === undefined
       ? null
       : {
-        balance: row.balance,
-        timestamp: utils.nsToSecNs(row.consensus_timestamp),
-        tokens: utils.parseTokenBalances(row.token_balances),
-      };
+          balance: row.balance,
+          timestamp: utils.nsToSecNs(row.consensus_timestamp),
+          tokens: utils.parseTokenBalances(row.token_balances),
+        };
   const entityId = EntityId.parse(row.id);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
   if (evmAddress === null) {
-    if (alias && row.alias.length == constants.EVM_ADDRESS_LENGTH) {
+    if (alias && row.alias.length === constants.EVM_ADDRESS_LENGTH) {
       evmAddress = utils.toHexString(row.alias, true);
     } else {
       evmAddress = entityId.toEvmAddress();
@@ -130,7 +130,14 @@ const getEntityBalanceQuery = (
   ]
     .filter((x) => !!x)
     .join(' and ');
-  const params = utils.mergeParams([], tokenBalanceQuery.params, balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
+  const params = utils.mergeParams(
+    [],
+    tokenBalanceQuery.params,
+    balanceQuery.params,
+    entityAccountQuery.params,
+    pubKeyQuery.params,
+    limitParams
+  );
   const query = `
     with latest_token_balance as (
       select account_id, balance, token_id
@@ -395,14 +402,14 @@ const acceptedAccountsParameters = new Set([
   constants.filterKeys.ACCOUNT_PUBLICKEY,
   constants.filterKeys.BALANCE,
   constants.filterKeys.LIMIT,
-  constants.filterKeys.ORDER
+  constants.filterKeys.ORDER,
 ]);
 
 const acceptedSingleAccountParameters = new Set([
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP,
-  constants.filterKeys.TRANSACTION_TYPE
+  constants.filterKeys.TRANSACTION_TYPE,
 ]);
 
 if (utils.isTestEnv()) {

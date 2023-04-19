@@ -24,7 +24,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.DOWNLOADED;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.VERIFIED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,8 +33,11 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +87,7 @@ class NodeSignatureVerifierTest {
         nodeSignatureVerifier = new NodeSignatureVerifier(consensusValidator);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
-        consensusValidator.validate(isA(List.class));
+        consensusValidator.validate(any());
     }
 
     @Test

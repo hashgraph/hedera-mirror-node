@@ -150,7 +150,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         });
     }
 
-    private void migrateSync(AsyncJavaMigration migration) throws Exception {
+    private void migrateSync(AsyncJavaMigration<?> migration) throws Exception {
         migration.doMigrate();
 
         while (!migration.isComplete()) {

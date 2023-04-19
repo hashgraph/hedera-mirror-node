@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class TokenUnpauseTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -54,7 +55,7 @@ class TokenUnpauseTransactionSupplierTest extends AbstractTransactionSupplierTes
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenFreezeTransactionSupplier.class;
     }
 }

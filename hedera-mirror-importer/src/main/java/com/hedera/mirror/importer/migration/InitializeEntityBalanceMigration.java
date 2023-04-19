@@ -62,7 +62,7 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
             update entity
             set balance = s.balance
             from state s
-            where account_id = id and deleted is not true and type in ('ACCOUNT', 'CONTRACT');
+            where account_id = id and type in ('ACCOUNT', 'CONTRACT');
             """;
 
     private final JdbcOperations jdbcOperations;

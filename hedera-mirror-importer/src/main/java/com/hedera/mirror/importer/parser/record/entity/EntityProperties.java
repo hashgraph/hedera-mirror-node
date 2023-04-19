@@ -60,6 +60,8 @@ public class EntityProperties {
 
         private boolean schedules = true;
 
+        private boolean syntheticContractLogs = true;
+
         private boolean systemFiles = true;
 
         private boolean tokens = true;

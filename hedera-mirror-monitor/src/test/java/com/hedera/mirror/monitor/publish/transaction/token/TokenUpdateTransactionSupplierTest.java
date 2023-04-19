@@ -32,6 +32,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -64,7 +65,7 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
     void createWithCustomData() {
         Duration autoRenewPeriod = Duration.ofSeconds(1);
         Instant expirationTime = Instant.now().plus(1, ChronoUnit.DAYS);
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenUpdateTransactionSupplier tokenUpdateTransactionSupplier = new TokenUpdateTransactionSupplier();
         tokenUpdateTransactionSupplier.setAdminKey(key.toString());
@@ -122,7 +123,7 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenUpdateTransactionSupplier.class;
     }
 }

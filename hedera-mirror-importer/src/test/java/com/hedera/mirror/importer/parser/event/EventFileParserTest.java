@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
-class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> {
+class EventFileParserTest extends AbstractStreamFileParserTest<EventFile, EventFileParser> {
 
     private long count = 0;
 
@@ -55,15 +55,14 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
     }
 
     @Override
-    protected StreamFileRepository getStreamFileRepository() {
+    protected StreamFileRepository<EventFile, Long> getStreamFileRepository() {
         return eventFileRepository;
     }
 
     @Override
-    protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
-        super.assertParsed(streamFile, parsed, dbError);
+    protected void assertParsed(EventFile eventFile, boolean parsed, boolean dbError) {
+        super.assertParsed(eventFile, parsed, dbError);
 
-        EventFile eventFile = (EventFile) streamFile;
         if (parsed) {
             verify(eventFileRepository).save(eventFile);
         } else {
@@ -74,7 +73,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
     }
 
     @Override
-    protected StreamFile getStreamFile() {
+    protected EventFile getStreamFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
         String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);

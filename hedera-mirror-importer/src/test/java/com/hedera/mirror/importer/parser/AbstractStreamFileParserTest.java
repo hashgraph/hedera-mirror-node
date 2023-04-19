@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 @ExtendWith(MockitoExtension.class)
-public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
+public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T extends StreamFileParser<F>> {
 
     protected T parser;
 
@@ -45,9 +45,9 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
     protected abstract T getParser();
 
-    protected abstract StreamFile getStreamFile();
+    protected abstract F getStreamFile();
 
-    protected abstract StreamFileRepository getStreamFileRepository();
+    protected abstract StreamFileRepository<F, ?> getStreamFileRepository();
 
     protected abstract void mockDbFailure();
 
@@ -62,7 +62,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
     @ParameterizedTest
     void parse(boolean startAndEndSame) {
         // given
-        StreamFile streamFile = getStreamFile();
+        F streamFile = getStreamFile();
         if (startAndEndSame) {
             streamFile.setConsensusStart(streamFile.getConsensusStart());
         }
@@ -78,7 +78,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
     void disabled() {
         // given
         parserProperties.setEnabled(false);
-        StreamFile streamFile = getStreamFile();
+        F streamFile = getStreamFile();
 
         // when
         parser.parse(streamFile);
@@ -91,7 +91,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
     @ParameterizedTest
     void alreadyExists(boolean startAndEndSame) {
         // given
-        StreamFile streamFile = getStreamFile();
+        F streamFile = getStreamFile();
         if (startAndEndSame) {
             streamFile.setConsensusStart(streamFile.getConsensusStart());
         }
@@ -107,7 +107,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
     @Test
     void failureShouldRollback() {
         // given
-        StreamFile streamFile = getStreamFile();
+        F streamFile = getStreamFile();
         mockDbFailure();
 
         // when
@@ -119,7 +119,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         assertParsed(streamFile, false, true);
     }
 
-    protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
+    protected void assertParsed(F streamFile, boolean parsed, boolean dbError) {
         assertThat(streamFile.getBytes()).isNotNull();
         assertThat(streamFile.getItems()).isNotNull();
     }

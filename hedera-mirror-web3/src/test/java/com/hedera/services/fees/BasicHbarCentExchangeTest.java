@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -66,7 +67,7 @@ class BasicHbarCentExchangeTest {
     void updatesRatesWhenRatesCalled() {
         subject.rate(beforeCrossTime);
 
-        verify(ratesAndFeesLoader).loadExchangeRates(beforeCrossTime.getSeconds());
+        verify(ratesAndFeesLoader).loadExchangeRates(DomainUtils.timestampInNanosMax(beforeCrossTime));
     }
 
     @Test

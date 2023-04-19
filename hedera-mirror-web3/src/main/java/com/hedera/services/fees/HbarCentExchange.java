@@ -22,10 +22,7 @@ package com.hedera.services.fees;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.time.Instant;
 
 public interface HbarCentExchange {
     ExchangeRate rate(Timestamp at);
-
-    ExchangeRate activeRate(Instant now);
 }

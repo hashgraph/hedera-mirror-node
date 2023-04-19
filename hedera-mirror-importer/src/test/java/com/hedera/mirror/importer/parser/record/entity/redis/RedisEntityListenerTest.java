@@ -106,29 +106,46 @@ class RedisEntityListenerTest {
     }
 
     @Test
-    void onDuplicateTopicMessages() throws InterruptedException {
+    void onUnduplicatedTopicMessages() throws InterruptedException {
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
-        TopicMessage topicMessage3 = topicMessage();
 
         //submitAndSave two messages, verify publish logic called twice
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
         verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2))
                 .executePipelined(any(SessionCallback.class));
+    }
 
-        //submitAndSave two duplicate messages, verify publish was not attempted
-        Mockito.reset(redisOperations);
+    @Test
+    void onDuplicateTopicMessages() throws InterruptedException {
+        TopicMessage topicMessage1 = topicMessage();
+        TopicMessage topicMessage2 = topicMessage();
+
+        //submitAndSave two different messages, then duplicates of each
+        // verify publish was only attempted twice (duplicates are skipped over)
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(0))
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
+        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2))
                 .executePipelined(any(SessionCallback.class));
+    }
 
-        //submitAndSave third new unique message, verify publish called once.
-        Mockito.reset(redisOperations);
+    @Test
+    void onDuplicateThenNewTopicMessages() throws InterruptedException {
+        TopicMessage topicMessage1 = topicMessage();
+        TopicMessage topicMessage2 = topicMessage();
+        TopicMessage topicMessage3 = topicMessage();
+
+        //same as above test, plus one new message at the end
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
+        submitAndSave(topicMessage1);
+        submitAndSave(topicMessage2);
         submitAndSave(topicMessage3);
-        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(1))
+        // verify publish was only attempted three times (duplicates are skipped over)
+        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(3))
                 .executePipelined(any(SessionCallback.class));
     }
 

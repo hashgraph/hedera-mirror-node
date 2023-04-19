@@ -22,10 +22,9 @@ package com.hedera.services.fees.calculation;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
-import com.hedera.services.utils.accessors.TxnAccessor;
-
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -79,39 +78,53 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                     .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
                     .build());
 
-    private Timestamp currFunctionUsagePricesExpiry;
-    private Timestamp nextFunctionUsagePricesExpiry;
-
-    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
-    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
-
     private final RatesAndFeesLoader ratesAndFeesLoader;
 
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
-        final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(at.getSeconds());
-        this.setFeeSchedules(feeSchedules);
-        return pricesGiven(function, at).get(DEFAULT);
+        final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
+        return pricesGiven(function, at, feeSchedules).get(DEFAULT);
     }
 
     @Override
-    public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
+    public Map<SubType, FeeData> pricesGiven(
+            final HederaFunctionality function, final Timestamp at, final CurrentAndNextFeeSchedule feeSchedules) {
         try {
-            return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
+            final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
+                    applicableUsagePrices(at, feeSchedules);
+            final Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
+            Objects.requireNonNull(usagePrices);
+            return usagePrices;
         } catch (final Exception e) {
-            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+            log.debug(
+                    "Default usage price will be used, no specific usage prices available for" + " function {} @ {}!",
+                    function,
+                    Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
         }
         return DEFAULT_RESOURCE_PRICES;
     }
 
-    public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {
-        currFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getCurrentFeeSchedule());
-        currFunctionUsagePricesExpiry =
-                asTimestamp(feeSchedules.getCurrentFeeSchedule().getExpiryTime());
+    private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
+            final Timestamp at, final CurrentAndNextFeeSchedule feeSchedules) {
+        final var applicableSchedule = onlyNextScheduleApplies(at, feeSchedules)
+                ? feeSchedules.getNextFeeSchedule()
+                : feeSchedules.getCurrentFeeSchedule();
 
-        nextFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getNextFeeSchedule());
-        nextFunctionUsagePricesExpiry =
+        return functionUsagePricesFrom(applicableSchedule);
+    }
+
+    private boolean onlyNextScheduleApplies(final Timestamp at, final CurrentAndNextFeeSchedule feeSchedules) {
+        final var currFunctionUsagePricesExpiry =
+                asTimestamp(feeSchedules.getCurrentFeeSchedule().getExpiryTime());
+        final var nextFunctionUsagePricesExpiry =
                 asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
+
+        return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds()
+                && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
+    }
+
+    private Timestamp asTimestamp(final TimestampSeconds ts) {
+        return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(final FeeSchedule feeSchedule) {
@@ -154,38 +167,5 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                 }
             }
         }
-    }
-
-    private Timestamp asTimestamp(final TimestampSeconds ts) {
-        return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
-    }
-
-    @Override
-    public Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at) {
-        try {
-            final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
-            final Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
-            Objects.requireNonNull(usagePrices);
-            return usagePrices;
-        } catch (final Exception e) {
-            log.debug(
-                    "Default usage price will be used, no specific usage prices available for" + " function {} @ {}!",
-                    function,
-                    Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
-        }
-        return DEFAULT_RESOURCE_PRICES;
-    }
-
-    private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {
-        if (onlyNextScheduleApplies(at)) {
-            return nextFunctionUsagePrices;
-        } else {
-            return currFunctionUsagePrices;
-        }
-    }
-
-    private boolean onlyNextScheduleApplies(final Timestamp at) {
-        return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds()
-                && at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
     }
 }

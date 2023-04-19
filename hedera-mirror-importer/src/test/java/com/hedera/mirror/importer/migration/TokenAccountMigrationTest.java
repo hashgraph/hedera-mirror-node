@@ -232,7 +232,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
         private long createdTimestamp;
         private TokenFreezeStatusEnum freezeStatus;
         private TokenKycStatusEnum kycStatus;
-        private Range timestampRange;
+        private Range<?> timestampRange;
         private long tokenId;
     }
 

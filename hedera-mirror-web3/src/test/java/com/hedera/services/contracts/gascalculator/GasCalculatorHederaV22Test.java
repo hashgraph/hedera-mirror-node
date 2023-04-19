@@ -69,12 +69,11 @@ class GasCalculatorHederaV22Test {
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHederaV22(mirrorNodeEvmProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Test
     void gasDepositCost() {
-        //        assertEquals(200 * 37, subject.codeDepositGasCost(37));
         assertEquals(0L, subject.codeDepositGasCost(37));
     }
 

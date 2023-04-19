@@ -86,6 +86,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         }, transactionBody, result.getNumber());
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction freezeTransaction() {
         return buildTransaction(builder -> builder.getFreezeBuilder()
                 .setEndHour(1)

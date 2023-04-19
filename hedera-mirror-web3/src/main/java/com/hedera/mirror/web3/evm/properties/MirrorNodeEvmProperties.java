@@ -41,6 +41,12 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+    @Getter
+    private boolean allowanceEnabled = false;
+
+    @Getter
+    private boolean approvedForAllEnabled = false;
+
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;

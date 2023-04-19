@@ -62,7 +62,7 @@ class GasCalculatorHederaV19Test {
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHederaV19(mirrorNodeEvmProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV19(usagePricesProvider, hbarCentExchange);
     }
 
     @Test

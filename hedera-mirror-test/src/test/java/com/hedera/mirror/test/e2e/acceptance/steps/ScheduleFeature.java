@@ -24,19 +24,17 @@ import static com.hedera.mirror.test.e2e.acceptance.config.ClientConfiguration.R
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorScheduleSignature;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-
 import java.util.List;
 import java.util.stream.Collectors;
-
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -49,11 +47,11 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorScheduleSignature;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import org.springframework.retry.support.RetryTemplate;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -82,15 +80,12 @@ public class ScheduleFeature {
                 .getCryptoTransferTransaction(
                         accountClient.getTokenTreasuryAccount().getAccountId(),
                         recipient.getAccountId(),
-                        Hbar.fromTinybars(DEFAULT_TINY_HBAR),
-                        false);
+                        Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
         createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) {
-        log.debug("Schedule creation ");
-
+    private void createNewSchedule(Transaction<?> transaction, KeyList innerSignatureKeyList) {
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
@@ -121,13 +116,11 @@ public class ScheduleFeature {
 
     @Then("the scheduled transaction is signed by {string}")
     public void accountSignsSignature(String accountName) {
-        log.debug("{} signs scheduledTransaction", accountName);
         signSignature(accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)));
     }
 
     @Then("the scheduled transaction is signed by treasuryAccount")
     public void treasurySignsSignature() {
-        log.debug("treasuryAccount signs scheduledTransaction");
         signSignature(accountClient.getTokenTreasuryAccount());
     }
 
@@ -161,7 +154,6 @@ public class ScheduleFeature {
 
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
     public void verifyMirrorAPIResponses(int status) {
-        log.info("Verify schedule transaction");
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
@@ -204,18 +196,18 @@ public class ScheduleFeature {
                 case EXECUTED -> {
                     assertThat(scheduleInfo.deletedAt).isNull();
                     assertThat(scheduleInfo.executedAt).isNotNull();
-                    TransactionReceipt transactionReceipt = scheduleClient.getTransactionReceipt(scheduledTransactionId);
+                    TransactionReceipt transactionReceipt =
+                            scheduleClient.getTransactionReceipt(scheduledTransactionId);
                     assertNotNull(transactionReceipt);
-                    log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
                 }
                 case DELETED -> {
                     assertThat(scheduleInfo.deletedAt).isNotNull();
                     assertThat(scheduleInfo.executedAt).isNull();
                 }
-                default -> {}
+                default -> {
+                }
             }
 
-            log.info("Schedule {} status was confirmed by network state", scheduleId);
             return null;
         });
     }
@@ -243,7 +235,6 @@ public class ScheduleFeature {
 
             assertNotNull(mirrorSchedule);
             assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
-            log.info("{} has {} signatories", scheduleId, mirrorSchedule.getSignatures().size());
 
             // get unique set of signatures
             var signatureSet = mirrorSchedule.getSignatures().stream()
@@ -254,7 +245,8 @@ public class ScheduleFeature {
             switch (scheduleStatus) {
                 case DELETED, NON_EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
                 case EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
-                default -> {}
+                default -> {
+                }
             }
 
             return mirrorSchedule;
@@ -262,7 +254,6 @@ public class ScheduleFeature {
     }
 
     private void verifyScheduledTransaction(String timestamp) {
-        log.info("Verify scheduled transaction {}", timestamp);
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactionInfoByTimestamp(timestamp);
 
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, HttpStatus.OK
