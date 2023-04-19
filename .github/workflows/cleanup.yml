@@ -54,5 +54,5 @@ jobs:
           done
           
           for digest in ${ALL_DIGESTS[@]}; do
-            gcloud container image delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
+            gcloud container images delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
           done
