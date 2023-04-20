@@ -21,7 +21,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.commons.codec.DecoderException;
 
 /**
@@ -210,20 +209,6 @@ public abstract class JKey {
         }
     }
 
-    public static boolean equalUpToDecodability(JKey a, JKey b) {
-        Key aKey = null;
-        Key bKey = null;
-        try {
-            aKey = mapJKey(a);
-        } catch (Exception ignore) {
-        }
-        try {
-            bKey = mapJKey(b);
-        } catch (Exception ignore) {
-        }
-        return Objects.equals(aKey, bKey);
-    }
-
     /**
      * Maps a JKey instance to a proto Key instance.
      *
@@ -253,10 +238,6 @@ public abstract class JKey {
     }
 
     public boolean hasEd25519Key() {
-        return false;
-    }
-
-    public boolean hasWildcardECDSAKey() {
         return false;
     }
 
