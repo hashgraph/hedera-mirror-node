@@ -18,14 +18,14 @@ package com.hedera.services.jproto;
 /**
  * Maps to proto Key.
  */
-public abstract class JKey {
+public interface JKey {
 
-    public abstract boolean isEmpty();
+    boolean isEmpty();
 
     /**
      * Expected to return {@code false} if the key is empty
      *
      * @return whether the key is valid
      */
-    public abstract boolean isValid();
+    boolean isValid();
 }
