@@ -35,6 +35,7 @@ public class EntityAddressSequencer {
     private final EntityRepository entityRepository;
     private final AtomicLong latestEntityId = new AtomicLong();
     private final AtomicLong numAllocatedIds = new AtomicLong();
+    private final AtomicLong latestMaxIdFromDB = new AtomicLong();
 
     public ContractID getNewContractId(Address sponsor) {
         final var nextId = getNextEntityId();
@@ -56,6 +57,14 @@ public class EntityAddressSequencer {
     }
 
     private void loadLatestFromRepository() {
-        latestEntityId.set(entityRepository.findMaxId());
+        final var currentMaxIdFromDB = new AtomicLong(entityRepository.findMaxId());
+
+        latestEntityId.set(currentMaxIdFromDB.get());
+
+        if(currentMaxIdFromDB.get() != latestMaxIdFromDB.get()) {
+            numAllocatedIds.set(0L);
+        }
+
+        latestMaxIdFromDB.set(currentMaxIdFromDB.get());
     }
 }
