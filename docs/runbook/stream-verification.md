@@ -1,23 +1,29 @@
 # Stream Verification
 
 ## Problem
+
 Stream files need to be verified for correctness or to identify a particular error observed when processing in an
 environment.
 
-## Setup Database
+## Setup
+* All commands are assumed to be run from the git repository root.
 
-1. cd {HEDERA_REPO}
-2. rm -r db
-3. docker-compose up db
+### DB
 
-## Configuration
+1. rm -r db
+2. docker-compose up db redis
+
+### Application Configuration
+
 Create application.yml in {HEDERA_REPO}/hedera-mirror-importer/config/
 
 1. Configure Network
 2. Configure start date
 3. Configure end date (optional)
 4. configure bucketName (blank will use the default bucket for the network)
-### For S3 download application.yml
+
+#### For S3 download application.yml
+
 ```yaml
 hedera:
   mirror:
@@ -35,9 +41,16 @@ hedera:
           sidecar: true
 ```
 
-### For Local Files application.yml
+#### For Local Files application.yml
+
+When starting the application, the following subdirectories will be created under `${hedera.mirror.importer.downloader.mirrorProperties.dataPath}`
+`/streams/accountBalances/record{NODE1...NODEn}` `/streams/recordstreams/record{NODE1...NODEn}` where n is the number of nodes in the address book.
+
 You will need the record file(s) and signature file(s) from at least 1/3 of the nodes and placed under the corresponding
-node folder in `${hedera.mirror.importer.downloader.mirrorProperties.dataPath}/streams/{accountBalances|recordstreams}/{NODE_FOLDER}`
+node folder in `${hedera.mirror.importer.downloader.mirrorProperties.dataPath}/streams/{accountBalances|recordstreams}/{NODE_FOLDER}`.
+
+These folders are watched for new files, so you may place the necessary files after application has started.
+
 ```yaml
 hedera:
   mirror:
@@ -48,16 +61,39 @@ hedera:
       downloader:
         cloudProvider: LOCAL
         mirrorProperties:
-          dataPath: {PATH_TO_RECORD_STREAMS} # will create sub dirs /streams/accountBalances/record{NODE1...NODEn} /streams/recordstreams/record{NODE1...NODEn}. Must have the signature file and the record file for 1/3 of nodes configured in address book
+          dataPath: { PATH_TO_RECORD_STREAMS }
       parser:
         record:
           sidecar: true
 ```
+
 ## Run the application
+
 1. cd {HEDERA_REPO}
 2. `./gradlew importer:bootRun`
 3. Optionally, run in an IDE and run the bootrun gradle task on the importer module
 
-## Verify Data
+## Verification
+
+### DB
+
 1. `psql -U mirror_node`
 2. password is located in docker-compose.yml in this repo and defaulted to `mirror_node_pass`
+3. Verify the record_file and/or account_balance_file table
+4. Verify any expected transactions
+
+#### Helpful Queries to verify data
+
+```sql
+SELECT * from record_file;
+
+SELECT * from account_balance_file;
+
+-- See TransactionType.java enum for readable type to int.
+select * from transaction where type = ?;
+```
+
+### Other
+
+1. Verify no errors in the application logs
+
