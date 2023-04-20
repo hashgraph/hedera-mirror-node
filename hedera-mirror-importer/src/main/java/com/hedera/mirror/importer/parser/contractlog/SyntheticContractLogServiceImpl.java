@@ -24,7 +24,6 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,6 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 import org.apache.tuweni.bytes.Bytes;
-import java.util.Arrays;
 
 @Named
 @RequiredArgsConstructor
@@ -64,7 +62,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
         contractLog.setTopic2(log.getTopic2());
         contractLog.setTopic3(log.getTopic3());
         contractLog.setTransactionIndex(log.getRecordItem().getTransactionIndex());
-        contractLog.setTransactionHash(Arrays.copyOfRange(DomainUtils.toBytes(log.getRecordItem().getTransactionRecord().getTransactionHash()), 0, 32));
+        contractLog.setTransactionHash(log.getRecordItem().getTransactionHash());
         entityListener.onContractLog(contractLog);
     }
 

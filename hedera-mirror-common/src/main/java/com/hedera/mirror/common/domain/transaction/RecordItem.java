@@ -28,8 +28,10 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.AccessLevel;
@@ -185,6 +187,17 @@ public class RecordItem implements StreamItem {
         }
 
         return dataCase.getNumber();
+    }
+
+    /**
+     * Check whether ethereum transaction exist in the record item and returns it hash, if not return 32-byte representation of the transaction hash
+     *
+     * @return 32-byte transaction hash of this record item
+     */
+    public byte[] getTransactionHash() {
+        return Optional.ofNullable(getEthereumTransaction())
+                .map(EthereumTransaction::getHash)
+                .orElseGet(() -> Arrays.copyOfRange(DomainUtils.toBytes(getTransactionRecord().getTransactionHash()), 0, 32));
     }
 
     private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
