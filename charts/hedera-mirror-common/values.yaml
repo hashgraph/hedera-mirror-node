@@ -414,7 +414,7 @@ traefik:
   resources:
     limits:
       cpu: 850m
-      memory: 1250Mi
+      memory: 2000Mi
     requests:
       cpu: 250m
       memory: 150Mi
