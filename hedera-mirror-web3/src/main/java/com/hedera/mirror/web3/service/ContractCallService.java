@@ -35,6 +35,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.CustomLog;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -49,7 +50,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 public class ContractCallService {
 
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
-    private final Map<CallType, Counter> gasPerSecondMetricMap;
+    private final Map<CallType, Pair<Counter,Counter>> gasPerSecondMetricMap;
     private final MirrorNodeEvmProperties properties;
 
     public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade,
@@ -57,12 +58,17 @@ public class ContractCallService {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
         this.properties = properties;
 
-        final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Counter>(CallType.class);
+        final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Pair<Counter,Counter>>(CallType.class);
         Arrays.stream(CallType.values()).forEach(type ->
-                gasPerSecondMetricEnumMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
+                gasPerSecondMetricEnumMap.put(type, Pair.of(Counter.builder("hedera.mirror.web3.call.gas")
                         .description("The amount of gas consumed by the EVM")
                         .tag("type", type.toString())
-                        .register(meterRegistry)));
+                        .register(meterRegistry),
+                        Counter.builder("hedera.mirror.web3.call.iterations")
+                                .description("The amount of time function is called")
+                                .tag("type", type.toString())
+                                .register(meterRegistry)
+                        )));
 
         gasPerSecondMetricMap = Collections.unmodifiableMap(gasPerSecondMetricEnumMap);
     }
@@ -113,10 +119,11 @@ public class ContractCallService {
      */
     private long binarySearch(final CallServiceParameters params, long lo, long hi) {
         long prevGasLimit = lo;
+        int iterationsMade = 0;
        do {
            long mid = (hi + lo) / 2 ;
            HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params, mid);
-
+           updateGasMetric(ETH_ESTIMATE_GAS, transactionResult, ++iterationsMade);
            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
             if (err || gasUsed == 0) {
@@ -153,18 +160,22 @@ public class ContractCallService {
     private void validateTxnResult(final HederaEvmTransactionProcessingResult txnResult,
                                    final CallType type) {
         if (!txnResult.isSuccessful()) {
-            updateGasMetric(ERROR, txnResult);
+            updateGasMetric(ERROR, txnResult, 1);
 
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             throw new InvalidTransactionException(getStatusOrDefault(txnResult),
                     maybeDecodeSolidityErrorStringToReadableMessage(revertReason), revertReason.toHexString());
         } else {
-            updateGasMetric(type, txnResult);
+            updateGasMetric(type, txnResult, 1);
         }
     }
 
-    private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result) {
-        final var counter = gasPerSecondMetricMap.get(callType);
-        counter.increment(result.getGasUsed());
+    private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result,
+                                 final int iterationsDone) {
+        final var gasUsedCounter = gasPerSecondMetricMap.get(callType).getLeft();
+        final var iterationCounter = gasPerSecondMetricMap.get(callType).getRight();
+
+        gasUsedCounter.increment(result.getGasUsed());
+        iterationCounter.increment(iterationsDone);
     }
 }

@@ -32,7 +32,7 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
-    private static final int MAX_REFUND_PERCENT = 20;
+    private static final int MAX_REFUND_PERCENT = 100;
     private static final Address FUNDING_ADDRESS =
             Address.fromHexString("0x0000000000000000000000000000000000000062");
 

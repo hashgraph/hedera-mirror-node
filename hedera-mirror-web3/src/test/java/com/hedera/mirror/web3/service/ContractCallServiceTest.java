@@ -77,7 +77,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             "0x00000000000000000000000000000000000003e4");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private long gas = 120000L;
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
@@ -312,7 +311,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .value(value)
                 .receiver(receiver)
                 .callData(data)
-                .gas(gas)
+                .gas(120000L)
                 .isEstimate(callType == ETH_ESTIMATE_GAS)
                 .isStatic(isStatic)
                 .callType(callType)
