@@ -78,7 +78,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             "0x00000000000000000000000000000000000003e4");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    LongFunction<String> hexValueOf = value -> stripStart(HexFormat.of().toHexDigits(value), "0");
+    private static final LongFunction<String> hexValueOf = value -> stripStart(HexFormat.of().toHexDigits(value), "0");
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
