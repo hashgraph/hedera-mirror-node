@@ -454,7 +454,7 @@ resources:
     cpu: 4
     memory: 4Gi
   requests:
-    cpu: 2
+    cpu: 200m
     memory: 512Mi
 
 revisionHistoryLimit: 3
