@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
@@ -47,14 +46,6 @@ public class JContractAliasKey extends JKey {
     @Override
     public boolean hasContractAlias() {
         return true;
-    }
-
-    public ContractID getContractID() {
-        return ContractID.newBuilder()
-                .setShardNum(shardNum)
-                .setRealmNum(realmNum)
-                .setEvmAddress(ByteString.copyFrom(evmAddress))
-                .build();
     }
 
     public long getShardNum() {

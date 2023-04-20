@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
-import com.hederahashgraph.api.proto.java.ContractID;
-
 import static com.swirlds.common.utility.CommonUtils.hex;
+
+import com.hederahashgraph.api.proto.java.ContractID;
 
 public class JDelegatableContractAliasKey extends JContractAliasKey {
     public JDelegatableContractAliasKey(final ContractID contractID) {

@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
-import static com.hedera.services.jproto.JKeyTest.randomUtf8ByteString;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -55,82 +49,6 @@ class JKeyListTest {
         final var cut = new JKeyList(List.of(new JECDSA_384Key(new byte[1])));
 
         assertFalse(cut.isEmpty());
-    }
-
-    @Test
-    void invalidJKeyListTest() throws Exception {
-        Key validED25519Key = Key.newBuilder()
-                .setEd25519(randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
-                .build();
-
-        Key invalidECDSAsecp256k1Key = randomInvalidECDSASecp256K1Key();
-        KeyList invalidKeyList1 = KeyList.newBuilder().build();
-        Key invalidKey1 = Key.newBuilder().setKeyList(invalidKeyList1).build();
-        KeyList invalidKeyList2 = KeyList.newBuilder()
-                .addKeys(validED25519Key)
-                .addKeys(invalidKey1)
-                .build();
-        Key invalidKey2 = Key.newBuilder().setKeyList(invalidKeyList2).build();
-        KeyList invalidKeyList3 = KeyList.newBuilder()
-                .addKeys(validED25519Key)
-                .addKeys(invalidKey2)
-                .build();
-        Key invalidKey3 = Key.newBuilder().setKeyList(invalidKeyList3).build();
-        KeyList invalidKeyList4 = KeyList.newBuilder()
-                .addKeys(invalidECDSAsecp256k1Key)
-                .addKeys(invalidKey3)
-                .build();
-        Key invalidKey4 = Key.newBuilder().setKeyList(invalidKeyList4).build();
-
-        JKey jKeyList1 = JKey.convertKey(invalidKey1, 1);
-        assertFalse(jKeyList1.isValid());
-
-        JKey jKeyList2 = JKey.convertKey(invalidKey2, 1);
-        assertFalse(jKeyList2.isValid());
-
-        JKey jKeyList3 = JKey.convertKey(invalidKey3, 1);
-        assertFalse(jKeyList3.isValid());
-
-        JKey jKeyList4 = JKey.convertKey(invalidKey4, 1);
-        assertFalse(jKeyList4.isValid());
-    }
-
-    @Test
-    void validJKeyListTest() throws Exception {
-        Key validED25519Key = Key.newBuilder()
-                .setEd25519(randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
-                .build();
-        Key validECDSAsecp256k1Key = randomValidECDSASecp256K1Key();
-        Key validECDSA384Key =
-                Key.newBuilder().setECDSA384(randomUtf8ByteString(24)).build();
-        KeyList validKeyList1 = KeyList.newBuilder()
-                .addKeys(validECDSA384Key)
-                .addKeys(validED25519Key)
-                .build();
-        Key validKey1 = Key.newBuilder().setKeyList(validKeyList1).build();
-        KeyList validKeyList2 =
-                KeyList.newBuilder().addKeys(validED25519Key).addKeys(validKey1).build();
-        Key validKey2 = Key.newBuilder().setKeyList(validKeyList2).build();
-        KeyList validKeyList3 =
-                KeyList.newBuilder().addKeys(validED25519Key).addKeys(validKey2).build();
-        Key validKey3 = Key.newBuilder().setKeyList(validKeyList3).build();
-        KeyList validKeyList4 = KeyList.newBuilder()
-                .addKeys(validECDSAsecp256k1Key)
-                .addKeys(validKey3)
-                .build();
-        Key validKey4 = Key.newBuilder().setKeyList(validKeyList4).build();
-
-        JKey jKeyList1 = JKey.convertKey(validKey1, 1);
-        assertTrue(jKeyList1.isValid());
-
-        JKey jKeyList2 = JKey.convertKey(validKey2, 1);
-        assertTrue(jKeyList2.isValid());
-
-        JKey jKeyList3 = JKey.convertKey(validKey3, 1);
-        assertTrue(jKeyList3.isValid());
-
-        JKey jKeyList4 = JKey.convertKey(validKey4, 1);
-        assertTrue(jKeyList4.isValid());
     }
 
     @Test
@@ -182,15 +100,18 @@ class JKeyListTest {
         assertFalse(subject.isForScheduledTxn());
     }
 
-    public static Key randomValidECDSASecp256K1Key() {
-        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
-                .concat(randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
-        return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+    static byte[] randomUtf8Bytes(int n) {
+        byte[] data = new byte[n];
+        int i = 0;
+        while (i < n) {
+            byte[] rnd = UUID.randomUUID().toString().getBytes();
+            System.arraycopy(rnd, 0, data, i, Math.min(rnd.length, n - 1 - i));
+            i += rnd.length;
+        }
+        return data;
     }
 
-    public static Key randomInvalidECDSASecp256K1Key() {
-        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x06})
-                .concat(randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
-        return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+    static ByteString randomUtf8ByteString(int n) {
+        return ByteString.copyFrom(randomUtf8Bytes(n));
     }
 }

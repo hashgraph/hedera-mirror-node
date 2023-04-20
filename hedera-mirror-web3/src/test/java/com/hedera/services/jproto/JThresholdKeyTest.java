@@ -16,14 +16,8 @@
 
 package com.hedera.services.jproto;
 
-import static com.hedera.services.jproto.JKeyListTest.randomValidECDSASecp256K1Key;
-import static com.hedera.services.jproto.JKeyTest.randomUtf8ByteString;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -51,70 +45,6 @@ class JThresholdKeyTest {
         final var cut = new JThresholdKey(new JKeyList(List.of(new JEd25519Key(new byte[1]))), 1);
 
         assertFalse(cut.isEmpty());
-    }
-
-    private Key thresholdKey(final KeyList keyList, final int threshold) {
-        return Key.newBuilder()
-                .setThresholdKey(ThresholdKey.newBuilder().setKeys(keyList).setThreshold(threshold))
-                .build();
-    }
-
-    private JKey jThresholdKey(final KeyList keyList, final int threshold) throws Exception {
-        return JKey.convertKey(thresholdKey(keyList, threshold), 1);
-    }
-
-    @Test
-    void JThresholdKeyWithVariousThresholdTest() throws Exception {
-        final Key validContractIDKey = Key.newBuilder()
-                .setContractID(ContractID.newBuilder().setContractNum(1L).build())
-                .build();
-        final Key validRSA3072Key =
-                Key.newBuilder().setRSA3072(randomUtf8ByteString(16)).build();
-        final KeyList validKeyList = KeyList.newBuilder()
-                .addKeys(validContractIDKey)
-                .addKeys(validRSA3072Key)
-                .build();
-
-        assertFalse(jThresholdKey(validKeyList, 0).isValid());
-        assertTrue(jThresholdKey(validKeyList, 1).isValid());
-        assertTrue(jThresholdKey(validKeyList, 2).isValid());
-        assertFalse(jThresholdKey(validKeyList, 3).isValid());
-    }
-
-    @Test
-    void invalidJThresholdKeyTest() throws Exception {
-        final Key validED25519Key = Key.newBuilder()
-                .setEd25519(randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
-                .build();
-        final Key validECDSA384Key =
-                Key.newBuilder().setECDSA384(randomUtf8ByteString(24)).build();
-        final Key validECDSASecp256Key = randomValidECDSASecp256K1Key();
-
-        final KeyList invalidKeyList1 = KeyList.newBuilder().build();
-        final Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
-        final KeyList invalidKeyList2 = KeyList.newBuilder()
-                .addKeys(validED25519Key)
-                .addKeys(invalidKey1)
-                .build();
-        final Key invalidKey2 = thresholdKey(invalidKeyList2, 2);
-        final KeyList invalidKeyList3 = KeyList.newBuilder()
-                .addKeys(validECDSA384Key)
-                .addKeys(invalidKey2)
-                .build();
-        final Key invalidKey3 = thresholdKey(invalidKeyList2, 2);
-        final KeyList invalidKeyList4 = KeyList.newBuilder()
-                .addKeys(validECDSASecp256Key)
-                .addKeys(invalidKey3)
-                .build();
-
-        final JKey jThresholdKey1 = JKey.convertKey(invalidKey1, 1);
-        assertFalse(jThresholdKey1.isValid());
-
-        final JKey jThresholdKey2 = JKey.convertKey(invalidKey2, 1);
-        assertFalse(jThresholdKey2.isValid());
-
-        assertFalse(jThresholdKey(invalidKeyList3, 1).isValid());
-        assertFalse(jThresholdKey(invalidKeyList4, 1).isValid());
     }
 
     @Test

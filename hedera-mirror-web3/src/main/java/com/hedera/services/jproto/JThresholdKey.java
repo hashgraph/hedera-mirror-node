@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
-/** Maps to proto Key of type ThresholdKey. */
+/**
+ * Maps to proto Key of type ThresholdKey.
+ */
 public class JThresholdKey extends JKey {
     int threshold;
     private JKeyList keys;

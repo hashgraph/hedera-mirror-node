@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
 import com.swirlds.common.utility.CommonUtils;
 
-/** Maps to proto Key of type RSA_3072. */
+/**
+ * Maps to proto Key of type RSA_3072.
+ */
 public class JRSA_3072Key extends JKey {
     private byte[] rsa3072;
 

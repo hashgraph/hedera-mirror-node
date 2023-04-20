@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.jproto;
 
-
-import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
-
 import java.util.Arrays;
 
-/** Maps to proto Key of type ECDSA_secp256k1Key */
+/**
+ * Maps to proto Key of type ECDSA_secp256k1Key
+ */
 public class JECDSASecp256k1Key extends JKey {
     private final byte[] ecdsaSecp256k1Key;
 
