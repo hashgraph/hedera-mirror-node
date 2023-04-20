@@ -76,6 +76,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    @Getter
+    @NotNull
+    private HederaChainId chainId = HederaChainId.TESTNET;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
@@ -98,7 +102,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return null;
+        return Bytes32.fromHexString(chainId.getChainId());
     }
 
     @Override
@@ -125,5 +129,16 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         OTHER(unhex("03"));
 
         private final byte[] ledgerId;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum HederaChainId {
+        MAINNET("0x0127"),
+        TESTNET("0x0128"),
+        PREVIEWNET("0x0129"),
+        OTHER("0x12A");
+
+        private final String chainId;
     }
 }

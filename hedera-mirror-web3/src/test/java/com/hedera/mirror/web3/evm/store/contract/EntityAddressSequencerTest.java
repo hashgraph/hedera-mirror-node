@@ -20,11 +20,13 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,6 +41,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EntityAddressSequencerTest {
     private static final long MAX_ID = 123L;
+    private static final long shardNum = 1L;
+    private static final long realmNum = 2L;
+    private static final Address sponsor = new Id(shardNum, realmNum, 111L).asEvmAddress();
 
     @Mock
     EntityRepository entityRepository;
@@ -53,11 +58,6 @@ class EntityAddressSequencerTest {
 
     @Test
     void getNewContractId() {
-        final long shardNum = 1L;
-        final long realmNum = 2L;
-
-        final Address sponsor = new Id(shardNum, realmNum, 111L).asEvmAddress();
-
         assertThat(entityAddressSequencer.getNewContractId(sponsor))
                 .returns(shardNum, ContractID::getShardNum)
                 .returns(realmNum, ContractID::getRealmNum)
@@ -66,18 +66,17 @@ class EntityAddressSequencerTest {
 
     @Test
     void getNextEntityIdReturnsNextId() {
-        final var actual = entityAddressSequencer.getNextEntityId();
-
-        assertThat(actual).isEqualTo(MAX_ID + 1);
+        final var actualAddress = entityAddressSequencer.getNewContractId(sponsor);
+        assertThat(actualAddress.getContractNum()).isEqualTo(MAX_ID + 1);
     }
 
     @Test
-    void getNextEntityIdGetsRepositoryValueOnlyOnce() {
-        entityAddressSequencer.getNextEntityId();
-        entityAddressSequencer.getNextEntityId();
-        final var actual = entityAddressSequencer.getNextEntityId();
+    void getNextEntityIdGetsRepositoryValueEverytime() {
+        entityAddressSequencer.getNewContractId(sponsor);
+        entityAddressSequencer.getNewContractId(sponsor);
+        final var actual = entityAddressSequencer.getNewContractId(sponsor);
 
-        assertThat(actual).isEqualTo(MAX_ID + 3);
-        verify(entityRepository, times(1)).findMaxId();
+        assertThat(actual.getContractNum()).isEqualTo(MAX_ID + 3);
+        verify(entityRepository, times(3)).findMaxId();
     }
 }

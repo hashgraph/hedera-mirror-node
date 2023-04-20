@@ -26,29 +26,36 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.ContractID;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
+import javax.inject.Named;
+import java.util.concurrent.atomic.AtomicLong;
 
+@Named
 @RequiredArgsConstructor
 public class EntityAddressSequencer {
     private final EntityRepository entityRepository;
-    private Long latestEntityId;
+    private final AtomicLong latestEntityId = new AtomicLong();
+    private final AtomicLong numAllocatedIds = new AtomicLong();
 
     public ContractID getNewContractId(Address sponsor) {
+        final var nextId = getNextEntityId();
+
+        numAllocatedIds.incrementAndGet();
+
         final var newContractSponsor = accountIdFromEvmAddress(sponsor.toArrayUnsafe());
         return ContractID.newBuilder()
                 .setRealmNum(newContractSponsor.getRealmNum())
                 .setShardNum(newContractSponsor.getShardNum())
-                .setContractNum(getNextEntityId())
+                .setContractNum(nextId)
                 .build();
     }
 
-    public long getNextEntityId() {
-        if (latestEntityId == null) {
-            loadLatestFromRepository();
-        }
-        return ++latestEntityId;
+    private long getNextEntityId() {
+        loadLatestFromRepository();
+
+        return latestEntityId.addAndGet(numAllocatedIds.get() + 1L);
     }
 
     private void loadLatestFromRepository() {
-        latestEntityId = entityRepository.findMaxId();
+        latestEntityId.set(entityRepository.findMaxId());
     }
 }
