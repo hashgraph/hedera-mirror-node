@@ -79,4 +79,28 @@ class EntityAddressSequencerTest {
         assertThat(actual.getContractNum()).isEqualTo(MAX_ID + 3);
         verify(entityRepository, times(3)).findMaxId();
     }
+
+    @Test
+    void getNextEntityIdCorrectlyWhileDbIsBeingUpdatedTwoTimes() {
+        when(entityRepository.findMaxId()).thenReturn(200L, 205L);
+
+        entityAddressSequencer.getNewContractId(sponsor);
+        entityAddressSequencer.getNewContractId(sponsor);
+        final var actual = entityAddressSequencer.getNewContractId(sponsor);
+
+        assertThat(actual.getContractNum()).isEqualTo(207L);
+        verify(entityRepository, times(3)).findMaxId();
+    }
+
+    @Test
+    void getNextEntityIdCorrectlyWhileDbIsBeingUpdatedThreeTimes() {
+        when(entityRepository.findMaxId()).thenReturn(200L, 205L, 210L);
+
+        entityAddressSequencer.getNewContractId(sponsor);
+        entityAddressSequencer.getNewContractId(sponsor);
+        final var actual = entityAddressSequencer.getNewContractId(sponsor);
+
+        assertThat(actual.getContractNum()).isEqualTo(211L);
+        verify(entityRepository, times(3)).findMaxId();
+    }
 }
