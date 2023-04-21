@@ -618,6 +618,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         var entityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         transaction = domainBuilder.transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
+                .customize(t -> t.transactionHash(DomainUtils.toBytes(recordItem.getTransactionRecord().getTransactionHash())))
                 .get();
 
         transactionTemplate.executeWithoutResult(status -> {
