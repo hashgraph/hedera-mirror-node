@@ -32,6 +32,9 @@ rest:
         ],
         "stateproof": { "enabled": false }
       }
+  resources:
+    requests:
+      cpu: 200m
 rosetta:
   test:
     enabled: false
