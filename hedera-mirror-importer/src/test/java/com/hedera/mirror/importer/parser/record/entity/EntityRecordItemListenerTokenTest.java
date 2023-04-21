@@ -1272,7 +1272,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
                 .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
                 .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
     }
 
     @Test
@@ -1415,7 +1415,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
                 .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
                 .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic2))
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
     }
 
     @Test
@@ -1627,7 +1627,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
                 .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
                 .returns(Bytes.ofUnsignedLong(RECEIVER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
     }
 
     @ParameterizedTest
@@ -1927,7 +1927,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
                 .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
                 .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
     }
 
     @Test
