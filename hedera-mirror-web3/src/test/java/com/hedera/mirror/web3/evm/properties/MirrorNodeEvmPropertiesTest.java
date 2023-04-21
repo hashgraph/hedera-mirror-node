@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.evm.properties;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,21 +18,23 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+package com.hedera.mirror.web3.evm.properties;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
     private static final int MAX_REFUND_PERCENT = 20;
-    private static final Address FUNDING_ADDRESS =
-            Address.fromHexString("0x0000000000000000000000000000000000000062");
+    private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
+    private static final Bytes32 CHAIN_ID = Bytes32.fromHexString("0x0128");
 
     private final MirrorNodeEvmProperties properties;
 
@@ -45,5 +45,8 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.maxGasRefundPercentage()).isEqualTo(MAX_REFUND_PERCENT);
         assertThat(properties.fundingAccountAddress()).isEqualTo(FUNDING_ADDRESS);
         assertThat(properties.isRedirectTokenCallsEnabled()).isTrue();
+        assertThat(properties.isLazyCreationEnabled()).isTrue();
+        assertThat(properties.isCreate2Enabled()).isTrue();
+        assertThat(properties.chainIdBytes32()).isEqualTo(CHAIN_ID);
     }
 }

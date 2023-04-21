@@ -1,6 +1,9 @@
-/*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
- *
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,7 +15,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
+
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
@@ -21,6 +26,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -30,8 +36,6 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-
-import com.hedera.services.store.models.Id;
 
 public final class EntityIdUtils {
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
@@ -156,6 +160,10 @@ public final class EntityIdUtils {
     }
 
     public static Address asTypedEvmAddress(final AccountID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static Address asTypedEvmAddress(final ContractID id) {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 
