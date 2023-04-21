@@ -49,7 +49,6 @@ public class TokenRelationship {
     private final boolean destroyed;
     private final boolean notYetPersisted;
     private final boolean automaticAssociation;
-
     private final long balanceChange;
 
     public TokenRelationship(Token token, Account account, long balance, boolean frozen, boolean kycGranted,
@@ -76,13 +75,20 @@ public class TokenRelationship {
     private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship tokenRel) {
         return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
                 tokenRel.frozen, tokenRel.kycGranted, true, tokenRel.notYetPersisted,
-                tokenRel.automaticAssociation, balanceChange);
+                tokenRel.automaticAssociation, tokenRel.balanceChange);
     }
 
     private TokenRelationship createCreateNewPersistedTokenRelationship(TokenRelationship tokenRel) {
         return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
                 tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, false,
-                tokenRel.automaticAssociation, balanceChange);
+                tokenRel.automaticAssociation, tokenRel.balanceChange);
+    }
+
+    private TokenRelationship createCreateNewTokenRelationshipWithFrozenFlag(TokenRelationship tokenRel,
+                                                                             boolean frozen) {
+        return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
+                frozen, tokenRel.kycGranted, tokenRel.destroyed, tokenRel.notYetPersisted,
+                tokenRel.automaticAssociation, tokenRel.balanceChange);
     }
 
     public long getBalance() {
@@ -104,6 +110,14 @@ public class TokenRelationship {
 
         long newBalanceChange = (balance - this.balance) + balanceChange;
         return createCreateNewTokenRelationshipWithNewBalance(this, newBalanceChange, balance);
+    }
+
+    public TokenRelationship setFrozen(boolean frozen) {
+        return createCreateNewTokenRelationshipWithFrozenFlag(this, frozen);
+    }
+
+    public TokenRelationship initBalance(long balance) {
+        return createCreateNewTokenRelationshipWithFrozenFlag(this, balance);
     }
 
     public boolean isFrozen() {

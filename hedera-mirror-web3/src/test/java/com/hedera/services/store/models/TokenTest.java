@@ -78,8 +78,8 @@ class TokenTest {
                 21_000_000, null, null, null, null, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
                 , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
 
-        treasuryRel = new TokenRelationship(subject, treasuryAccount);
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+        treasuryRel = new TokenRelationship(subject, treasuryAccount, initialTreasuryBalance, false, false, false,
+                false, true, 0);
     }
 
     @Test
@@ -111,7 +111,6 @@ class TokenTest {
         assertFalse(subject.isPaused());
     }
 
-
     @Test
     void okCreationRelationship() {
         final var frzKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
@@ -127,8 +126,8 @@ class TokenTest {
     @Test
     void constructsTreasuryRelationShipAsExpected() {
         subject = subject.setKycKey(someKey);
-        final var newRel = subject.newRelationshipWith(treasuryAccount, true);
-        newRel.initBalance(initialTreasuryBalance);
+        var newRel = subject.newRelationshipWith(treasuryAccount, true);
+        newRel = newRel.initBalance(initialTreasuryBalance);
 
         assertEquals(newRel, treasuryRel);
     }
@@ -136,7 +135,7 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithNoKeys() {
         // setup:
-        nonTreasuryRel.setKycGranted(true);
+        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -148,8 +147,7 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
-        nonTreasuryRel.setFrozen(true);
-        nonTreasuryRel.setKycGranted(true);
+        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, true, true, false, false, false, 0);
 
         // given:
 
@@ -166,7 +164,7 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
         // setup:
-        nonTreasuryRel.setKycGranted(true);
+        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
 
         // given:
         subject = subject.setFreezeKey(someKey);
@@ -205,14 +203,15 @@ class TokenTest {
     @Test
     void burnsUniqueAsExpected() {
         subject = subject.setSupplyKey(someKey);
-        treasuryRel.initBalance(2);
-        subject.getLoadedUniqueTokens().putAll(Map.of(10L, new UniqueToken(subject.getId(), 10L, treasuryId), 11L,
-                new UniqueToken(subject.getId(), 11L, treasuryId)));
+        treasuryRel = treasuryRel.initBalance(2);
+        subject.getLoadedUniqueTokens()
+                .putAll(Map.of(10L, new UniqueToken(subject.getId(), 10L, null, treasuryId, null, new byte[] {}), 11L,
+                        new UniqueToken(subject.getId(), 11L, null, treasuryId, null, new byte[] {})));
         final var ownershipTracker = mock(OwnershipTracker.class);
         final long serialNumber0 = 10L;
         final long serialNumber1 = 11L;
 
-        subject.burn(ownershipTracker, treasuryRel, List.of(serialNumber0, serialNumber1));
+        subject = subject.burn(ownershipTracker, treasuryRel, List.of(serialNumber0, serialNumber1));
 
         assertEquals(initialSupply - 2, subject.getTotalSupply());
         assertEquals(-2, treasuryRel.getBalanceChange());
@@ -229,9 +228,9 @@ class TokenTest {
     @Test
     void mintsUniqueAsExpected() {
         subject = subject.setSupplyKey(someKey);
-        treasuryRel.initBalance(0);
+        treasuryRel = treasuryRel.initBalance(0);
         final var ownershipTracker = mock(OwnershipTracker.class);
-        subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("memo")),
+        subject = subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("memo")),
                 RichInstant.fromJava(Instant.now()));
         assertEquals(initialSupply + 1, subject.getTotalSupply());
         assertEquals(1, treasuryRel.getBalanceChange());
@@ -249,7 +248,7 @@ class TokenTest {
         subject = subject.setSupplyKey(someKey);
 
         // when:
-        subject.mint(treasuryRel, mintAmount, false);
+        subject = subject.mint(treasuryRel, mintAmount, false);
 
         // then:
         assertEquals(initialSupply + mintAmount, subject.getTotalSupply());
@@ -261,16 +260,16 @@ class TokenTest {
     void wipesCommonAsExpected() {
         subject = subject.setSupplyKey(someKey);
         subject = subject.setWipeKey(someKey);
-        nonTreasuryRel.setBalance(100);
+        nonTreasuryRel = nonTreasuryRel.setBalance(100);
 
-        subject.wipe(nonTreasuryRel, 10);
+        subject = subject.wipe(nonTreasuryRel, 10);
         assertEquals(initialSupply - 10, subject.getTotalSupply());
         assertEquals(90, nonTreasuryRel.getBalance());
         assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
 
-        nonTreasuryRel.setBalance(30);
+        nonTreasuryRel = nonTreasuryRel.setBalance(30);
 
-        subject.wipe(nonTreasuryRel, 30);
+        subject = subject.wipe(nonTreasuryRel, 30);
         assertEquals(initialSupply - 40, subject.getTotalSupply());
         assertEquals(0, nonTreasuryRel.getBalance());
         assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
@@ -299,7 +298,7 @@ class TokenTest {
 
         // negate account balance
 
-        nonTreasuryRel.setBalance(0);
+        nonTreasuryRel = nonTreasuryRel.setBalance(0);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
@@ -317,10 +316,10 @@ class TokenTest {
         given(loadedUniqueTokensMap.get(any())).willReturn(uniqueToken);
         subject.getLoadedUniqueTokens().putAll(loadedUniqueTokensMap);
 
-        nonTreasuryRel.setBalance(100);
+        nonTreasuryRel = nonTreasuryRel.setBalance(100);
 
         final var ownershipTracker = mock(OwnershipTracker.class);
-        subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
+        subject = subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
         assertEquals(initialSupply - 1, subject.getTotalSupply());
         assertEquals(99, nonTreasuryRel.getBalanceChange());
         assertEquals(99, nonTreasuryRel.getBalance());
@@ -331,9 +330,9 @@ class TokenTest {
         assertEquals(100000, subject.getMaxSupply());
         assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
 
-        nonTreasuryRel.setBalance(2);
+        nonTreasuryRel = nonTreasuryRel.setBalance(2);
 
-        subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
+        subject = subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
 
         assertEquals(initialSupply - 3, subject.getTotalSupply());
         assertEquals(0, nonTreasuryRel.getBalanceChange());
@@ -429,7 +428,7 @@ class TokenTest {
             subject.mint(ownershipTracker, treasuryRel, metadata, RichInstant.fromJava(Instant.now()));
         });
 
-        subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         assertThrows(InvalidTransactionException.class, () -> {
             subject.mint(ownershipTracker, treasuryRel, emptyMetadata, RichInstant.fromJava(Instant.now()));
         });
@@ -437,7 +436,8 @@ class TokenTest {
 
     @Test
     void reflectionObjectHelpersWork() {
-        final var otherToken = new Token(new Id(1,2, 3), false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE, 100000,
+        final var otherToken = new Token(new Id(1, 2, 3), false, TokenType.FUNGIBLE_COMMON, TokenSupplyType.FINITE,
+                100000,
                 20000L, null, null, someKey, null, null, null, null, false, treasuryAccount, new Account(Id.DEFAULT)
                 , false, false, 1000L, true, "the mother", "bitcoin", "BTC", 10, 0L, 1, null);
 

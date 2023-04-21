@@ -40,7 +40,10 @@ class TokenRelationshipTest {
 
     @BeforeEach
     void setUp() {
-        token = new Token(tokenId);
+
+        token = new Token(tokenId, false, null, null, 0,
+                0, null, null, null, null, null, null, null, false, null,
+                null, false, false, 0, false, null, null, null, 0, 0, 0, null);
         account = new Account(accountId);
         int associatedTokensCount = 3;
         account.setNumAssociations(associatedTokensCount);
@@ -50,7 +53,7 @@ class TokenRelationshipTest {
 
     @Test
     void ofRecordInterestIfFungibleBalanceChanges() {
-        token.setType(TokenType.FUNGIBLE_COMMON);
+        token = token.setType(TokenType.FUNGIBLE_COMMON);
 
         subject = subject.setBalance(balance - 1);
         assertTrue(subject.hasChangesForRecord());
@@ -58,7 +61,7 @@ class TokenRelationshipTest {
 
     @Test
     void notOrdinarilyOfRecordInterestIfNonFungibleBalanceChanges() {
-        token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        token = token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
         subject = subject.setBalance(balance - 1);
         assertTrue(subject.hasChangesForRecord());
@@ -66,8 +69,8 @@ class TokenRelationshipTest {
 
     @Test
     void ordinarilyOfRecordInterestIfNonFungibleBalanceChangesForDeletedToken() {
-        token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        token.setIsDeleted(true);
+        token = token.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        token = token.delete();
 
         subject = subject.setBalance(balance - 1);
         assertTrue(subject.hasChangesForRecord());
@@ -107,7 +110,7 @@ class TokenRelationshipTest {
     @Test
     void cannotChangeBalanceIfFrozenForToken() {
         // given:
-        token.setFreezeKey(freezeKey);
+        token = token.setFreezeKey(freezeKey);
         subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
 
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
@@ -115,21 +118,21 @@ class TokenRelationshipTest {
 
     @Test
     void canChangeBalanceIfFrozenForDeletedToken() {
-        token.setFreezeKey(freezeKey);
-        token.setIsDeleted(true);
+        token = token.setFreezeKey(freezeKey);
+        token = token.delete();
         subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
 
-        subject.setBalance(0);
+        subject = subject.setBalance(0);
         assertEquals(-balance, subject.getBalanceChange());
     }
 
     @Test
     void canChangeBalanceIfUnfrozenForToken() {
         // given:
-        token.setFreezeKey(freezeKey);
+        token = token.setFreezeKey(freezeKey);
 
         // when:
-        subject.setBalance(balance + 1);
+        subject = subject.setBalance(balance + 1);
 
         // then:
         assertEquals(1, subject.getBalanceChange());
@@ -141,7 +144,7 @@ class TokenRelationshipTest {
         subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
 
         // when:
-        subject.setBalance(balance + 1);
+        subject = subject.setBalance(balance + 1);
 
         // then:
         assertEquals(1, subject.getBalanceChange());
@@ -150,7 +153,7 @@ class TokenRelationshipTest {
     @Test
     void cannotChangeBalanceIfKycNotGranted() {
         // given:
-        token.setKycKey(kycKey);
+        token = token.setKycKey(kycKey);
 
         // verify
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
@@ -159,11 +162,11 @@ class TokenRelationshipTest {
     @Test
     void canChangeBalanceIfKycGranted() {
         // given:
-        token.setKycKey(kycKey);
+        token = token.setKycKey(kycKey);
         subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);
 
         // when:
-        subject.setBalance(balance + 1);
+        subject = subject.setBalance(balance + 1);
 
         // then:
         assertEquals(1, subject.getBalanceChange());
@@ -173,7 +176,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfNoKycKey() {
 
         // when:
-        subject.setBalance(balance + 1);
+        subject = subject.setBalance(balance + 1);
 
         // then:
         assertEquals(1, subject.getBalanceChange());
@@ -182,7 +185,7 @@ class TokenRelationshipTest {
     @Test
     void updateFreezeWorksIfFeezeKeyIsPresent() {
         // given:
-        token.setFreezeKey(freezeKey);
+        token = token.setFreezeKey(freezeKey);
 
         // when:
         subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
@@ -193,10 +196,12 @@ class TokenRelationshipTest {
 
     @Test
     void givesCorrectRepresentation() {
-        subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        token = subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
         assertTrue(subject.hasUniqueRepresentation());
 
-        subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+        token = subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
         assertTrue(subject.hasCommonRepresentation());
     }
 
@@ -209,7 +214,7 @@ class TokenRelationshipTest {
     @Test
     void updateKycWorksIfKycKeyIsPresent() {
         // given:
-        token.setKycKey(kycKey);
+        token = token.setKycKey(kycKey);
 
         // when:
         subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);

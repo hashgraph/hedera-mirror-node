@@ -97,14 +97,12 @@ public class Token {
     private final int decimals;
     private final long autoRenewPeriod;
     private final long lastUsedSerialNumber;
-    private final List<FcCustomFee> customFees;
 
     public Token(Id id, boolean supplyHasChanged, TokenType type, TokenSupplyType supplyType, long totalSupply,
                  long maxSupply, JKey kycKey, JKey freezeKey, JKey supplyKey, JKey wipeKey, JKey adminKey,
                  JKey feeScheduleKey, JKey pauseKey, boolean frozenByDefault, Account treasury,
                  Account autoRenewAccount, boolean deleted, boolean paused, long expiry, boolean isNew, String memo,
-                 String name, String symbol, int decimals, long autoRenewPeriod, long lastUsedSerialNumber,
-                 List<FcCustomFee> customFees) {
+                 String name, String symbol, int decimals, long autoRenewPeriod, long lastUsedSerialNumber) {
         this.id = id;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
@@ -131,12 +129,11 @@ public class Token {
         this.decimals = decimals;
         this.autoRenewPeriod = autoRenewPeriod;
         this.lastUsedSerialNumber = lastUsedSerialNumber;
-        this.customFees = customFees;
     }
 
     /**
-     * Creates new instance of {@link Token} with updated totalSupply in order to keep the object's immutability and avoid entry
-     * points for changing the state.
+     * Creates new instance of {@link Token} with updated totalSupply in order to keep the object's immutability and
+     * avoid entry points for changing the state.
      *
      * @param oldToken
      * @param totalSupply
@@ -148,12 +145,12 @@ public class Token {
                 oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey, oldToken.frozenByDefault,
                 oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted, oldToken.paused, oldToken.expiry,
                 oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol, oldToken.decimals,
-                oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+                oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated lastUsedSerialNumber in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated lastUsedSerialNumber in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldToken
      * @param lastUsedSerialNumber
@@ -165,12 +162,12 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with deleted property set to true in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with deleted property set to true in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldToken
      * @return new instance of {@link Token} with {@link #deleted} property set to true
@@ -181,12 +178,13 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, true,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated type in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated type in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
      * @param oldToken
      * @param tokenType
      * @return new instance of {@link Token} with updated {@link #type} property
@@ -197,12 +195,13 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated kycKey in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated kycKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
      * @param oldToken
      * @param kycKey
      * @return new instance of {@link Token} with updated {@link #kycKey} property
@@ -213,12 +212,13 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated freezeKey in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated freezeKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
      * @param oldToken
      * @param freezeKey
      * @return new instance of {@link Token} with updated {@link #freezeKey} property
@@ -229,12 +229,13 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated supplyKey in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated supplyKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
      * @param oldToken
      * @param supplyKey
      * @return new instance of {@link Token} with updated {@link #supplyKey} property
@@ -245,12 +246,13 @@ public class Token {
                 oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
     }
 
     /**
-     * Creates new instance of {@link Token} with updated wipeKey in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Token} with updated wipeKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
      * @param oldToken
      * @param wipeKey
      * @return new instance of {@link Token} with updated {@link #wipeKey} property
@@ -261,7 +263,7 @@ public class Token {
                 wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
                 oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
+                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -291,12 +293,13 @@ public class Token {
         final var supplyKey = asUsableFcKey(op.getSupplyKey());
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
-        final var token = new Token(tokenId, false, mapToDomain(op.getTokenType()), op.getSupplyType(), null,
+        final var token = new Token(tokenId, false, mapToDomain(op.getTokenType()), op.getSupplyType(),
+                op.getMaxSupply(),
                 op.getMaxSupply(), kycKey.get(), freezeKey.get(), supplyKey.get(), wipeKey.get(), adminKey.get(),
                 feeScheduleKey.get(), pauseKey.get(), op.getFreezeDefault(), treasury, autoRenewAccount, false, false
                 , tokenExpiry, true, op.getMemo(), op.getName(), op.getSymbol(), op.getDecimals(),
                 op.getAutoRenewPeriod()
-                        .getSeconds(), null, op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
+                        .getSeconds(), 0);
         return token;
     }
 
@@ -310,6 +313,7 @@ public class Token {
 
     /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
+     *
      * @param treasuryRel
      * @param amount
      * @param ignoreSupplyKey
@@ -365,6 +369,7 @@ public class Token {
 
     /**
      * Burning fungible tokens reduces the supply and sets new balance to the treasuryRel
+     *
      * @param treasuryRel
      * @param amount
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
@@ -474,12 +479,11 @@ public class Token {
     }
 
     public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
-        final var newRel = new TokenRelationship(this, account);
+        var newRel = new TokenRelationship(this, account, 0, false, !hasKycKey(), false, false, automaticAssociation,
+                0);
         if (hasFreezeKey() && frozenByDefault) {
-            newRel.setFrozen(true);
+            newRel = newRel.setFrozen(true);
         }
-        newRel.setKycGranted(!hasKycKey());
-        newRel.setAutomaticAssociation(automaticAssociation);
         return newRel;
     }
 
@@ -491,9 +495,7 @@ public class Token {
      * @return newly created {@link TokenRelationship}
      */
     public TokenRelationship newEnabledRelationship(final Account account) {
-        final var rel = new TokenRelationship(this, account);
-        rel.setKycGranted(true);
-        rel.setFrozen(false);
+        var rel = new TokenRelationship(this, account, 0, false, true, false, false, false, 0);
         return rel;
     }
 
@@ -776,9 +778,5 @@ public class Token {
 
     public JKey getFeeScheduleKey() {
         return feeScheduleKey;
-    }
-
-    public List<FcCustomFee> getCustomFees() {
-        return customFees;
     }
 }
