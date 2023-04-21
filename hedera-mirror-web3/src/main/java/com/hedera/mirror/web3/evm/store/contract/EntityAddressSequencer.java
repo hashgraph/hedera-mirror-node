@@ -34,13 +34,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EntityAddressSequencer {
     private final EntityRepository entityRepository;
     private final AtomicLong latestEntityId = new AtomicLong();
-    private final AtomicLong numAllocatedIds = new AtomicLong();
-    private final AtomicLong latestMaxIdFromDB = new AtomicLong();
 
     public ContractID getNewContractId(Address sponsor) {
         final var nextId = getNextEntityId();
-
-        numAllocatedIds.incrementAndGet();
+        latestEntityId.set(nextId);
 
         final var newContractSponsor = accountIdFromEvmAddress(sponsor.toArrayUnsafe());
         return ContractID.newBuilder()
@@ -51,20 +48,16 @@ public class EntityAddressSequencer {
     }
 
     private long getNextEntityId() {
-        loadLatestFromRepository();
+        final var currentMaxIdFromDB = loadLatestFromRepository();
 
-        return latestEntityId.addAndGet(numAllocatedIds.get() + 1L);
-    }
-
-    private void loadLatestFromRepository() {
-        final var currentMaxIdFromDB = new AtomicLong(entityRepository.findMaxId());
-
-        latestEntityId.set(currentMaxIdFromDB.get());
-
-        if(currentMaxIdFromDB.get() != latestMaxIdFromDB.get()) {
-            numAllocatedIds.set(0L);
+        if(currentMaxIdFromDB > latestEntityId.get()) {
+            latestEntityId.set(currentMaxIdFromDB);
         }
 
-        latestMaxIdFromDB.set(currentMaxIdFromDB.get());
+        return latestEntityId.addAndGet(1L);
+    }
+
+    private long loadLatestFromRepository() {
+        return entityRepository.findMaxId();
     }
 }

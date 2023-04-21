@@ -48,6 +48,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean approvedForAllEnabled = false;
 
+    @Getter
+    @NotNull
+    private HederaChainId chainId = HederaChainId.TESTNET;
+
     private boolean directTokenCall = true;
 
     private boolean dynamicEvmVersion = true;
@@ -75,10 +79,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
-
-    @Getter
-    @NotNull
-    private HederaChainId chainId = HederaChainId.TESTNET;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
