@@ -69,7 +69,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
     private static final LongFunction<String> hexValueOf =
-            value -> Bytes.ofUnsignedLong(value).toShortHexString().replace("0x","");
+            value -> Bytes.ofUnsignedLong(value).toShortHexString().replace("0x", "");
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
@@ -95,7 +95,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var expectedGasUsed = 22294L;
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters =
+                serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -125,9 +126,11 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @Test
     void estimateGasForViewCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var viewFuncHash = "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
+        final var viewFuncHash =
+                "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var expectedGasUsed = 23447L;
-        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters =
+                serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -135,7 +138,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
-
 
     @Test
     void transferFunds() {
@@ -274,8 +276,10 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @Test
     void estimateGasForStateChangeCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var stateChangeHash = "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
+        final var stateChangeHash =
+                "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
+        final var serviceParameters =
+                serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
         final var expectedGasUsed = 29780;
 
         persistEntities(false);
@@ -303,7 +307,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
 
-    private CallServiceParameters serviceParameters(String callData, long value, CallType callType, boolean isStatic, Address contract) {
+    private CallServiceParameters serviceParameters(
+            String callData, long value, CallType callType, boolean isStatic, Address contract) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         final var data = Bytes.fromHexString(callData);
         final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : contract;
@@ -319,7 +324,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .callType(callType)
                 .build();
     }
-
 
     private double getGasUsedBeforeExecution(final CallType callType) {
         final var callCounter = meterRegistry.find(GAS_METRICS).counters().stream()

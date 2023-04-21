@@ -97,7 +97,6 @@ class ContractController {
                 .build();
     }
 
-
     @ExceptionHandler
     @ResponseStatus(TOO_MANY_REQUESTS)
     private Mono<GenericErrorResponse> rateLimitError(final RateLimitException e) {

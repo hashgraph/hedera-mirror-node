@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.web3.viewmodel;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
+import com.hedera.mirror.web3.convert.BlockTypeSerializer;
+import com.hedera.mirror.web3.validation.Hex;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
@@ -24,10 +28,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import org.hibernate.validator.group.GroupSequenceProvider;
-
-import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
-import com.hedera.mirror.web3.convert.BlockTypeSerializer;
-import com.hedera.mirror.web3.validation.Hex;
 
 @Data
 @GroupSequenceProvider(TransferValidation.class)

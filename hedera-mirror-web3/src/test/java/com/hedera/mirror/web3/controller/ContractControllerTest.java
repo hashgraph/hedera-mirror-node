@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
@@ -25,6 +26,13 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -42,19 +50,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
-import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
+
     @Resource
     private WebTestClient webClient;
 
@@ -86,12 +87,14 @@ class ContractControllerTest {
     @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
     @ParameterizedTest
     void estimateGasWithInvalidGasParameter(long gas) {
-        final var errorString = gas < 21000L ? numberErrorString("gas", "greater", 21000L) :
-                numberErrorString("gas", "less", 15_000_000L);
+        final var errorString = gas < 21000L
+                ? numberErrorString("gas", "greater", 21000L)
+                : numberErrorString("gas", "less", 15_000_000L);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -129,13 +132,13 @@ class ContractControllerTest {
     @NullAndEmptySource
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidTo(String to) {
@@ -175,13 +178,13 @@ class ContractControllerTest {
     @EmptySource
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidFrom(String from) {
@@ -232,8 +235,8 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(
                         "Failed to read HTTP message",
                         "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                                + " at [Source: (org.springframework.core.io.buffer" +
-                                ".DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
+                                + " at [Source: (org.springframework.core.io.buffer"
+                                + ".DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
                         StringUtils.EMPTY));
     }
 
@@ -252,8 +255,8 @@ class ContractControllerTest {
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(
                         "Unsupported Media Type",
-                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel" +
-                                ".ContractCallRequest",
+                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel"
+                                + ".ContractCallRequest",
                         StringUtils.EMPTY));
     }
 

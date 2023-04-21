@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.web3.evm.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {

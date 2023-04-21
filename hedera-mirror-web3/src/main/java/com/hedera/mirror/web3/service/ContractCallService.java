@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
@@ -22,6 +23,12 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -30,20 +37,13 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-
 @CustomLog
 @Named
 @RequiredArgsConstructor
 public class ContractCallService {
 
-    private final Counter.Builder gasCounter = Counter.builder("hedera.mirror.web3.call.gas")
-            .description("The amount of gas consumed by the EVM");
+    private final Counter.Builder gasCounter =
+            Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
     private final MeterRegistry meterRegistry;
     private final MirrorNodeEvmProperties properties;
@@ -117,18 +117,17 @@ public class ContractCallService {
         return hi;
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters params,
-                                                               final long estimatedGas) {
+    private HederaEvmTransactionProcessingResult doProcessCall(
+            final CallServiceParameters params, final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult =
-                    mirrorEvmTxProcessorFacade.execute(
-                            params.getSender(),
-                            params.getReceiver(),
-                            params.isEstimate() ? estimatedGas : params.getGas(),
-                            params.getValue(),
-                            params.getCallData(),
-                            params.isStatic());
+            transactionResult = mirrorEvmTxProcessorFacade.execute(
+                    params.getSender(),
+                    params.getReceiver(),
+                    params.isEstimate() ? estimatedGas : params.getGas(),
+                    params.getValue(),
+                    params.getCallData(),
+                    params.isStatic());
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
@@ -146,9 +145,10 @@ public class ContractCallService {
         }
     }
 
-    private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result,
-                                 final int iterations) {
-        gasCounter.tag("type", callType.toString())
+    private void updateGasMetric(
+            final CallType callType, final HederaEvmTransactionProcessingResult result, final int iterations) {
+        gasCounter
+                .tag("type", callType.toString())
                 .tag("iteration", String.valueOf(iterations))
                 .register(meterRegistry)
                 .increment(result.getGasUsed());

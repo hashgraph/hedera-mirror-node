@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -32,8 +34,6 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 
 @Setter
 @Validated
