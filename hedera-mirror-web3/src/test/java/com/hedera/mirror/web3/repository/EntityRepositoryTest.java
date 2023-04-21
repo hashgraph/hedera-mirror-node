@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.repository;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,11 +18,12 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+package com.hedera.mirror.web3.repository;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +36,9 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByIdAndDeletedIsFalseSuccessfulCall() {
         Entity entity = domainBuilder.entity().persist();
-        assertThat(entityRepository.findByIdAndDeletedIsFalse(entity.getId())).get().isEqualTo(entity);
+        assertThat(entityRepository.findByIdAndDeletedIsFalse(entity.getId()))
+                .get()
+                .isEqualTo(entity);
     }
 
     @Test
@@ -56,18 +57,22 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByEvmAddressAndDeletedIsFalseSuccessfulCall() {
         Entity entity = domainBuilder.entity().persist();
-        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress())).get().isEqualTo(entity);
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress()))
+                .get()
+                .isEqualTo(entity);
     }
 
     @Test
     void findByEvmAddressAndDeletedIsFalseFailCall() {
         domainBuilder.entity().persist();
-        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(new byte[32])).isEmpty();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(new byte[32]))
+                .isEmpty();
     }
 
     @Test
     void findByEvmAddressAndDeletedTrueCall() {
         Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress())).isEmpty();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress()))
+                .isEmpty();
     }
 }
