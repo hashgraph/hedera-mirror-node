@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFals
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -63,6 +62,9 @@ import com.hedera.services.state.submerkle.RichInstant;
  * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
  * signature for a {@code NON_FUNGIBLE_UNIQUE} is
  * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ * <p>
+ * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
+ * immutability is required for this model in order to be used seamlessly in the state.
  */
 public class Token {
     private final Id id;
@@ -132,6 +134,14 @@ public class Token {
         this.customFees = customFees;
     }
 
+    /**
+     * Creates new instance of {@link Token} with updated totalSupply in order to keep the object's immutability and avoid entry
+     * points for changing the state.
+     *
+     * @param oldToken
+     * @param totalSupply
+     * @return the new instance of {@link Token} with updated {@link #totalSupply} property
+     */
     private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType, totalSupply,
                 oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey, oldToken.wipeKey,
@@ -141,6 +151,14 @@ public class Token {
                 oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
     }
 
+    /**
+     * Creates new instance of {@link Token} with updated lastUsedSerialNumber in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param lastUsedSerialNumber
+     * @return new instance of {@link Token} with updated {@link #lastUsedSerialNumber} property
+     */
     private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
@@ -150,6 +168,13 @@ public class Token {
                 oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
     }
 
+    /**
+     * Creates new instance of {@link Token} with deleted property set to true in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @return new instance of {@link Token} with {@link #deleted} property set to true
+     */
     private Token createNewDeletedToken(Token oldToken) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
@@ -159,6 +184,13 @@ public class Token {
                 oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
     }
 
+    /**
+     * Creates new instance of {@link Token} with updated type in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     * @param oldToken
+     * @param tokenType
+     * @return new instance of {@link Token} with updated {@link #type} property
+     */
     private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, tokenType, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
@@ -168,6 +200,13 @@ public class Token {
                 oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber, oldToken.customFees);
     }
 
+    /**
+     * Creates new instance of {@link Token} with updated kycKey in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     * @param oldToken
+     * @param kycKey
+     * @return new instance of {@link Token} with updated {@link #kycKey} property
+     */
     private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
@@ -176,6 +215,14 @@ public class Token {
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
                 oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
     }
+
+    /**
+     * Creates new instance of {@link Token} with updated freezeKey in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     * @param oldToken
+     * @param freezeKey
+     * @return new instance of {@link Token} with updated {@link #freezeKey} property
+     */
     private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, kycKey, freezeKey, oldToken.supplyKey,
@@ -184,6 +231,14 @@ public class Token {
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
                 oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
     }
+
+    /**
+     * Creates new instance of {@link Token} with updated supplyKey in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     * @param oldToken
+     * @param supplyKey
+     * @return new instance of {@link Token} with updated {@link #supplyKey} property
+     */
     private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, supplyKey,
@@ -193,6 +248,13 @@ public class Token {
                 oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
     }
 
+    /**
+     * Creates new instance of {@link Token} with updated wipeKey in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     * @param oldToken
+     * @param wipeKey
+     * @return new instance of {@link Token} with updated {@link #wipeKey} property
+     */
     private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
         return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
                 oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
@@ -201,6 +263,7 @@ public class Token {
                 oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
                 oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber, oldToken.customFees);
     }
+
     /**
      * Creates a new instance of the model token, which is later persisted in state.
      *
@@ -237,6 +300,7 @@ public class Token {
         return token;
     }
 
+    // copied from TokenTypesManager in services
     private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
             return TokenType.NON_FUNGIBLE_UNIQUE;
@@ -244,14 +308,21 @@ public class Token {
         return TokenType.FUNGIBLE_COMMON;
     }
 
-    public void mint(final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
+    /**
+     * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
+     * @param treasuryRel
+     * @param amount
+     * @param ignoreSupplyKey
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
+     */
+    public Token mint(final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
         validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
                 "Fungible mint can be invoked only on fungible token type");
 
-        changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
+        return changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
     }
 
     /**
@@ -262,6 +333,7 @@ public class Token {
      * @param treasuryRel      - the relationship between the treasury account and the token
      * @param metadata         - a list of user-defined metadata, related to the nft instances.
      * @param creationTime     - the consensus time of the token mint transaction
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token mint(
             final OwnershipTracker ownershipTracker,
@@ -275,8 +347,7 @@ public class Token {
                 FAIL_INVALID,
                 "Non-fungible mint can be invoked only on non-fungible token type");
         validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
-
-        changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
+        var newToken = changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
         long lastUsedSerialNumber = this.lastUsedSerialNumber;
 
         for (final ByteString m : metadata) {
@@ -289,13 +360,15 @@ public class Token {
             ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
         }
         treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        return new Token(this.id, this.supplyHasChanged, this.type, this.supplyType, this.totalSupply, this.maxSupply,
-                this.kycKey, this.freezeKey, this.supplyKey, this.wipeKey, this.adminKey, this.feeScheduleKey,
-                this.pauseKey, this.frozenByDefault, this.treasury, this.autoRenewAccount, this.deleted,
-                this.paused, this.expiry, this.isNew, this.memo, this.name, this.symbol, this.decimals,
-                this.autoRenewPeriod, lastUsedSerialNumber, this.customFees);
+        return createNewTokenWithNewLastUsedSerialNumber(newToken, lastUsedSerialNumber);
     }
 
+    /**
+     * Burning fungible tokens reduces the supply and sets new balance to the treasuryRel
+     * @param treasuryRel
+     * @param amount
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
+     */
     public Token burn(final TokenRelationship treasuryRel, final long amount) {
         validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
         return changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
@@ -307,6 +380,7 @@ public class Token {
      * @param ownershipTracker     - a tracker of changes made to the nft ownership
      * @param treasuryRelationship - the relationship between the treasury account and the token
      * @param serialNumbers        - the serial numbers, representing the unique tokens which will be destroyed.
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token burn(
             final OwnershipTracker ownershipTracker,
@@ -334,6 +408,7 @@ public class Token {
      *
      * @param accountRel - the relationship between the account which owns the tokens and the token
      * @param amount     - amount to be wiped
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token wipe(final TokenRelationship accountRel, final long amount) {
         validateTrue(
@@ -362,6 +437,7 @@ public class Token {
      * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
      * @param accountRel       - the relationship between the account, which owns the tokens, and the token
      * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token wipe(
             final OwnershipTracker ownershipTracker,
@@ -500,12 +576,15 @@ public class Token {
     public Token setFreezeKey(JKey freezeKey) {
         return createNewTokenWithFreezeKey(this, freezeKey);
     }
+
     public Token setWipeKey(JKey wipeKey) {
         return createNewTokenWithWipeKey(this, wipeKey);
     }
+
     public Token setSupplyKey(JKey supplyKey) {
         return createNewTokenWithSupplyKey(this, supplyKey);
     }
+
     public boolean hasAdminKey() {
         return adminKey != null;
     }
@@ -679,14 +758,14 @@ public class Token {
                 .add("type", type)
                 .add("deleted", deleted)
                 .add("autoRemoved", autoRemoved)
-                .add("treasury", treasury)
-                .add("autoRenewAccount", autoRenewAccount)
-                .add("kycKey", describe(kycKey))
-                .add("freezeKey", describe(freezeKey))
+                //.add("treasury", treasury)
+                //.add("autoRenewAccount", autoRenewAccount)
+                //.add("kycKey", kycKey)
+                //.add("freezeKey", freezeKey)
                 .add("frozenByDefault", frozenByDefault)
-                .add("supplyKey", describe(supplyKey))
+                //.add("supplyKey", supplyKey)
                 .add("currentSerialNumber", lastUsedSerialNumber)
-                .add("pauseKey", describe(pauseKey))
+                //.add("pauseKey", pauseKey)
                 .add("paused", paused)
                 .toString();
     }
