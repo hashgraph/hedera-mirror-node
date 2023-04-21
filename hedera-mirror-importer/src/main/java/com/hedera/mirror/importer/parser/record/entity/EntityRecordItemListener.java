@@ -29,6 +29,8 @@ import com.google.protobuf.UnknownFieldSet;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 
+import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -352,7 +354,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
 
         boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
         boolean isSingleTransfer = tokenTransferCount == 2;
 
         for (int i = 0; i < tokenTransferCount; i++) {
@@ -482,7 +484,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
             syntheticContractLogService
-                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
+                    .create(new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
     }
 

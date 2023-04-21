@@ -72,6 +72,13 @@ class SyntheticContractLogServiceImplTest {
     }
 
     @Test
+    @DisplayName("Should be able to create valid synthetic contract log with indexed value")
+    void createValidIndexed() {
+        syntheticContractLogService.create(new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, amount));
+        verify(entityListener, times(1)).onContractLog(any());
+    }
+
+    @Test
     @DisplayName("Should not create synthetic contract log with contract")
     void createWithContract() {
         recordItem = recordItemBuilder.contractCall().build();

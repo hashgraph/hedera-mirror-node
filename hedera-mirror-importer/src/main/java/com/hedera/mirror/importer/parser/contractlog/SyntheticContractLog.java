@@ -29,5 +29,6 @@ public interface SyntheticContractLog {
     byte[] getTopic0();
     byte[] getTopic1();
     byte[] getTopic2();
+    byte[] getTopic3();
     byte[] getData();
 }
