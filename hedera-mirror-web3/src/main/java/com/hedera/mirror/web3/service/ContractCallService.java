@@ -28,14 +28,9 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 import javax.inject.Named;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.CustomLog;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -50,27 +45,15 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 public class ContractCallService {
 
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
-    private final Map<CallType, Pair<Counter,Counter>> gasPerSecondMetricMap;
+    private final MeterRegistry meterRegistry;
+    private final Counter.Builder gasCounter = Counter.builder("hedera.mirror.web3.call.gas")
+        .description("The amount of gas consumed by the EVM");
     private final MirrorNodeEvmProperties properties;
 
-    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade,
-                               final MeterRegistry meterRegistry, MirrorNodeEvmProperties properties) {
+    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, MeterRegistry meterRegistry, MirrorNodeEvmProperties properties) {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
+        this.meterRegistry = meterRegistry;
         this.properties = properties;
-
-        final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Pair<Counter,Counter>>(CallType.class);
-        Arrays.stream(CallType.values()).forEach(type ->
-                gasPerSecondMetricEnumMap.put(type, Pair.of(Counter.builder("hedera.mirror.web3.call.gas")
-                        .description("The amount of gas consumed by the EVM")
-                        .tag("type", type.toString())
-                        .register(meterRegistry),
-                        Counter.builder("hedera.mirror.web3.call.iterations")
-                                .description("The amount of time function is called")
-                                .tag("type", type.toString())
-                                .register(meterRegistry)
-                        )));
-
-        gasPerSecondMetricMap = Collections.unmodifiableMap(gasPerSecondMetricEnumMap);
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -171,11 +154,10 @@ public class ContractCallService {
     }
 
     private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result,
-                                 final int iterationsDone) {
-        final var gasUsedCounter = gasPerSecondMetricMap.get(callType).getLeft();
-        final var iterationCounter = gasPerSecondMetricMap.get(callType).getRight();
-
-        gasUsedCounter.increment(result.getGasUsed());
-        iterationCounter.increment(iterationsDone);
+                                 final int iterations) {
+       gasCounter.tag("type", callType.toString())
+                .tag("iteration", String.valueOf(iterations))
+                .register(meterRegistry)
+                .increment(result.getGasUsed());
     }
 }

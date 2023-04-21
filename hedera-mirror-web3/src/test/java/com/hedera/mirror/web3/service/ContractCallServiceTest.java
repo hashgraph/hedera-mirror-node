@@ -29,13 +29,11 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-import static org.apache.commons.lang3.StringUtils.stripStart;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.HexFormat;
 import java.util.function.LongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -78,7 +76,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             "0x00000000000000000000000000000000000003e4");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private static final LongFunction<String> hexValueOf = value -> stripStart(HexFormat.of().toHexDigits(value), "0");
+    private static final LongFunction<String> hexValueOf =
+            value -> Bytes.ofUnsignedLong(value).toShortHexString().replace("0x","");
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
