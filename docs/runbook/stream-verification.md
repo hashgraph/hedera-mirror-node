@@ -43,11 +43,11 @@ hedera:
 
 #### For Local Files application.yml
 
-When starting the application, the following subdirectories will be created under `${hedera.mirror.importer.downloader.mirrorProperties.dataPath}`
-`/streams/accountBalances/record{NODE1...NODEn}` `/streams/recordstreams/record{NODE1...NODEn}` where n is the number of nodes in the address book.
+When starting the application, the following subdirectories will be created under `${hedera.mirror.importer.dataPath}`
+`/streams/accountBalances/balance{NODE1...NODEn}` `/streams/recordstreams/record{NODE1...NODEn}` where n is the number of nodes in the address book.
 
 You will need the record file(s) and signature file(s) from at least 1/3 of the nodes and placed under the corresponding
-node folder in `${hedera.mirror.importer.downloader.mirrorProperties.dataPath}/streams/{accountBalances|recordstreams}/{NODE_FOLDER}`.
+node folder in `${hedera.mirror.importer.dataPath}/streams/{accountBalances|recordstreams}/{NODE_FOLDER}`.
 
 These folders are watched for new files, so you may place the necessary files after application has started.
 
@@ -55,13 +55,12 @@ These folders are watched for new files, so you may place the necessary files af
 hedera:
   mirror:
     importer:
+      dataPath: { PATH_TO_RECORD_STREAMS }
       startDate: 2023-04-19T22:47:16.030078003Z # exclusive
       endDate: 2023-04-19T22:47:16.030078003Z # inclusive
       network: testnet
       downloader:
         cloudProvider: LOCAL
-        mirrorProperties:
-          dataPath: { PATH_TO_RECORD_STREAMS }
       parser:
         record:
           sidecar: true
@@ -77,7 +76,7 @@ hedera:
 
 ### DB
 
-1. `psql -U mirror_node`
+1. `psql -h localhost -U mirror_node`
 2. password is located in docker-compose.yml in this repo and defaulted to `mirror_node_pass`
 3. Verify the record_file and/or account_balance_file table
 4. Verify any expected transactions
