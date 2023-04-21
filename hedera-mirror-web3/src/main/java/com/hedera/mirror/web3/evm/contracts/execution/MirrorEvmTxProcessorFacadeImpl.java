@@ -64,7 +64,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
-            final EntityRepository entityRepository) {
+            final EntityAddressSequencer entityAddressSequencer) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
@@ -75,7 +75,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final EntityAddressSequencer entityAddressSequencer = new EntityAddressSequencer(entityRepository);
+
         this.worldState = new HederaEvmWorldState(
                 entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityAddressSequencer);
     }
