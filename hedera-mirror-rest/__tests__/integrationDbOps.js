@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {execSync} from 'child_process';
@@ -179,12 +175,12 @@ const getCleanupSql = async () => {
   // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
   // each jest worker, it's done this way because the query to find the correct table names is also slow.
   const {rows} = await pool.queryQuietly(`
-	  select table_name
-	  from information_schema.tables
-	  left join time_partitions on partition::text = table_name::text
-	  where table_schema = 'public' and table_type <> 'VIEW'
-	    and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
-	  order by table_name`);
+    select table_name
+    from information_schema.tables
+    left join time_partitions on partition::text = table_name::text
+    where table_schema = 'public' and table_type <> 'VIEW'
+      and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
+    order by table_name`);
   cleanupSql.v2 = rows.map((row) => `delete from ${row.table_name};`).join('\n');
   return cleanupSql.v2;
 };

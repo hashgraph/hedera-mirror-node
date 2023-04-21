@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,15 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.grpc.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.mirror.grpc.DbProperties;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.pgclient.PgConnectOptions;
@@ -34,10 +33,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
-
-import com.hedera.mirror.grpc.DbProperties;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 @Named
 public class NotifyingTopicListener extends SharedTopicListener {
@@ -97,11 +92,10 @@ public class NotifyingTopicListener extends SharedTopicListener {
         vertxOptions.getFileSystemOptions().setClassPathResolvingEnabled(false);
         Vertx vertx = Vertx.vertx(vertxOptions);
 
-        PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
-                .reconnectPolicy(retries -> {
-                    log.warn("Attempting reconnect");
-                    return interval.toMillis() * Math.min(retries, 4);
-                });
+        PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions).reconnectPolicy(retries -> {
+            log.warn("Attempting reconnect");
+            return interval.toMillis() * Math.min(retries, 4);
+        });
 
         return Mono.fromCompletionStage(subscriber.connect().toCompletionStage())
                 .doOnSuccess(v -> log.info("Connected to database"))

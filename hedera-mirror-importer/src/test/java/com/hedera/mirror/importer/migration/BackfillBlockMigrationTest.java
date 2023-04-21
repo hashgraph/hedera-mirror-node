@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,11 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.importer.migration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -39,6 +27,13 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -76,14 +71,23 @@ class BackfillBlockMigrationTest extends IntegrationTest {
 
         var timestamp = consensusStart;
         var transactionIndex = 0;
-        var transaction = domainBuilder.transaction().customize(customizeTransaction(timestamp, null)).persist();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(timestamp, null))
+                .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
         timestamp++;
-        transaction = domainBuilder.transaction().customize(customizeTransaction(timestamp, null)).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(timestamp, null))
+                .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
-        transaction = domainBuilder.transaction().customize(customizeTransaction(consensusEnd, null)).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(consensusEnd, null))
+                .persist();
         transaction.setIndex(transactionIndex);
         expectedTransactions.add(transaction);
 
@@ -102,25 +106,35 @@ class BackfillBlockMigrationTest extends IntegrationTest {
 
         timestamp = consensusStart;
         transactionIndex = 0;
-        transaction = domainBuilder.transaction().customize(customizeTransaction(timestamp, null)).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(timestamp, null))
+                .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
 
         timestamp++;
-        transaction = domainBuilder.transaction().customize(customizeTransaction(timestamp, null))
-                .customize(this::setContractCall).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(timestamp, null))
+                .customize(this::setContractCall)
+                .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
         var bloom1 = new byte[LogsBloomAggregator.BYTE_SIZE];
         bloom1[0] = (byte) 0xf0;
         bloom1[1] = (byte) 0x07;
         System.arraycopy(logsBloom, 2, bloom1, 2, LogsBloomAggregator.BYTE_SIZE / 2);
-        domainBuilder.contractResult().customize(customizeContractResult(timestamp, bloom1, 10L)).persist();
+        domainBuilder
+                .contractResult()
+                .customize(customizeContractResult(timestamp, bloom1, 10L))
+                .persist();
 
         // child contract create
         timestamp++;
         var parent = transaction;
-        transaction = domainBuilder.transaction()
+        transaction = domainBuilder
+                .transaction()
                 .customize(customizeTransaction(timestamp, null))
                 .customize(t -> t.type(TransactionType.CONTRACTCREATEINSTANCE.getProtoId())
                         .payerAccountId(parent.getPayerAccountId())
@@ -129,11 +143,17 @@ class BackfillBlockMigrationTest extends IntegrationTest {
                 .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
-        domainBuilder.contractResult().customize(customizeContractResult(timestamp, null, 3L)).persist();
+        domainBuilder
+                .contractResult()
+                .customize(customizeContractResult(timestamp, null, 3L))
+                .persist();
 
         timestamp++;
-        transaction = domainBuilder.transaction().customize(customizeTransaction(timestamp, null))
-                .customize(this::setContractCall).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(timestamp, null))
+                .customize(this::setContractCall)
+                .persist();
         transaction.setIndex(transactionIndex++);
         expectedTransactions.add(transaction);
         var bloom2 = new byte[LogsBloomAggregator.BYTE_SIZE];
@@ -142,9 +162,15 @@ class BackfillBlockMigrationTest extends IntegrationTest {
         var offset = LogsBloomAggregator.BYTE_SIZE / 2;
         var length = LogsBloomAggregator.BYTE_SIZE - offset;
         System.arraycopy(logsBloom, offset, bloom2, offset, length);
-        domainBuilder.contractResult().customize(customizeContractResult(timestamp, bloom2, 20L)).persist();
+        domainBuilder
+                .contractResult()
+                .customize(customizeContractResult(timestamp, bloom2, 20L))
+                .persist();
 
-        transaction = domainBuilder.transaction().customize(customizeTransaction(consensusEnd, null)).persist();
+        transaction = domainBuilder
+                .transaction()
+                .customize(customizeTransaction(consensusEnd, null))
+                .persist();
         transaction.setIndex(transactionIndex);
         expectedTransactions.add(transaction);
 
@@ -157,12 +183,23 @@ class BackfillBlockMigrationTest extends IntegrationTest {
         expectedRecordFiles.add(recordFile);
 
         expectedTransactions.addAll(List.of(
-                domainBuilder.transaction().customize(customizeTransaction(consensusStart, 0)).persist(),
-                domainBuilder.transaction().customize(customizeTransaction(consensusStart + 1, 1))
-                        .customize(this::setContractCall).persist(),
-                domainBuilder.transaction().customize(customizeTransaction(consensusEnd, 2)).persist()
-        ));
-        domainBuilder.contractResult().customize(customizeContractResult(consensusStart + 1, logsBloom, 40L)).persist();
+                domainBuilder
+                        .transaction()
+                        .customize(customizeTransaction(consensusStart, 0))
+                        .persist(),
+                domainBuilder
+                        .transaction()
+                        .customize(customizeTransaction(consensusStart + 1, 1))
+                        .customize(this::setContractCall)
+                        .persist(),
+                domainBuilder
+                        .transaction()
+                        .customize(customizeTransaction(consensusEnd, 2))
+                        .persist()));
+        domainBuilder
+                .contractResult()
+                .customize(customizeContractResult(consensusStart + 1, logsBloom, 40L))
+                .persist();
 
         // when
         backfillBlockMigration.migrateAsync();
@@ -174,8 +211,8 @@ class BackfillBlockMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expectedTransactions);
     }
 
-    private Consumer<ContractResult.ContractResultBuilder<?, ?>> customizeContractResult(long consensusTimestamp,
-                                                                                         byte[] bloom, long gasUsed) {
+    private Consumer<ContractResult.ContractResultBuilder<?, ?>> customizeContractResult(
+            long consensusTimestamp, byte[] bloom, long gasUsed) {
         return b -> b.consensusTimestamp(consensusTimestamp).bloom(bloom).gasUsed(gasUsed);
     }
 
@@ -183,10 +220,16 @@ class BackfillBlockMigrationTest extends IntegrationTest {
         return b -> b.consensusTimestamp(consensusTimestamp).index(index);
     }
 
-    private RecordFile persistRecordFile(long index, long consensusStart, long consensusEnd, long gasUsed,
-                                         byte[] logsBloom) {
-        return domainBuilder.recordFile().customize(r -> r.index(index).consensusStart(consensusStart)
-                .consensusEnd(consensusEnd).gasUsed(gasUsed).logsBloom(logsBloom)).persist();
+    private RecordFile persistRecordFile(
+            long index, long consensusStart, long consensusEnd, long gasUsed, byte[] logsBloom) {
+        return domainBuilder
+                .recordFile()
+                .customize(r -> r.index(index)
+                        .consensusStart(consensusStart)
+                        .consensusEnd(consensusEnd)
+                        .gasUsed(gasUsed)
+                        .logsBloom(logsBloom))
+                .persist();
     }
 
     private void setContractCall(Transaction.TransactionBuilder b) {

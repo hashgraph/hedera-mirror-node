@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,11 @@ package com.hedera.mirror.monitor.subscribe;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.subscribe;
+
+import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -33,8 +30,6 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 
 @Log4j2
 @Named
@@ -65,7 +60,8 @@ public class SubscribeMetrics {
     }
 
     private TimeGauge newDurationGauge(Scenario<?, ?> scenario) {
-        return TimeGauge.builder(METRIC_DURATION, scenario, TimeUnit.NANOSECONDS, s -> s.getElapsed().toNanos())
+        return TimeGauge.builder(METRIC_DURATION, scenario, TimeUnit.NANOSECONDS, s -> s.getElapsed()
+                        .toNanos())
                 .description("How long the subscriber has been running")
                 .tag(TAG_PROTOCOL, scenario.getProtocol().toString())
                 .tag(TAG_SCENARIO, scenario.getName())
@@ -83,12 +79,11 @@ public class SubscribeMetrics {
     }
 
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.subscribe.statusFrequency:10000}")
-    @SuppressWarnings("java:S3864") //Call to peek here is fine
+    @SuppressWarnings("java:S3864") // Call to peek here is fine
     public void status() {
         if (subscribeProperties.isEnabled()) {
             var running = new AtomicBoolean(false);
-            durationMetrics.keySet()
-                    .stream()
+            durationMetrics.keySet().stream()
                     .filter(Scenario::isRunning)
                     .peek(s -> running.set(true))
                     .forEach(this::status);
@@ -101,7 +96,13 @@ public class SubscribeMetrics {
 
     private void status(Scenario<?, ?> s) {
         String elapsed = DurationToStringSerializer.convert(s.getElapsed());
-        log.info("{} scenario {} received {} responses in {} at {}/s. Errors: {}",
-                s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
+        log.info(
+                "{} scenario {} received {} responses in {} at {}/s. Errors: {}",
+                s.getProtocol(),
+                s,
+                s.getCount(),
+                elapsed,
+                s.getRate(),
+                s.getErrors());
     }
 }

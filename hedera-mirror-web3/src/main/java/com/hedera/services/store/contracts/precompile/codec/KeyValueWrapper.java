@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 
 public final class KeyValueWrapper {
     public enum KeyValueType {
@@ -108,9 +108,9 @@ public final class KeyValueWrapper {
     private KeyValueType setKeyValueType() {
         if (isShouldInheritAccountKeySet()) {
             return (!isEcdsaSecp256k1KeySet()
-                    && !isDelegatableContractIdSet()
-                    && !isContractIDSet()
-                    && !isEd25519KeySet())
+                            && !isDelegatableContractIdSet()
+                            && !isContractIDSet()
+                            && !isEd25519KeySet())
                     ? KeyValueType.INHERIT_ACCOUNT_KEY
                     : KeyValueType.INVALID_KEY;
         } else if (isContractIDSet()) {

@@ -15,7 +15,7 @@ hedera:
             topicId: ${topic.ping}
         rest:
           transactionId:
-            publishers: [ "pinger" ]
+            publishers: ["pinger"]
             samplePercent: 1.0
 logging:
   level:

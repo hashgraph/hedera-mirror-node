@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,19 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.contract.ContractState;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import java.io.File;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
@@ -35,14 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.contract.ContractState;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.ContractStateRepository;
-
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -54,8 +49,10 @@ class ContractStateMigrationTest extends IntegrationTest {
             """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
+
     @Value("classpath:db/migration/v1/V1.67.1__contract_state.sql")
     private final File migrationSql;
+
     private final ContractStateRepository contractStateRepository;
 
     @AfterEach
@@ -73,47 +70,37 @@ class ContractStateMigrationTest extends IntegrationTest {
     @Test
     void migrate() {
         // given
-        var builder = domainBuilder.contractStateChange()
-                .customize(c -> c
-                        .consensusTimestamp(1L)
-                        .migration(true)
-                        .contractId(1000)
-                        .slot(new byte[]{1})
-                        .valueRead("a".getBytes())
-                        .valueWritten(null)
-                );
+        var builder = domainBuilder.contractStateChange().customize(c -> c.consensusTimestamp(1L)
+                .migration(true)
+                .contractId(1000)
+                .slot(new byte[] {1})
+                .valueRead("a".getBytes())
+                .valueWritten(null));
 
         builder.persist();
-        var contractStateChange2 = builder.customize(c -> c
-                .consensusTimestamp(2L)
-                .valueRead("b".getBytes())
-        ).persist();
-        builder.customize(c -> c
-                .slot(new byte[]{2})
-                .valueRead("c".getBytes())
-        ).persist();
-        var contractStateChange4 = builder.customize(c -> c
-                .contractId(1001)
-                .consensusTimestamp(2L)
-                .slot(new byte[]{1})
-                .valueRead("d".getBytes())
-        ).persist();
-        var contractStateChange5 = builder.customize(c -> c
-                .contractId(1000)
-                .consensusTimestamp(3L)
-                .migration(false)
-                .slot(new byte[]{2})
-                .valueRead("c".getBytes())
-                .valueWritten("e".getBytes())
-        ).persist();
-        builder.customize(c -> c
-                .contractId(1001)
-                .consensusTimestamp(4L)
-                .migration(false)
-                .slot(new byte[]{1})
-                .valueRead("f".getBytes())
-                .valueWritten(null)
-        ).persist();
+        var contractStateChange2 = builder.customize(
+                        c -> c.consensusTimestamp(2L).valueRead("b".getBytes()))
+                .persist();
+        builder.customize(c -> c.slot(new byte[] {2}).valueRead("c".getBytes())).persist();
+        var contractStateChange4 = builder.customize(c -> c.contractId(1001)
+                        .consensusTimestamp(2L)
+                        .slot(new byte[] {1})
+                        .valueRead("d".getBytes()))
+                .persist();
+        var contractStateChange5 = builder.customize(c -> c.contractId(1000)
+                        .consensusTimestamp(3L)
+                        .migration(false)
+                        .slot(new byte[] {2})
+                        .valueRead("c".getBytes())
+                        .valueWritten("e".getBytes()))
+                .persist();
+        builder.customize(c -> c.contractId(1001)
+                        .consensusTimestamp(4L)
+                        .migration(false)
+                        .slot(new byte[] {1})
+                        .valueRead("f".getBytes())
+                        .valueWritten(null))
+                .persist();
 
         // when
         runMigration();
@@ -128,8 +115,9 @@ class ContractStateMigrationTest extends IntegrationTest {
     }
 
     private ContractState convert(ContractStateChange contractStateChange, long createdTimestamp) {
-        var value = contractStateChange.getValueWritten() == null ?
-                contractStateChange.getValueRead() : contractStateChange.getValueWritten();
+        var value = contractStateChange.getValueWritten() == null
+                ? contractStateChange.getValueRead()
+                : contractStateChange.getValueWritten();
         return ContractState.builder()
                 .contractId(contractStateChange.getContractId())
                 .createdTimestamp(createdTimestamp)

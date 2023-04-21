@@ -98,7 +98,7 @@ spring:
   flyway:
     baselineOnMigrate: true
     connectRetries: 20
-    ignoreMigrationPatterns: [ "*:missing", "*:ignored" ]
+    ignoreMigrationPatterns: ["*:missing", "*:ignored"]
     password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
@@ -130,7 +130,7 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
   main:
-    allow-circular-references: true  # flywayInitializer -> java migrations -> jdbcTemplate -> flywayInitializer
+    allow-circular-references: true # flywayInitializer -> java migrations -> jdbcTemplate -> flywayInitializer
   task:
     scheduling:
       pool:

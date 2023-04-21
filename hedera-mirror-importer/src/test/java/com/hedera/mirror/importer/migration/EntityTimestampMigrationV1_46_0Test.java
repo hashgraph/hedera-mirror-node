@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,23 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
@@ -37,16 +42,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -88,8 +83,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 entity(9003, EntityType.FILE),
                 entity(9004, EntityType.TOPIC),
                 entity(9005, EntityType.TOKEN),
-                entity(9006, EntityType.SCHEDULE)
-        ));
+                entity(9006, EntityType.SCHEDULE)));
 
         persistTransactions(List.of(
                 transaction(102L, 9001, SUCCESS, TransactionType.CRYPTOUPDATEACCOUNT),
@@ -105,8 +99,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 transaction(112L, 9005, SUCCESS, TransactionType.TOKENCREATION),
                 transaction(113L, 9005, SUCCESS, TransactionType.TOKENUPDATE),
                 transaction(114L, 9006, SUCCESS, TransactionType.SCHEDULECREATE),
-                transaction(116L, 9006, SUCCESS, TransactionType.SCHEDULEDELETE)
-        ));
+                transaction(116L, 9006, SUCCESS, TransactionType.SCHEDULEDELETE)));
 
         List<MigrationEntity> expected = List.of(
                 entity(9000, EntityType.ACCOUNT, 99L, 99L), // no change
@@ -116,14 +109,15 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 entity(9004, EntityType.TOPIC, 108L, 111L), // last update at 111L
                 entity(9005, EntityType.TOKEN, 112L, 113L), // last update at 113L
                 entity(9006, EntityType.SCHEDULE, 114L, true, 116L) // schedule was deleted at 116L
-        );
+                );
 
         // when
         migrate();
 
         // then
         assertThat(retrieveEntities())
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "createdTimestamp", "deleted", "modifiedTimestamp")
+                .usingRecursiveFieldByFieldElementComparatorOnFields(
+                        "id", "createdTimestamp", "deleted", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
@@ -131,13 +125,12 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         return entity(id, EntityType, null, false, null);
     }
 
-    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp,
-                                   Long modifiedTimestamp) {
+    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp, Long modifiedTimestamp) {
         return entity(id, EntityType, createdTimestamp, false, modifiedTimestamp);
     }
 
-    private MigrationEntity entity(long id, EntityType entityType, Long createdTimestamp, boolean deleted,
-                                   Long modifiedTimestamp) {
+    private MigrationEntity entity(
+            long id, EntityType entityType, Long createdTimestamp, boolean deleted, Long modifiedTimestamp) {
         MigrationEntity entity = new MigrationEntity();
         entity.setDeleted(deleted);
         entity.setCreatedTimestamp(createdTimestamp);
@@ -148,8 +141,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         return entity;
     }
 
-    private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
-                                    TransactionType type) {
+    private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result, TransactionType type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
@@ -164,8 +156,8 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
     private void persistEntities(List<MigrationEntity> entities) {
         for (MigrationEntity entity : entities) {
             jdbcOperations.update(
-                    "insert into entity (created_timestamp, deleted, id, modified_timestamp, num, realm, shard, type)" +
-                            " values (?,?,?,?,?,?,?,?)",
+                    "insert into entity (created_timestamp, deleted, id, modified_timestamp, num, realm, shard, type)"
+                            + " values (?,?,?,?,?,?,?,?)",
                     entity.getCreatedTimestamp(),
                     entity.getDeleted(),
                     entity.getId(),
@@ -173,8 +165,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                     entity.getNum(),
                     entity.getRealm(),
                     entity.getShard(),
-                    entity.getType()
-            );
+                    entity.getType());
         }
     }
 
@@ -188,29 +179,28 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
     private void persistTransactions(List<Transaction> transactions) {
         for (Transaction transaction : transactions) {
-            jdbcOperations
-                    .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
-                                    "max_fee, " +
-                                    "memo, " +
-                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
-                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            transaction.getChargedTxFee(),
-                            transaction.getConsensusTimestamp(),
-                            transaction.getEntityId().getId(),
-                            transaction.getInitialBalance(),
-                            transaction.getMaxFee(),
-                            transaction.getMemo(),
-                            transaction.getNodeAccountId().getId(),
-                            transaction.getPayerAccountId().getId(),
-                            transaction.getResult(),
-                            transaction.isScheduled(),
-                            transaction.getTransactionBytes(),
-                            transaction.getTransactionHash(),
-                            transaction.getType(),
-                            transaction.getValidDurationSeconds(),
-                            transaction.getValidStartNs());
+            jdbcOperations.update(
+                    "insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " + "max_fee, "
+                            + "memo, "
+                            + "node_account_id, payer_account_id, result, scheduled, transaction_bytes, "
+                            + "transaction_hash, type, valid_duration_seconds, valid_start_ns)"
+                            + " values"
+                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    transaction.getChargedTxFee(),
+                    transaction.getConsensusTimestamp(),
+                    transaction.getEntityId().getId(),
+                    transaction.getInitialBalance(),
+                    transaction.getMaxFee(),
+                    transaction.getMemo(),
+                    transaction.getNodeAccountId().getId(),
+                    transaction.getPayerAccountId().getId(),
+                    transaction.getResult(),
+                    transaction.isScheduled(),
+                    transaction.getTransactionBytes(),
+                    transaction.getTransactionHash(),
+                    transaction.getType(),
+                    transaction.getValidDurationSeconds(),
+                    transaction.getValidStartNs());
         }
     }
 

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.store.contract;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,23 @@ package com.hedera.mirror.web3.evm.store.contract;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.repository.ContractStateRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,32 +40,28 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.web3.repository.ContractRepository;
-import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
-
 @ExtendWith(MockitoExtension.class)
 class MirrorEntityAccessTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
     private static final byte[] DATA = BYTES.toArrayUnsafe();
     private static final Address ADDRESS = Address.fromHexString(HEX);
-    private static final Address NON_MIRROR_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+    private static final Address NON_MIRROR_ADDRESS =
+            Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
 
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
-    private static final Long ENTITY_ID = EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(),
-            ENTITY.getEntityNum());
+    private static final Long ENTITY_ID =
+            EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
+
     @Mock
     private EntityRepository entityRepository;
+
     @Mock
     private ContractRepository contractRepository;
+
     @Mock
     private ContractStateRepository contractStateRepository;
+
     @Mock
     Entity entity;
 
@@ -189,7 +189,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void isExtantForNonMirrorAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe())).thenReturn(Optional.of(entity));
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe()))
+                .thenReturn(Optional.of(entity));
         final var result = mirrorEntityAccess.isExtant(NON_MIRROR_ADDRESS);
         assertThat(result).isTrue();
     }
@@ -241,7 +242,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void getStorage() {
-        when(contractStateRepository.findStorage(ENTITY_ID, BYTES.toArrayUnsafe())).thenReturn(Optional.of(DATA));
+        when(contractStateRepository.findStorage(ENTITY_ID, BYTES.toArrayUnsafe()))
+                .thenReturn(Optional.of(DATA));
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(HEX));
     }

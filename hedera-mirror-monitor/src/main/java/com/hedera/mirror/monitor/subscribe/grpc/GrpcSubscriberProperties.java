@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.grpc;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,17 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.subscribe.grpc;
+
+import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 import java.time.Duration;
 import java.time.Instant;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
-
-import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 
 @Data
 @Validated

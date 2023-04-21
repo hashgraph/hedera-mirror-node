@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository.upsert;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,17 @@ package com.hedera.mirror.importer.repository.upsert;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository.upsert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.importer.IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
@@ -37,8 +32,8 @@ class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
 
     @Test
     void createTempIndexQuery() {
-        var expected = "create index if not exists token_account_temp_idx on token_account_temp " +
-                "(token_id, account_id)";
+        var expected =
+                "create index if not exists token_account_temp_idx on token_account_temp " + "(token_id, account_id)";
         var createTempIndexQuery = upsertQueryGenerator.getCreateTempIndexQuery();
         assertThat(createTempIndexQuery).isEqualTo(expected);
     }

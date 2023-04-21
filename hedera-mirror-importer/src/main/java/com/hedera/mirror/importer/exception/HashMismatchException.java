@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.exception;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,12 @@ package com.hedera.mirror.importer.exception;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.io.Serial;
+package com.hedera.mirror.importer.exception;
 
 import com.hedera.mirror.common.util.DomainUtils;
+import java.io.Serial;
 
 @SuppressWarnings("java:S110")
 public class HashMismatchException extends ImporterException {
@@ -37,7 +32,7 @@ public class HashMismatchException extends ImporterException {
     }
 
     public HashMismatchException(String filename, byte[] expectedHash, byte[] actualHash, String hashType) {
-        super(String.format(MESSAGE, hashType, filename, DomainUtils.bytesToHex(expectedHash),
-                DomainUtils.bytesToHex(actualHash)));
+        super(String.format(
+                MESSAGE, hashType, filename, DomainUtils.bytesToHex(expectedHash), DomainUtils.bytesToHex(actualHash)));
     }
 }

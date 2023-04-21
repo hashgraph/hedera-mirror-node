@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
@@ -30,6 +26,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -39,12 +40,6 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.util.DomainUtils;
 
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -57,7 +52,9 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
-                        .setTopicID(TopicID.newBuilder().setTopicNum(DEFAULT_ENTITY_NUM).build()));
+                        .setTopicID(TopicID.newBuilder()
+                                .setTopicNum(DEFAULT_ENTITY_NUM)
+                                .build()));
     }
 
     @Override
@@ -68,12 +65,14 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Test
     void updateTransactionSuccessful() {
         var recordItem = recordItemBuilder.consensusUpdateTopic().build();
-        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var topicId = EntityId.of(
+                recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
-        when(entityIdService.lookup(any(AccountID.class)))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
+                .get();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
     }
@@ -81,13 +80,17 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.consensusUpdateTopic()
+        var recordItem = recordItemBuilder
+                .consensusUpdateTopic()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
                 .build();
-        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var topicId = EntityId.of(
+                recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
+                .get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -99,13 +102,17 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     void updateTransactionEntityIdEmpty(EntityId entityId) {
         // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.consensusUpdateTopic()
+        var recordItem = recordItemBuilder
+                .consensusUpdateTopic()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
                 .build();
-        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var topicId = EntityId.of(
+                recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
+                .get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.ofNullable(entityId));
         var expectedId = entityId == null ? null : entityId.getId();
@@ -117,13 +124,17 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
 
     @Test
     void updateTransactionSuccessfulClearAutoRenewAccountId() {
-        var recordItem = recordItemBuilder.consensusUpdateTopic()
+        var recordItem = recordItemBuilder
+                .consensusUpdateTopic()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAccountNum(0))
                 .build();
-        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var topicId = EntityId.of(
+                recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
+                .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(0L, id));
     }
@@ -142,7 +153,6 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .returns(topicId.getRealmNum(), Entity::getRealm)
                 .returns(topicId.getShardNum(), Entity::getShard)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
-                .returns(TOPIC, Entity::getType)
-        ));
+                .returns(TOPIC, Entity::getType)));
     }
 }

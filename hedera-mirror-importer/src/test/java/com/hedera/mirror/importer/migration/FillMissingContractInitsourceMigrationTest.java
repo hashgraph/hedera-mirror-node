@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,16 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -33,13 +33,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.ContractRepository;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -112,7 +105,9 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
     @DisplayName("post 0.26, child contract in its own contract create transaction, parent is created with initcode")
     @Test
     void post026ParentWithInitcode() {
-        var parent = domainBuilder.contract().customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32)))
+        var parent = domainBuilder
+                .contract()
+                .customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32)))
                 .persist();
         var child = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
         insertContractResult(parent, List.of(parent.getId(), child.getId()));
@@ -130,13 +125,13 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
     }
 
     private void insertContractResult(Contract caller, List<Long> createdContractIds) {
-        domainBuilder.contractResult()
+        domainBuilder
+                .contractResult()
                 .customize(cr -> cr.contractId(caller.getId()).createdContractIds(createdContractIds))
                 .persist();
     }
 
     private void assertContracts(Contract... contracts) {
-        assertThat(contractRepository.findAll())
-                .containsExactlyInAnyOrder(contracts);
+        assertThat(contractRepository.findAll()).containsExactlyInAnyOrder(contracts);
     }
 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,26 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.importer.reader.record.RecordFileReader.MAX_TRANSACTION_LENGTH;
 
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.BufferedReader;
@@ -42,21 +52,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenTransfer;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import com.hedera.mirror.importer.exception.FileOperationException;
-import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
-import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
-import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
-import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
-
 /**
  * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database.md#errata
  * for more detail.
@@ -71,6 +66,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
 
     @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
+
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
@@ -83,15 +79,16 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
 
     @Lazy
     @SuppressWarnings("java:S107")
-    public ErrataMigration(Resource balanceOffsets,
-                           EntityRecordItemListener entityRecordItemListener,
-                           EntityProperties entityProperties,
-                           NamedParameterJdbcOperations jdbcOperations,
-                           MirrorProperties mirrorProperties,
-                           RecordStreamFileListener recordStreamFileListener,
-                           TokenTransferRepository tokenTransferRepository,
-                           TransactionOperations transactionOperations,
-                           TransactionRepository transactionRepository) {
+    public ErrataMigration(
+            Resource balanceOffsets,
+            EntityRecordItemListener entityRecordItemListener,
+            EntityProperties entityProperties,
+            NamedParameterJdbcOperations jdbcOperations,
+            MirrorProperties mirrorProperties,
+            RecordStreamFileListener recordStreamFileListener,
+            TokenTransferRepository tokenTransferRepository,
+            TransactionOperations transactionOperations,
+            TransactionRepository transactionRepository) {
         super(mirrorProperties.getMigration());
         this.balanceOffsets = balanceOffsets;
         this.entityRecordItemListener = entityRecordItemListener;
@@ -153,14 +150,16 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
 
     private void balanceFileAdjustment() {
         // Adjusts the balance file's consensus timestamp by -1 for use when querying transfers.
-        String sql = """
+        String sql =
+                """
                 update account_balance_file set time_offset = -1
                 where consensus_timestamp in (:timestamps) and time_offset <> -1
                 """;
         int count = jdbcOperations.update(sql, new MapSqlParameterSource("timestamps", getTimestamps()));
 
         // Set the fixed time offset for account balance files in the applicable range
-        sql = """
+        sql =
+                """
                 update account_balance_file set time_offset = :fixedTimeOffset
                 where consensus_timestamp >= :firstTimestamp and consensus_timestamp <= :lastTimestamp
                 """;
@@ -181,7 +180,8 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
      * 1570120372315307000) have a corner case where the credit has the payer to be same as the receiver.
      */
     private void spuriousTransfers() {
-        String sql = """
+        String sql =
+                """
                 with spurious_transfer as (
                   update crypto_transfer ct
                   set errata = 'DELETE'
@@ -323,7 +323,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     }
 
     private boolean shouldApplyFixedTimeOffset(long consensusTimestamp) {
-        return consensusTimestamp >= FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP &&
-                consensusTimestamp <= LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP;
+        return consensusTimestamp >= FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP
+                && consensusTimestamp <= LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP;
     }
 }

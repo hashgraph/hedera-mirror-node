@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,15 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
+package com.hedera.mirror.importer.parser.batch;
 
+import com.hedera.mirror.common.domain.Upsertable;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
@@ -30,14 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import javax.persistence.Entity;
 import javax.sql.DataSource;
-
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotationUtils;
-
-import com.hedera.mirror.common.domain.Upsertable;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;
 
 @Named
 @Primary
@@ -49,17 +42,19 @@ public class CompositeBatchPersister implements BatchPersister {
     private final CommonParserProperties properties;
     private final UpsertQueryGeneratorFactory upsertQueryGeneratorFactory;
 
-    public CompositeBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
-                                   CommonParserProperties properties,
-                                   UpsertQueryGeneratorFactory upsertQueryGeneratorFactory,
-                                   Optional<TransactionHashBatchInserter> transactionHashV1BatchPersister) {
+    public CompositeBatchPersister(
+            DataSource dataSource,
+            MeterRegistry meterRegistry,
+            CommonParserProperties properties,
+            UpsertQueryGeneratorFactory upsertQueryGeneratorFactory,
+            Optional<TransactionHashBatchInserter> transactionHashV1BatchPersister) {
         this.dataSource = dataSource;
         this.meterRegistry = meterRegistry;
         this.properties = properties;
         this.upsertQueryGeneratorFactory = upsertQueryGeneratorFactory;
 
-        transactionHashV1BatchPersister.ifPresent(batchPersister -> batchPersisters.put(TransactionHash.class,
-                batchPersister));
+        transactionHashV1BatchPersister.ifPresent(
+                batchPersister -> batchPersisters.put(TransactionHash.class, batchPersister));
     }
 
     @Override

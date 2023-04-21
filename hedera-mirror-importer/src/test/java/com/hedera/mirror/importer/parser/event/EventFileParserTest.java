@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.event;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.event;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.event;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,13 +22,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Instant;
-import org.mockito.Mock;
-import reactor.core.publisher.Flux;
-
 import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -40,6 +30,10 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Instant;
+import org.mockito.Mock;
+import reactor.core.publisher.Flux;
 
 class EventFileParserTest extends AbstractStreamFileParserTest<EventFile, EventFileParser> {
 

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,13 @@ package com.hedera.mirror.web3.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
-
 import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -36,19 +31,20 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class CustomFeeRepositoryImpl implements CustomFeeRepositoryExtra{
+public class CustomFeeRepositoryImpl implements CustomFeeRepositoryExtra {
 
-    public static final String SELECT_QUERY ="select * from custom_fee  where token_id = :tokenId and created_timestamp = (select created_timestamp from custom_fee  where token_id = :tokenId order by created_timestamp desc limit 1)";
+    public static final String SELECT_QUERY =
+            "select * from custom_fee  where token_id = :tokenId and created_timestamp = (select created_timestamp from custom_fee  where token_id = :tokenId order by created_timestamp desc limit 1)";
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private static final DataClassRowMapper<CustomFee> rowMapper;
 
-   static {
-       var defaultConversionService = new DefaultConversionService();
-       defaultConversionService.addConverter(Long.class, EntityId.class,
-               AccountIdConverter.INSTANCE::convertToEntityAttribute);
-       rowMapper = new DataClassRowMapper<>(CustomFee.class);
-       rowMapper.setConversionService(defaultConversionService);
-   }
+    static {
+        var defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(
+                Long.class, EntityId.class, AccountIdConverter.INSTANCE::convertToEntityAttribute);
+        rowMapper = new DataClassRowMapper<>(CustomFee.class);
+        rowMapper.setConversionService(defaultConversionService);
+    }
 
     @Override
     public List<CustomFee> findByTokenId(Long tokenId) {

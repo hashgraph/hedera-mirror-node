@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import bodyParser from 'body-parser';
@@ -57,7 +53,7 @@ common.initResults();
 app.get('/health/liveness', (req, res) => res.status(200).send(healthUp));
 app.get('/health/readiness', (req, res) => {
   const status = common.getStatus();
-  const total = status.results.map((r) => r.results.testResults ? 1 : 0).reduce((r, i) => r + i);
+  const total = status.results.map((r) => (r.results.testResults ? 1 : 0)).reduce((r, i) => r + i);
 
   if (total > 0) {
     res.status(200).send(healthUp);
@@ -101,7 +97,7 @@ const servers = [...config.servers].map((server) => {
 
 // Run tests on startup and every interval after that
 runEverything(servers)
-  .catch(e => logger.error(`Error starting server: ${JSON.stringify(e)}`))
+  .catch((e) => logger.error(`Error starting server: ${JSON.stringify(e)}`))
   .then(() => {
     setInterval(async () => {
       await runEverything(servers);

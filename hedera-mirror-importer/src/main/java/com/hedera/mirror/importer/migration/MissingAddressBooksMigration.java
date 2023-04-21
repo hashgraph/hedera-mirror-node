@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,16 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-import org.flywaydb.core.api.configuration.Configuration;
-import org.springframework.context.annotation.Lazy;
+package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
+import javax.inject.Named;
+import org.flywaydb.core.api.configuration.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 @Named
 public class MissingAddressBooksMigration extends RepeatableMigration {
@@ -35,9 +30,10 @@ public class MissingAddressBooksMigration extends RepeatableMigration {
     private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
     @Lazy
-    public MissingAddressBooksMigration(AddressBookService addressBookService,
-                                        AddressBookServiceEndpointRepository addressBookServiceEndpointRepository,
-                                        MirrorProperties mirrorProperties) {
+    public MissingAddressBooksMigration(
+            AddressBookService addressBookService,
+            AddressBookServiceEndpointRepository addressBookServiceEndpointRepository,
+            MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.addressBookService = addressBookService;
         this.addressBookServiceEndpointRepository = addressBookServiceEndpointRepository;

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,11 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.importer.migration;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.IterableAssert;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -47,6 +32,16 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings("java:S5786")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -71,10 +66,7 @@ public class ErrataMigrationTest extends IntegrationTest {
             .timeOffset(53)
             .build();
     private static final List<AccountBalanceFile> EXPECTED_ACCOUNT_BALANCE_FILES = List.of(
-            EXPECTED_ACCOUNT_BALANCE_FILE1,
-            EXPECTED_ACCOUNT_BALANCE_FILE2,
-            EXPECTED_ACCOUNT_BALANCE_FILE_FIXED_OFFSET
-    );
+            EXPECTED_ACCOUNT_BALANCE_FILE1, EXPECTED_ACCOUNT_BALANCE_FILE2, EXPECTED_ACCOUNT_BALANCE_FILE_FIXED_OFFSET);
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final ContractResultRepository contractResultRepository;
@@ -105,7 +97,10 @@ public class ErrataMigrationTest extends IntegrationTest {
     void migrateNotMainnet() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
-        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1))
+                .persist();
         spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER, false, false);
 
         errataMigration.doMigrate();
@@ -134,9 +129,18 @@ public class ErrataMigrationTest extends IntegrationTest {
     @Test
     void migrateMainnet() throws Exception {
         domainBuilder.accountBalanceFile().persist();
-        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
-        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2)).persist();
-        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET)).persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1))
+                .persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2))
+                .persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET))
+                .persist();
         spuriousTransfer(RECEIVER_PAYER_TIMESTAMP, 10, TransactionType.CRYPTOTRANSFER, true, false); // Expected
         spuriousTransfer(1L, 15, TransactionType.CRYPTOTRANSFER, false, false); // Expected
         spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER, false, true); // Expected
@@ -180,7 +184,10 @@ public class ErrataMigrationTest extends IntegrationTest {
     @Test
     void migrateMissedTokenTransfers() throws Exception {
         long existingTimestamp = DomainUtils.convertToNanosMax(Instant.parse("2023-02-10T02:16:18.649144003Z"));
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(existingTimestamp)).persist();
+        domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(existingTimestamp))
+                .persist();
         errataMigration.doMigrate();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
     }
@@ -240,10 +247,12 @@ public class ErrataMigrationTest extends IntegrationTest {
                 .hasSize(expected);
     }
 
-    private void spuriousTransfer(long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer,
-                                  boolean senderIsPayer) {
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
+    private void spuriousTransfer(
+            long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer, boolean senderIsPayer) {
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
                 .persist();
         long amount = 100000L;
         long payer = transaction.getPayerAccountId().getId() + 1000L;
@@ -260,7 +269,8 @@ public class ErrataMigrationTest extends IntegrationTest {
     }
 
     private void insertCryptoTransfer(Transaction transaction, long entityId, long amount) {
-        domainBuilder.cryptoTransfer()
+        domainBuilder
+                .cryptoTransfer()
                 .customize(c -> c.amount(amount)
                         .consensusTimestamp(transaction.getConsensusTimestamp())
                         .entityId(entityId)

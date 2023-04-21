@@ -8,13 +8,20 @@
   "setup": {
     "sql": {
       "pathprefix": "data/db/stateproof",
-      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file_v6.sql", "transaction_v6.sql"]
+      "scripts": [
+        "address_book.sql",
+        "address_book_entry.sql",
+        "record_file_v6.sql",
+        "transaction_v6.sql"
+      ]
     }
   },
   "url": "/api/v1/transactions/0.0.90-1658802987-519128529/stateproof",
   "responseStatus": 200,
   "responseJson": {
-    "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
+    "address_books": [
+      "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"
+    ],
     "record_file": {
       "block_number": "c2cc3d47772baf38bcf3bd36efcafd1a56e9e6144fc04e89df2e08d0bc663d24",
       "end_running_hash_object": "a8fcac6df0d3b6ba942a608700d7138b96ce9d7213885c5c8791b01fe9f367c5",

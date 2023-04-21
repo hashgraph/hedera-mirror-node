@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.importer.downloader;
 
 /*
@@ -27,6 +43,14 @@ import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureSta
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -38,19 +62,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.exception.SignatureVerificationException;
-
 class ConsensusValidatorImplTest {
 
-    private static final BigDecimal MAX_TINYBARS = BigDecimal.valueOf(50_000_000_000L)
-            .multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
+    private static final BigDecimal MAX_TINYBARS =
+            BigDecimal.valueOf(50_000_000_000L).multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
     private CommonDownloaderProperties commonDownloaderProperties;
@@ -60,8 +75,8 @@ class ConsensusValidatorImplTest {
     @BeforeEach
     void setup() {
         commonDownloaderProperties = new CommonDownloaderProperties(new MirrorProperties());
-        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19,
-                RoundingMode.DOWN));
+        commonDownloaderProperties.setConsensusRatio(
+                BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19, RoundingMode.DOWN));
         consensusValidator = new ConsensusValidatorImpl(commonDownloaderProperties);
     }
 
@@ -80,7 +95,9 @@ class ConsensusValidatorImplTest {
 
     @Test
     void successWithLargeStakes() {
-        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING).longValue();
+        var oneThirdStake = MAX_TINYBARS
+                .divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING)
+                .longValue();
         var signatures = signatures(oneThirdStake, oneThirdStake, oneThirdStake);
 
         consensusValidator.validate(signatures);
@@ -115,23 +132,24 @@ class ConsensusValidatorImplTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StreamFileSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
-            "NOT_FOUND"})
+    @EnumSource(
+            value = StreamFileSignature.SignatureStatus.class,
+            names = {"DOWNLOADED", "CONSENSUS_REACHED", "NOT_FOUND"})
     void notVerified(StreamFileSignature.SignatureStatus status) {
         var signatures = signatures(3, 3, 3);
         signatures.forEach(s -> s.setStatus(status));
         assertThatThrownBy(() -> consensusValidator.validate(signatures))
                 .isInstanceOf(SignatureVerificationException.class)
                 .hasMessageContaining("Consensus not reached for file");
-        assertThat(signatures)
-                .map(StreamFileSignature::getStatus)
-                .containsOnly(status);
+        assertThat(signatures).map(StreamFileSignature::getStatus).containsOnly(status);
     }
 
     @Test
     void fullNodeStakeConsensus() {
         commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE);
-        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING).longValue();
+        var oneThirdStake = MAX_TINYBARS
+                .divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING)
+                .longValue();
         var signatures = signatures(oneThirdStake, oneThirdStake, oneThirdStake - 1);
 
         consensusValidator.validate(signatures);
@@ -153,9 +171,7 @@ class ConsensusValidatorImplTest {
         var signatures = signatures(1, 7);
 
         consensusValidator.validate(signatures);
-        assertThat(signatures)
-                .map(StreamFileSignature::getStatus)
-                .doesNotContain(CONSENSUS_REACHED);
+        assertThat(signatures).map(StreamFileSignature::getStatus).doesNotContain(CONSENSUS_REACHED);
     }
 
     @Test
@@ -176,9 +192,7 @@ class ConsensusValidatorImplTest {
         commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE);
         var signatures = signatures(0, 0, 0);
         consensusValidator.validate(signatures);
-        assertThat(signatures)
-                .map(StreamFileSignature::getStatus)
-                .containsOnly(CONSENSUS_REACHED);
+        assertThat(signatures).map(StreamFileSignature::getStatus).containsOnly(CONSENSUS_REACHED);
     }
 
     @Test
@@ -196,9 +210,7 @@ class ConsensusValidatorImplTest {
         assertThatThrownBy(() -> consensusValidator.validate(signatures))
                 .isInstanceOf(SignatureVerificationException.class)
                 .hasMessageContaining("Consensus not reached for file");
-        assertThat(signatures)
-                .map(StreamFileSignature::getStatus)
-                .doesNotContain(CONSENSUS_REACHED);
+        assertThat(signatures).map(StreamFileSignature::getStatus).doesNotContain(CONSENSUS_REACHED);
     }
 
     private List<StreamFileSignature> signatures(long... stakes) {

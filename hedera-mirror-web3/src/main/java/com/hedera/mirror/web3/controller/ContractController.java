@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.web3.controller;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
@@ -31,7 +27,15 @@ import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.RateLimitException;
+import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
+import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
 import javax.validation.Valid;
 import lombok.CustomLog;
@@ -49,16 +53,6 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import reactor.core.publisher.Mono;
-
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
-import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
-import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @CustomLog
 @RequestMapping("/api/v1/contracts")
@@ -164,8 +158,8 @@ class ContractController {
         return Mono.just(new GenericErrorResponse(errorMessage));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage,
-                                                     final String hexErrorMessage) {
+    private Mono<GenericErrorResponse> errorResponse(
+            final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage));
     }
 }

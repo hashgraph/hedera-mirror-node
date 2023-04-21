@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,14 @@ package com.hedera.mirror.graphql.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.graphql.config;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.StringWriter;
+import java.time.Duration;
 import lombok.CustomLog;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -35,10 +35,6 @@ import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import java.io.StringWriter;
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @CustomLog
 class LoggingFilterTest {
@@ -72,18 +68,17 @@ class LoggingFilterTest {
         logger.removeAppender(appender);
     }
 
-    @CsvSource({
-            "/, 200, INFO",
-            "/actuator/, 200, DEBUG"
-    })
+    @CsvSource({"/, 200, INFO", "/actuator/, 200, DEBUG"})
     @ParameterizedTest
     void filterOnSuccess(String path, int code, String level) {
-        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
+        MockServerWebExchange exchange =
+                MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
         exchange.getResponse().setRawStatusCode(code);
 
-        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange,
-                        serverWebExchange -> Mono.defer(() -> exchange.getResponse()
-                                .setComplete())))
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(
+                        exchange,
+                        serverWebExchange ->
+                                Mono.defer(() -> exchange.getResponse().setComplete())))
                 .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);
@@ -99,9 +94,10 @@ class LoggingFilterTest {
                 .build());
         exchange.getResponse().setRawStatusCode(200);
 
-        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange,
-                        serverWebExchange -> Mono.defer(() -> exchange.getResponse()
-                                .setComplete())))
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(
+                        exchange,
+                        serverWebExchange ->
+                                Mono.defer(() -> exchange.getResponse().setComplete())))
                 .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);
@@ -111,10 +107,11 @@ class LoggingFilterTest {
 
     @Test
     void filterOnCancel() {
-        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+        MockServerWebExchange exchange =
+                MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
 
-        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse()
-                        .setComplete()))
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(
+                        exchange, serverWebExchange -> exchange.getResponse().setComplete()))
                 .thenCancel()
                 .verify(WAIT);
 
@@ -123,11 +120,13 @@ class LoggingFilterTest {
 
     @Test
     void filterOnError() {
-        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+        MockServerWebExchange exchange =
+                MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
         exchange.getResponse().setRawStatusCode(500);
 
         var exception = new RuntimeException("error");
-        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception))
+        StepVerifier.withVirtualTime(() -> loggingFilter
+                        .filter(exchange, serverWebExchange -> Mono.error(exception))
                         .onErrorResume((t) -> exchange.getResponse().setComplete()))
                 .thenAwait(WAIT)
                 .expectComplete()

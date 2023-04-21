@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.service;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.mirror.web3.service;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
@@ -28,9 +23,11 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.Counter;
-import javax.inject.Named;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
+import javax.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -42,33 +39,29 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 public class ContractCallService {
 
+    private final Counter.Builder gasCounter = Counter.builder("hedera.mirror.web3.call.gas")
+            .description("The amount of gas consumed by the EVM");
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
     private final MeterRegistry meterRegistry;
-    private final Counter.Builder gasCounter = Counter.builder("hedera.mirror.web3.call.gas")
-        .description("The amount of gas consumed by the EVM");
     private final MirrorNodeEvmProperties properties;
-
-    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, MeterRegistry meterRegistry, MirrorNodeEvmProperties properties) {
-        this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
-        this.meterRegistry = meterRegistry;
-        this.properties = properties;
-    }
 
     public String processCall(final CallServiceParameters params) {
         var stopwatch = Stopwatch.createStarted();
-        String stringResult = "";
+        var stringResult = "";
+
         try {
             if (params.isEstimate()) {
                 stringResult = estimateGas(params);
                 return stringResult;
             }
-            final var ethCallTxnResult = doProcessCall(params, params.getGas());
-            validateTxnResult(ethCallTxnResult, params.getCallType());
 
-            final var callResult = ethCallTxnResult.getOutput() != null
-                    ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
+            final var ethCallTxnResult = doProcessCall(params, params.getGas());
+            validateResult(ethCallTxnResult, params.getCallType());
+
+            final var callResult = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
             stringResult = callResult.toHexString();
             return stringResult;
         } finally {
@@ -77,19 +70,19 @@ public class ContractCallService {
     }
 
     /**
-     * This method estimates the amount of gas required to execute a smart contract function.
-     * The estimation process involves three steps:
-     * 1. Firstly, a call is made with the maximum gas value of 15 million to determine if the call
-     *    estimation is possible. This step is intended to quickly identify any issues that would
-     *    prevent the estimation from succeeding.
-     *
-     * 2. Finally, if the first step is successful, a binary search is initiated.
-     *    The lower bound of the search is the gas used in the first step, while the upper bound
-     *    is half of the maximum gas value .
+     * This method estimates the amount of gas required to execute a smart contract function. The estimation process
+     * involves two steps:
+     * <p>
+     * 1. Firstly, a call is made with the maximum gas value of 15 million to determine if the call estimation is
+     * possible. This step is intended to quickly identify any issues that would prevent the estimation from
+     * succeeding.
+     * <p>
+     * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
+     * gas used in the first step, while the upper bound is half of the maximum gas value .
      */
     private String estimateGas(final CallServiceParameters params) {
         HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, properties.getMaxGasToUseLimit());
-        validateTxnResult(processingResult, ETH_ESTIMATE_GAS);
+        validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
         final var estimatedGas = binarySearch(params, gasUsedByInitialCall, properties.getMaxGasToUseLimit() / 2);
@@ -103,11 +96,12 @@ public class ContractCallService {
     private long binarySearch(final CallServiceParameters params, long lo, long hi) {
         long prevGasLimit = lo;
         int iterationsMade = 0;
-       do {
-           long mid = (hi + lo) / 2 ;
-           HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params, mid);
-           updateGasMetric(ETH_ESTIMATE_GAS, transactionResult, ++iterationsMade);
-           boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
+
+        do {
+            long mid = (hi + lo) / 2;
+            HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params, mid);
+            updateGasMetric(ETH_ESTIMATE_GAS, transactionResult, ++iterationsMade);
+            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
             if (err || gasUsed == 0) {
                 lo = mid;
@@ -119,6 +113,7 @@ public class ContractCallService {
             }
             prevGasLimit = mid;
         } while (lo + 1 < hi);
+
         return hi;
     }
 
@@ -140,14 +135,12 @@ public class ContractCallService {
         return transactionResult;
     }
 
-    private void validateTxnResult(final HederaEvmTransactionProcessingResult txnResult,
-                                   final CallType type) {
+    private void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallType type) {
         if (!txnResult.isSuccessful()) {
             updateGasMetric(ERROR, txnResult, 1);
-
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
-            throw new InvalidTransactionException(getStatusOrDefault(txnResult),
-                    maybeDecodeSolidityErrorStringToReadableMessage(revertReason), revertReason.toHexString());
+            var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
+            throw new InvalidTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
             updateGasMetric(type, txnResult, 1);
         }
@@ -155,7 +148,7 @@ public class ContractCallService {
 
     private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result,
                                  final int iterations) {
-       gasCounter.tag("type", callType.toString())
+        gasCounter.tag("type", callType.toString())
                 .tag("iteration", String.valueOf(iterations))
                 .register(meterRegistry)
                 .increment(result.getGasUsed());

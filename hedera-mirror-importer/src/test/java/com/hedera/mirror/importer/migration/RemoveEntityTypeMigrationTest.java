@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
@@ -31,6 +27,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.converter.RangeToStringSerializer;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,13 +50,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -78,14 +73,14 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         List<MigrationEntityV1_47_1> badEntities = Arrays.asList(entity(1, 1, CONTRACT));
         List<MigrationContractV1_47_1> badContracts = Arrays.asList(contract(1, 1, FILE));
 
-        //Entities can have any type except CONTRACT
+        // Entities can have any type except CONTRACT
         entities.add(entity(1, 1, ACCOUNT));
         entities.add(entity(2, 2, FILE));
         entities.add(entity(3, 3, TOPIC));
         entities.add(entity(4, 4, TOKEN));
         entities.add(entity(5, 5, SCHEDULE));
 
-        //Contracts can only have type CONTRACT
+        // Contracts can only have type CONTRACT
         contracts.add(contract(6, 6, CONTRACT));
 
         persistEntities(entities, false);
@@ -96,18 +91,18 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(findAllEntities()).extracting(MigrationEntityV1_47_1::getType).containsExactly(
-                ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
-        );
-        assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_47_1::getType).containsExactly(
-                ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
-        );
-        assertThat(findAllContracts()).extracting(MigrationContractV1_47_1::getType).containsExactly(
-                CONTRACT
-        );
-        assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_1::getType).containsExactly(
-                CONTRACT
-        );
+        assertThat(findAllEntities())
+                .extracting(MigrationEntityV1_47_1::getType)
+                .containsExactly(ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE);
+        assertThat(findAllEntitiesHistory())
+                .extracting(MigrationEntityV1_47_1::getType)
+                .containsExactly(ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE);
+        assertThat(findAllContracts())
+                .extracting(MigrationContractV1_47_1::getType)
+                .containsExactly(CONTRACT);
+        assertThat(findAllContractsHistory())
+                .extracting(MigrationContractV1_47_1::getType)
+                .containsExactly(CONTRACT);
 
         assertThrows(DataIntegrityViolationException.class, () -> {
             persistEntities(badEntities, true);
@@ -167,10 +162,13 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                     entity.getNum(),
                     entity.getRealm(),
                     entity.getShard(),
-                    migrationRan ? entity.getType().toString() : entity.getType().getId(),
-                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
-                            .lowerEndpoint())
-            );
+                    migrationRan
+                            ? entity.getType().toString()
+                            : entity.getType().getId(),
+                    String.format(
+                            "(%d, %d)",
+                            entity.getCreatedTimestamp(),
+                            entity.getTimestampRange().lowerEndpoint()));
         }
     }
 
@@ -183,10 +181,13 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                     entity.getNum(),
                     entity.getRealm(),
                     entity.getShard(),
-                    migrationRan ? entity.getType().toString() : entity.getType().getId(),
-                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
-                            .lowerEndpoint())
-            );
+                    migrationRan
+                            ? entity.getType().toString()
+                            : entity.getType().getId(),
+                    String.format(
+                            "(%d, %d)",
+                            entity.getCreatedTimestamp(),
+                            entity.getTimestampRange().lowerEndpoint()));
         }
     }
 
@@ -200,10 +201,13 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                     contract.getNum(),
                     contract.getRealm(),
                     contract.getShard(),
-                    migrationRan ? contract.getType().toString() : contract.getType().getId(),
-                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
-                            .lowerEndpoint())
-            );
+                    migrationRan
+                            ? contract.getType().toString()
+                            : contract.getType().getId(),
+                    String.format(
+                            "(%d, %d)",
+                            contract.getCreatedTimestamp(),
+                            contract.getTimestampRange().lowerEndpoint()));
         }
     }
 
@@ -217,41 +221,50 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                     contract.getNum(),
                     contract.getRealm(),
                     contract.getShard(),
-                    migrationRan ? contract.getType().toString() : contract.getType().getId(),
-                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
-                            .lowerEndpoint())
-            );
+                    migrationRan
+                            ? contract.getType().toString()
+                            : contract.getType().getId(),
+                    String.format(
+                            "(%d, %d)",
+                            contract.getCreatedTimestamp(),
+                            contract.getTimestampRange().lowerEndpoint()));
         }
     }
 
     private String getContractSql(String table, boolean useEnum) {
-        return String.format("insert into %s (id, created_timestamp, memo, num, realm, shard, type, " +
-                "timestamp_range)" +
-                " values (?,?,?,?,?,?,%s,?::int8range)", table, useEnum ? "cast(? as entity_type)" : "?");
+        return String.format(
+                "insert into %s (id, created_timestamp, memo, num, realm, shard, type, " + "timestamp_range)"
+                        + " values (?,?,?,?,?,?,%s,?::int8range)",
+                table, useEnum ? "cast(? as entity_type)" : "?");
     }
 
     private String getEntitySql(String table, boolean useEnum) {
-        return String.format("insert into %s (id, created_timestamp, num, realm, shard, type, " +
-                "timestamp_range) values (?,?,?,?,?,%s,?::int8range)", table, useEnum ? "cast(? as entity_type)" : "?");
+        return String.format(
+                "insert into %s (id, created_timestamp, num, realm, shard, type, "
+                        + "timestamp_range) values (?,?,?,?,?,%s,?::int8range)",
+                table, useEnum ? "cast(? as entity_type)" : "?");
     }
 
     private List<MigrationEntityV1_47_1> findAllEntities() {
-        return jdbcOperations.query("select id, type from entity order by id",
-                new BeanPropertyRowMapper<>(MigrationEntityV1_47_1.class));
+        return jdbcOperations.query(
+                "select id, type from entity order by id", new BeanPropertyRowMapper<>(MigrationEntityV1_47_1.class));
     }
 
     private List<MigrationEntityV1_47_1> findAllEntitiesHistory() {
-        return jdbcOperations.query("select id, type from entity_history order by id",
+        return jdbcOperations.query(
+                "select id, type from entity_history order by id",
                 new BeanPropertyRowMapper<>(MigrationEntityV1_47_1.class));
     }
 
     private List<MigrationContractV1_47_1> findAllContracts() {
-        return jdbcOperations.query("select id, type from contract order by id",
+        return jdbcOperations.query(
+                "select id, type from contract order by id",
                 new BeanPropertyRowMapper<>(MigrationContractV1_47_1.class));
     }
 
     private List<MigrationContractV1_47_1> findAllContractsHistory() {
-        return jdbcOperations.query("select id, type from contract_history order by id",
+        return jdbcOperations.query(
+                "select id, type from contract_history order by id",
                 new BeanPropertyRowMapper<>(MigrationContractV1_47_1.class));
     }
 
@@ -263,8 +276,10 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         private long num;
         private final long realm = 0;
         private final long shard = 0;
+
         @JsonSerialize(using = RangeToStringSerializer.class)
         private final Range<Long> timestampRange = Range.atLeast(2L);
+
         private EntityType type;
     }
 
@@ -277,8 +292,10 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         private long num;
         private long realm = 0;
         private long shard = 0;
+
         @JsonSerialize(using = RangeToStringSerializer.class)
         private Range<Long> timestampRange = Range.atLeast(2L);
+
         private EntityType type;
     }
 }
