@@ -167,7 +167,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         // Normalize the two distinct hashes into one 32 byte hash
-        var transactionHash = recordItem.getTransactionHash();
+        var transactionHash = Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getHash)
+                .orElseGet(() -> Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32));
 
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
