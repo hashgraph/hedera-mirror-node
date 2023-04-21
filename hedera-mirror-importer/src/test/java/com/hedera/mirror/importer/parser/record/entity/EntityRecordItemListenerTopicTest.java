@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -28,6 +24,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.converter.KeyConverter;
+import com.hedera.mirror.importer.converter.TopicIdArgumentConverter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -50,17 +56,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.converter.KeyConverter;
-import com.hedera.mirror.importer.converter.TopicIdArgumentConverter;
-
 class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
 
     static final TopicID TOPIC_ID = TopicID.newBuilder().setTopicNum(200L).build();
@@ -71,27 +66,34 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.65537, admin-key, submit-key, '', 1000000, 1, 30",
-            "0.0.2147483647, admin-key, '', memo, 1000001, 1, 30",
-            "0.0.1, '', '', memo, 1000002, , ,",
-            "0.0.55, admin-key, submit-key, memo, 1000003, 1, 30"
+        "0.0.65537, admin-key, submit-key, '', 1000000, 1, 30",
+        "0.0.2147483647, admin-key, '', memo, 1000001, 1, 30",
+        "0.0.1, '', '', memo, 1000002, , ,",
+        "0.0.55, admin-key, submit-key, memo, 1000003, 1, 30"
     })
-    void createTopicTest(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
-                         @ConvertWith(KeyConverter.class) Key adminKey,
-                         @ConvertWith(KeyConverter.class) Key submitKey, String memo, long consensusTimestamp,
-                         Long autoRenewAccountNum, Long autoRenewPeriod) {
+    void createTopicTest(
+            @ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
+            @ConvertWith(KeyConverter.class) Key adminKey,
+            @ConvertWith(KeyConverter.class) Key submitKey,
+            String memo,
+            long consensusTimestamp,
+            Long autoRenewAccountNum,
+            Long autoRenewPeriod) {
         var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(topicId);
 
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
-        var expectedEntity = createTopicEntity(topicId, null, null, adminKey, submitKey, memo, autoRenewAccountNum,
-                autoRenewPeriod);
+        var expectedEntity =
+                createTopicEntity(topicId, null, null, adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
         expectedEntity.setCreatedTimestamp(consensusTimestamp);
         expectedEntity.setDeleted(false);
         expectedEntity.setTimestampLower(consensusTimestamp);
@@ -106,7 +108,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "", null, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 2, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -128,7 +133,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "", autoRenewAccountId, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 1, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(TOPIC_ID);
 
@@ -149,10 +157,13 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var consensusTimestamp = 2_000_000L;
         var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, null, null);
-        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, 1, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                TopicID.newBuilder().setTopicNum(topicId).build(), null, null, 1, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertEquals(0L, entityRepository.count());
         assertEquals(0L, transactionRepository.count());
@@ -165,7 +176,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "memo", null, null);
         var transactionRecord = createTransactionRecord(null, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, null);
         assertEquals(0L, entityRepository.count());
@@ -173,33 +187,56 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "11, 21, updated-admin-key, updated-submit-key, updated-memo, 1, 30",
-            "11, 21, '', '', '', 0, 30",
-            "11, 21, updated-admin-key, updated-submit-key, updated-memo, ,"
+        "11, 21, updated-admin-key, updated-submit-key, updated-memo, 1, 30",
+        "11, 21, '', '', '', 0, 30",
+        "11, 21, updated-admin-key, updated-submit-key, updated-memo, ,"
     })
-    void updateTopicTest(long updatedExpirationTimeSeconds, int updatedExpirationTimeNanos,
-                         @ConvertWith(KeyConverter.class) Key updatedAdminKey,
-                         @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
-                         String updatedMemo, Long autoRenewAccountId, Long autoRenewPeriod) {
-        var topic = domainBuilder.topic().customize(t -> t.permanentRemoval(null).obtainerId(null)).persist();
+    void updateTopicTest(
+            long updatedExpirationTimeSeconds,
+            int updatedExpirationTimeNanos,
+            @ConvertWith(KeyConverter.class) Key updatedAdminKey,
+            @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
+            String updatedMemo,
+            Long autoRenewAccountId,
+            Long autoRenewPeriod) {
+        var topic = domainBuilder
+                .topic()
+                .customize(t -> t.permanentRemoval(null).obtainerId(null))
+                .persist();
         var updateTimestamp = topic.getCreatedTimestamp() + 100L;
 
         var topicId = TopicID.newBuilder().setTopicNum(topic.getNum()).build();
-        var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
-                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountId,
+        var transaction = createUpdateTopicTransaction(
+                topicId,
+                updatedExpirationTimeSeconds,
+                updatedExpirationTimeNanos,
+                updatedAdminKey,
+                updatedSubmitKey,
+                updatedMemo,
+                autoRenewAccountId,
                 autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, updateTimestamp, SUCCESS);
 
-        var expectedAutoRenewAccountId = autoRenewAccountId == null ?
-                topic.getAutoRenewAccountId() : autoRenewAccountId;
+        var expectedAutoRenewAccountId =
+                autoRenewAccountId == null ? topic.getAutoRenewAccountId() : autoRenewAccountId;
         var expectedAutoRenewPeriod = autoRenewPeriod == null ? topic.getAutoRenewPeriod() : autoRenewPeriod;
-        var expected = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
-                updatedAdminKey, updatedSubmitKey, updatedMemo, expectedAutoRenewAccountId, expectedAutoRenewPeriod);
+        var expected = createTopicEntity(
+                topicId,
+                updatedExpirationTimeSeconds,
+                updatedExpirationTimeNanos,
+                updatedAdminKey,
+                updatedSubmitKey,
+                updatedMemo,
+                expectedAutoRenewAccountId,
+                expectedAutoRenewPeriod);
         expected.setCreatedTimestamp(topic.getCreatedTimestamp());
         expected.setDeleted(false);
         expected.setTimestampLower(updateTimestamp);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(SUCCESS, updateTimestamp, topic.getId());
         assertEntity(expected);
@@ -220,11 +257,14 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var topic = createTopicEntity(topicId, 10L, 20, adminKey, submitKey, "memo", null, 30L);
         entityRepository.save(topic);
 
-        var transaction = createUpdateTopicTransaction(topicId, 11L, 21,
-                updatedAdminKey, updatedSubmitKey, "updated-memo", null, 30L);
+        var transaction = createUpdateTopicTransaction(
+                topicId, 11L, 21, updatedAdminKey, updatedSubmitKey, "updated-memo", null, 30L);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
@@ -241,17 +281,20 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityType.ACCOUNT);
         // Topic does not get stored in the repository beforehand.
 
-        var transaction = createUpdateTopicTransaction(TOPIC_ID, 11L, 0, adminKey, submitKey, memo,
-                autoRenewAccount.getId(), 30L);
+        var transaction = createUpdateTopicTransaction(
+                TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(), 30L);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
 
-        var expectedTopic = createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(),
-                30L);
+        var expectedTopic =
+                createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(), 30L);
         expectedTopic.setDeleted(false);
         expectedTopic.setTimestampLower(consensusTimestamp);
         assertThat(entity).isEqualTo(expectedTopic);
@@ -259,27 +302,41 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, 0, 0, , , , 1, 30, , 0",
-            "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , , 1, 30, , ",
-            "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , '', 1, 30, , ",
-            "0.0.1501, 0, 0, '', '', '', 5000001, 0, 0, , , , , , ,",
-            "0.0.1502, , , admin-key, submit-key, memo, 5000002, 10, 20, updated-admin-key, updated-submit-key, " +
-                    "updated-memo, 1, 30, 11, 31",
-            "0.0.1503, , , , , '', 5000003, 11, 21, admin-key, submit-key, memo, , , 1, 30"
+        "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, 0, 0, , , , 1, 30, , 0",
+        "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , , 1, 30, , ",
+        "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , '', 1, 30, , ",
+        "0.0.1501, 0, 0, '', '', '', 5000001, 0, 0, , , , , , ,",
+        "0.0.1502, , , admin-key, submit-key, memo, 5000002, 10, 20, updated-admin-key, updated-submit-key, "
+                + "updated-memo, 1, 30, 11, 31",
+        "0.0.1503, , , , , '', 5000003, 11, 21, admin-key, submit-key, memo, , , 1, 30"
     })
-    void updateTopicTestPartialUpdates(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
-                                       Long expirationTimeSeconds,
-                                       Integer expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
-                                       @ConvertWith(KeyConverter.class) Key submitKey, String memo,
-                                       long consensusTimestamp, Long updatedExpirationTimeSeconds,
-                                       Integer updatedExpirationTimeNanos,
-                                       @ConvertWith(KeyConverter.class) Key updatedAdminKey,
-                                       @ConvertWith(KeyConverter.class) Key updatedSubmitKey, String updatedMemo,
-                                       Long autoRenewAccountNum, Long autoRenewPeriod, Long updatedAutoRenewAccountNum,
-                                       Long updatedAutoRenewPeriod) {
+    void updateTopicTestPartialUpdates(
+            @ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
+            Long expirationTimeSeconds,
+            Integer expirationTimeNanos,
+            @ConvertWith(KeyConverter.class) Key adminKey,
+            @ConvertWith(KeyConverter.class) Key submitKey,
+            String memo,
+            long consensusTimestamp,
+            Long updatedExpirationTimeSeconds,
+            Integer updatedExpirationTimeNanos,
+            @ConvertWith(KeyConverter.class) Key updatedAdminKey,
+            @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
+            String updatedMemo,
+            Long autoRenewAccountNum,
+            Long autoRenewPeriod,
+            Long updatedAutoRenewAccountNum,
+            Long updatedAutoRenewPeriod) {
         // Store topic to be updated.
-        var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
-                autoRenewAccountNum, autoRenewPeriod);
+        var topic = createTopicEntity(
+                topicId,
+                expirationTimeSeconds,
+                expirationTimeNanos,
+                adminKey,
+                submitKey,
+                memo,
+                autoRenewAccountNum,
+                autoRenewPeriod);
         entityRepository.save(topic);
 
         if (updatedAutoRenewAccountNum != null) {
@@ -289,8 +346,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
         if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
-            topic.setExpirationTimestamp(DomainUtils
-                    .convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
+            topic.setExpirationTimestamp(
+                    DomainUtils.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
         }
         if (updatedAdminKey != null) {
             topic.setKey(updatedAdminKey.toByteArray());
@@ -303,12 +360,21 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
 
         var responseCode = SUCCESS;
-        var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
-                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccountNum,
+        var transaction = createUpdateTopicTransaction(
+                topicId,
+                updatedExpirationTimeSeconds,
+                updatedExpirationTimeNanos,
+                updatedAdminKey,
+                updatedSubmitKey,
+                updatedMemo,
+                updatedAutoRenewAccountNum,
                 updatedAutoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         if (updatedAutoRenewAccountNum != null) {
             topic.setAutoRenewAccountId(updatedAutoRenewAccountNum);
@@ -338,7 +404,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(SUCCESS, consensusTimestamp, entity.getId());
@@ -360,7 +429,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -380,7 +452,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -390,35 +465,54 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , false, 0",
-            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 89999999, false, 0",
-            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 89999999, false, 0",
-            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, false, 0",
-            "0.0.9001, test-message4, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, true, 7",
+        "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , false, 0",
+        "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 89999999, false, 0",
+        "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 89999999, false, 0",
+        "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, false, 0",
+        "0.0.9001, test-message4, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, true, 7",
     })
-    void submitMessageTest(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId, String message,
-                           long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
-                           Integer chunkNum, Integer chunkTotal, Long validStartNs,
-                           Boolean scheduled, Integer nonce) {
+    void submitMessageTest(
+            @ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
+            String message,
+            long consensusTimestamp,
+            String runningHash,
+            long sequenceNumber,
+            int runningHashVersion,
+            Integer chunkNum,
+            Integer chunkTotal,
+            Long validStartNs,
+            Boolean scheduled,
+            Integer nonce) {
         var responseCode = SUCCESS;
 
         TransactionID initialTransactionId = null;
         if (chunkNum != null) {
-            initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                    TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+            initialTransactionId = createTransactionID(
+                    PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
         }
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        var topicMessage = createTopicMessage(
+                topicId,
+                message,
+                sequenceNumber,
+                runningHash,
+                consensusTimestamp,
+                runningHashVersion,
+                chunkNum,
+                chunkTotal,
+                PAYER_ACCOUNT_ID,
+                initialTransactionId);
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                topicId, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, topicId.getTopicNum());
         assertEquals(0L, entityRepository.count());
-        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
-                .isEqualTo(topicMessage);
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get().isEqualTo(topicMessage);
     }
 
     @Test
@@ -435,22 +529,33 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId = createTransactionID(
+                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
-        var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        var topicMessage = createTopicMessage(
+                TOPIC_ID,
+                message,
+                sequenceNumber,
+                runningHash,
+                consensusTimestamp,
+                runningHashVersion,
+                chunkNum,
+                chunkTotal,
+                PAYER_ACCOUNT_ID,
+                initialTransactionId);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                TOPIC_ID, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0L, entityRepository.count());
         assertEquals(1L, topicMessageRepository.count());
-        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
-                .isEqualTo(topicMessage);
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get().isEqualTo(topicMessage);
     }
 
     @Test
@@ -470,15 +575,18 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId = createTransactionID(
+                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                topicId, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         // then
         assertEquals(0L, entityRepository.count());
@@ -491,8 +599,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     void submitMessageTestFiltered() {
         // given
         var responseCode = SUCCESS;
-        var topicId = (TopicID) new TopicIdArgumentConverter()
-                .convert("0.0.999", null); // excluded in application-default.yml
+        var topicId = (TopicID)
+                new TopicIdArgumentConverter().convert("0.0.999", null); // excluded in application-default.yml
         var consensusTimestamp = 10_000_000L;
         var message = "message";
         var sequenceNumber = 10_000L;
@@ -504,15 +612,18 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId = createTransactionID(
+                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                topicId, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         // then
         // if the transaction is filtered out, nothing in it should affect the state
@@ -528,14 +639,16 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(null,
-                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(null, TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE), scheduled, nonce);
         var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, initialTransactionId);
-        var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash"
-                .getBytes(), 2, id, SUCCESS);
+        var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash".getBytes(), 2, id, SUCCESS);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         // then
         assertEquals(0L, entityRepository.count());
@@ -560,14 +673,17 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId = createTransactionID(
+                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
-                runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                TOPIC_ID, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0, entityRepository.count());
@@ -591,16 +707,28 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
-        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
-                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId = createTransactionID(
+                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
-        createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        createTopicMessage(
+                TOPIC_ID,
+                message,
+                sequenceNumber,
+                runningHash,
+                consensusTimestamp,
+                runningHashVersion,
+                chunkNum,
+                chunkTotal,
+                PAYER_ACCOUNT_ID,
+                initialTransactionId);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
-        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                TOPIC_ID, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0, entityRepository.count());
@@ -611,10 +739,12 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             Key adminKey, Key submitKey, String memo, Long autoRenewAccount, Long autoRenewPeriod) {
         var innerBody = ConsensusCreateTopicTransactionBody.newBuilder();
         if (autoRenewAccount != null) {
-            innerBody.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(autoRenewAccount).build());
+            innerBody.setAutoRenewAccount(
+                    AccountID.newBuilder().setAccountNum(autoRenewAccount).build());
         }
         if (autoRenewPeriod != null) {
-            innerBody.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build());
+            innerBody.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(autoRenewPeriod).build());
         }
         if (adminKey != null) {
             innerBody.setAdminKey(adminKey);
@@ -627,7 +757,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
         var body = createTransactionBody().setConsensusCreateTopic(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.toByteString())
+                        .build()
                         .toByteString())
                 .build();
     }
@@ -643,29 +775,44 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var chunkNum = 3;
         var chunkTotal = 5;
 
-        var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, null);
+        var topicMessage = createTopicMessage(
+                TOPIC_ID,
+                message,
+                sequenceNumber,
+                runningHash,
+                consensusTimestamp,
+                runningHashVersion,
+                chunkNum,
+                chunkTotal,
+                PAYER_ACCOUNT_ID,
+                null);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, null);
-        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(
+                TOPIC_ID, sequenceNumber, runningHash.getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0L, entityRepository.count());
-        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
-                .isEqualTo(topicMessage);
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get().isEqualTo(topicMessage);
     }
 
-    private TransactionRecord createTransactionRecord(TopicID topicId, long consensusTimestamp,
-                                                      ResponseCodeEnum responseCode) {
-        return createTransactionRecord(topicId, 10_000L, "running_hash"
-                .getBytes(), 1, consensusTimestamp, responseCode);
+    private TransactionRecord createTransactionRecord(
+            TopicID topicId, long consensusTimestamp, ResponseCodeEnum responseCode) {
+        return createTransactionRecord(
+                topicId, 10_000L, "running_hash".getBytes(), 1, consensusTimestamp, responseCode);
     }
 
-    private TransactionRecord createTransactionRecord(TopicID topicId, Long topicSequenceNumber,
-                                                      byte[] topicRunningHash, int runningHashVersion,
-                                                      long consensusTimestamp, ResponseCodeEnum responseCode) {
+    private TransactionRecord createTransactionRecord(
+            TopicID topicId,
+            Long topicSequenceNumber,
+            byte[] topicRunningHash,
+            int runningHashVersion,
+            long consensusTimestamp,
+            ResponseCodeEnum responseCode) {
         var receipt = TransactionReceipt.newBuilder().setStatus(responseCode);
         if (null != topicId) {
             receipt.setTopicID(topicId);
@@ -678,7 +825,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             receipt.setTopicRunningHashVersion(runningHashVersion);
         }
         var consensusTimestampProto = TestUtils.toTimestamp(consensusTimestamp);
-        var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setReceipt(receipt)
                 .setConsensusTimestamp(consensusTimestampProto)
                 .setTransactionHash(ByteString.copyFrom(DigestUtils.sha384(consensusTimestampProto.toByteArray())));
         return transactionRecord.build();
@@ -686,15 +834,22 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     private TransactionBody.Builder createTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTransactionValidDuration(Duration.newBuilder().setSeconds(10).build())
+                .setTransactionValidDuration(
+                        Duration.newBuilder().setSeconds(10).build())
                 .setNodeAccountID(TestUtils.toAccountId(NODE_ID))
                 .setTransactionID(TestUtils.toTransactionId(TRANSACTION_ID))
                 .setMemo(TRANSACTION_MEMO);
     }
 
-    private Entity createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
-                                     Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
-                                     Long autoRenewPeriod) {
+    private Entity createTopicEntity(
+            TopicID topicId,
+            Long expirationTimeSeconds,
+            Integer expirationTimeNanos,
+            Key adminKey,
+            Key submitKey,
+            String memo,
+            Long autoRenewAccountNum,
+            Long autoRenewPeriod) {
         Entity topic = EntityId.of(topicId).toEntity();
 
         if (autoRenewAccountNum != null) {
@@ -722,10 +877,17 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         return topic;
     }
 
-    private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
-                                            long consensusTimestamp, int runningHashVersion, Integer chunkNum,
-                                            Integer chunkTotal, EntityId payerAccountId,
-                                            TransactionID initialTransactionID) {
+    private TopicMessage createTopicMessage(
+            TopicID topicId,
+            String message,
+            long sequenceNumber,
+            String runningHash,
+            long consensusTimestamp,
+            int runningHashVersion,
+            Integer chunkNum,
+            Integer chunkTotal,
+            EntityId payerAccountId,
+            TransactionID initialTransactionID) {
 
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
@@ -745,19 +907,29 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createUpdateTopicTransaction(
-            TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos, Key adminKey, Key submitKey,
-            String memo, Long autoRenewAccount, Long autoRenewPeriod) {
+            TopicID topicId,
+            Long expirationTimeSeconds,
+            Integer expirationTimeNanos,
+            Key adminKey,
+            Key submitKey,
+            String memo,
+            Long autoRenewAccount,
+            Long autoRenewPeriod) {
         var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder().setTopicID(topicId);
 
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
             innerBody.setExpirationTime(TestUtils.toTimestamp(expirationTimeSeconds, expirationTimeNanos));
         }
         if (autoRenewAccount != null) {
-            innerBody.setAutoRenewAccount(AccountID.newBuilder().setShardNum(topicId.getShardNum())
-                    .setRealmNum(topicId.getRealmNum()).setAccountNum(autoRenewAccount).build());
+            innerBody.setAutoRenewAccount(AccountID.newBuilder()
+                    .setShardNum(topicId.getShardNum())
+                    .setRealmNum(topicId.getRealmNum())
+                    .setAccountNum(autoRenewAccount)
+                    .build());
         }
         if (autoRenewPeriod != null) {
-            innerBody.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build());
+            innerBody.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(autoRenewPeriod).build());
         }
         if (adminKey != null) {
             innerBody.setAdminKey(adminKey);
@@ -770,7 +942,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
         var body = createTransactionBody().setConsensusUpdateTopic(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.toByteString())
+                        .build()
                         .toByteString())
                 .build();
     }
@@ -779,7 +953,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var innerBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
         var body = createTransactionBody().setConsensusDeleteTopic(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.toByteString())
+                        .build()
                         .toByteString())
                 .build();
     }
@@ -791,30 +967,31 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .setMessage(ByteString.copyFrom(message.getBytes()));
 
         if (chunkNum != null) {
-            ConsensusMessageChunkInfo.Builder chunkInfoBuilder = ConsensusMessageChunkInfo.newBuilder()
-                    .setNumber(chunkNum)
-                    .setTotal(chunkTotal);
+            ConsensusMessageChunkInfo.Builder chunkInfoBuilder =
+                    ConsensusMessageChunkInfo.newBuilder().setNumber(chunkNum).setTotal(chunkTotal);
             if (initialTransactionID != null) {
                 chunkInfoBuilder.setInitialTransactionID(initialTransactionID);
             }
-            submitMessageTransactionBodyBuilder
-                    .setChunkInfo(chunkInfoBuilder);
+            submitMessageTransactionBodyBuilder.setChunkInfo(chunkInfoBuilder);
         }
 
         var innerBody = submitMessageTransactionBodyBuilder.build();
 
         var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.toByteString())
+                        .build()
                         .toByteString())
                 .build();
     }
 
-    private TransactionID createTransactionID(Long payerAccountIdNum, Timestamp validStartNs, Boolean scheduled,
-                                              Integer nonce) {
+    private TransactionID createTransactionID(
+            Long payerAccountIdNum, Timestamp validStartNs, Boolean scheduled, Integer nonce) {
         TransactionID.Builder transactionIdBuilder = TransactionID.newBuilder();
         if (payerAccountIdNum != null) {
-            transactionIdBuilder.setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
+            transactionIdBuilder.setAccountID(
+                    AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
         }
         if (validStartNs != null) {
             transactionIdBuilder.setTransactionValidStart(validStartNs);

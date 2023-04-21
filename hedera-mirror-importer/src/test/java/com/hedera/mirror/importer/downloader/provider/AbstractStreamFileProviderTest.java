@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,13 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import reactor.test.StepVerifier;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -43,6 +30,14 @@ import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import reactor.test.StepVerifier;
 
 abstract class AbstractStreamFileProviderTest {
 
@@ -166,7 +161,8 @@ abstract class AbstractStreamFileProviderTest {
     void listInvalidFilename() throws Exception {
         var node = node("0.0.3");
         fileCopier.copy();
-        fileCopier.getTo()
+        fileCopier
+                .getTo()
                 .resolve(StreamType.RECORD.getNodePrefix() + node.getNodeAccountId())
                 .resolve("Invalid.file")
                 .toFile()
@@ -192,7 +188,8 @@ abstract class AbstractStreamFileProviderTest {
     protected StreamFileData streamFileData(ConsensusNode node, String filename) {
         try {
             var streamFilename = new StreamFilename(filename);
-            var filePath = fileCopier.getFrom()
+            var filePath = fileCopier
+                    .getFrom()
                     .resolve(StreamType.RECORD.getNodePrefix() + node.getNodeAccountId())
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
                     .resolve(filename);

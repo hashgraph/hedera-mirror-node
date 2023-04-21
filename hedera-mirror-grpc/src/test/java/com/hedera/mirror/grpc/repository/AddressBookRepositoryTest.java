@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.grpc.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.grpc.repository;
 
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AddressBookRepositoryTest extends GrpcIntegrationTest {
@@ -43,15 +38,22 @@ class AddressBookRepositoryTest extends GrpcIntegrationTest {
         EntityId fileId = EntityId.of(101L, EntityType.FILE);
         assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).isEmpty();
 
-        domainBuilder.addressBook().customize(a -> a.fileId(EntityId.of(999L, EntityType.FILE))).persist();
+        domainBuilder
+                .addressBook()
+                .customize(a -> a.fileId(EntityId.of(999L, EntityType.FILE)))
+                .persist();
         assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).isEmpty();
 
-        AddressBook addressBook2 = domainBuilder.addressBook().customize(a -> a.fileId(fileId)).persist();
-        assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).get()
+        AddressBook addressBook2 =
+                domainBuilder.addressBook().customize(a -> a.fileId(fileId)).persist();
+        assertThat(addressBookRepository.findLatestTimestamp(fileId.getId()))
+                .get()
                 .isEqualTo(addressBook2.getStartConsensusTimestamp());
 
-        AddressBook addressBook3 = domainBuilder.addressBook().customize(a -> a.fileId(fileId)).persist();
-        assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).get()
+        AddressBook addressBook3 =
+                domainBuilder.addressBook().customize(a -> a.fileId(fileId)).persist();
+        assertThat(addressBookRepository.findLatestTimestamp(fileId.getId()))
+                .get()
                 .isEqualTo(addressBook3.getStartConsensusTimestamp());
     }
 }

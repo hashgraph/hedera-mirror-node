@@ -25,7 +25,7 @@ const operator = __ENV.OPERATOR_ADDRESS;
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallApprovedForAll') // use unique scenario name among all tests
   .selector(selector)
-  .args([token,account,operator])
+  .args([token, account, operator])
   .to(contract)
   .build();
 

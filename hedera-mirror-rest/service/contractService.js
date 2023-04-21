@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -129,7 +125,7 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
-    static contractStateTimestampQuery = `
+  static contractStateTimestampQuery = `
       with ${ContractService.entityCTE}
       select DISTINCT on (${ContractStateChange.SLOT}) 
             ${ContractStateChange.CONTRACT_ID},
@@ -275,7 +271,12 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit, timestamp = false) {
+  async getContractStateByIdAndFilters(
+    whereConditions = [],
+    order = orderFilterValues.ASC,
+    limit = defaultLimit,
+    timestamp = false
+  ) {
     let orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
     const {where, params} = this.buildWhereSqlStatement(whereConditions);
     const limitClause = this.getLimitQuery(params.push(limit));
@@ -287,7 +288,7 @@ class ContractService extends BaseService {
         OrderSpec.from(ContractStateChange.SLOT, order),
         OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)
       );
-      
+
       query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
     }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');

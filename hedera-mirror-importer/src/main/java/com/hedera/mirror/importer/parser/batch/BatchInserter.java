@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.batch;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -28,6 +24,11 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
+import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -41,12 +42,6 @@ import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.springframework.jdbc.datasource.DataSourceUtils;
-
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
-import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
 
 /**
  * Stateless writer to insert rows into PostgreSQL using COPY.
@@ -62,19 +57,24 @@ public class BatchInserter implements BatchPersister {
     private final ObjectWriter writer;
     private final CommonParserProperties properties;
 
-    public BatchInserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                         CommonParserProperties properties) {
+    public BatchInserter(
+            Class<?> entityClass,
+            DataSource dataSource,
+            MeterRegistry meterRegistry,
+            CommonParserProperties properties) {
         this(entityClass, dataSource, meterRegistry, properties, entityClass.getSimpleName());
     }
 
-    public BatchInserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                         CommonParserProperties properties, String tableName) {
+    public BatchInserter(
+            Class<?> entityClass,
+            DataSource dataSource,
+            MeterRegistry meterRegistry,
+            CommonParserProperties properties,
+            String tableName) {
         this.dataSource = dataSource;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
-        this.tableName = CaseFormat.UPPER_CAMEL.to(
-                CaseFormat.LOWER_UNDERSCORE,
-                tableName);
+        this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tableName);
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
         module.addSerializer(byte[].class, ByteArrayToHexSerializer.INSTANCE);

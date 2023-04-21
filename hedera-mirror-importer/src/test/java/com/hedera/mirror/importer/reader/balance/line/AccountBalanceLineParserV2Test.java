@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.balance.line;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,31 +12,29 @@ package com.hedera.mirror.importer.reader.balance.line;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.balance.line;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.base.Splitter;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 class AccountBalanceLineParserV2Test {
 
@@ -57,43 +50,50 @@ class AccountBalanceLineParserV2Test {
 
     @DisplayName("Parse account balance line")
     @ParameterizedTest(name = "from \"{0}\"")
-    @CsvSource(value = {
-            "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';false;" +
-                    "0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0,0,123,700,';false;" +
-                    "0;123;700;;",
-            "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgo';true;;;;",
-            "' 0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0, 0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0,0, 123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0,0,123, 700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0,0,123,700, CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ ';" +
-                    "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
-            "'1,0,123,700,';true;;;;",
-            "'x,0,123,700,';true;;;;",
-            "'0,x,123,700,';true;;;;",
-            "'0,0,x,700,';true;;;;",
-            "'0,0,123,a00,';true;;;;",
-            "'1000000000000000000000000000,0,123,700,';true;;;;",
-            "'0,1000000000000000000000000000,123,700,';true;;;;",
-            "'0,0,1000000000000000000000000000,700,';true;;;;",
-            "'0,0,123,1000000000000000000000000000,';true;;;;",
-            "'-1,0,123,700,';true;;;;",
-            "'0,-1,123,700,';true;;;;",
-            "'0,0,-1,700,';true;;;;",
-            "'0,0,123,-1,';true;;;;",
-            "'foobar';true;;;;",
-            "'';true;;;;",
-            ";true;;;;"
-    }, delimiter = ';')
-    void parse(String line, boolean expectThrow, Long expectedRealm, Long expectedAccount, Long expectedBalance,
-               String tokenBalances) throws IOException {
+    @CsvSource(
+            value = {
+                "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';false;"
+                        + "0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0,0,123,700,';false;" + "0;123;700;;",
+                "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgo';true;;;;",
+                "' 0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0, 0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0,0, 123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0,0,123, 700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0,0,123,700, CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'0,0,123,700,CggKAxjsBxCEBwoHCgMY7QcQGQoKCgMY7gcQwKilBAoICgMY8gcQhAcKBwoDGPMHEBkKCgoDGPQHEMCopQQ ';"
+                        + "false;0;123;700;1004=900,1005=25,1006=9000000,1010=900,1011=25,1012=9000000",
+                "'1,0,123,700,';true;;;;",
+                "'x,0,123,700,';true;;;;",
+                "'0,x,123,700,';true;;;;",
+                "'0,0,x,700,';true;;;;",
+                "'0,0,123,a00,';true;;;;",
+                "'1000000000000000000000000000,0,123,700,';true;;;;",
+                "'0,1000000000000000000000000000,123,700,';true;;;;",
+                "'0,0,1000000000000000000000000000,700,';true;;;;",
+                "'0,0,123,1000000000000000000000000000,';true;;;;",
+                "'-1,0,123,700,';true;;;;",
+                "'0,-1,123,700,';true;;;;",
+                "'0,0,-1,700,';true;;;;",
+                "'0,0,123,-1,';true;;;;",
+                "'foobar';true;;;;",
+                "'';true;;;;",
+                ";true;;;;"
+            },
+            delimiter = ';')
+    void parse(
+            String line,
+            boolean expectThrow,
+            Long expectedRealm,
+            Long expectedAccount,
+            Long expectedBalance,
+            String tokenBalances)
+            throws IOException {
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp);
             var id = accountBalance.getId();
@@ -106,18 +106,21 @@ class AccountBalanceLineParserV2Test {
 
             List<TokenBalance> actualTokenBalanceList = accountBalance.getTokenBalances();
             if (StringUtils.isNotBlank(tokenBalances)) {
-                Map<Long, Long> expectedTokenBalances = Splitter.on(',').withKeyValueSeparator('=')
-                        .split(tokenBalances).entrySet().stream().collect(Collectors
-                                .toMap(entry -> Long.parseLong(entry.getKey()), entry -> Long
-                                        .parseLong(entry.getValue())));
+                Map<Long, Long> expectedTokenBalances =
+                        Splitter.on(',').withKeyValueSeparator('=').split(tokenBalances).entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        entry -> Long.parseLong(entry.getKey()),
+                                        entry -> Long.parseLong(entry.getValue())));
                 assertThat(actualTokenBalanceList).hasSameSizeAs(tokenBalances.split(","));
                 for (int i = 0; i < actualTokenBalanceList.size(); i++) {
                     TokenBalance actualTokenBalance = actualTokenBalanceList.get(i);
                     TokenBalance.Id actualId = actualTokenBalance.getId();
 
-                    assertThat(expectedTokenBalances).containsKey(actualId.getTokenId().getEntityNum());
+                    assertThat(expectedTokenBalances)
+                            .containsKey(actualId.getTokenId().getEntityNum());
                     assertThat(actualTokenBalance.getBalance())
-                            .isEqualTo(expectedTokenBalances.get(actualId.getTokenId().getEntityNum()));
+                            .isEqualTo(expectedTokenBalances.get(
+                                    actualId.getTokenId().getEntityNum()));
                     assertThat(actualId).isNotNull();
                     assertThat(actualId.getConsensusTimestamp()).isEqualTo(timestamp);
                     assertThat(actualId.getAccountId().getShardNum()).isEqualTo(mirrorProperties.getShard());

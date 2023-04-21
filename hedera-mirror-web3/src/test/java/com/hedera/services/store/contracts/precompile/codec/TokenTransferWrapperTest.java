@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
+import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
-import com.hedera.services.store.contracts.precompile.NftExchange;
-import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 
 class TokenTransferWrapperTest {
     @Test
@@ -39,11 +39,7 @@ class TokenTransferWrapperTest {
         final var builder = nftSubject.asGrpcBuilder();
         assertEquals(token, builder.getToken());
         final var exchanges = builder.getNftTransfersList();
-        assertEquals(
-                inputExchanges.stream()
-                        .map(NftExchange::asGrpc)
-                        .toList(),
-                exchanges);
+        assertEquals(inputExchanges.stream().map(NftExchange::asGrpc).toList(), exchanges);
     }
 
     @Test

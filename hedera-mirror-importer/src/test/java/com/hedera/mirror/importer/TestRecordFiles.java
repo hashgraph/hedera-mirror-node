@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,11 @@ package com.hedera.mirror.importer;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.protobuf.BytesValue;
-import com.hederahashgraph.api.proto.java.ContractID;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
-import org.apache.commons.codec.binary.Hex;
+package com.hedera.mirror.importer;
 
+import com.google.protobuf.BytesValue;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -39,6 +26,14 @@ import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.SneakyThrows;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.codec.binary.Hex;
 
 @UtilityClass
 public class TestRecordFiles {
@@ -60,7 +55,8 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
                         "333d6940254659533fd6b939033e59c57fe8f4ff78375d1e687c032918aa0b7b8179c7fd403754274a8c91e0b6c0195a")
-                .hash("333d6940254659533fd6b939033e59c57fe8f4ff78375d1e687c032918aa0b7b8179c7fd403754274a8c91e0b6c0195a")
+                .hash(
+                        "333d6940254659533fd6b939033e59c57fe8f4ff78375d1e687c032918aa0b7b8179c7fd403754274a8c91e0b6c0195a")
                 .name("2019-07-01T14_13_00.317763Z.rcd")
                 .previousHash(
                         "f423447a3d5a531a07426070e511555283daae063706242590949116f717a0524e4dd18f9d64e66c73982d475401db04")
@@ -74,7 +70,8 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
                         "1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
-                .hash("1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
+                .hash(
+                        "1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
                 .name("2019-07-01T14_29_00.302068Z.rcd")
                 .previousHash(recordFileV1_1.getFileHash())
                 .size(22347)
@@ -87,7 +84,8 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
                         "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
-                .hash("591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
+                .hash(
+                        "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
                 .name("2019-08-30T18_10_00.419072Z.rcd")
                 .previousHash(digestAlgorithm.getEmptyHash())
                 .size(8515)
@@ -100,7 +98,8 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
                         "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
-                .hash("5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
+                .hash(
+                        "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
                 .name("2019-08-30T18_10_05.249678Z.rcd")
                 .previousHash(recordFileV2_1.getFileHash())
                 .size(6649)
@@ -116,7 +115,8 @@ public class TestRecordFiles {
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(9)
                 .hapiVersionPatch(0)
-                .hash("151bd3358db59fc7936eff15f1cb6734354e444cf85549a5643e55c9c929cb500be712abccd588cd8d20eb92ca55ff49")
+                .hash(
+                        "151bd3358db59fc7936eff15f1cb6734354e444cf85549a5643e55c9c929cb500be712abccd588cd8d20eb92ca55ff49")
                 .metadataHash(
                         "ffe56840b99145f7b3370367fa5784cbe225278afd1c4c078dfe5b950fee22e2b9e9a04bde32023c3ba07c057cb54406")
                 .name("2021-01-11T22_09_24.063739000Z.rcd")
@@ -134,7 +134,8 @@ public class TestRecordFiles {
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(9)
                 .hapiVersionPatch(0)
-                .hash("514e361089074cb06f984e5a943a20fba2a0d601b766f8adb432d03214c48c3ff14898e6b78292520340f484e820ea84")
+                .hash(
+                        "514e361089074cb06f984e5a943a20fba2a0d601b766f8adb432d03214c48c3ff14898e6b78292520340f484e820ea84")
                 .metadataHash(
                         "912869b5204ffbb7e437aaa6e7a09e9d53da98ead27942fdf7017e850827e857fadb1167e8877cfb8175883adcd74f7d")
                 .name("2021-01-11T22_09_34.097416003Z.rcd")
@@ -152,7 +153,8 @@ public class TestRecordFiles {
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
-                .hash("a6c241fad2c636f68a6aa0da9293245a5ef0ebef345cd139858068ff7998716cefe0fd3afa0d21304725507061975279")
+                .hash(
+                        "a6c241fad2c636f68a6aa0da9293245a5ef0ebef345cd139858068ff7998716cefe0fd3afa0d21304725507061975279")
                 .index(5L)
                 .metadataHash(
                         "361c0176ba28cc55525c50e7e75e58618b451f3dca402d9be19626159d939e7a569534658125732c1af31ff6f4a8e283")
@@ -195,7 +197,8 @@ public class TestRecordFiles {
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
-                .hash("3064b824b8b9f9ece011f88a26c030c9f6b822f30fbcabcc7240a220ea42bbdbf305db415a4e41307d0630d5cefe4550")
+                .hash(
+                        "3064b824b8b9f9ece011f88a26c030c9f6b822f30fbcabcc7240a220ea42bbdbf305db415a4e41307d0630d5cefe4550")
                 .index(6L)
                 .metadataHash(
                         "b13a2b638c5688dbec43b97dbee8ad637d2d42376fc313c628a990ac65aefdbd39832cf5ece42b925a520ed2d2bf8eac")
@@ -218,10 +221,15 @@ public class TestRecordFiles {
                 .version(6)
                 .build();
 
-        var allFiles = List.of(recordFileV1_1, recordFileV1_2,
-                recordFileV2_1, recordFileV2_2,
-                recordFileV5_1, recordFileV5_2,
-                recordFileV6_1, recordFileV6_2);
+        var allFiles = List.of(
+                recordFileV1_1,
+                recordFileV1_2,
+                recordFileV2_1,
+                recordFileV2_2,
+                recordFileV5_1,
+                recordFileV5_2,
+                recordFileV6_1,
+                recordFileV6_2);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 
@@ -233,7 +241,8 @@ public class TestRecordFiles {
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(
                         "e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
-                .hash("e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
+                .hash(
+                        "e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
                 .name("2021-01-21T00_15_51.568507001Z.rcd")
                 .nodeId(0L)
                 .previousHash(
@@ -251,7 +260,8 @@ public class TestRecordFiles {
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(11)
                 .hapiVersionPatch(0)
-                .hash("e6c1d7bfe956b6b2c8061bee5c43e512111cbccb21099bb0c49e2a7c74cf617cf5b6bf65070f29eb43a80d9cef2d8242")
+                .hash(
+                        "e6c1d7bfe956b6b2c8061bee5c43e512111cbccb21099bb0c49e2a7c74cf617cf5b6bf65070f29eb43a80d9cef2d8242")
                 .metadataHash(
                         "1d83206a166a06c8579f9de637cf50a565341928b55bfbdc774ce85ac2169b46c23db42729723e7c39e5a042bd9e3b98")
                 .name("2021-01-21T00_19_43.558496000Z.rcd")

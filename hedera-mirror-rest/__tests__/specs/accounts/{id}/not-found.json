@@ -1,6 +1,8 @@
 {
   "description": "Account api call for non matching",
-  "extendedDescription": ["account 18 is deleted, when querying by its alias, the rest api should return 404"],
+  "extendedDescription": [
+    "account 18 is deleted, when querying by its alias, the rest api should return 404"
+  ],
   "setup": {
     "accounts": [
       {

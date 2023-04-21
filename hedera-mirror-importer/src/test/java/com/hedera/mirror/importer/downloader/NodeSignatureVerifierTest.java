@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.importer.downloader;
 
 /*
@@ -26,26 +42,6 @@ import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureSta
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -54,6 +50,22 @@ import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.util.List;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NodeSignatureVerifierTest {
@@ -82,8 +94,8 @@ class NodeSignatureVerifierTest {
     @SneakyThrows
     void setup() {
         commonDownloaderProperties = new CommonDownloaderProperties(new MirrorProperties());
-        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19,
-                RoundingMode.DOWN));
+        commonDownloaderProperties.setConsensusRatio(
+                BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19, RoundingMode.DOWN));
         nodeSignatureVerifier = new NodeSignatureVerifier(consensusValidator);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
@@ -99,7 +111,10 @@ class NodeSignatureVerifierTest {
 
         nodeSignatureVerifier.verify(signatures);
 
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).containsOnly(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .containsOnly(VERIFIED);
     }
 
     @Test
@@ -108,7 +123,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).containsOnly(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .containsOnly(VERIFIED);
     }
 
     @Test
@@ -120,7 +138,9 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature1, signature2, signature3);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus)
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
                 .containsExactly(VERIFIED, VERIFIED, DOWNLOADED);
     }
 
@@ -131,7 +151,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     @Test
@@ -141,7 +164,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     @Test
@@ -151,7 +177,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     @Test
@@ -161,7 +190,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     @Test
@@ -171,7 +203,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     @SneakyThrows
@@ -182,7 +217,10 @@ class NodeSignatureVerifierTest {
         var signatures = List.of(streamFileSignature());
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures)
+                .isNotEmpty()
+                .extracting(StreamFileSignature::getStatus)
+                .doesNotContain(VERIFIED);
     }
 
     private StreamFileSignature streamFileSignature() {

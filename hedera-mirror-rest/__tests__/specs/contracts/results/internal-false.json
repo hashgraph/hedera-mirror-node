@@ -76,7 +76,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results?internal=false", "/api/v1/contracts/results"],
+  "urls": [
+    "/api/v1/contracts/results?internal=false",
+    "/api/v1/contracts/results"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [

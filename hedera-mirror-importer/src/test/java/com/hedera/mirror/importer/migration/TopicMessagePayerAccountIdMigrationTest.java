@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,16 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -36,11 +36,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -69,22 +64,15 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     @Test
     void verifyTopicMessagePayerAccountIdMigration() throws Exception {
 
-        persistTopicMessage(Arrays.asList(
-                topicMessage(1, null, 1),
-                topicMessage(2, null, 2),
-                topicMessage(3, 1L, 3)
-        ));
+        persistTopicMessage(Arrays.asList(topicMessage(1, null, 1), topicMessage(2, null, 2), topicMessage(3, 1L, 3)));
 
-        persistTransactions(Arrays.asList(
-                transaction(1, 1),
-                transaction(2, 2),
-                transaction(3, 3)
-        ));
+        persistTransactions(Arrays.asList(transaction(1, 1), transaction(2, 2), transaction(3, 3)));
         // migration
         migrate();
 
         assertThat(retrieveTopicMessages())
-                .hasSize(3).extracting(MigrationTopicMessage::getPayerAccountId)
+                .hasSize(3)
+                .extracting(MigrationTopicMessage::getPayerAccountId)
                 .containsExactly(1L, 2L, 1L);
     }
 
@@ -108,32 +96,41 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationTopicMessage> retrieveTopicMessages() {
-        return jdbcOperations.query("select consensus_timestamp, payer_account_id from topic_message " +
-                        "order by consensus_timestamp",
+        return jdbcOperations.query(
+                "select consensus_timestamp, payer_account_id from topic_message " + "order by consensus_timestamp",
                 new BeanPropertyRowMapper<>(MigrationTopicMessage.class));
     }
 
     private void persistTopicMessage(List<MigrationTopicMessage> topicMessages) {
         for (MigrationTopicMessage topicMessage : topicMessages) {
-            jdbcOperations.update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
-                            "running_hash, running_hash_version, sequence_number, topic_id) " +
-                            " values (?, ?, ?, ?, ?, ?, ?)",
-                    topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
-                    topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
-                    topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
+            jdbcOperations.update(
+                    "insert into topic_message (consensus_timestamp, message, payer_account_id, "
+                            + "running_hash, running_hash_version, sequence_number, topic_id) "
+                            + " values (?, ?, ?, ?, ?, ?, ?)",
+                    topicMessage.getConsensusTimestamp(),
+                    topicMessage.getMessage(),
+                    topicMessage.getPayerAccountId(),
+                    topicMessage.getRunninghHash(),
+                    topicMessage.getRunningHashVersion(),
+                    topicMessage.getSequenceNumber(),
                     topicMessage.getTopicId());
         }
     }
 
     private void persistTransactions(List<MigrationTransaction> transactions) {
         transactions.forEach(transaction -> {
-            jdbcOperations.update("insert into transaction " +
-                            "(consensus_timestamp, entity_id, node_account_id, payer_account_id, result, type, " +
-                            "valid_start_ns) " +
-                            "values (?, ?, ?, ?, ?, ?, ?)",
-                    transaction.getConsensusTimestamp(), transaction.getEntityId(),
-                    transaction.getNodeAccountId(), transaction.getPayerAccountId(), transaction.getResult(),
-                    transaction.getType(), transaction.getValidStartNs());
+            jdbcOperations.update(
+                    "insert into transaction "
+                            + "(consensus_timestamp, entity_id, node_account_id, payer_account_id, result, type, "
+                            + "valid_start_ns) "
+                            + "values (?, ?, ?, ?, ?, ?, ?)",
+                    transaction.getConsensusTimestamp(),
+                    transaction.getEntityId(),
+                    transaction.getNodeAccountId(),
+                    transaction.getPayerAccountId(),
+                    transaction.getResult(),
+                    transaction.getType(),
+                    transaction.getValidStartNs());
         });
     }
 

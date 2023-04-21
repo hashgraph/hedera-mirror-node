@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish.generator;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.publish.generator;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,6 +23,10 @@ import static org.assertj.core.api.Assertions.within;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -38,11 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import com.hedera.hashgraph.sdk.TopicId;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 class ConfigurableTransactionGeneratorTest {
 
@@ -63,19 +58,18 @@ class ConfigurableTransactionGeneratorTest {
         properties.setProperties(Map.of("topicId", TOPIC_ID));
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p,
-                p -> Collections.unmodifiableMap(p), properties));
+        generator = Suppliers.memoize(
+                () -> new ConfigurableTransactionGenerator(p -> p, p -> Collections.unmodifiableMap(p), properties));
     }
 
     @Test
     void nonTruncatedMemo() {
         properties.setMaxMemoLength(100);
         List<PublishRequest> publishRequests = generator.get().next();
-        assertThat(publishRequests)
-                .isNotEmpty()
-                .allSatisfy(publishRequest -> assertThat(publishRequest.getTransaction().getTransactionMemo())
-                        .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
-                        .hasSizeGreaterThan(MEMO_SIZE));
+        assertThat(publishRequests).isNotEmpty().allSatisfy(publishRequest -> assertThat(
+                        publishRequest.getTransaction().getTransactionMemo())
+                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
+                .hasSizeGreaterThan(MEMO_SIZE));
     }
 
     @Test
@@ -216,18 +210,15 @@ class ConfigurableTransactionGeneratorTest {
     }
 
     private void assertRequests(List<PublishRequest> publishRequests, int size) {
-        assertThat(publishRequests)
-                .hasSize(size)
-                .allSatisfy(publishRequest -> assertThat(publishRequest)
-                        .isNotNull()
-                        .hasNoNullFieldsOrProperties()
-                        .hasFieldOrPropertyWithValue("receipt", true)
-                        .hasFieldOrPropertyWithValue("sendRecord", true)
-                        .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
-                        .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
-                                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
-                                .hasSize(MEMO_SIZE))
-                );
+        assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
+                .isNotNull()
+                .hasNoNullFieldsOrProperties()
+                .hasFieldOrPropertyWithValue("receipt", true)
+                .hasFieldOrPropertyWithValue("sendRecord", true)
+                .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
+                .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
+                        .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
+                        .hasSize(MEMO_SIZE)));
     }
 
     private void assertRequests(List<PublishRequest> publishRequests) {

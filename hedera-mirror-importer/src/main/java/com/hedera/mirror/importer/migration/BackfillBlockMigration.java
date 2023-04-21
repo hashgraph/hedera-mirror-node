@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,13 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
+import com.hedera.mirror.importer.db.DBProperties;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,37 +29,34 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
-import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
 @Named
 public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
 
-    private static final String SELECT_CONTRACT_RESULT = "select bloom, gas_used " +
-            "from contract_result cr " +
-            "join transaction t on t.consensus_timestamp = cr.consensus_timestamp " +
-            "where cr.consensus_timestamp >= :consensusStart " +
-            "  and cr.consensus_timestamp <= :consensusEnd " +
-            "  and t.nonce = 0";
+    private static final String SELECT_CONTRACT_RESULT = "select bloom, gas_used " + "from contract_result cr "
+            + "join transaction t on t.consensus_timestamp = cr.consensus_timestamp "
+            + "where cr.consensus_timestamp >= :consensusStart "
+            + "  and cr.consensus_timestamp <= :consensusEnd "
+            + "  and t.nonce = 0";
 
-    private static final String SET_TRANSACTION_INDEX = "with indexed as ( " +
-            "  select consensus_timestamp, row_number() over (order by consensus_timestamp) - 1 as index " +
-            "  from transaction " +
-            "  where consensus_timestamp >= :consensusStart" +
-            "    and consensus_timestamp <= :consensusEnd " +
-            "  order by consensus_timestamp) " +
-            "update transaction t " +
-            "set index = indexed.index " +
-            "from indexed " +
-            "where t.consensus_timestamp = indexed.consensus_timestamp";
+    private static final String SET_TRANSACTION_INDEX = "with indexed as ( "
+            + "  select consensus_timestamp, row_number() over (order by consensus_timestamp) - 1 as index "
+            + "  from transaction "
+            + "  where consensus_timestamp >= :consensusStart"
+            + "    and consensus_timestamp <= :consensusEnd "
+            + "  order by consensus_timestamp) "
+            + "update transaction t "
+            + "set index = indexed.index "
+            + "from indexed "
+            + "where t.consensus_timestamp = indexed.consensus_timestamp";
 
     private final RecordFileRepository recordFileRepository;
 
     @Lazy
-    public BackfillBlockMigration(DBProperties dbProperties, NamedParameterJdbcTemplate jdbcTemplate,
-                                  RecordFileRepository recordFileRepository,
-                                  TransactionOperations transactionOperations) {
+    public BackfillBlockMigration(
+            DBProperties dbProperties,
+            NamedParameterJdbcTemplate jdbcTemplate,
+            RecordFileRepository recordFileRepository,
+            TransactionOperations transactionOperations) {
         super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
         this.recordFileRepository = recordFileRepository;
     }
@@ -94,25 +90,30 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
     @Nonnull
     @Override
     protected Optional<Long> migratePartial(Long lastConsensusEnd) {
-        return recordFileRepository.findLatestMissingGasUsedBefore(lastConsensusEnd).map(recordFile -> {
-            var queryParams = Map.of("consensusStart", recordFile.getConsensusStart(),
-                    "consensusEnd", recordFile.getConsensusEnd());
+        return recordFileRepository
+                .findLatestMissingGasUsedBefore(lastConsensusEnd)
+                .map(recordFile -> {
+                    var queryParams = Map.of(
+                            "consensusStart",
+                            recordFile.getConsensusStart(),
+                            "consensusEnd",
+                            recordFile.getConsensusEnd());
 
-            var bloomAggregator = new LogsBloomAggregator();
-            var gasUsedTotal = new AtomicLong(0);
-            jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
-                bloomAggregator.aggregate(rs.getBytes("bloom"));
-                gasUsedTotal.addAndGet(rs.getLong("gas_used"));
-            });
+                    var bloomAggregator = new LogsBloomAggregator();
+                    var gasUsedTotal = new AtomicLong(0);
+                    jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
+                        bloomAggregator.aggregate(rs.getBytes("bloom"));
+                        gasUsedTotal.addAndGet(rs.getLong("gas_used"));
+                    });
 
-            recordFile.setGasUsed(gasUsedTotal.get());
-            recordFile.setLogsBloom(bloomAggregator.getBloom());
-            recordFileRepository.save(recordFile);
+                    recordFile.setGasUsed(gasUsedTotal.get());
+                    recordFile.setLogsBloom(bloomAggregator.getBloom());
+                    recordFileRepository.save(recordFile);
 
-            // set transaction index for the transactions in the record file
-            jdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
+                    // set transaction index for the transactions in the record file
+                    jdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
 
-            return recordFile.getConsensusEnd();
-        });
+                    return recordFile.getConsensusEnd();
+                });
     }
 }

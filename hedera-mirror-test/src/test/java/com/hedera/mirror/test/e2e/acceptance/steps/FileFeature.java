@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.steps;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,20 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.FileInfo;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.nio.charset.StandardCharsets;
@@ -32,21 +35,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.FileInfo;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class FileFeature {
-    private final static String originalFileContents = "Mirror Node v1";
-    private final static String updateBaseFileContents = "Mirror Node v2,";
-    private final static String appendFileContents = " new and improved";
-    private final static String updatedFileContents = updateBaseFileContents + appendFileContents;
+    private static final String originalFileContents = "Mirror Node v1";
+    private static final String updateBaseFileContents = "Mirror Node v2,";
+    private static final String appendFileContents = " new and improved";
+    private static final String updatedFileContents = updateBaseFileContents + appendFileContents;
 
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
@@ -68,8 +63,8 @@ public class FileFeature {
 
     @Given("I successfully update the file")
     public void updateFile() {
-        networkTransactionResponse = fileClient
-                .updateFile(fileId, updateBaseFileContents.getBytes(StandardCharsets.UTF_8));
+        networkTransactionResponse =
+                fileClient.updateFile(fileId, updateBaseFileContents.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -162,8 +157,8 @@ public class FileFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
-    private MirrorTransaction verifyMirrorTransactionsResponse(MirrorTransactionsResponse mirrorTransactionsResponse,
-                                                               int status) {
+    private MirrorTransaction verifyMirrorTransactionsResponse(
+            MirrorTransactionsResponse mirrorTransactionsResponse, int status) {
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();

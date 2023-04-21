@@ -1,25 +1,28 @@
-package com.hedera.mirror.importer.reader.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.reader.balance;
+
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,14 +42,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
-
 @Log4j2
 @RequiredArgsConstructor
 public abstract class CsvBalanceFileReader implements BalanceFileReader {
@@ -61,7 +56,8 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
-        if (!FILE_EXTENSION.equals(streamFileData.getStreamFilename().getExtension().getName())) {
+        if (!FILE_EXTENSION.equals(
+                streamFileData.getStreamFilename().getExtension().getName())) {
             return false;
         }
 
@@ -89,7 +85,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
         int bufferSize = balanceParserProperties.getFileBufferSize();
 
         try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
             long consensusTimestamp = parseConsensusTimestamp(reader);
             AtomicLong count = new AtomicLong(0L);
             List<AccountBalance> items = new ArrayList<>();

@@ -1,32 +1,36 @@
-package com.hedera.mirror.importer.reader.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.UnknownFieldSet;
-
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
-
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.File;
 import java.nio.file.Paths;
@@ -40,22 +44,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.services.stream.proto.AllAccountBalances;
-import com.hedera.services.stream.proto.SingleAccountBalances;
-
 class ProtoBalanceFileReaderTest {
 
     private static final String TIMESTAMP = "2021-03-08T20_15_00Z";
-    private static final String FILEPATH = Paths.get("data", "accountBalances", "proto",
-            TIMESTAMP + "_Balances.pb.gz").toString();
+    private static final String FILEPATH = Paths.get("data", "accountBalances", "proto", TIMESTAMP + "_Balances.pb.gz")
+            .toString();
 
     private AccountBalanceFile expected;
     private ProtoBalanceFileReader protoBalanceFileReader;
@@ -73,10 +66,12 @@ class ProtoBalanceFileReaderTest {
     @Test
     void readGzippedProtoBalanceFile() {
         AccountBalanceFile actual = protoBalanceFileReader.read(streamFileData);
-        assertThat(actual).usingRecursiveComparison()
+        assertThat(actual)
+                .usingRecursiveComparison()
                 .ignoringFields("loadStart", "nodeAccountId", "items")
                 .isEqualTo(expected);
-        assertThat(expected.getItems().collectList().block()).isEqualTo(actual.getItems().collectList().block());
+        assertThat(expected.getItems().collectList().block())
+                .isEqualTo(actual.getItems().collectList().block());
         assertThat(actual.getLoadStart()).isNotNull().isPositive();
     }
 
@@ -91,7 +86,8 @@ class ProtoBalanceFileReaderTest {
     @Test
     void missingTimestamp() {
         AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder()
-                .addAllAccounts(SingleAccountBalances.newBuilder().build()).build();
+                .addAllAccounts(SingleAccountBalances.newBuilder().build())
+                .build();
         byte[] bytes = allAccountBalances.toByteArray();
         StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
         assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
@@ -99,10 +95,12 @@ class ProtoBalanceFileReaderTest {
 
     @Test
     void unknownFields() {
-        UnknownFieldSet.Field field = UnknownFieldSet.Field.newBuilder().addFixed32(11).build();
+        UnknownFieldSet.Field field =
+                UnknownFieldSet.Field.newBuilder().addFixed32(11).build();
         AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(1L).build())
-                .mergeUnknownFields(UnknownFieldSet.newBuilder().addField(23, field).build())
+                .mergeUnknownFields(
+                        UnknownFieldSet.newBuilder().addField(23, field).build())
                 .addAllAccounts(SingleAccountBalances.newBuilder().build())
                 .build();
         byte[] bytes = allAccountBalances.toByteArray();
@@ -148,16 +146,19 @@ class ProtoBalanceFileReaderTest {
         long tokenNum = 5000;
         long tokenBalance = 6000;
 
-        List<AccountBalance> accountBalances = IntStream.range(0, 10).mapToObj(i -> {
+        List<AccountBalance> accountBalances = IntStream.range(0, 10)
+                .mapToObj(i -> {
                     EntityId accountId = EntityId.of(0, 0, accountNum + i, EntityType.ACCOUNT);
-                    List<TokenBalance> tokenBalances = IntStream.range(0, 5).mapToObj(j -> {
+                    List<TokenBalance> tokenBalances = IntStream.range(0, 5)
+                            .mapToObj(j -> {
                                 EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j, EntityType.TOKEN);
-                                return new TokenBalance(tokenBalance + i * 5 + j,
+                                return new TokenBalance(
+                                        tokenBalance + i * 5 + j,
                                         new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
                             })
                             .collect(Collectors.toList());
-                    return new AccountBalance(hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp,
-                            accountId));
+                    return new AccountBalance(
+                            hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
                 })
                 .collect(Collectors.toList());
         return AccountBalanceFile.builder()

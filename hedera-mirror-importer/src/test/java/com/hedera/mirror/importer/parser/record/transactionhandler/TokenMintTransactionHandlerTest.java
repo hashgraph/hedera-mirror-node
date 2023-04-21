@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -29,16 +25,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.Token;
 
 class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -50,7 +45,10 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setTokenMint(TokenMintTransactionBody.newBuilder()
-                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
+                        .setToken(TokenID.newBuilder()
+                                .setTokenNum(DEFAULT_ENTITY_NUM)
+                                .build())
+                        .build());
     }
 
     @Override
@@ -117,7 +115,10 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionNonFungibleMismatch() {
         // Given
-        var recordItem = recordItemBuilder.tokenMint(NON_FUNGIBLE_UNIQUE).receipt(r -> r.addSerialNumbers(3L)).build();
+        var recordItem = recordItemBuilder
+                .tokenMint(NON_FUNGIBLE_UNIQUE)
+                .receipt(r -> r.addSerialNumbers(3L))
+                .build();
         var transaction = domainBuilder.transaction().get();
         var nft = ArgumentCaptor.forClass(Nft.class);
         var transactionBody = recordItem.getTransactionBody().getTokenMint();

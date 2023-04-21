@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.contractlog;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,16 @@ package com.hedera.mirror.importer.parser.contractlog;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-
-import lombok.RequiredArgsConstructor;
+package com.hedera.mirror.importer.parser.contractlog;
 
 import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 @Named
@@ -39,6 +30,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final byte[] empty = Bytes.of(0).toArray();
+
     @Override
     public void create(SyntheticContractLog log) {
         if (isContract(log.getRecordItem()) || !entityProperties.getPersist().isSyntheticContractLogs()) {
@@ -67,6 +59,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
     }
 
     private boolean isContract(RecordItem recordItem) {
-        return recordItem.getTransactionRecord().hasContractCallResult() || recordItem.getTransactionRecord().hasContractCreateResult();
+        return recordItem.getTransactionRecord().hasContractCallResult()
+                || recordItem.getTransactionRecord().hasContractCreateResult();
     }
 }

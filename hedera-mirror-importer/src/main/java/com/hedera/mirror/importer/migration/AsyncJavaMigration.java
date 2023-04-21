@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
@@ -41,17 +37,20 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
-    private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL = """
+    private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL =
+            """
             select exists(select * from information_schema.tables
             where table_schema = :schema and table_name = 'flyway_schema_history')
             """;
 
-    private static final String SELECT_LAST_CHECKSUM_SQL = """
+    private static final String SELECT_LAST_CHECKSUM_SQL =
+            """
             select checksum from flyway_schema_history
             where script = :className order by installed_rank desc limit 1
             """;
 
-    private static final String UPDATE_CHECKSUM_SQL = """
+    private static final String UPDATE_CHECKSUM_SQL =
+            """
             with last as (
               select installed_rank from flyway_schema_history
               where script = :className order by installed_rank desc limit 1
@@ -127,8 +126,8 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         try {
             do {
                 final var previous = last;
-                last = Objects.requireNonNullElse(transactionOperations.execute(t -> migratePartial(previous.get())),
-                        Optional.empty());
+                last = Objects.requireNonNullElse(
+                        transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
@@ -162,8 +161,8 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
     }
 
     private boolean hasFlywaySchemaHistoryTable() {
-        var exists = jdbcTemplate.queryForObject(CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema),
-                Boolean.class);
+        var exists = jdbcTemplate.queryForObject(
+                CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema), Boolean.class);
         return exists != null && exists;
     }
 

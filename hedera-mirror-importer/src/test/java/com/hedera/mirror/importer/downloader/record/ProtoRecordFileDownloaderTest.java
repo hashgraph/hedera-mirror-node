@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,20 @@ package com.hedera.mirror.importer.downloader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
+import com.hedera.services.stream.proto.SidecarFile;
+import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,15 +45,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
-import com.hedera.services.stream.proto.SidecarFile;
-import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
@@ -76,8 +71,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
-        super.verifyStreamFiles(List.of(file1, file2), s -> {
-        });
+        super.verifyStreamFiles(List.of(file1, file2), s -> {});
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
@@ -116,7 +110,8 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         verifyStreamFiles(List.of(file1, file2), recordFile -> {
-            var sidecarTypes = recordFile.getItems()
+            var sidecarTypes = recordFile
+                    .getItems()
                     .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
                     .map(TransactionSidecarRecord::getSidecarRecordsCase)
                     .collectList()
@@ -144,7 +139,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     @Test
     void sidecarFileHashMismatch() throws IOException {
         try (var byteArrayOutputStream = new ByteArrayOutputStream();
-             var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
+                var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
             gzipCompressorOutputStream.write(SidecarFile.getDefaultInstance().toByteArray());
             gzipCompressorOutputStream.finish();
             var fileData = byteArrayOutputStream.toByteArray();
@@ -178,8 +173,10 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         var allRecordFileMap = TestRecordFiles.getAll();
-        var recordFile1 = allRecordFileMap.get("2022-07-13T08_46_08.041986003Z.rcd.gz").toBuilder().build();
-        var recordFile2 = allRecordFileMap.get("2022-07-13T08_46_11.304284003Z.rcd.gz").toBuilder().build();
+        var recordFile1 = allRecordFileMap.get("2022-07-13T08_46_08.041986003Z.rcd.gz").toBuilder()
+                .build();
+        var recordFile2 = allRecordFileMap.get("2022-07-13T08_46_11.304284003Z.rcd.gz").toBuilder()
+                .build();
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 
@@ -199,13 +196,14 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                         // timestamp is the same as that of the recordItem
                         .allSatisfy(recordItem -> {
                             var consensusTimestamp = recordItem.getConsensusTimestamp();
-                            assertThat(recordItem.getSidecarRecords()).satisfiesAnyOf(
-                                    sidecarRecords -> assertThat(sidecarRecords).isEmpty(),
-                                    sidecarRecords -> assertThat(sidecarRecords)
-                                            .map(TransactionSidecarRecord::getConsensusTimestamp)
-                                            .map(DomainUtils::timestampInNanosMax)
-                                            .containsOnly(consensusTimestamp)
-                            );
+                            assertThat(recordItem.getSidecarRecords())
+                                    .satisfiesAnyOf(
+                                            sidecarRecords ->
+                                                    assertThat(sidecarRecords).isEmpty(),
+                                            sidecarRecords -> assertThat(sidecarRecords)
+                                                    .map(TransactionSidecarRecord::getConsensusTimestamp)
+                                                    .map(DomainUtils::timestampInNanosMax)
+                                                    .containsOnly(consensusTimestamp));
                         })
                         // Also verify there are transaction sidecar records
                         .flatMap(RecordItem::getSidecarRecords)

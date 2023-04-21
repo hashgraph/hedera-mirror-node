@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.parser.record.transactionhandler;
+
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
-import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
-import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-
-import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
-
-import com.hedera.mirror.importer.parser.contractlog.ApproveForAllAllowanceContractLog;
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.HashMap;
-import java.util.List;
-import javax.inject.Named;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -49,7 +31,17 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
+import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
+import com.hedera.mirror.importer.parser.contractlog.ApproveForAllAllowanceContractLog;
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.HashMap;
+import java.util.List;
+import javax.inject.Named;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
@@ -84,13 +76,14 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         parseTokenAllowances(transactionBody.getTokenAllowancesList(), recordItem);
     }
 
-    private void parseCryptoAllowances(List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances,
-                                       RecordItem recordItem) {
+    private void parseCryptoAllowances(
+            List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances, RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var cryptoAllowanceState = new HashMap<AbstractCryptoAllowance.Id, CryptoAllowance>();
         var payerAccountId = recordItem.getPayerAccountId();
 
-        // iterate the crypto allowance list in reverse order and honor the last allowance for the same owner and spender
+        // iterate the crypto allowance list in reverse order and honor the last allowance for the same owner and
+        // spender
         var iterator = cryptoAllowances.listIterator(cryptoAllowances.size());
         while (iterator.hasPrevious()) {
             var cryptoApproval = iterator.previous();
@@ -113,8 +106,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         }
     }
 
-    private void parseNftAllowances(List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances,
-                                    RecordItem recordItem) {
+    private void parseNftAllowances(
+            List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances, RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
         var nftAllowanceState = new HashMap<AbstractNftAllowance.Id, NftAllowance>();
@@ -134,7 +127,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             EntityId spender = EntityId.of(nftApproval.getSpender());
             EntityId tokenId = EntityId.of(nftApproval.getTokenId());
             boolean hasApprovedForAll = nftApproval.hasApprovedForAll();
-            parseNftApproveForAll(recordItem, nftAllowanceState, nftApproval, ownerAccountId, spender, tokenId, hasApprovedForAll);
+            parseNftApproveForAll(
+                    recordItem, nftAllowanceState, nftApproval, ownerAccountId, spender, tokenId, hasApprovedForAll);
 
             EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
             for (var serialNumber : nftApproval.getSerialNumbersList()) {
@@ -149,17 +143,22 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 if (nftSerialAllowanceState.putIfAbsent(nft.getId(), nft) == null) {
                     entityListener.onNft(nft);
                     if (!hasApprovedForAll) {
-                        syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(recordItem, tokenId, ownerAccountId, spender, serialNumber));
+                        syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(
+                                recordItem, tokenId, ownerAccountId, spender, serialNumber));
                     }
                 }
             }
         }
     }
 
-    private void parseNftApproveForAll(RecordItem recordItem, HashMap<AbstractNftAllowance.Id,
-                                        NftAllowance> nftAllowanceState,
-                                        com.hederahashgraph.api.proto.java.NftAllowance nftApproval, EntityId ownerAccountId,
-                                        EntityId spender, EntityId tokenId, boolean hasApprovedForAll) {
+    private void parseNftApproveForAll(
+            RecordItem recordItem,
+            HashMap<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState,
+            com.hederahashgraph.api.proto.java.NftAllowance nftApproval,
+            EntityId ownerAccountId,
+            EntityId spender,
+            EntityId tokenId,
+            boolean hasApprovedForAll) {
         if (hasApprovedForAll) {
             var consensusTimestamp = recordItem.getConsensusTimestamp();
             var payerAccountId = recordItem.getPayerAccountId();
@@ -175,13 +174,14 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
             if (nftAllowanceState.putIfAbsent(nftAllowance.getId(), nftAllowance) == null) {
                 entityListener.onNftAllowance(nftAllowance);
-                syntheticContractLogService.create(new ApproveForAllAllowanceContractLog(recordItem, tokenId, ownerAccountId, spender, approvedForAll));
+                syntheticContractLogService.create(new ApproveForAllAllowanceContractLog(
+                        recordItem, tokenId, ownerAccountId, spender, approvedForAll));
             }
         }
     }
 
-    private void parseTokenAllowances(List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances,
-                                      RecordItem recordItem) {
+    private void parseTokenAllowances(
+            List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances, RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
         var tokenAllowanceState = new HashMap<AbstractTokenAllowance.Id, TokenAllowance>();
@@ -208,7 +208,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
             if (tokenAllowanceState.putIfAbsent(tokenAllowance.getId(), tokenAllowance) == null) {
                 entityListener.onTokenAllowance(tokenAllowance);
-                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
+                syntheticContractLogService.create(new ApproveAllowanceContractLog(
+                        recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
             }
         }
     }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,15 @@ package com.hedera.mirror.web3.controller;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
-import static org.mockito.BDDMockito.given;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
@@ -35,7 +31,10 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-
+import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -52,14 +51,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
-
-import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
-import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-
-import org.springframework.web.server.ServerWebInputException;
-import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
@@ -78,7 +69,7 @@ class ContractControllerTest {
     private Bucket bucket;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         given(bucket.tryConsume(1)).willReturn(true);
     }
 
@@ -86,7 +77,8 @@ class ContractControllerTest {
     void estimateGas() {
         final var request = request();
         request.setEstimate(true);
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -100,7 +92,8 @@ class ContractControllerTest {
     @Test
     void exceedingRateLimit() {
         for (var i = 0; i < 3; i++) {
-            webClient.post()
+            webClient
+                    .post()
                     .uri(CALL_URI)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(BodyInserters.fromValue(request()))
@@ -110,7 +103,8 @@ class ContractControllerTest {
         }
         given(bucket.tryConsume(1)).willReturn(false);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request()))
@@ -120,21 +114,23 @@ class ContractControllerTest {
     }
 
     @NullAndEmptySource
-    @ValueSource(strings = {
-            " ",
-            "0x",
-            "0xghijklmno",
-            "0x00000000000000000000000000000000000004e",
-            "0x00000000000000000000000000000000000004e2a",
-            "0x000000000000000000000000000000Z0000007e7",
-            "00000000001239847e"
-    })
+    @ValueSource(
+            strings = {
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
+            })
     @ParameterizedTest
     void callInvalidTo(String to) {
         final var request = request();
         request.setTo(to);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -151,7 +147,8 @@ class ContractControllerTest {
 
         given(service.processCall(any())).willThrow(new EntityNotFoundException(exceptionMessage));
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -163,22 +160,24 @@ class ContractControllerTest {
     }
 
     @EmptySource
-    @ValueSource(strings = {
-            " ",
-            "0x",
-            "0xghijklmno",
-            "0x00000000000000000000000000000000000004e",
-            "0x00000000000000000000000000000000000004e2a",
-            "0x000000000000000000000000000000Z0000007e7",
-            "00000000001239847e"
-    })
+    @ValueSource(
+            strings = {
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
+            })
     @ParameterizedTest
     void callInvalidFrom(String from) {
         final var errorString = "from field ".concat(MESSAGE);
         final var request = request();
         request.setFrom(from);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -194,7 +193,8 @@ class ContractControllerTest {
         final var request = request();
         request.setValue(-1L);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -207,7 +207,8 @@ class ContractControllerTest {
 
     @Test
     void callWithMalformedJsonBody() {
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue("{from: 0x00000000000000000000000000000000000004e2"))
@@ -215,15 +216,19 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Failed to read HTTP message", "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]", StringUtils.EMPTY));
+                .isEqualTo(new GenericErrorResponse(
+                        "Failed to read HTTP message",
+                        "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
+                                + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
+                        StringUtils.EMPTY));
     }
 
     @Test
     void callWithUnsupportedMediaTypeBody() {
         final var request = request();
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.TEXT_PLAIN)
                 .body(BodyInserters.fromValue(request.toString()))
@@ -231,20 +236,26 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest", StringUtils.EMPTY));
+                .isEqualTo(new GenericErrorResponse(
+                        "Unsupported Media Type",
+                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest",
+                        StringUtils.EMPTY));
     }
 
     @Test
     void callRevertMethodAndExpectDetailMessage() {
         final var detailedErrorMessage = "Custom revert message";
-        final var hexDataErrorMessage = "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
+        final var hexDataErrorMessage =
+                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
         final var request = request();
         request.setData("0xa26388bb");
 
-        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage,
-                hexDataErrorMessage));
+        given(service.processCall(any()))
+                .willThrow(new InvalidTransactionException(
+                        CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -252,7 +263,8 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage));
+                .isEqualTo(new GenericErrorResponse(
+                        CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage));
     }
 
     @Test
@@ -262,7 +274,8 @@ class ContractControllerTest {
 
         given(service.processCall(any())).willThrow(new InvalidParametersException(ERROR_MESSAGE));
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -279,7 +292,8 @@ class ContractControllerTest {
         final var request = request();
         request.setGas(-1L);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -296,7 +310,8 @@ class ContractControllerTest {
         final var request = request();
         request.setGasPrice(-1L);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -313,7 +328,8 @@ class ContractControllerTest {
         final var request = request();
         request.setFrom(null);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -331,7 +347,8 @@ class ContractControllerTest {
         final var request = request();
         request.setBlock(BlockType.of(value));
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -346,7 +363,8 @@ class ContractControllerTest {
         request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
         request.setValue(0);
 
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request))
@@ -357,7 +375,8 @@ class ContractControllerTest {
 
     @Test
     void transferSuccess() {
-        webClient.post()
+        webClient
+                .post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(request()))
