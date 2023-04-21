@@ -43,7 +43,7 @@ public class UpdatableReferenceCacheLineState<K> {
         DELETED // has been deleted in this cache
     }
 
-    public record Entry(ValueState state, Object value) {}
+    public record Entry(@NonNull ValueState state, Object value) {}
 
     private static final Entry invalidStateMarker = new Entry(ValueState.INVALID, null);
     private static final Entry valueNotYetFetchedMarker = new Entry(ValueState.NOT_YET_FETCHED, null);
