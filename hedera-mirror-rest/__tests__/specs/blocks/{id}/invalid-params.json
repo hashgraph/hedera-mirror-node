@@ -49,9 +49,7 @@
       }
     },
     {
-      "urls": [
-        "/api/v1/blocks/9900000000000001?block.number=9900000000000001"
-      ],
+      "urls": ["/api/v1/blocks/9900000000000001?block.number=9900000000000001"],
       "responseStatus": 400,
       "responseJson": {
         "_status": {

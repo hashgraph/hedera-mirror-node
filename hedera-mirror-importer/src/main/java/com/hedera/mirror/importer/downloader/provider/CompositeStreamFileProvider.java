@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,22 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.downloader.provider;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
-import com.google.common.annotations.VisibleForTesting;
 import lombok.CustomLog;
 import lombok.Value;
 import org.springframework.context.annotation.Primary;
@@ -34,12 +35,6 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 
 @CustomLog
 @Named
@@ -109,7 +104,11 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
 
     @VisibleForTesting
     boolean isHealthy() {
-        return providers.stream().filter(ProviderHealth::isHealthy).map(ProviderHealth::isHealthy).findFirst().orElse(false);
+        return providers.stream()
+                .filter(ProviderHealth::isHealthy)
+                .map(ProviderHealth::isHealthy)
+                .findFirst()
+                .orElse(false);
     }
 
     @Value

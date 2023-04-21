@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,25 +12,15 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.Optional;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -47,6 +32,16 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractResultServiceImplTest {
@@ -56,12 +51,16 @@ class ContractResultServiceImplTest {
 
     @Mock(lenient = true)
     private EntityIdService entityIdService;
+
     @Mock
     private EntityListener entityListener;
+
     @Mock
     private SidecarContractMigration sidecarContractMigration;
+
     @Mock
     private TransactionHandlerFactory transactionHandlerFactory;
+
     @Mock
     private TransactionHandler transactionHandler;
 
@@ -70,8 +69,8 @@ class ContractResultServiceImplTest {
     @BeforeEach
     void beforeEach() {
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
-        contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
-                sidecarContractMigration, transactionHandlerFactory);
+        contractResultService = new ContractResultServiceImpl(
+                entityProperties, entityIdService, entityListener, sidecarContractMigration, transactionHandlerFactory);
     }
 
     private static Stream<EntityId> provideEntities() {
@@ -82,7 +81,8 @@ class ContractResultServiceImplTest {
     @MethodSource("provideEntities")
     void invalidContractLogId(EntityId entityId) {
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
-        var transaction = domainBuilder.transaction()
+        var transaction = domainBuilder
+                .transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
                 .get();
 
@@ -96,10 +96,12 @@ class ContractResultServiceImplTest {
     @ParameterizedTest
     @MethodSource("provideEntities")
     void lookupReturnsEmptyId(EntityId entityId) {
-        RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
+        RecordItem recordItem = recordItemBuilder
+                .tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult()))
                 .build();
-        var transaction = domainBuilder.transaction()
+        var transaction = domainBuilder
+                .transaction()
                 .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
                 .get();
 

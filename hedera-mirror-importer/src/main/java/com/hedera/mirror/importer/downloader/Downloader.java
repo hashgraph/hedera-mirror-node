@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
@@ -29,6 +25,24 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
+import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import com.hedera.mirror.importer.reader.StreamFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.util.ShutdownHelper;
+import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -53,25 +67,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.StreamItem;
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
-import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
-import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.reader.StreamFileReader;
-import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.util.ShutdownHelper;
-import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
@@ -114,15 +109,16 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     private final Timer.Builder streamVerificationMetric;
 
     @SuppressWarnings({"java:S107", "java:S3740"})
-    protected Downloader(ConsensusNodeService consensusNodeService,
-                         DownloaderProperties downloaderProperties,
-                         MeterRegistry meterRegistry,
-                         MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                         NodeSignatureVerifier nodeSignatureVerifier,
-                         SignatureFileReader signatureFileReader,
-                         StreamFileNotifier streamFileNotifier,
-                         StreamFileProvider streamFileProvider,
-                         StreamFileReader<T, ?> streamFileReader) {
+    protected Downloader(
+            ConsensusNodeService consensusNodeService,
+            DownloaderProperties downloaderProperties,
+            MeterRegistry meterRegistry,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            NodeSignatureVerifier nodeSignatureVerifier,
+            SignatureFileReader signatureFileReader,
+            StreamFileNotifier streamFileNotifier,
+            StreamFileProvider streamFileProvider,
+            StreamFileReader<T, ?> streamFileReader) {
         this.consensusNodeService = consensusNodeService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
@@ -141,14 +137,14 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         // Metrics
         cloudStorageLatencyMetric = Timer.builder("hedera.mirror.importer.cloud.latency")
-                .description("The difference in time between the consensus time of the last transaction in the file " +
-                        "and the time at which the file was created in the cloud storage provider")
+                .description("The difference in time between the consensus time of the last transaction in the file "
+                        + "and the time at which the file was created in the cloud storage provider")
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
         downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
-                .description("The difference in time between the consensus time of the last transaction in the file " +
-                        "and the time at which the file was downloaded and verified")
+                .description("The difference in time between the consensus time of the last transaction in the file "
+                        + "and the time at which the file was downloaded and verified")
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
@@ -196,7 +192,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      * @param streamFile the stream file object
      */
     protected void setStreamFileIndex(T streamFile) {
-        long index = lastStreamFile.get()
+        long index = lastStreamFile
+                .get()
                 .map(StreamFile::getIndex)
                 .map(v -> v + 1)
                 .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
@@ -216,8 +213,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      *
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles()
-            throws InterruptedException {
+    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles() throws InterruptedException {
         var startAfterFilename = getStartAfterFilename();
         var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
@@ -235,7 +231,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 var stopwatch = Stopwatch.createStarted();
 
                 try {
-                    var count = streamFileProvider.list(node, startAfterFilename)
+                    var count = streamFileProvider
+                            .list(node, startAfterFilename)
                             .doOnNext(s -> {
                                 try {
                                     var streamFileSignature = signatureFileReader.read(s);
@@ -269,8 +266,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         } else {
-            log.info("No new signature files to download after file: {}. Retrying in {} s",
-                    startAfterFilename, downloaderProperties.getFrequency().toMillis() / 1_000f);
+            log.info(
+                    "No new signature files to download after file: {}. Retrying in {} s",
+                    startAfterFilename,
+                    downloaderProperties.getFrequency().toMillis() / 1_000f);
         }
 
         return sigFilesMap;
@@ -285,7 +284,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      * @return filename lexically after the last signature file and before the next stream file
      */
     private StreamFilename getStartAfterFilename() {
-        return lastStreamFile.get()
+        return lastStreamFile
+                .get()
                 .or(() -> {
                     Optional<T> streamFile = mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType);
                     lastStreamFile.compareAndSet(Optional.empty(), streamFile);
@@ -308,8 +308,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      */
     @SuppressWarnings("java:S135")
     private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, StreamFileSignature> sigFilesMap) {
-        var nodeIds = consensusNodeService.getNodes()
-                .stream()
+        var nodeIds = consensusNodeService.getNodes().stream()
                 .map(ConsensusNode::getNodeId)
                 .collect(Collectors.toSet());
 
@@ -332,7 +331,9 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 if (consensusCount == nodeIds.size()) {
                     log.debug("Verified signature file {} reached consensus", sigFilename);
                 } else if (consensusCount > 0) {
-                    log.warn("Verified signature file {} reached consensus but with some errors: {}", sigFilename,
+                    log.warn(
+                            "Verified signature file {} reached consensus but with some errors: {}",
+                            sigFilename,
                             statusMap(signatures, nodeIds));
                 }
             } catch (SignatureVerificationException ex) {
@@ -350,7 +351,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 log.error("None of the data files could be verified, signatures: {}", signatures);
             }
 
-            streamVerificationMetric.tag("success", String.valueOf(valid))
+            streamVerificationMetric
+                    .tag("success", String.valueOf(valid))
                     .register(meterRegistry)
                     .record(Duration.between(startTime, Instant.now()));
         }
@@ -377,7 +379,9 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 verify(streamFile, signature);
 
                 if (downloaderProperties.isWriteFiles()) {
-                    Utility.archiveFile(streamFile.getName(), streamFile.getBytes(),
+                    Utility.archiveFile(
+                            streamFile.getName(),
+                            streamFile.getBytes(),
                             downloaderProperties.getNodeStreamPath(nodeId));
                 }
 
@@ -401,11 +405,17 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 onVerified(streamFileData, streamFile, node);
                 return true;
             } catch (HashMismatchException | TransientProviderException e) {
-                log.warn("Failed processing signature from node {} corresponding to {}. Will retry another node: {}",
-                        nodeId, signature.getFilename(), e.getMessage());
+                log.warn(
+                        "Failed processing signature from node {} corresponding to {}. Will retry another node: {}",
+                        nodeId,
+                        signature.getFilename(),
+                        e.getMessage());
             } catch (Exception e) {
-                log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                        nodeId, signature.getFilename(), e);
+                log.error(
+                        "Error downloading data file from node {} corresponding to {}. Will retry another node",
+                        nodeId,
+                        signature.getFilename(),
+                        e);
             }
         }
 
@@ -417,11 +427,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
 
-        lastStreamFile.get()
-                .ifPresent(last -> {
-                    long latency = streamFile.getConsensusStart() - last.getConsensusStart();
-                    streamCloseMetric.record(latency, TimeUnit.NANOSECONDS);
-                });
+        lastStreamFile.get().ifPresent(last -> {
+            long latency = streamFile.getConsensusStart() - last.getConsensusStart();
+            streamCloseMetric.record(latency, TimeUnit.NANOSECONDS);
+        });
 
         Instant cloudStorageTime = streamFileData.getLastModified();
         Instant consensusEnd = Instant.ofEpochSecond(0, streamFile.getConsensusEnd());
@@ -447,8 +456,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
         if (!verifyHashChain(streamFile, expectedPrevHash)) {
-            throw new HashMismatchException(filename, expectedPrevHash, streamFile
-                    .getPreviousHash(), HASH_TYPE_RUNNING);
+            throw new HashMismatchException(
+                    filename, expectedPrevHash, streamFile.getPreviousHash(), HASH_TYPE_RUNNING);
         }
 
         verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex(), HASH_TYPE_FILE);
@@ -488,10 +497,11 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return streamFile.getPreviousHash().contentEquals(expectedPreviousHash);
     }
 
-    private Map<SignatureStatus, Collection<Long>> statusMap(Collection<StreamFileSignature> signatures,
-                                                             Set<Long> nodeIds) {
+    private Map<SignatureStatus, Collection<Long>> statusMap(
+            Collection<StreamFileSignature> signatures, Set<Long> nodeIds) {
         Map<SignatureStatus, Collection<Long>> statusMap = signatures.stream()
-                .collect(Collectors.groupingBy(StreamFileSignature::getStatus,
+                .collect(Collectors.groupingBy(
+                        StreamFileSignature::getStatus,
                         Collectors.mapping(s -> s.getNode().getNodeId(), Collectors.toCollection(TreeSet::new))));
 
         var seenNodes = signatures.stream().map(s -> s.getNode().getNodeId()).collect(Collectors.toSet());
@@ -506,8 +516,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         for (var entry : statusMap.entrySet()) {
             entry.getValue().forEach(nodeId -> {
-                Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(nodeId,
-                        n -> newStatusMetric(nodeId, signatureStreamType, entry.getKey()));
+                Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(
+                        nodeId, n -> newStatusMetric(nodeId, signatureStreamType, entry.getKey()));
                 counter.increment();
             });
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -78,7 +79,8 @@ class DecodingFacadeTest {
     void decodeTokenKeysTest() {
 
         final Tuple decodedArguments = decodeFunctionCall(
-                CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
+                CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2,
+                TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
                 TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
         final Tuple tokenCreateStruct = decodedArguments.get(0);
         final var decodedInput = decodeTokenKeys(tokenCreateStruct.get(7), identity());
@@ -101,7 +103,8 @@ class DecodingFacadeTest {
     @Test
     void decodeTokenExpiryTest() {
         final Tuple decodedArguments = decodeFunctionCall(
-                CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
+                CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2,
+                TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2,
                 TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
         final Tuple tokenCreateStruct = decodedArguments.get(0);
         final var decodedInput = decodeTokenExpiry(tokenCreateStruct.get(8), identity());
@@ -110,8 +113,8 @@ class DecodingFacadeTest {
 
     @Test
     void decodeAccountIdTest() {
-        final Tuple decodedArguments = decodeFunctionCall(
-                TRANSFER_NFTS_INPUT, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
+        final Tuple decodedArguments =
+                decodeFunctionCall(TRANSFER_NFTS_INPUT, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
         final var decodedInput = decodeAccountIds(decodedArguments.get(1), identity());
         assertEquals(1143, decodedInput.get(0).getAccountNum());
     }

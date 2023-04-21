@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,17 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -39,11 +39,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-
 @DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -52,6 +47,7 @@ import com.hedera.mirror.importer.config.Owner;
 class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
 
     private final @Owner JdbcOperations jdbcOperations;
+
     @Value("classpath:db/migration/v1/V1.51.2__contract_logs_convert_topics_to_bytes.sql")
     private final File migrationSql;
 
@@ -70,10 +66,7 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
     void verifyConvertTopicsToBytesMigration() throws Exception {
 
         MigrationContractLog contractLogWithTopics = contractLog(1, 1, 0, "00", "aa", "bb", "cc");
-        persistContractLog(Arrays.asList(
-                contractLogWithTopics,
-                contractLog(2, 2, 1, null, null, null, null)
-        ));
+        persistContractLog(Arrays.asList(contractLogWithTopics, contractLog(2, 2, 1, null, null, null, null)));
         // migration
         migrate();
 
@@ -89,12 +82,17 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
                 () -> assertNull(contractLogs.get(1).getTopic0Bytes()),
                 () -> assertNull(contractLogs.get(1).getTopic1Bytes()),
                 () -> assertNull(contractLogs.get(1).getTopic2Bytes()),
-                () -> assertNull(contractLogs.get(1).getTopic3Bytes())
-        );
+                () -> assertNull(contractLogs.get(1).getTopic3Bytes()));
     }
 
-    private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index, String topic0,
-                                             String topic1, String topic2, String topic3) {
+    private MigrationContractLog contractLog(
+            long consensusTimestamp,
+            long contractId,
+            int index,
+            String topic0,
+            String topic1,
+            String topic2,
+            String topic3) {
         MigrationContractLog migrationContractLog = new MigrationContractLog();
         migrationContractLog.setConsensusTimestamp(consensusTimestamp);
         migrationContractLog.setContractId(contractId);
@@ -111,35 +109,41 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationContractLog> retrieveContractLogs() {
-        return jdbcOperations.query("select consensus_timestamp, topic0 as topic0_bytes, topic1 as topic1_bytes, " +
-                        "topic2 as " +
-                        "topic2_bytes, topic3 as topic3_bytes from contract_log order by consensus_timestamp asc",
+        return jdbcOperations.query(
+                "select consensus_timestamp, topic0 as topic0_bytes, topic1 as topic1_bytes, " + "topic2 as "
+                        + "topic2_bytes, topic3 as topic3_bytes from contract_log order by consensus_timestamp asc",
                 new BeanPropertyRowMapper<>(MigrationContractLog.class));
     }
 
     private void persistContractLog(List<MigrationContractLog> contractLogs) {
         for (MigrationContractLog contractLog : contractLogs) {
-            jdbcOperations
-                    .update("insert into contract_log (bloom, consensus_timestamp, contract_id, data, " +
-                                    "index, payer_account_id, topic0, topic1, topic2, topic3) " +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            contractLog.getBloom(), contractLog.getConsensusTimestamp(), contractLog.getContractId(),
-                            contractLog.getData(), contractLog.getIndex(), contractLog.getPayerAccountId(),
-                            contractLog.getTopic0(), contractLog.getTopic1(), contractLog.getTopic2(),
-                            contractLog.getTopic3());
+            jdbcOperations.update(
+                    "insert into contract_log (bloom, consensus_timestamp, contract_id, data, "
+                            + "index, payer_account_id, topic0, topic1, topic2, topic3) "
+                            + " values"
+                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    contractLog.getBloom(),
+                    contractLog.getConsensusTimestamp(),
+                    contractLog.getContractId(),
+                    contractLog.getData(),
+                    contractLog.getIndex(),
+                    contractLog.getPayerAccountId(),
+                    contractLog.getTopic0(),
+                    contractLog.getTopic1(),
+                    contractLog.getTopic2(),
+                    contractLog.getTopic3());
         }
     }
 
     private void revertMigration() {
-        jdbcOperations
-                .update("alter table contract_log alter column topic0 type varchar(64) using encode(topic0, 'hex')");
-        jdbcOperations
-                .update("alter table contract_log alter column topic1 type varchar(64) using encode(topic1, 'hex')");
-        jdbcOperations
-                .update("alter table contract_log alter column topic2 type varchar(64) using encode(topic2, 'hex')");
-        jdbcOperations
-                .update("alter table contract_log alter column topic3 type varchar(64) using encode(topic3, 'hex')");
+        jdbcOperations.update(
+                "alter table contract_log alter column topic0 type varchar(64) using encode(topic0, 'hex')");
+        jdbcOperations.update(
+                "alter table contract_log alter column topic1 type varchar(64) using encode(topic1, 'hex')");
+        jdbcOperations.update(
+                "alter table contract_log alter column topic2 type varchar(64) using encode(topic2, 'hex')");
+        jdbcOperations.update(
+                "alter table contract_log alter column topic3 type varchar(64) using encode(topic3, 'hex')");
     }
 
     @Data

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.List;
+package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
 
 public record TokenUpdateWrapper(
         TokenID tokenID,
@@ -29,5 +29,4 @@ public record TokenUpdateWrapper(
         AccountID treasury,
         String memo,
         List<TokenKeyWrapper> tokenKeys,
-        TokenExpiryWrapper expiry) {
-}
+        TokenExpiryWrapper expiry) {}

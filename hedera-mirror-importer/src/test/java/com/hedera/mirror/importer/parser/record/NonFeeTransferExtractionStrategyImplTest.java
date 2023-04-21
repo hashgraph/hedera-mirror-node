@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,17 @@ package com.hedera.mirror.importer.parser.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -52,20 +52,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.EntityIdService;
-
 @ExtendWith(MockitoExtension.class)
 class NonFeeTransferExtractionStrategyImplTest {
     private static final long payerAccountNum = 999L;
-    private static final AccountID payerAccountId = AccountID.newBuilder().setAccountNum(payerAccountNum).build();
-    private static final AccountID testAccount1 = AccountID.newBuilder().setAccountNum(1234L).build();
-    private static final AccountID testAccount2 = AccountID.newBuilder().setAccountNum(5555L).build();
+    private static final AccountID payerAccountId =
+            AccountID.newBuilder().setAccountNum(payerAccountNum).build();
+    private static final AccountID testAccount1 =
+            AccountID.newBuilder().setAccountNum(1234L).build();
+    private static final AccountID testAccount2 =
+            AccountID.newBuilder().setAccountNum(5555L).build();
     private static final long initialBalance = 1234L;
     private static final long newEntityNum = 987654L;
-    private static final AccountID newAccountId = AccountID.newBuilder().setAccountNum(newEntityNum).build();
+    private static final AccountID newAccountId =
+            AccountID.newBuilder().setAccountNum(newEntityNum).build();
 
     @Mock
     private EntityIdService entityIdService;
@@ -78,9 +77,10 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getCryptoTransferTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
-                () -> assertEquals(3, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList(), result)
-        );
+                () -> assertEquals(
+                        3, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(
+                        transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList(), result));
     }
 
     @Test
@@ -88,10 +88,10 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getCryptoCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewAccountTransactionRecord());
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance,
-                        newEntityNum, initialBalance), result)
-        );
+                () -> assertEquals(
+                        2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(
+                        createAccountAmounts(payerAccountNum, -initialBalance, newEntityNum, initialBalance), result));
     }
 
     @Test
@@ -99,9 +99,9 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getCryptoCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
-                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result)
-        );
+                () -> assertEquals(
+                        1, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result));
     }
 
     @Test
@@ -109,10 +109,10 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getContractCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewContractTransactionRecord());
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance,
-                        newEntityNum, initialBalance), result)
-        );
+                () -> assertEquals(
+                        2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(
+                        createAccountAmounts(payerAccountNum, -initialBalance, newEntityNum, initialBalance), result));
     }
 
     @Test
@@ -120,16 +120,17 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getContractCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
-                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result)
-        );
+                () -> assertEquals(
+                        1, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result));
     }
 
     @Test
     void extractNonFeeTransfersContractCallBody() {
         var amount = 123456L;
         var contractNum = 8888L;
-        ContractID contractId = ContractID.newBuilder().setContractNum(contractNum).build();
+        ContractID contractId =
+                ContractID.newBuilder().setContractNum(contractNum).build();
         var transactionBody = getContractCallTransactionBody(contractNum, amount);
         var contractCallResult = ContractFunctionResult.newBuilder().setContractID(contractId);
         var transactionRecord = getSimpleTransactionRecord().toBuilder()
@@ -139,9 +140,9 @@ class NonFeeTransferExtractionStrategyImplTest {
                 .thenReturn(Optional.of(EntityId.of(contractId)));
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(contractNum, amount, payerAccountNum, -amount), result)
-        );
+                () -> assertEquals(
+                        2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(contractNum, amount, payerAccountNum, -amount), result));
     }
 
     @Test
@@ -149,12 +150,13 @@ class NonFeeTransferExtractionStrategyImplTest {
         var amount = 123456L;
         var contractNum = 8888L;
         ContractID contractIdBody = ContractID.newBuilder().setContractNum(-1L).build();
-        ContractID contractIdReceipt = ContractID.newBuilder().setContractNum(contractNum).build();
+        ContractID contractIdReceipt =
+                ContractID.newBuilder().setContractNum(contractNum).build();
         var transactionBody = getContractCallTransactionBody(-1L, amount);
         var contractCallResult = ContractFunctionResult.newBuilder().setContractID(contractIdReceipt);
 
-        var receipt = TransactionReceipt.newBuilder().setContractID(contractIdReceipt)
-                .setStatus(ResponseCodeEnum.SUCCESS);
+        var receipt =
+                TransactionReceipt.newBuilder().setContractID(contractIdReceipt).setStatus(ResponseCodeEnum.SUCCESS);
         var transactionRecord = TransactionRecord.newBuilder()
                 .setReceipt(receipt)
                 .setContractCallResult(contractCallResult)
@@ -163,9 +165,9 @@ class NonFeeTransferExtractionStrategyImplTest {
                 .thenReturn(Optional.of(EntityId.of(contractIdReceipt)));
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(contractNum, amount, payerAccountNum, -amount), result)
-        );
+                () -> assertEquals(
+                        2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(contractNum, amount, payerAccountNum, -amount), result));
     }
 
     @ParameterizedTest
@@ -174,8 +176,10 @@ class NonFeeTransferExtractionStrategyImplTest {
         var amount = 123456L;
         var transactionBody = getContractCallTransactionBody(TestUtils.generateRandomByteArray(20), amount);
         var transactionRecord = getSimpleTransactionRecord();
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall()
-                .getContractID())).thenReturn(Optional.ofNullable(entityId));
+        when(entityIdService.lookup(
+                        ContractID.getDefaultInstance(),
+                        transactionBody.getContractCall().getContractID()))
+                .thenReturn(Optional.ofNullable(entityId));
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
@@ -196,23 +200,26 @@ class NonFeeTransferExtractionStrategyImplTest {
     private List<AccountAmount> createAccountAmounts(long... accountNumThenAmount) {
         var result = new ArrayList<AccountAmount>();
         for (int i = 0; i < accountNumThenAmount.length; i += 2) {
-            result.add(
-                    AccountAmount.newBuilder()
-                            .setAccountID(AccountID.newBuilder().setAccountNum(accountNumThenAmount[i]).build())
-                            .setAmount(accountNumThenAmount[i + 1])
-                            .build());
+            result.add(AccountAmount.newBuilder()
+                    .setAccountID(AccountID.newBuilder()
+                            .setAccountNum(accountNumThenAmount[i])
+                            .build())
+                    .setAmount(accountNumThenAmount[i + 1])
+                    .build());
         }
         return result;
     }
 
     private void assertResult(List<AccountAmount> expected, Iterable<AccountAmount> actual) {
-        assertArrayEquals(expected.toArray(), StreamSupport.stream(actual.spliterator(), false)
-                .toArray());
+        assertArrayEquals(
+                expected.toArray(),
+                StreamSupport.stream(actual.spliterator(), false).toArray());
     }
 
     private TransactionBody.Builder transactionBodyBuilder() {
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerAccountId).build());
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(payerAccountId).build());
     }
 
     private TransactionBody getCryptoTransferTransactionBody() {
@@ -223,31 +230,39 @@ class NonFeeTransferExtractionStrategyImplTest {
                 .build();
 
         var innerBody = CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(transferList).build();
+                .setTransfers(transferList)
+                .build();
         return transactionBodyBuilder().setCryptoTransfer(innerBody).build();
     }
 
     private TransactionBody getCryptoCreateTransactionBody() {
-        var innerBody = CryptoCreateTransactionBody.newBuilder().setInitialBalance(initialBalance).build();
+        var innerBody = CryptoCreateTransactionBody.newBuilder()
+                .setInitialBalance(initialBalance)
+                .build();
         return transactionBodyBuilder().setCryptoCreateAccount(innerBody).build();
     }
 
     private TransactionBody getContractCreateTransactionBody() {
-        var innerBody = ContractCreateTransactionBody.newBuilder().setInitialBalance(initialBalance).build();
+        var innerBody = ContractCreateTransactionBody.newBuilder()
+                .setInitialBalance(initialBalance)
+                .build();
         return transactionBodyBuilder().setContractCreateInstance(innerBody).build();
     }
 
     private TransactionBody getContractCallTransactionBody(long contractNum, long amount) {
         var innerBody = ContractCallTransactionBody.newBuilder()
-                .setContractID(ContractID.newBuilder().setContractNum(contractNum).build())
-                .setAmount(amount).build();
+                .setContractID(
+                        ContractID.newBuilder().setContractNum(contractNum).build())
+                .setAmount(amount)
+                .build();
         return transactionBodyBuilder().setContractCall(innerBody).build();
     }
 
     private TransactionBody getContractCallTransactionBody(byte[] evmAddress, long amount) {
         var innerBody = ContractCallTransactionBody.newBuilder()
                 .setContractID(ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(evmAddress)))
-                .setAmount(amount).build();
+                .setAmount(amount)
+                .build();
         return transactionBodyBuilder().setContractCall(innerBody).build();
     }
 
@@ -267,27 +282,35 @@ class NonFeeTransferExtractionStrategyImplTest {
     }
 
     private TransactionRecord getNewAccountTransactionRecord() {
-        var receipt = TransactionReceipt.newBuilder().setAccountID(newAccountId).setStatus(ResponseCodeEnum.SUCCESS)
+        var receipt = TransactionReceipt.newBuilder()
+                .setAccountID(newAccountId)
+                .setStatus(ResponseCodeEnum.SUCCESS)
                 .build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private TransactionRecord getNewContractTransactionRecord() {
-        var receipt = TransactionReceipt.newBuilder().setContractID(
-                ContractID.newBuilder().setContractNum(newEntityNum).build()
-        ).setStatus(ResponseCodeEnum.SUCCESS).build();
+        var receipt = TransactionReceipt.newBuilder()
+                .setContractID(
+                        ContractID.newBuilder().setContractNum(newEntityNum).build())
+                .setStatus(ResponseCodeEnum.SUCCESS)
+                .build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private TransactionRecord getNewFileTransactionRecord() {
-        var receipt = TransactionReceipt.newBuilder().setFileID(
-                FileID.newBuilder().setFileNum(newEntityNum).build()
-        ).setStatus(ResponseCodeEnum.SUCCESS).build();
+        var receipt = TransactionReceipt.newBuilder()
+                .setFileID(FileID.newBuilder().setFileNum(newEntityNum).build())
+                .setStatus(ResponseCodeEnum.SUCCESS)
+                .build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private AccountAmount newAccountAmount(AccountID accountId, long amount) {
-        return AccountAmount.newBuilder().setAccountID(accountId).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(accountId)
+                .setAmount(amount)
+                .build();
     }
 
     private static Stream<EntityId> provideEntities() {

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.times;
@@ -28,16 +24,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -47,6 +33,15 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -107,13 +102,15 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener, syntheticContractLogService);
+        return new CryptoApproveAllowanceTransactionHandler(
+                entityIdService, entityListener, syntheticContractLogService);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder().build());
+                .setCryptoApproveAllowance(
+                        CryptoApproveAllowanceTransactionBody.newBuilder().build());
     }
 
     @Override
@@ -123,20 +120,24 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     @Test
     void updateTransactionSuccessful() {
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+        var recordItem = recordItemBuilder
+                .cryptoApproveAllowance()
                 .transactionBody(this::customizeTransactionBody)
                 .transactionBodyWrapper(this::setTransactionPayer)
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(consensusTimestamp)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp))
+                .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(null);
     }
 
     @Test
     void updateTransactionSuccessfulWithImplicitOwner() {
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+        var recordItem = recordItemBuilder
+                .cryptoApproveAllowance()
                 .transactionBody(this::customizeTransactionBody)
                 .transactionBody(b -> {
                     b.getCryptoAllowancesBuilderList().forEach(builder -> builder.clearOwner());
@@ -147,8 +148,10 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
         var effectiveOwner = recordItem.getPayerAccountId().getId();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(consensusTimestamp)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp))
+                .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(effectiveOwner);
     }
@@ -156,12 +159,16 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionWithEmptyEntityId() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+        var recordItem = recordItemBuilder
+                .cryptoApproveAllowance()
                 .transactionBody(this::customizeTransactionBody)
                 .transactionBody(b -> {
-                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getCryptoAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
                 })
                 .transactionBodyWrapper(this::setTransactionPayer)
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
@@ -180,11 +187,15 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @MethodSource("provideEntities")
     void updateTransactionWithEmptyOwner(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+        var recordItem = recordItemBuilder
+                .cryptoApproveAllowance()
                 .transactionBody(b -> {
-                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().clear());
-                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getCryptoAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().clear());
+                    b.getNftAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
                 })
                 .transactionBodyWrapper(w -> w.getTransactionIDBuilder()
                         .setAccountID(AccountID.newBuilder().setAccountNum(0)))
@@ -202,18 +213,25 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     void updateTransactionWithAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var ownerEntityId = EntityId.of(recordItemBuilder.accountId());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+        var recordItem = recordItemBuilder
+                .cryptoApproveAllowance()
                 .transactionBody(this::customizeTransactionBody)
                 .transactionBody(b -> {
-                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getCryptoAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList()
+                            .forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
                 })
                 .transactionBodyWrapper(this::setTransactionPayer)
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp))
+                .get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.of(ownerEntityId));
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -241,53 +259,55 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         builder.addCryptoAllowances(com.hederahashgraph.api.proto.java.CryptoAllowance.newBuilder()
                 .setAmount(expectedCryptoAllowance.getAmount() - 10)
                 .setOwner(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getOwner()))
-                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender()))
-        );
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender())));
         // the last one is honored
         builder.addCryptoAllowances(com.hederahashgraph.api.proto.java.CryptoAllowance.newBuilder()
                 .setAmount(expectedCryptoAllowance.getAmount())
                 .setOwner(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getOwner()))
-                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender()))
-        );
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender())));
 
         // duplicate nft allowance by serial
         builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
-                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .setOwner(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getAccountId().getEntityNum()))
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
-                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum() + 1))
-                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
-        );
+                .setSpender(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getSpender().getEntityNum() + 1))
+                .setTokenId(TokenID.newBuilder()
+                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
         // duplicate nft approved for all allowance, approved for all flag is flipped from the last one
         builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(!expectedNftAllowance.isApprovedForAll()))
-                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .setOwner(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getAccountId().getEntityNum()))
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
-                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum()))
-                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
-        );
+                .setSpender(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getSpender().getEntityNum()))
+                .setTokenId(TokenID.newBuilder()
+                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
         // the last one is honored
         builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(expectedNftAllowance.isApprovedForAll()))
-                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .setOwner(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getAccountId().getEntityNum()))
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
-                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum()))
-                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
-        );
+                .setSpender(AccountID.newBuilder()
+                        .setAccountNum(expectedNft.getSpender().getEntityNum()))
+                .setTokenId(TokenID.newBuilder()
+                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
 
         // duplicate token allowance
         builder.addTokenAllowances(com.hederahashgraph.api.proto.java.TokenAllowance.newBuilder()
                 .setAmount(expectedTokenAllowance.getAmount() - 10)
                 .setOwner(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getOwner()))
                 .setSpender(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getSpender()))
-                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId()))
-        );
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId())));
         // the last one is honored
         builder.addTokenAllowances(com.hederahashgraph.api.proto.java.TokenAllowance.newBuilder()
                 .setAmount(expectedTokenAllowance.getAmount())
                 .setOwner(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getOwner()))
                 .setSpender(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getSpender()))
-                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId()))
-        );
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId())));
     }
 
     private void setTransactionPayer(TransactionBody.Builder builder) {

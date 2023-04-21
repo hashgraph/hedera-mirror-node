@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,32 +12,20 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import javax.inject.Named;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -57,6 +40,15 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
+import java.util.List;
+import javax.inject.Named;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @Named
@@ -78,8 +70,9 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         var transactionBody = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getTransactionRecord();
-        var functionResult = transactionRecord.hasContractCreateResult() ?
-                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+        var functionResult = transactionRecord.hasContractCreateResult()
+                ? transactionRecord.getContractCreateResult()
+                : transactionRecord.getContractCallResult();
 
         var sidecarFailedInitcode = processSidecarRecords(recordItem);
 
@@ -93,16 +86,18 @@ public class ContractResultServiceImpl implements ContractResultService {
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
-        var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
-                entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
+        var contractId = isContractCreateOrCall(transactionBody)
+                ? transaction.getEntityId()
+                : entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
         if (EntityId.isEmpty(contractId)) {
             contractId = EntityId.EMPTY;
-            log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
-                    .getConsensusTimestamp());
+            log.error(
+                    RECOVERABLE_ERROR + "Invalid contract id for contract result at {}",
+                    recordItem.getConsensusTimestamp());
         }
 
-        processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,
-                sidecarFailedInitcode);
+        processContractResult(
+                recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -113,20 +108,23 @@ public class ContractResultServiceImpl implements ContractResultService {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private void processContractAction(ContractAction action, long consensusTimestamp, int index,
-                                       EntityId payerAccountId) {
+    private void processContractAction(
+            ContractAction action, long consensusTimestamp, int index, EntityId payerAccountId) {
         var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
         switch (action.getCallerCase()) {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
-            default -> log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp,
+            default -> log.error(
+                    RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}",
+                    consensusTimestamp,
                     action.getCallerCase());
         }
 
         switch (action.getRecipientCase()) {
             case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
-            case TARGETED_ADDRESS -> contractAction.setRecipientAddress(action.getTargetedAddress().toByteArray());
+            case TARGETED_ADDRESS -> contractAction.setRecipientAddress(
+                    action.getTargetedAddress().toByteArray());
             default -> {
                 // ContractCreate transaction has no recipient
             }
@@ -136,7 +134,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             case ERROR -> contractAction.setResultData(DomainUtils.toBytes(action.getError()));
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
-            default -> log.error(RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
+            default -> log.error(
+                    RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
                     consensusTimestamp,
                     action.getResultDataCase());
         }
@@ -156,10 +155,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onContractAction(contractAction);
     }
 
-    private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                       ContractFunctionResult functionResult, Transaction transaction,
-                                       TransactionHandler transactionHandler,
-                                       ByteString sidecarFailedInitcode) {
+    private void processContractResult(
+            RecordItem recordItem,
+            EntityId contractEntityId,
+            ContractFunctionResult functionResult,
+            Transaction transaction,
+            TransactionHandler transactionHandler,
+            ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
@@ -207,8 +209,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onContractResult(contractResult);
     }
 
-    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult,
-                                     byte[] transactionHash, Integer transactionIndex) {
+    private void processContractLogs(
+            ContractFunctionResult functionResult,
+            ContractResult contractResult,
+            byte[] transactionHash,
+            Integer transactionIndex) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             var contractLoginfo = functionResult.getLogInfo(index);
             ContractLog contractLog = new ContractLog();
@@ -230,8 +235,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractStateChange(long consensusTimestamp, boolean migration, EntityId payerAccountId,
-                                            ContractStateChange stateChange) {
+    private void processContractStateChange(
+            long consensusTimestamp, boolean migration, EntityId payerAccountId, ContractStateChange stateChange) {
         var contractId = EntityId.of(stateChange.getContractId());
         for (var storageChange : stateChange.getStorageChangesList()) {
             var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
@@ -245,8 +250,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             // If a value of zero is written the valueWritten will be present but the inner value will be
             // absent. If a value was read and not written this value will not be present.
             if (storageChange.hasValueWritten()) {
-                contractStateChange
-                        .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
+                contractStateChange.setValueWritten(
+                        DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
             }
 
             entityListener.onContractStateChange(contractStateChange);
@@ -254,8 +259,8 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     @SuppressWarnings("deprecation")
-    private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
-                                             EntityId parentEntityContractId) {
+    private List<Long> getCreatedContractIds(
+            ContractFunctionResult functionResult, RecordItem recordItem, EntityId parentEntityContractId) {
         List<Long> createdContractIds = new ArrayList<>();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
@@ -311,8 +316,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             } else if (sidecarRecord.hasActions()) {
                 var actions = sidecarRecord.getActions();
                 for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), consensusTimestamp, actionIndex,
-                            payerAccountId);
+                    processContractAction(
+                            actions.getContractActions(actionIndex), consensusTimestamp, actionIndex, payerAccountId);
                 }
             } else if (sidecarRecord.hasBytecode()) {
                 if (migration) {
@@ -327,7 +332,10 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         sidecarContractMigration.migrate(contractBytecodes);
-        log.info("{} Sidecar records processed with {} migrations in {}", sidecarRecords.size(), migrationCount,
+        log.info(
+                "{} Sidecar records processed with {} migrations in {}",
+                sidecarRecords.size(),
+                migrationCount,
                 stopwatch);
         return failedInitcode;
     }
@@ -379,8 +387,8 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @return Whether the createdContractIDs list should be persisted.
      */
     private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
-        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
-                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
+        return recordItem.isSuccessful()
+                && entityProperties.getPersist().isContracts()
+                && recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
     }
-
 }

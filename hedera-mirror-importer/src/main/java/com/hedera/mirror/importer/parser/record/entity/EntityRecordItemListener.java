@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,38 +12,15 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
-
-import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
-
-import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
-
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -72,10 +44,30 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
+import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @Named
@@ -104,8 +96,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error(RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
-                    consensusTimestamp, e.getMessage());
+            log.error(
+                    RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp,
+                    e.getMessage());
             entityId = EntityId.EMPTY;
         }
 
@@ -114,8 +108,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         Collection<EntityId> entities = transactionFilterFields.getEntities();
         log.debug("Processing {} transaction {} for entities {}", transactionType, consensusTimestamp, entities);
         if (!commonParserProperties.getFilter().test(transactionFilterFields)) {
-            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entities={}",
-                    consensusTimestamp, transactionType, entities);
+            log.debug(
+                    "Ignoring transaction. consensusTimestamp={}, transactionType={}, entities={}",
+                    consensusTimestamp,
+                    transactionType,
+                    entities);
             return;
         }
 
@@ -164,8 +161,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionBody body = recordItem.getTransactionBody();
         TransactionRecord txRecord = recordItem.getTransactionRecord();
 
-        Long validDurationSeconds = body.hasTransactionValidDuration() ?
-                body.getTransactionValidDuration().getSeconds() : null;
+        Long validDurationSeconds = body.hasTransactionValidDuration()
+                ? body.getTransactionValidDuration().getSeconds()
+                : null;
         // transactions in stream always have valid node account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
         var transactionId = body.getTransactionID();
@@ -183,8 +181,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
         transaction.setResult(txRecord.getReceipt().getStatusValue());
         transaction.setScheduled(txRecord.hasScheduleRef());
-        transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
-                recordItem.getTransactionBytes() : null);
+        transaction.setTransactionBytes(
+                entityProperties.getPersist().isTransactionBytes() ? recordItem.getTransactionBytes() : null);
         transaction.setTransactionHash(DomainUtils.toBytes(txRecord.getTransactionHash()));
         transaction.setType(recordItem.getTransactionType());
         transaction.setValidDurationSeconds(validDurationSeconds);
@@ -214,7 +212,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (aa.getAmount() != 0) {
                 var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
                 if (EntityId.isEmpty(entityId)) {
-                    log.error(RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
+                    log.error(
+                            RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
                             recordItem.getConsensusTimestamp());
                     continue;
                 }
@@ -252,7 +251,8 @@ public class EntityRecordItemListener implements RecordItemListener {
      */
     private void insertTransferList(RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
-        if (!transactionRecord.hasTransferList() || !entityProperties.getPersist().isCryptoTransferAmounts()) {
+        if (!transactionRecord.hasTransferList()
+                || !entityProperties.getPersist().isCryptoTransferAmounts()) {
             return;
         }
 
@@ -292,7 +292,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
-        List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
+        List<AccountAmount> accountAmountsList =
+                body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         for (AccountAmount a : accountAmountsList) {
             if (aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID())) {
                 return a;
@@ -301,8 +302,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, EntityId tokenId,
-                                            TransactionBody body) {
+    private AccountAmount findAccountAmount(
+            Predicate<AccountAmount> accountAmountPredicate, EntityId tokenId, TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
@@ -321,9 +322,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private com.hederahashgraph.api.proto.java.NftTransfer findNftTransferInsideBody(
-            com.hederahashgraph.api.proto.java.NftTransfer nftTransfer,
-            TokenID nftId,
-            TransactionBody body) {
+            com.hederahashgraph.api.proto.java.NftTransfer nftTransfer, TokenID nftId, TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
@@ -333,9 +332,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                 continue;
             }
             for (NftTransfer transfer : transferList.getNftTransfersList()) {
-                if (transfer.getSerialNumber() == nftTransfer.getSerialNumber() &&
-                        transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
-                        transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())) {
+                if (transfer.getSerialNumber() == nftTransfer.getSerialNumber()
+                        && transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID())
+                        && transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())) {
                     return transfer;
                 }
             }
@@ -344,8 +343,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFungibleTokenTransfers(
-            RecordItem recordItem, EntityId tokenId,
-            EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
+            RecordItem recordItem, EntityId tokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
@@ -353,8 +351,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
 
-        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
+        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId()
+                || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId()
+                || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
         boolean isSingleTransfer = tokenTransferCount == 2;
 
         for (int i = 0; i < tokenTransferCount; i++) {
@@ -387,42 +387,59 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void logTokenEvents(RecordItem recordItem, EntityId tokenId, boolean isWipeOrBurn, boolean isMint,
-                           EntityId accountId, long amount) {
+    private void logTokenEvents(
+            RecordItem recordItem,
+            EntityId tokenId,
+            boolean isWipeOrBurn,
+            boolean isMint,
+            EntityId accountId,
+            long amount) {
         if (isMint || isWipeOrBurn) {
             EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
             EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
-            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId,
-                    Math.abs(amount)));
+            syntheticContractLogService.create(
+                    new TransferContractLog(recordItem, tokenId, senderId, receiverId, Math.abs(amount)));
         }
     }
 
-    private void logTokenTransfers(RecordItem recordItem, EntityId tokenId, List<AccountAmount> tokenTransfers,
-                                   boolean isSingleTransfer, int i, EntityId accountId, long amount) {
+    private void logTokenTransfers(
+            RecordItem recordItem,
+            EntityId tokenId,
+            List<AccountAmount> tokenTransfers,
+            boolean isSingleTransfer,
+            int i,
+            EntityId accountId,
+            long amount) {
         if (isSingleTransfer && amount > 0) {
-            EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
-            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+            EntityId senderId = i == 0
+                    ? EntityId.of(tokenTransfers.get(1).getAccountID())
+                    : EntityId.of(tokenTransfers.get(0).getAccountID());
+            syntheticContractLogService.create(
+                    new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
         }
     }
 
-    private void handleNegativeAccountAmounts(EntityId tokenId, TransactionBody body, AccountAmount accountAmount, long amount,
-                           TokenTransfer tokenTransfer) {
+    private void handleNegativeAccountAmounts(
+            EntityId tokenId,
+            TransactionBody body,
+            AccountAmount accountAmount,
+            long amount,
+            TokenTransfer tokenTransfer) {
         // If a record AccountAmount with amount < 0 is not in the body;
         // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
         // then again set is_approval=true
         if (amount < 0) {
 
             // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
-            AccountAmount accountAmountInsideTransferList =
-                    findAccountAmount(
-                            accountAmount::equals, tokenId, body);
+            AccountAmount accountAmountInsideTransferList = findAccountAmount(accountAmount::equals, tokenId, body);
             if (accountAmountInsideTransferList == null) {
 
                 // Is there any account amount inside the body's transfer list for the given tokenId
                 // with the same accountId as the accountAmount from the record?
                 AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
                         aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
-                        tokenId, body);
+                        tokenId,
+                        body);
                 if (accountAmountWithSameIdInsideBody != null) {
                     tokenTransfer.setIsApproval(true);
                 }
@@ -437,27 +454,29 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
         for (int i = 0; i < recordItem.getTransactionRecord().getTokenTransferListsCount(); i++) {
-            TokenTransferList tokenTransferList = recordItem.getTransactionRecord().getTokenTransferLists(i);
+            TokenTransferList tokenTransferList =
+                    recordItem.getTransactionRecord().getTokenTransferLists(i);
             TokenID tokenId = tokenTransferList.getToken();
             EntityId entityTokenId = EntityId.of(tokenId);
             EntityId payerAccountId = recordItem.getPayerAccountId();
 
             if (tokenTransferList.getTransfersCount() > 0) {
                 insertFungibleTokenTransfers(
-                        recordItem, entityTokenId, payerAccountId,
-                        tokenTransferList.getTransfersList());
+                        recordItem, entityTokenId, payerAccountId, tokenTransferList.getTransfersList());
             }
 
             if (tokenTransferList.getNftTransfersCount() > 0) {
                 insertNonFungibleTokenTransfers(
-                        recordItem, tokenId, entityTokenId,
-                        payerAccountId, tokenTransferList.getNftTransfersList());
+                        recordItem, tokenId, entityTokenId, payerAccountId, tokenTransferList.getNftTransfersList());
             }
         }
     }
 
     private void insertNonFungibleTokenTransfers(
-            RecordItem recordItem, TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId,
+            RecordItem recordItem,
+            TokenID tokenId,
+            EntityId entityTokenId,
+            EntityId payerAccountId,
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
@@ -483,8 +502,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (!EntityId.isEmpty(receiverId)) {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
-            syntheticContractLogService
-                    .create(new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
+            syntheticContractLogService.create(
+                    new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
     }
 
@@ -496,25 +515,29 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            recordItem.getTransactionRecord().getAutomaticTokenAssociationsList().forEach(tokenAssociation -> {
-                // The accounts and tokens in the associations should have been added to EntityListener when inserting
-                // the corresponding token transfers, so no need to duplicate the logic here
-                EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
-                EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
-                TokenAccount tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(accountId.getId());
-                tokenAccount.setAssociated(true);
-                tokenAccount.setAutomaticAssociation(true);
-                tokenAccount.setCreatedTimestamp(consensusTimestamp);
-                tokenAccount.setTimestampRange(Range.atLeast(consensusTimestamp));
-                tokenAccount.setTokenId(tokenId.getId());
-                entityListener.onTokenAccount(tokenAccount);
-            });
+            recordItem
+                    .getTransactionRecord()
+                    .getAutomaticTokenAssociationsList()
+                    .forEach(tokenAssociation -> {
+                        // The accounts and tokens in the associations should have been added to EntityListener when
+                        // inserting
+                        // the corresponding token transfers, so no need to duplicate the logic here
+                        EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
+                        EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
+                        TokenAccount tokenAccount = new TokenAccount();
+                        tokenAccount.setAccountId(accountId.getId());
+                        tokenAccount.setAssociated(true);
+                        tokenAccount.setAutomaticAssociation(true);
+                        tokenAccount.setCreatedTimestamp(consensusTimestamp);
+                        tokenAccount.setTimestampRange(Range.atLeast(consensusTimestamp));
+                        tokenAccount.setTokenId(tokenId.getId());
+                        entityListener.onTokenAccount(tokenAccount);
+                    });
         }
     }
 
-    private void transferNftOwnership(long modifiedTimeStamp, long serialNumber, EntityId tokenId,
-                                      EntityId receiverId) {
+    private void transferNftOwnership(
+            long modifiedTimeStamp, long serialNumber, EntityId tokenId, EntityId receiverId) {
         Nft nft = new Nft(serialNumber, tokenId);
         nft.setAccountId(receiverId);
         nft.setModifiedTimestamp(modifiedTimeStamp);
@@ -522,8 +545,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     @SuppressWarnings("java:S135")
-    private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
-                                             List<SignaturePair> signaturePairList) {
+    private void insertTransactionSignatures(
+            EntityId entityId, long consensusTimestamp, List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();
         for (SignaturePair signaturePair : signaturePairList) {
             ByteString prefix = signaturePair.getPubKeyPrefix();
@@ -548,7 +571,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                     signature = signaturePair.getRSA3072();
                     break;
                 case SIGNATURE_NOT_SET:
-                    Map<Integer, UnknownFieldSet.Field> unknownFields = signaturePair.getUnknownFields().asMap();
+                    Map<Integer, UnknownFieldSet.Field> unknownFields =
+                            signaturePair.getUnknownFields().asMap();
 
                     // If we encounter a signature that our version of the protobuf does not yet support, it will
                     // return SIGNATURE_NOT_SET. Hence we should look in the unknown fields for the new signature.
@@ -564,13 +588,17 @@ public class EntityRecordItemListener implements RecordItemListener {
                     }
 
                     if (signature == null) {
-                        log.error(RECOVERABLE_ERROR + "Unsupported signature at {}: {}", consensusTimestamp,
+                        log.error(
+                                RECOVERABLE_ERROR + "Unsupported signature at {}: {}",
+                                consensusTimestamp,
                                 unknownFields);
                         continue;
                     }
                     break;
                 default:
-                    log.error(RECOVERABLE_ERROR + "Unsupported signature case at {}: {}", consensusTimestamp,
+                    log.error(
+                            RECOVERABLE_ERROR + "Unsupported signature case at {}: {}",
+                            consensusTimestamp,
                             signaturePair.getSignatureCase());
                     continue;
             }
@@ -632,16 +660,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         entities.add(entityId);
         entities.add(recordItem.getPayerAccountId());
 
-        recordItem.getTransactionRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
-                entities.add(EntityId.of(accountAmount.getAccountID()))
-        );
+        recordItem
+                .getTransactionRecord()
+                .getTransferList()
+                .getAccountAmountsList()
+                .forEach(accountAmount -> entities.add(EntityId.of(accountAmount.getAccountID())));
 
         recordItem.getTransactionRecord().getTokenTransferListsList().forEach(transfer -> {
             entities.add(EntityId.of(transfer.getToken()));
 
-            transfer.getTransfersList().forEach(accountAmount ->
-                    entities.add(EntityId.of(accountAmount.getAccountID()))
-            );
+            transfer.getTransfersList()
+                    .forEach(accountAmount -> entities.add(EntityId.of(accountAmount.getAccountID())));
 
             transfer.getNftTransfersList().forEach(nftTransfer -> {
                 entities.add(EntityId.of(nftTransfer.getReceiverAccountID()));

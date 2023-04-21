@@ -42,4 +42,3 @@ INSERT INTO public.transaction (consensus_timestamp, type, result, payer_account
 --
 -- PostgreSQL database dump complete
 --
-

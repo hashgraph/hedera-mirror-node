@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.steps;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpStatus;
 
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import java.util.List;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 
 @Log4j2
 abstract class AbstractFeature {

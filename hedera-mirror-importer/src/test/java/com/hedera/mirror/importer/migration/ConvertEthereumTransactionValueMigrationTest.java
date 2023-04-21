@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,17 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransactionParser;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,11 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransactionParser;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -70,13 +65,15 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
         var tinybar = BigInteger.valueOf(1);
         var transaction = ethereumTransaction(toWeibar(tinybar));
         transactions.add(transaction);
-        expectedTransactions.add(transaction.toBuilder().value(tinybar.toByteArray()).build());
+        expectedTransactions.add(
+                transaction.toBuilder().value(tinybar.toByteArray()).build());
 
         // larger than an unsigned long can hold
         tinybar = new BigInteger("700000000000000000", 16);
         transaction = ethereumTransaction(toWeibar(tinybar));
         transactions.add(transaction);
-        expectedTransactions.add(transaction.toBuilder().value(tinybar.toByteArray()).build());
+        expectedTransactions.add(
+                transaction.toBuilder().value(tinybar.toByteArray()).build());
 
         persistEthereumTransactions(transactions);
 
@@ -104,27 +101,26 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
     }
 
     private List<EthereumTransaction> findAllEthereumTransactions() {
-        return jdbcTemplate.query("select * from ethereum_transaction",
-                (rs, index) -> EthereumTransaction.builder()
-                        .consensusTimestamp(rs.getLong("consensus_timestamp"))
-                        .data(rs.getBytes("data"))
-                        .gasLimit(rs.getLong("gas_limit"))
-                        .hash(rs.getBytes("hash"))
-                        .maxGasAllowance(rs.getLong("max_gas_allowance"))
-                        .nonce(rs.getLong("nonce"))
-                        .payerAccountId(rs.getLong("payer_account_id"))
-                        .signatureR(rs.getBytes("signature_r"))
-                        .signatureS(rs.getBytes("signature_s"))
-                        .type(rs.getInt("type"))
-                        .value(rs.getBytes("value"))
-                        .build());
+        return jdbcTemplate.query("select * from ethereum_transaction", (rs, index) -> EthereumTransaction.builder()
+                .consensusTimestamp(rs.getLong("consensus_timestamp"))
+                .data(rs.getBytes("data"))
+                .gasLimit(rs.getLong("gas_limit"))
+                .hash(rs.getBytes("hash"))
+                .maxGasAllowance(rs.getLong("max_gas_allowance"))
+                .nonce(rs.getLong("nonce"))
+                .payerAccountId(rs.getLong("payer_account_id"))
+                .signatureR(rs.getBytes("signature_r"))
+                .signatureS(rs.getBytes("signature_s"))
+                .type(rs.getInt("type"))
+                .value(rs.getBytes("value"))
+                .build());
     }
 
     private void persistEthereumTransactions(List<EthereumTransaction> transactions) {
         jdbcTemplate.batchUpdate(
-                "insert into ethereum_transaction (consensus_timestamp, data, gas_limit, hash, max_gas_allowance, " +
-                        "nonce, payer_account_id, signature_r, signature_s, type, value) " +
-                        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "insert into ethereum_transaction (consensus_timestamp, data, gas_limit, hash, max_gas_allowance, "
+                        + "nonce, payer_account_id, signature_r, signature_s, type, value) "
+                        + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 transactions,
                 transactions.size(),
                 (ps, transaction) -> {
@@ -139,8 +135,7 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
                     ps.setBytes(9, transaction.getSignatureS());
                     ps.setShort(10, transaction.getType().shortValue());
                     ps.setBytes(11, transaction.getValue());
-                }
-        );
+                });
     }
 
     private byte[] toWeibar(BigInteger value) {

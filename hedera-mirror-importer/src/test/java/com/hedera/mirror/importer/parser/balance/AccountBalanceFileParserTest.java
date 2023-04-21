@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,12 @@ package com.hedera.mirror.importer.parser.balance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.balance;
 
 import static com.hedera.mirror.importer.migration.ErrataMigrationTest.BAD_TIMESTAMP1;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
@@ -41,6 +28,14 @@ import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountBalanceFileParserTest extends IntegrationTest {
@@ -172,8 +167,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         }
     }
 
-    void assertAccountBalanceFileWhenSkipped(AccountBalanceFile accountBalanceFile,
-                                             List<AccountBalance> accountBalances) {
+    void assertAccountBalanceFileWhenSkipped(
+            AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
         assertThat(accountBalanceFile.getBytes()).isNotNull();
         assertThat(accountBalanceFile.getItems().collectList().block()).containsExactlyElementsOf(accountBalances);
         assertThat(accountBalanceRepository.count()).isZero();
@@ -192,20 +187,24 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
-        return accountBalanceFileBuilder.accountBalanceFile(timestamp)
-                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+        return accountBalanceFileBuilder
+                .accountBalanceFile(timestamp)
+                .accountBalance(accountBalanceBuilder
+                        .accountBalance(timestamp)
                         .accountId(1000L)
                         .balance(1000L)
                         .tokenBalance(1, 10000L)
                         .tokenBalance(1, 10000L) // duplicate token balance rows should be filtered by parser
                         .build())
-                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+                .accountBalance(accountBalanceBuilder
+                        .accountBalance(timestamp)
                         .accountId(2000L)
                         .balance(2000L)
                         .tokenBalance(2, 20000L)
                         .tokenBalance(2, 20000L)
                         .build())
-                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+                .accountBalance(accountBalanceBuilder
+                        .accountBalance(timestamp)
                         .accountId(3000L)
                         .balance(3000L)
                         .tokenBalance(3, 30000L)

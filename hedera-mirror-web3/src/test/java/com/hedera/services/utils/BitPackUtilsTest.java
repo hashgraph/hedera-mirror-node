@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package com.hedera.services.utils;
 
-import org.junit.jupiter.api.Test;
-import java.time.Instant;
-
 import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -30,6 +27,9 @@ import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociations
 import static com.hedera.services.utils.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.utils.BitPackUtils.unsignedHighOrder32From;
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
 
 class BitPackUtilsTest {
     private final int maxAutoAssociations = 123;

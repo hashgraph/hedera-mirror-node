@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.signature;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.reader.signature;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.signature;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +22,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import java.io.IOException;
 import java.security.SecureRandom;
 import lombok.SneakyThrows;
@@ -34,9 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @ExtendWith(MockitoExtension.class)
 class CompositeSignatureFileReaderTest {
@@ -56,8 +51,8 @@ class CompositeSignatureFileReaderTest {
 
     @BeforeEach
     void setUp() {
-        compositeBalanceFileReader = new CompositeSignatureFileReader(signatureFileReaderV2, signatureFileReaderV5,
-                protoSignatureFileReader);
+        compositeBalanceFileReader = new CompositeSignatureFileReader(
+                signatureFileReaderV2, signatureFileReaderV5, protoSignatureFileReader);
     }
 
     @Test
@@ -98,8 +93,7 @@ class CompositeSignatureFileReaderTest {
         });
         assertAll(
                 () -> assertTrue(exception.getMessage().contains("Error reading signature file")),
-                () -> assertTrue(exception.getCause() instanceof IOException)
-        );
+                () -> assertTrue(exception.getCause() instanceof IOException));
     }
 
     @Test
@@ -107,8 +101,8 @@ class CompositeSignatureFileReaderTest {
         byte invalidVersionNumber = 12;
         var signatureFileBytes = getSignatureFileBytes(invalidVersionNumber);
         var invalidFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
-        var exception = assertThrows(SignatureFileParsingException.class,
-                () -> compositeBalanceFileReader.read(invalidFileData));
+        var exception = assertThrows(
+                SignatureFileParsingException.class, () -> compositeBalanceFileReader.read(invalidFileData));
         assertTrue(exception.getMessage().contains("Unsupported signature file version: " + invalidVersionNumber));
     }
 

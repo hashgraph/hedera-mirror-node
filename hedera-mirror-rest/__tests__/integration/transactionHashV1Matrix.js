@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,16 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {isV2Schema} from '../testutils.js';
 
-const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash_sharded set payer_account_id = null');
-const putHashInOldTable = async () => pool.queryQuietly(
-  `with deleted as (DELETE from transaction_hash_sharded RETURNING *)
+const nullifyPayerAccountId = async () =>
+  pool.queryQuietly('update transaction_hash_sharded set payer_account_id = null');
+const putHashInOldTable = async () =>
+  pool.queryQuietly(
+    `with deleted as (DELETE from transaction_hash_sharded RETURNING *)
                     INSERT into transaction_hash_old(consensus_timestamp, hash, payer_account_id)
-                       SELECT consensus_timestamp, hash, payer_account_id from deleted`);
+                       SELECT consensus_timestamp, hash, payer_account_id from deleted`
+  );
 
 const applyMatrix = (spec) => {
   if (isV2Schema()) {
@@ -40,7 +39,7 @@ const applyMatrix = (spec) => {
   nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId;
 
   const transactionHashOldSpec = {...spec};
-  transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`
+  transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`;
   transactionHashOldSpec.postSetup = putHashInOldTable;
 
   return [defaultSpec, transactionHashOldSpec, nullPayerAccountIdSpec];

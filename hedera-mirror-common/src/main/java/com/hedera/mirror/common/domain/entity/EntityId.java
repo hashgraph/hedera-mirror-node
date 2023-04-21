@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,15 @@ package com.hedera.mirror.common.domain.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.converter.EntityTypeSerializer;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -39,8 +36,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.common.converter.EntityTypeSerializer;
-
 /**
  * Common encapsulation for accountID, fileID, contractID, topicID and tokenID.
  * <p>
@@ -53,8 +48,8 @@ import com.hedera.mirror.common.converter.EntityTypeSerializer;
 public class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityType.ACCOUNT);
-    private static final Comparator<EntityId> COMPARATOR = Comparator
-            .nullsFirst(Comparator.comparingLong(EntityId::getId));
+    private static final Comparator<EntityId> COMPARATOR =
+            Comparator.nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
     private static final long serialVersionUID = 1427649605832330197L;
@@ -63,9 +58,11 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     @JsonIgnore
     @EqualsAndHashCode.Include
     private final Long id;
+
     private final Long shardNum;
     private final Long realmNum;
     private final Long entityNum;
+
     @JsonSerialize(using = EntityTypeSerializer.class)
     private final EntityType type;
 
@@ -85,8 +82,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(ContractID contractID) {
-        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(),
-                EntityType.CONTRACT);
+        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(), EntityType.CONTRACT);
     }
 
     public static EntityId of(FileID fileID) {
@@ -102,8 +98,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(ScheduleID scheduleID) {
-        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID
-                .getScheduleNum(), EntityType.SCHEDULE);
+        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum(), EntityType.SCHEDULE);
     }
 
     public static EntityId of(String entityId, EntityType type) {

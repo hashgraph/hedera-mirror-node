@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,23 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.Owner;
-
 @Named
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
-    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL = """
+    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
+            """
             begin;
 
             create temp table token_allowance_temp (
@@ -94,8 +90,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public SyntheticTokenAllowanceOwnerMigration(@Owner JdbcTemplate jdbcTemplate,
-                                                 MirrorProperties mirrorProperties) {
+    public SyntheticTokenAllowanceOwnerMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
     }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.exception;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,15 @@ package com.hedera.mirror.web3.exception;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.web3.exception;
+
+import com.hedera.mirror.web3.evm.exception.EvmException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import org.apache.tuweni.bytes.Bytes;
-
-import com.hedera.mirror.web3.evm.exception.EvmException;
 
 @SuppressWarnings("java:S110")
 public class InvalidTransactionException extends EvmException {

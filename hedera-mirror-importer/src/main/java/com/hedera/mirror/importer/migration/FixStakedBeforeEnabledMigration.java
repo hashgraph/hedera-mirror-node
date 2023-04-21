@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,13 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.util.Utility;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -29,19 +27,16 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.util.Utility;
-
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
     static final Map<MirrorProperties.HederaNetwork, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
             MirrorProperties.HederaNetwork.MAINNET, 1658419200981687000L,
-            MirrorProperties.HederaNetwork.TESTNET, 1656691197976341207L
-    );
+            MirrorProperties.HederaNetwork.TESTNET, 1656691197976341207L);
 
-    private static final String MIGRATION_SQL = """
+    private static final String MIGRATION_SQL =
+            """
             --- The migration fixes the staking settings for accounts started to stake to a node before 0.27.x release.
             with last_26_file as (
               select index from record_file where consensus_end = :consensusEnd

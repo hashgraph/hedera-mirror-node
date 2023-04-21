@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,14 @@ package com.hedera.mirror.grpc.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.domain;
+
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.grpc.repository.EntityRepository;
+import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -38,10 +37,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.grpc.repository.EntityRepository;
-import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Log4j2
 @Named("grpcDomainBuilder")
@@ -61,8 +56,7 @@ public class DomainBuilder {
     }
 
     public Mono<Entity> entity() {
-        return entity(e -> {
-        });
+        return entity(e -> {});
     }
 
     public Mono<Entity> entity(Consumer<Entity.EntityBuilder> customizer) {
@@ -80,8 +74,7 @@ public class DomainBuilder {
     }
 
     public Mono<TopicMessage> topicMessage() {
-        return topicMessage(t -> {
-        });
+        return topicMessage(t -> {});
     }
 
     /**
@@ -97,11 +90,13 @@ public class DomainBuilder {
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .initialTransactionId(TransactionID.newBuilder()
                         .setAccountID(AccountID.newBuilder().setAccountNum(10).build())
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+                        .setTransactionValidStart(Timestamp.newBuilder()
+                                .setSeconds(now.getEpochSecond())
                                 .setNanos(now.getNano()))
                         .setNonce(0)
                         .setScheduled(false)
-                        .build().toByteArray())
+                        .build()
+                        .toByteArray())
                 .message(new byte[] {0, 1, 2})
                 .payerAccountId(10L)
                 .runningHash(new byte[] {3, 4, 5})
@@ -124,8 +119,7 @@ public class DomainBuilder {
     }
 
     private Mono<Entity> insert(Entity entity) {
-        return Mono.defer(() -> Mono.just(entityRepository.save(entity)))
-                .doOnNext(t -> log.trace("Inserted: {}", t));
+        return Mono.defer(() -> Mono.just(entityRepository.save(entity))).doOnNext(t -> log.trace("Inserted: {}", t));
     }
 
     private Mono<TopicMessage> insert(TopicMessage topicMessage) {

@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.mapper;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,17 @@ package com.hedera.mirror.graphql.mapper;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.mapper;
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.graphql.viewmodel.EntityId;
+import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -39,10 +38,6 @@ import org.apache.logging.log4j.Logger;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
 import org.springframework.util.CollectionUtils;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.graphql.viewmodel.EntityId;
-import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
@@ -123,8 +118,7 @@ public interface CommonMapper {
             case RSA_3072 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getRSA3072())));
             case THRESHOLDKEY -> Map.of(
                     THRESHOLD, key.getThresholdKey().getThreshold(),
-                    KEYS, mapKeyList(key.getThresholdKey().getKeys())
-            );
+                    KEYS, mapKeyList(key.getThresholdKey().getKeys()));
             default -> null;
         };
     }
