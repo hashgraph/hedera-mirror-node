@@ -75,13 +75,4 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress()))
                 .isEmpty();
     }
-
-    @Test
-    void findByMaxId() {
-        domainBuilder.entity().customize(e -> e.id(1L)).persist();
-        domainBuilder.entity().customize(e -> e.id(3L)).persist();
-        domainBuilder.entity().customize(e -> e.id(2L)).persist();
-
-        assertThat(entityRepository.findMaxId()).isEqualTo(3L);
-    }
 }

@@ -22,7 +22,6 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.ContractID;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
@@ -32,32 +31,17 @@ import java.util.concurrent.atomic.AtomicLong;
 @Named
 @RequiredArgsConstructor
 public class EntityAddressSequencer {
-    private final EntityRepository entityRepository;
-    private final AtomicLong latestEntityId = new AtomicLong();
+    private final AtomicLong entityIds = new AtomicLong(1_000_000_000);
 
     public ContractID getNewContractId(Address sponsor) {
-        final var nextId = getNextEntityId();
-        latestEntityId.set(nextId);
-
         final var newContractSponsor = accountIdFromEvmAddress(sponsor.toArrayUnsafe());
         return ContractID.newBuilder()
                 .setRealmNum(newContractSponsor.getRealmNum())
                 .setShardNum(newContractSponsor.getShardNum())
-                .setContractNum(nextId)
+                .setContractNum(getNextEntityId())
                 .build();
     }
-
     private long getNextEntityId() {
-        final var currentMaxIdFromDB = loadLatestFromRepository();
-
-        if(currentMaxIdFromDB > latestEntityId.get()) {
-            latestEntityId.set(currentMaxIdFromDB);
-        }
-
-        return latestEntityId.addAndGet(1L);
-    }
-
-    private long loadLatestFromRepository() {
-        return entityRepository.findMaxId();
+        return entityIds.getAndIncrement();
     }
 }
