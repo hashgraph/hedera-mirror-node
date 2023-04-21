@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.79.0-beta1'
+      version: '0.79.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -72,9 +72,6 @@ spec:
         target:
           namespace: integration
     traefik:
-      resources:
-        limits:
-          memory: 2000Mi
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod"} } }'
