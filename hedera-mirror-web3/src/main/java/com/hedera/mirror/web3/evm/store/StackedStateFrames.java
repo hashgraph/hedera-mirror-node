@@ -63,7 +63,7 @@ public class StackedStateFrames<K> {
         }
 
         // TODO: probably takes the database connection thing/abstraction as a parameter and saves it away;
-        // alternatively, maybe that's hidden inside the GroundTruthAccessors.
+        // alternatively, maybe that's hidden inside the DatabaseAccessors.
         final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
         stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), valueClasses);
         // Initial state is just the R/O cache on top of the database.  You really need to do a
