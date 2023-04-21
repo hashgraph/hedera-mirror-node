@@ -22,11 +22,8 @@ import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.services.store.models.Id;
@@ -86,26 +83,11 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(grpc.getTokenNum());
     }
 
-    public static @NonNull EntityNum fromTopicId(@NonNull final TopicID grpc) {
-        Objects.requireNonNull(grpc);
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getTopicNum());
-    }
-
     public static EntityNum fromContractId(final ContractID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getContractNum());
-    }
-
-    public static EntityNum fromScheduleId(final ScheduleID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getScheduleNum());
     }
 
     public int intValue() {
