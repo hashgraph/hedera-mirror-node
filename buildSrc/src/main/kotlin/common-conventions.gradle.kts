@@ -84,6 +84,7 @@ spotless {
         licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
         prettier()
             .npmExecutable(npmExecutable)
+            .npmInstallCache(Paths.get("${rootProject.rootDir}", ".gradle", "spotless"))
             .config(
                 mapOf(
                     "bracketSpacing" to false,
@@ -92,7 +93,7 @@ spotless {
                 )
             )
         target("**/*.js")
-        targetExclude("**/node_modules/**")
+        targetExclude("**/node_modules/**", "**/__tests__/integration/*.test.js")
     })
     java {
         addStep(StripOldLicenseFormatterStep.create())
