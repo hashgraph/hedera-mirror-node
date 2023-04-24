@@ -18,6 +18,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.EnumSet;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.hedera.services.fees.calculation.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
@@ -27,11 +33,6 @@ import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.util.UtilOpsUsage;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
-
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.EnumSet;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 @Singleton
 public class AccessorBasedUsages {
@@ -65,7 +66,6 @@ public class AccessorBasedUsages {
     private final UtilOpsUsage utilOpsUsage;
 
     private final OpUsageCtxHelper opUsageCtxHelper;
-    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public AccessorBasedUsages(
@@ -74,15 +74,14 @@ public class AccessorBasedUsages {
             CryptoOpsUsage cryptoOpsUsage,
             OpUsageCtxHelper opUsageCtxHelper,
             ConsensusOpsUsage consensusOpsUsage,
-            UtilOpsUsage utilOpsUsage,
-            GlobalDynamicProperties dynamicProperties) {
+            UtilOpsUsage utilOpsUsage
+    ) {
         this.fileOpsUsage = fileOpsUsage;
         this.tokenOpsUsage = tokenOpsUsage;
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.opUsageCtxHelper = opUsageCtxHelper;
         this.consensusOpsUsage = consensusOpsUsage;
         this.utilOpsUsage = utilOpsUsage;
-        this.dynamicProperties = dynamicProperties;
     }
 
     public void assess(SigUsage sigUsage, TxnAccessor accessor, UsageAccumulator into) {
@@ -150,7 +149,7 @@ public class AccessorBasedUsages {
     private void estimateCryptoTransfer(
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var xferMeta = accessor.availXferUsageMeta();
-        xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
+        xferMeta.setTokenMultiplier(Integer.class.cast("fees.tokenTransferUsageMultiplier"));
         cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
     }
 
@@ -239,5 +238,4 @@ public class AccessorBasedUsages {
         final var prngMeta = accessor.getSpanMapAccessor().getUtilPrngMeta(accessor);
         utilOpsUsage.prngUsage(sigUsage, baseMeta, prngMeta, into);
     }
-
 }

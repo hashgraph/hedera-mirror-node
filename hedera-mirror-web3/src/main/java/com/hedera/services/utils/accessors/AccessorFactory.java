@@ -1,11 +1,6 @@
 package com.hedera.services.utils.accessors;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -13,11 +8,8 @@ import javax.inject.Inject;
 
 public class AccessorFactory {
 
-    private final EvmProperties dynamicProperties;
-
     @Inject
-    public AccessorFactory(final EvmProperties dynamicProperties) {
-        this.dynamicProperties = dynamicProperties;
+    public AccessorFactory() {
     }
 
     public TxnAccessor nonTriggeredTxn(final byte[] transactionBytes) throws InvalidProtocolBufferException {
@@ -44,8 +36,8 @@ public class AccessorFactory {
     }
 
     /**
-     * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle
-     * the transaction's logical operation.
+     * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle the transaction's
+     * logical operation.
      *
      * @param transaction the gRPC transaction
      * @return a specialized accessor
@@ -57,11 +49,6 @@ public class AccessorFactory {
 
     private SignedTxnAccessor internalSpecializedConstruction(
             final byte[] transactionBytes, final Transaction transaction) throws InvalidProtocolBufferException {
-        final var body = extractTransactionBody(transaction);
-        final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
-        if (function == TokenAccountWipe) {
-            return new TokenWipeAccessor(transactionBytes, transaction, dynamicProperties);
-        }
         return SignedTxnAccessor.from(transactionBytes, transaction);
     }
 
@@ -72,5 +59,4 @@ public class AccessorFactory {
             throw new IllegalArgumentException("Not a valid signed transaction");
         }
     }
-
 }

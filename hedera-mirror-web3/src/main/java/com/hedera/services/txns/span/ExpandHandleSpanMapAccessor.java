@@ -15,6 +15,10 @@ import com.hedera.services.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 
+import com.hedera.services.utils.ethereum.EthTxData;
+
+import com.hedera.services.utils.ethereum.EthTxSigs;
+
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import javax.inject.Inject;
@@ -51,14 +55,6 @@ public class ExpandHandleSpanMapAccessor {
 
     public FeeScheduleUpdateMeta getFeeScheduleUpdateMeta(final TxnAccessor accessor) {
         return (FeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
-    }
-
-    public void setImpliedTransfers(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
-        accessor.getSpanMap().put(IMPLIED_TRANSFERS_KEY, impliedTransfers);
-    }
-
-    public ImpliedTransfers getImpliedTransfers(final TxnAccessor accessor) {
-        return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
     }
 
     public void setTokenCreateMeta(final TxnAccessor accessor, final TokenCreateMeta tokenCreateMeta) {
@@ -188,18 +184,6 @@ public class ExpandHandleSpanMapAccessor {
 
     public TransactionBody getEthTxBodyMeta(final TxnAccessor accessor) {
         return (TransactionBody) accessor.getSpanMap().get(ETH_TX_BODY_META_KEY);
-    }
-
-    public void setEthTxExpansion(final TxnAccessor accessor, final EthTxExpansion expansion) {
-        accessor.getSpanMap().put(ETH_TX_EXPANSION_KEY, expansion);
-    }
-
-    public void setEthTxExpansion(final Map<String, Object> spanMap, final EthTxExpansion expansion) {
-        spanMap.put(ETH_TX_EXPANSION_KEY, expansion);
-    }
-
-    public EthTxExpansion getEthTxExpansion(final TxnAccessor accessor) {
-        return (EthTxExpansion) accessor.getSpanMap().get(ETH_TX_EXPANSION_KEY);
     }
 
     public UtilPrngMeta getUtilPrngMeta(final TxnAccessor accessor) {

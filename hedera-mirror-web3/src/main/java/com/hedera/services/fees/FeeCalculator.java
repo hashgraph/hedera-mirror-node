@@ -1,7 +1,9 @@
 package com.hedera.services.fees;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.TxnAccessor;
 
 import com.hederahashgraph.api.proto.java.FeeData;

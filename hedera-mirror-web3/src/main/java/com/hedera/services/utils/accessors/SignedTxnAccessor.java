@@ -25,6 +25,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
@@ -32,9 +33,12 @@ import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
 import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+
+import com.hedera.services.utils.ethereum.EthTxData;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -85,14 +89,12 @@ public class SignedTxnAccessor implements TxnAccessor {
     private BaseTransactionMeta txnUsageMeta;
     private HederaFunctionality function;
     private ResponseCodeEnum expandedSigStatus;
-    private final PubKeyToSigBytes pubKeyToSigBytes;
     private boolean throttleExempt;
     private boolean congestionExempt;
     private boolean usesUnknownFields = false;
 
     private AccountID payer;
     private ScheduleID scheduleRef;
-    private StateView view;
 
     public static SignedTxnAccessor uncheckedFrom(final Transaction validSignedTxn) {
         try {
@@ -137,7 +139,6 @@ public class SignedTxnAccessor implements TxnAccessor {
             sigMap = signedTxn.getSigMap();
             hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
         }
-        pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
         txn = TransactionBody.parseFrom(txnBytes);
         // Note that the SignatureMap was parsed with either the top-level
@@ -166,17 +167,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     public EthTxData opEthTxData() {
         final var hapiTx = txn.getEthereumTransaction();
         return EthTxData.populateEthTxData(unwrapUnsafelyIfPossible(hapiTx.getEthereumData()));
-    }
-
-    @Override
-    public void countImplicitCreationsWith(final AliasManager aliasManager) {
-        final var resolver = new AliasResolver();
-        if (txn.hasEthereumTransaction()) {
-            resolver.perceiveEthTxn(getSpanMapAccessor().getEthTxDataMeta(this), aliasManager);
-        } else {
-            resolver.resolve(txn.getCryptoTransfer(), aliasManager);
-        }
-        numImplicitCreations = resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
 
     @Override
@@ -227,9 +217,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         return expandedSigStatus;
     }
 
-    public PubKeyToSigBytes getPkToSigsFn() {
-        return pubKeyToSigBytes;
-    }
 
     @Override
     public Transaction getSignedTxnWrapper() {
@@ -342,10 +329,8 @@ public class SignedTxnAccessor implements TxnAccessor {
                 .add("xferUsageMeta", xferUsageMeta)
                 .add("txnUsageMeta", txnUsageMeta)
                 .add("function", function)
-                .add("pubKeyToSigBytes", pubKeyToSigBytes)
                 .add("payer", payer)
                 .add("scheduleRef", scheduleRef)
-                .add("view", view)
                 .toString();
     }
 
@@ -406,22 +391,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     public long getGasLimitForContractTx() {
         return MiscUtils.getGasLimitForContractTx(
                 getTxn(), getFunction(), () -> getSpanMapAccessor().getEthTxDataMeta(this));
-    }
-
-    @Override
-    public void setStateView(final StateView view) {
-        this.view = view;
-    }
-
-    protected EntityNum lookUpAlias(final ByteString alias) {
-        return view.aliases().get(alias);
-    }
-
-    protected EntityNum unaliased(final AccountID idOrAlias) {
-        if (isAlias(idOrAlias)) {
-            return lookUpAlias(idOrAlias.getAlias());
-        }
-        return EntityNum.fromAccountId(idOrAlias);
     }
 
     private void setBaseUsageMeta() {
@@ -576,10 +545,4 @@ public class SignedTxnAccessor implements TxnAccessor {
         }
         return SubType.DEFAULT;
     }
-
-    @Override
-    public StateView getStateView() {
-        return view;
-    }
-
 }

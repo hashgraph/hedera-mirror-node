@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.BasicHbarCentExchange;
 
 import com.hedera.services.fees.FeeCalculator;

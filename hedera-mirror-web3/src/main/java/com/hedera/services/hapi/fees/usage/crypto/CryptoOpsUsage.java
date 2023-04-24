@@ -23,6 +23,8 @@ import com.hedera.services.hapi.fees.usage.QueryUsage;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 
+import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
+
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;

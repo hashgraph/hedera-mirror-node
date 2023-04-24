@@ -1,7 +1,11 @@
 package com.hedera.services.fees.calculation;
 
+import static com.hedera.services.fees.calculation.utils.PricedUsageCalculator.numSimpleKeys;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
+
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.jproto.JKey;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -19,6 +23,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -101,7 +106,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
      */
     public FeeObject computeFromQueryResourceUsage(
             final FeeData queryUsage, final FeeData usagePrices, final Timestamp at) {
-        return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
+        return getFeeObject(usagePrices, queryUsage, exchange.rate(at), 1L);
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
@@ -182,6 +187,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
+                // TODO
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
                 return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
@@ -205,6 +211,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         final var sigUsage = accessor.usageGiven(numPayerKeys);
         return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());
     }
+
 
     private TxnResourceUsageEstimator getTxnUsageEstimator(TxnAccessor accessor) {
         var txn = accessor.getTxn();

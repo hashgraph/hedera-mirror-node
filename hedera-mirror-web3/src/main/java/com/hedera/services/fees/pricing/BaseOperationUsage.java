@@ -10,6 +10,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 
+import com.hedera.services.fees.calculation.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
@@ -27,6 +29,7 @@ import com.hedera.services.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.services.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
 
+import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
 import com.hedera.services.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.hapi.fees.usage.util.UtilOpsUsage;

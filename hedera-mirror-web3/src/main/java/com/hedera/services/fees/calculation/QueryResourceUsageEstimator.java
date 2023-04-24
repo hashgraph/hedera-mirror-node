@@ -1,5 +1,7 @@
 package com.hedera.services.fees.calculation;
 
+import com.hedera.services.context.primitives.StateView;
+
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;

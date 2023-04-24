@@ -1,5 +1,15 @@
 package com.hedera.services.utils.accessors;
 
+import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+
+import com.hedera.services.hapi.fees.usage.SigUsage;
+
+import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+
+import com.hedera.services.utils.ethereum.EthTxData;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -99,7 +109,7 @@ public interface TxnAccessor {
 
     boolean areImplicitCreationsCounted();
 
-    void countImplicitCreationsWith(final AliasManager aliasManager);
+    //void countImplicitCreationsWith(final AliasManager aliasManager); TODO
 
     // Used only for EthereumTransaction
     EthTxData opEthTxData();
@@ -136,8 +146,8 @@ public interface TxnAccessor {
         throw new UnsupportedOperationException();
     }
 
-    void setStateView(StateView view);
+    //void setStateView(StateView view);
 
-    StateView getStateView();
+    //StateView getStateView();
 
 }

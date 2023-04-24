@@ -11,13 +11,6 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.getAccountKeyStorag
 import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 
 import com.google.common.annotations.VisibleForTesting;
-
-import com.hedera.services.hapi.fees.usage.EstimatorFactory;
-
-import com.hedera.services.hapi.fees.usage.QueryUsage;
-import com.hedera.services.hapi.fees.usage.SigUsage;
-import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
-
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -25,6 +18,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
+import com.hedera.services.hapi.fees.usage.QueryUsage;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 
 @Singleton
 public class ScheduleOpsUsage {
