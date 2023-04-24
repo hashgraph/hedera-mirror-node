@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,32 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish;
 
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
+import com.hedera.hashgraph.sdk.proto.Query;
+import com.hedera.hashgraph.sdk.proto.Response;
+import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.hashgraph.sdk.proto.ResponseHeader;
+import com.hedera.hashgraph.sdk.proto.Transaction;
+import com.hedera.hashgraph.sdk.proto.TransactionGetReceiptResponse;
+import com.hedera.hashgraph.sdk.proto.TransactionGetRecordResponse;
+import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.TransactionRecord;
+import com.hedera.hashgraph.sdk.proto.TransactionResponse;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.OperatorProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -49,24 +62,6 @@ import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.TransferTransaction;
-import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
-import com.hedera.hashgraph.sdk.proto.Query;
-import com.hedera.hashgraph.sdk.proto.Response;
-import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
-import com.hedera.hashgraph.sdk.proto.ResponseHeader;
-import com.hedera.hashgraph.sdk.proto.Transaction;
-import com.hedera.hashgraph.sdk.proto.TransactionGetReceiptResponse;
-import com.hedera.hashgraph.sdk.proto.TransactionGetRecordResponse;
-import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.TransactionRecord;
-import com.hedera.hashgraph.sdk.proto.TransactionResponse;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.OperatorProperties;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @CustomLog
 @ExtendWith(MockitoExtension.class)
@@ -125,7 +120,8 @@ class TransactionPublisherTest {
         PublishRequest request = request().build();
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r)
@@ -146,7 +142,8 @@ class TransactionPublisherTest {
         publishScenarioProperties.setLogResponse(true);
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -159,11 +156,14 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().receipt(true).build())
+        transactionPublisher
+                .publish(request().receipt(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNull();
+                    assertThat(r)
+                            .extracting(PublishResponse::getTransactionRecord)
+                            .isNull();
                     return true;
                 })
                 .expectComplete()
@@ -176,11 +176,14 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQuery(Mono.just(record(SUCCESS)));
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().sendRecord(true).build())
+        transactionPublisher
+                .publish(request().sendRecord(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNotNull();
+                    assertThat(r)
+                            .extracting(PublishResponse::getTransactionRecord)
+                            .isNotNull();
                     return true;
                 })
                 .expectComplete()
@@ -193,7 +196,8 @@ class TransactionPublisherTest {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
         cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -204,10 +208,12 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishRetrySuccessful() {
-        cryptoServiceStub.addTransaction(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)))
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)))
                 .addTransaction(Mono.just(response(ResponseCodeEnum.OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -218,10 +224,12 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)))
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(errorResponseCode)))
                 .addTransaction(Mono.just(response(errorResponseCode)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -235,11 +243,13 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishRetrySameRequest() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)))
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(errorResponseCode)))
                 .addTransaction(Mono.just(response(errorResponseCode)));
 
         var request = request().build();
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -249,7 +259,8 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(2L));
 
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -262,7 +273,8 @@ class TransactionPublisherTest {
         publishScenarioProperties.setTimeout(Duration.ofMillis(100L));
         cryptoServiceStub.addTransaction(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -277,9 +289,11 @@ class TransactionPublisherTest {
         PublishRequest request = request().build();
         when(nodeSupplier.get()).thenThrow(new IllegalArgumentException("No valid nodes"));
 
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertThat(t).isInstanceOf(PublishException.class)
+                .expectErrorSatisfies(t -> assertThat(t)
+                        .isInstanceOf(PublishException.class)
                         .hasCauseInstanceOf(IllegalArgumentException.class))
                 .verify(Duration.ofSeconds(1L));
     }
@@ -289,7 +303,8 @@ class TransactionPublisherTest {
     void closeWhenDisabled() {
         publishProperties.setEnabled(false);
         transactionPublisher.close();
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(0L)
                 .expectComplete()
@@ -310,21 +325,22 @@ class TransactionPublisherTest {
     }
 
     private Response receipt(ResponseCodeEnum responseCode) {
-        ResponseHeader responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK)
-                .build();
+        ResponseHeader responseHeader =
+                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
         return Response.newBuilder()
                 .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
                         .setHeader(responseHeader)
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
+                        .setReceipt(TransactionReceipt.newBuilder()
+                                .setStatus(responseCode)
+                                .build())
                         .build())
                 .build();
     }
 
     private Response record(ResponseCodeEnum responseCode) {
-        ResponseHeader.Builder responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK);
-        TransactionReceipt.Builder transactionReceipt = TransactionReceipt.newBuilder().setStatus(responseCode);
+        ResponseHeader.Builder responseHeader = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK);
+        TransactionReceipt.Builder transactionReceipt =
+                TransactionReceipt.newBuilder().setStatus(responseCode);
         return Response.newBuilder()
                 .setTransactionGetRecord(TransactionGetRecordResponse.newBuilder()
                         .setHeader(responseHeader)

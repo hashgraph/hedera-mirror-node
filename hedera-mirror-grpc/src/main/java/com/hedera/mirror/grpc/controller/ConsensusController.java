@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,9 @@ package com.hedera.mirror.grpc.controller;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Timestamp;
-import java.time.Instant;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import net.devh.boot.grpc.server.service.GrpcService;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+package com.hedera.mirror.grpc.controller;
 
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
@@ -37,6 +25,13 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.devh.boot.grpc.server.service.GrpcService;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * GRPC calls their protocol adapter layer a service, but most of the industry calls this layer the controller layer.
@@ -60,8 +55,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
-        var filter = TopicMessageFilter.builder()
-                .limit(query.getLimit());
+        var filter = TopicMessageFilter.builder().limit(query.getLimit());
 
         if (query.hasTopicID()) {
             filter.topicId(EntityId.of(query.getTopicID()));
@@ -76,8 +70,10 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
             Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-            filter.endTime(endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ?
-                    InstantToLongConverter.LONG_MAX_INSTANT : endInstant);
+            filter.endTime(
+                    endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT)
+                            ? InstantToLongConverter.LONG_MAX_INSTANT
+                            : endInstant);
         }
 
         return filter.build();

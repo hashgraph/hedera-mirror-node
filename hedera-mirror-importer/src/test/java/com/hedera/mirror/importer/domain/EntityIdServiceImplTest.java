@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
@@ -26,6 +22,11 @@ import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import lombok.RequiredArgsConstructor;
@@ -34,20 +35,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.EntityRepository;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityIdServiceImplTest extends IntegrationTest {
 
     // in the form 'shard.realm.num'
     private static final byte[] PARSABLE_EVM_ADDRESS = new byte[] {
-            0, 0, 0, 0, // shard
-            0, 0, 0, 0, 0, 0, 0, 0, // realm
-            0, 0, 0, 0, 0, 0, 0, 100, // num
+        0, 0, 0, 0, // shard
+        0, 0, 0, 0, 0, 0, 0, 0, // realm
+        0, 0, 0, 0, 0, 0, 0, 100, // num
     };
 
     private final EntityRepository entityRepository;
@@ -55,7 +50,10 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void cache() {
-        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).persist();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).type(CONTRACT))
+                .persist();
         ContractID contractId = getProtoContractId(contract);
         EntityId expected = contract.toEntityId();
 
@@ -125,9 +123,11 @@ class EntityIdServiceImplTest extends IntegrationTest {
         AccountID nullAccountId = null;
         AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
         AccountID accountIdInvalid = AccountID.newBuilder().setRealmNum(1).build();
-        Entity accountDeleted = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        Entity accountDeleted =
+                domainBuilder.entity().customize(e -> e.deleted(true)).persist();
 
-        var entityId = entityIdService.lookup(nullAccountId,
+        var entityId = entityIdService.lookup(
+                nullAccountId,
                 AccountID.getDefaultInstance(),
                 getProtoAccountId(accountDeleted),
                 accountIdInvalid,
@@ -161,26 +161,37 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void lookupContractEvmAddress() {
-        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).persist();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).type(CONTRACT))
+                .persist();
         assertThat(entityIdService.lookup(getProtoContractId(contract))).hasValue(contract.toEntityId());
     }
 
     @Test
     void lookupContractEvmAddressSpecific() {
-        var contractId = ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS)).build();
+        var contractId = ContractID.newBuilder()
+                .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
+                .build();
         assertThat(entityIdService.lookup(contractId)).hasValue(EntityId.of(100, CONTRACT));
     }
 
     @Test
     void lookupContractEvmAddressNoMatch() {
-        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).type(CONTRACT))
+                .get();
         var contractId = getProtoContractId(contract);
         assertThat(entityIdService.lookup(contractId)).isEmpty();
     }
 
     @Test
     void lookupContractEvmAddressDeleted() {
-        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT)).persist();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).deleted(true).type(CONTRACT))
+                .persist();
         var contractId = getProtoContractId(contract);
         assertThat(entityIdService.lookup(contractId)).isEmpty();
     }
@@ -210,10 +221,13 @@ class EntityIdServiceImplTest extends IntegrationTest {
         ContractID nullContractId = null;
         ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
         ContractID contractIdInvalid = ContractID.newBuilder().setRealmNum(1).build();
-        Entity contractDeleted = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT))
+        Entity contractDeleted = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).deleted(true).type(CONTRACT))
                 .persist();
 
-        var entityId = entityIdService.lookup(nullContractId,
+        var entityId = entityIdService.lookup(
+                nullContractId,
                 ContractID.getDefaultInstance(),
                 getProtoContractId(contractDeleted),
                 contractIdInvalid,
@@ -232,8 +246,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void lookupContractsEntityIdNotFound() {
-        Entity contract1 = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
-        Entity contract2 = domainBuilder.entity().customize(c -> c.alias(null).evmAddress(null).type(CONTRACT)).get();
+        Entity contract1 = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).type(CONTRACT))
+                .get();
+        Entity contract2 = domainBuilder
+                .entity()
+                .customize(c -> c.alias(null).evmAddress(null).type(CONTRACT))
+                .get();
         var contractId1 = getProtoContractId(contract1);
         var contractId2 = getProtoContractId(contract2);
         assertThat(entityIdService.lookup(contractId1, contractId2)).hasValue(contract2.toEntityId());
@@ -242,7 +262,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
     void storeAccount(Boolean deleted) {
-        Entity account = domainBuilder.entity().customize(e -> e.deleted(deleted)).get();
+        Entity account =
+                domainBuilder.entity().customize(e -> e.deleted(deleted)).get();
         entityIdService.notify(account);
         assertThat(entityIdService.lookup(getProtoAccountId(account))).hasValue(account.toEntityId());
     }
@@ -258,14 +279,20 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
     void storeContract(Boolean deleted) {
-        Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(deleted).type(CONTRACT)).get();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(c -> c.alias(null).deleted(deleted).type(CONTRACT))
+                .get();
         entityIdService.notify(contract);
         assertThat(entityIdService.lookup(getProtoContractId(contract))).hasValue(contract.toEntityId());
     }
 
     @Test
     void storeContractDeleted() {
-        Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(true).type(CONTRACT)).get();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(c -> c.alias(null).deleted(true).type(CONTRACT))
+                .get();
         entityIdService.notify(contract);
         var contractId = getProtoContractId(contract);
         assertThat(entityIdService.lookup(contractId)).isEmpty();
@@ -278,8 +305,12 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void unknownEntityType() {
-        Entity contract = domainBuilder.entity()
-                .customize(c -> c.alias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS).toByteArray()).type(UNKNOWN)).get();
+        Entity contract = domainBuilder
+                .entity()
+                .customize(
+                        c -> c.alias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS).toByteArray())
+                                .type(UNKNOWN))
+                .get();
         entityIdService.notify(contract);
         var contractId = getProtoContractId(contract);
         assertThat(entityIdService.lookup(contractId)).isEmpty();
@@ -294,9 +325,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     private AccountID getProtoAccountId(Entity account) {
-        var accountId = AccountID.newBuilder()
-                .setShardNum(account.getShard())
-                .setRealmNum(account.getRealm());
+        var accountId = AccountID.newBuilder().setShardNum(account.getShard()).setRealmNum(account.getRealm());
         if (account.getAlias() == null) {
             accountId.setAccountNum(account.getNum());
         } else {
@@ -306,9 +335,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     private ContractID getProtoContractId(Entity contract) {
-        var contractId = ContractID.newBuilder()
-                .setShardNum(contract.getShard())
-                .setRealmNum(contract.getRealm());
+        var contractId =
+                ContractID.newBuilder().setShardNum(contract.getShard()).setRealmNum(contract.getRealm());
         if (contract.getEvmAddress() == null) {
             contractId.setContractNum(contract.getNum());
         } else {

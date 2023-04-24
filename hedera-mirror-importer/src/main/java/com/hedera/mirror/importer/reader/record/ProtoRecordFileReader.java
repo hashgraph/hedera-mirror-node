@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,24 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.record;
 
 import static java.lang.String.format;
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
+import com.hedera.services.stream.proto.HashAlgorithm;
+import com.hedera.services.stream.proto.RecordStreamFile;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -39,18 +46,6 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.SidecarFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.services.stream.proto.HashAlgorithm;
-import com.hedera.services.stream.proto.RecordStreamFile;
 
 @Log4j2
 @Named
@@ -70,8 +65,12 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var startHashAlgorithm = startObjectRunningHash.getAlgorithm();
             var endHashAlgorithm = endObjectRunningHash.getAlgorithm();
             if (!startHashAlgorithm.equals(endHashAlgorithm)) {
-                log.warn("{} has mismatch start object running hash algorithm {} and end object running" +
-                        "hash algorithm {}", filename, startHashAlgorithm, endHashAlgorithm);
+                log.warn(
+                        "{} has mismatch start object running hash algorithm {} and end object running"
+                                + "hash algorithm {}",
+                        filename,
+                        startHashAlgorithm,
+                        endHashAlgorithm);
             }
 
             var bytes = streamFileData.getBytes();
@@ -129,8 +128,10 @@ public class ProtoRecordFileReader implements RecordFileReader {
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElseThrow(() -> {
-                    var message = format("%s has unsupported start running object hash algorithm %s and " +
-                            "end running object hash algorithm %s", filename, start, end);
+                    var message = format(
+                            "%s has unsupported start running object hash algorithm %s and "
+                                    + "end running object hash algorithm %s",
+                            filename, start, end);
                     return new InvalidStreamFileException(message);
                 });
     }
@@ -142,7 +143,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
 
     private String getMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile) throws IOException {
         try (var digestOutputStream = new DigestOutputStream(NULL_OUTPUT_STREAM, createMessageDigest(algorithm));
-             var dataOutputStream = new DataOutputStream(digestOutputStream)) {
+                var dataOutputStream = new DataOutputStream(digestOutputStream)) {
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
             dataOutputStream.writeInt(VERSION);
             dataOutputStream.writeInt(hapiProtoVersion.getMajor());
@@ -156,13 +157,14 @@ public class ProtoRecordFileReader implements RecordFileReader {
         }
     }
 
-    private List<SidecarFile> getSidecars(long consensusEnd, RecordStreamFile recordStreamFile,
-                                          StreamFilename recordStreamFilename) {
+    private List<SidecarFile> getSidecars(
+            long consensusEnd, RecordStreamFile recordStreamFile, StreamFilename recordStreamFilename) {
         try {
             return recordStreamFile.getSidecarsList().stream()
                     .map(sidecar -> SidecarFile.builder()
                             .consensusEnd(consensusEnd)
-                            .hashAlgorithm(DigestAlgorithm.valueOf(sidecar.getHash().getAlgorithm().toString()))
+                            .hashAlgorithm(DigestAlgorithm.valueOf(
+                                    sidecar.getHash().getAlgorithm().toString()))
                             .hash(DomainUtils.toBytes(sidecar.getHash().getHash()))
                             .index(sidecar.getId())
                             .name(recordStreamFilename.getSidecarFilename(sidecar.getId()))
@@ -182,8 +184,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
         }
 
         var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
-        var hapiVersion = new Version(hapiProtoVersion.getMajor(), hapiProtoVersion.getMinor(),
-                hapiProtoVersion.getPatch());
+        var hapiVersion =
+                new Version(hapiProtoVersion.getMajor(), hapiProtoVersion.getMinor(), hapiProtoVersion.getPatch());
         var items = new ArrayList<RecordItem>(count);
         RecordItem previousItem = null;
         for (var recordStreamItem : recordStreamFile.getRecordStreamItemsList()) {
@@ -205,8 +207,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
         try (var dataInputStream = new DataInputStream(inputStream)) {
             int version = dataInputStream.readInt();
             if (version != VERSION) {
-                throw new InvalidStreamFileException(format("Expected file %s with version %d, got %d.", filename,
-                        VERSION, version));
+                throw new InvalidStreamFileException(
+                        format("Expected file %s with version %d, got %d.", filename, VERSION, version));
             }
 
             return RecordStreamFile.parseFrom(dataInputStream);

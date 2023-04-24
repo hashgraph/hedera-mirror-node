@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,12 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.test.e2e.acceptance.config;
+
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -32,9 +30,6 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 
 @Named
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")

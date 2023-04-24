@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,19 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.importer.migration.ContractResultMigration.MigrationContractLog;
 import static com.hedera.mirror.importer.migration.ContractResultMigration.MigrationContractResult;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -39,11 +39,6 @@ import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -121,11 +116,12 @@ class ContractResultMigrationTest extends IntegrationTest {
                 .returns(functionResult.getContractCallResult().toByteArray(), MigrationContractResult::getCallResult)
                 .returns(functionResult.getContractID().getContractNum(), MigrationContractResult::getContractId)
                 .returns(functionResult.getErrorMessage(), MigrationContractResult::getErrorMessage)
-                .returns(functionResult.getCreatedContractIDsList()
-                        .stream()
-                        .map(EntityId::of)
-                        .map(EntityId::getId)
-                        .toArray(Long[]::new), MigrationContractResult::getCreatedContractIds);
+                .returns(
+                        functionResult.getCreatedContractIDsList().stream()
+                                .map(EntityId::of)
+                                .map(EntityId::getId)
+                                .toArray(Long[]::new),
+                        MigrationContractResult::getCreatedContractIds);
     }
 
     @SuppressWarnings("deprecation")
@@ -151,8 +147,8 @@ class ContractResultMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenEmptyTopic() throws Exception {
         ContractFunctionResult.Builder functionResult = contractFunctionResult();
-        functionResult.setLogInfo(0, functionResult.getLogInfoBuilder(0).clearTopic()
-                .addTopic(ByteString.copyFrom(new byte[0])));
+        functionResult.setLogInfo(
+                0, functionResult.getLogInfoBuilder(0).clearTopic().addTopic(ByteString.copyFrom(new byte[0])));
         MigrationContractResult contractResult = contractResult(functionResult);
         insert(contractResult);
 
@@ -182,13 +178,15 @@ class ContractResultMigrationTest extends IntegrationTest {
     @SuppressWarnings("deprecation")
     private ContractFunctionResult.Builder contractFunctionResult() {
         long contractNum = ++id;
-        ContractID contractID = ContractID.newBuilder().setContractNum(contractNum).build();
+        ContractID contractID =
+                ContractID.newBuilder().setContractNum(contractNum).build();
 
         return ContractFunctionResult.newBuilder()
                 .setBloom(ByteString.copyFrom(new byte[] {0, 1}))
                 .setContractCallResult(ByteString.copyFrom(new byte[] {2, 3}))
                 .setContractID(contractID)
-                .addCreatedContractIDs(ContractID.newBuilder().setContractNum(contractNum + 1).build())
+                .addCreatedContractIDs(
+                        ContractID.newBuilder().setContractNum(contractNum + 1).build())
                 .setErrorMessage("")
                 .setGasUsed(100L)
                 .addLogInfo(ContractLoginfo.newBuilder()
@@ -204,10 +202,10 @@ class ContractResultMigrationTest extends IntegrationTest {
 
     private void insert(MigrationContractResult cr) {
         jdbcOperations.update(c -> {
-            PreparedStatement preparedStatement = c.prepareStatement("insert into contract_result " +
-                    "(bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message, " +
-                    "function_parameters, function_result, gas_limit, gas_used) " +
-                    "values (?, ?, ?, ?, ?, ?, ?, ?, 100, 100)");
+            PreparedStatement preparedStatement = c.prepareStatement("insert into contract_result "
+                    + "(bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message, "
+                    + "function_parameters, function_result, gas_limit, gas_used) "
+                    + "values (?, ?, ?, ?, ?, ?, ?, ?, 100, 100)");
             preparedStatement.setBytes(1, cr.getBloom());
             preparedStatement.setBytes(2, cr.getCallResult());
             preparedStatement.setLong(3, cr.getConsensusTimestamp());

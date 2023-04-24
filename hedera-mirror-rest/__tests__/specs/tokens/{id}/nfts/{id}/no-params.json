@@ -67,7 +67,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts/2", "/api/v1/tokens/0.1500/nfts/2", "/api/v1/tokens/0.0.1500/nfts/2"],
+  "urls": [
+    "/api/v1/tokens/1500/nfts/2",
+    "/api/v1/tokens/0.1500/nfts/2",
+    "/api/v1/tokens/0.0.1500/nfts/2"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "account_id": "0.0.2001",

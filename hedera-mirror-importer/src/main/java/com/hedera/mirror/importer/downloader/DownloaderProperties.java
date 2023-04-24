@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,14 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.nio.file.Path;
-import java.time.Duration;
+package com.hedera.mirror.importer.downloader;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
+import java.nio.file.Path;
+import java.time.Duration;
 
 public interface DownloaderProperties {
 

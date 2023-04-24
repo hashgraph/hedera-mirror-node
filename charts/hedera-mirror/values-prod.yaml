@@ -50,6 +50,9 @@ importer:
   prometheusRules:
     enabled: true
   replicas: 1
+  resources:
+    requests:
+      cpu: 2
 
 monitor:
   alertmanager:

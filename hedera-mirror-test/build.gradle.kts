@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 description = "Hedera Mirror Node Test"
 
-plugins {
-    id("java-conventions")
-}
+plugins { id("java-conventions") }
 
 dependencies {
     implementation(platform("io.cucumber:cucumber-bom"))
@@ -36,7 +30,8 @@ dependencies {
     testImplementation("io.cucumber:cucumber-junit-platform-engine")
     testImplementation("io.cucumber:cucumber-spring")
     testImplementation("io.grpc:grpc-okhttp")
-    testImplementation(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+    testImplementation(
+        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("javax.inject:javax.inject")
     testImplementation("org.apache.commons:commons-lang3")
     testImplementation("org.awaitility:awaitility")
@@ -49,20 +44,20 @@ dependencies {
     testImplementation("commons-codec:commons-codec")
 }
 
-// Disable the default test task and only run acceptance tests during the standalone "acceptance" task
-tasks.named("test") {
-    enabled = false
-}
+// Disable the default test task and only run acceptance tests during the standalone "acceptance"
+// task
+tasks.named("test") { enabled = false }
 
 tasks.register<Test>("acceptance") {
     val maxParallelism = project.property("maxParallelism") as String
     jvmArgs = listOf("-Xmx1024m", "-Xms1024m")
     maxParallelForks =
-        if (maxParallelism.isNotBlank()) maxParallelism.toInt()!! else Runtime.getRuntime().availableProcessors()
+        if (maxParallelism.isNotBlank()) maxParallelism.toInt()!!
+        else Runtime.getRuntime().availableProcessors()
     useJUnitPlatform {}
 
     // Copy relevant system properties to the forked test process
-    System.getProperties().filter { it.key.toString().matches(Regex("^(cucumber|hedera|spring)\\..*")) }.forEach {
-        systemProperty(it.key.toString(), it.value)
-    }
+    System.getProperties()
+        .filter { it.key.toString().matches(Regex("^(cucumber|hedera|spring)\\..*")) }
+        .forEach { systemProperty(it.key.toString(), it.value) }
 }

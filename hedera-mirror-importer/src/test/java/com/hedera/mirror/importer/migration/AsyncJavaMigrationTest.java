@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,17 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.db.DBProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,10 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
-
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.db.DBProperties;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -67,12 +62,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {
-            ", -1",
-            "-1, -2",
-            "1, 1",
-            "2, -1"
-    })
+    @CsvSource(value = {", -1", "-1, -2", "1, 1", "2, -1"})
     void getChecksum(Integer existing, Integer expected) {
         addMigrationHistory(new MigrationHistory(existing, ELAPSED, 1000));
         var migration = new TestAsyncJavaMigration(false, 0, 1);
@@ -132,7 +122,8 @@ class AsyncJavaMigrationTest extends IntegrationTest {
                 .addValue("description", TEST_MIGRATION_DESCRIPTION)
                 .addValue("script", script)
                 .addValue("checksum", migrationHistory.getChecksum());
-        var sql = """
+        var sql =
+                """
                 insert into flyway_schema_history (installed_rank, description, type, script, checksum,
                 installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script,
                 :checksum, 20, 100, true)
@@ -141,13 +132,16 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationHistory> getAllMigrationHistory() {
-        return jdbcTemplate2.query("select installed_rank, checksum, execution_time from flyway_schema_history where " +
-                "script = :script order by installed_rank asc", Map.of("script", script), (rs, rowNum) -> {
-            Integer checksum = rs.getInt("checksum");
-            int executionTime = rs.getInt("execution_time");
-            int installedRank = rs.getInt("installed_rank");
-            return new MigrationHistory(checksum, executionTime, installedRank);
-        });
+        return jdbcTemplate2.query(
+                "select installed_rank, checksum, execution_time from flyway_schema_history where "
+                        + "script = :script order by installed_rank asc",
+                Map.of("script", script),
+                (rs, rowNum) -> {
+                    Integer checksum = rs.getInt("checksum");
+                    int executionTime = rs.getInt("execution_time");
+                    int installedRank = rs.getInt("installed_rank");
+                    return new MigrationHistory(checksum, executionTime, installedRank);
+                });
     }
 
     private void migrateSync(AsyncJavaMigration<?> migration) throws Exception {

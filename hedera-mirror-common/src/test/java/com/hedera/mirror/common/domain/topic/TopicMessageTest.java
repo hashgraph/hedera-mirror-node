@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.topic;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.common.domain.topic;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 
 class TopicMessageTest {
 
@@ -50,7 +45,8 @@ class TopicMessageTest {
         topicMessage.setValidStartTimestamp(1594401416000000000L);
 
         TransactionID transactionID = TransactionID.newBuilder()
-                .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10))
+                .setAccountID(
+                        AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10))
                 .setTransactionValidStart(Timestamp.newBuilder().setSeconds(20).setNanos(20))
                 .setNonce(1)
                 .setScheduled(true)
@@ -59,18 +55,18 @@ class TopicMessageTest {
 
         ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         String json = objectMapper.writeValueAsString(topicMessage);
-        assertThat(json).isEqualTo("{" +
-                "\"@type\":\"TopicMessage\"," +
-                "\"chunk_num\":1," +
-                "\"chunk_total\":2," +
-                "\"consensus_timestamp\":1594401417000000000," +
-                "\"initial_transaction_id\":\"CgQIFBAUEgIYChgBIAE=\"," +
-                "\"message\":\"AQID\"," +
-                "\"payer_account_id\":4294968296," +
-                "\"running_hash\":\"BAUG\"," +
-                "\"running_hash_version\":2," +
-                "\"sequence_number\":1," +
-                "\"topic_id\":1001," +
-                "\"valid_start_timestamp\":1594401416000000000}");
+        assertThat(json)
+                .isEqualTo("{" + "\"@type\":\"TopicMessage\","
+                        + "\"chunk_num\":1,"
+                        + "\"chunk_total\":2,"
+                        + "\"consensus_timestamp\":1594401417000000000,"
+                        + "\"initial_transaction_id\":\"CgQIFBAUEgIYChgBIAE=\","
+                        + "\"message\":\"AQID\","
+                        + "\"payer_account_id\":4294968296,"
+                        + "\"running_hash\":\"BAUG\","
+                        + "\"running_hash_version\":2,"
+                        + "\"sequence_number\":1,"
+                        + "\"topic_id\":1001,"
+                        + "\"valid_start_timestamp\":1594401416000000000}");
     }
 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.scalar;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.graphql.scalar;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.scalar;
 
 import static graphql.scalars.util.Kit.typeName;
 
@@ -35,8 +31,8 @@ public class GraphQlDuration implements Coercing<Duration, String> {
 
     public static final GraphQLScalarType INSTANCE = GraphQLScalarType.newScalar()
             .name("Duration")
-            .description("An ISO 8601 compatible duration with support for nanoseconds granularity in the format " +
-                    "P[n]Y[n]M[n]DT[n]H[n]M[n]S.")
+            .description("An ISO 8601 compatible duration with support for nanoseconds granularity in the format "
+                    + "P[n]Y[n]M[n]DT[n]H[n]M[n]S.")
             .coercing(new GraphQlDuration())
             .build();
 

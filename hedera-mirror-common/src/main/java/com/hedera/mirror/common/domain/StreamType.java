@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,14 @@ package com.hedera.mirror.common.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.common.domain;
+
 import com.google.common.collect.ImmutableSortedSet;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
@@ -31,14 +30,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.event.EventFile;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-
 @Getter
 public enum StreamType {
-
-    BALANCE(AccountBalanceFile::new, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
+    BALANCE(
+            AccountBalanceFile::new,
+            "accountBalances",
+            "balance",
+            "_Balances",
+            List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
     EVENT(EventFile::new, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
     RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
@@ -56,8 +55,13 @@ public enum StreamType {
     private final Supplier<? extends StreamFile<?>> supplier;
     private final Duration fileCloseInterval;
 
-    StreamType(Supplier<? extends StreamFile<?>> supplier, String path, String nodePrefix, String suffix,
-               List<String> extensions, Duration fileCloseInterval) {
+    StreamType(
+            Supplier<? extends StreamFile<?>> supplier,
+            String path,
+            String nodePrefix,
+            String suffix,
+            List<String> extensions,
+            Duration fileCloseInterval) {
         this.supplier = supplier;
         this.path = path;
         this.nodePrefix = nodePrefix;
@@ -67,8 +71,7 @@ public enum StreamType {
         dataExtensions = IntStream.range(0, extensions.size())
                 .mapToObj(index -> Extension.of(extensions.get(index), index))
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-        signatureExtensions = dataExtensions
-                .stream()
+        signatureExtensions = dataExtensions.stream()
                 .map(ext -> Extension.of(ext.getName() + SIGNATURE_SUFFIX, ext.getPriority()))
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
@@ -95,6 +98,7 @@ public enum StreamType {
         private static final Comparator<Extension> COMPARATOR = Comparator.comparing(Extension::getPriority);
 
         String name;
+
         @EqualsAndHashCode.Exclude
         int priority; // starting from 0, larger value means higher priority
 

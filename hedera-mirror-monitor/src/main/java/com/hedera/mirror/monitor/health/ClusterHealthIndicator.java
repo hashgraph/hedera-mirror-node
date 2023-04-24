@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.health;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,13 @@ package com.hedera.mirror.monitor.health;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.health;
+
+import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.Scenario;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -27,10 +26,6 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import reactor.core.publisher.Mono;
-
-import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
-import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.Scenario;
 
 @Named
 @RequiredArgsConstructor
@@ -58,7 +53,8 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
 
     // Returns unknown if all publish scenarios aggregated rate has dropped to zero, otherwise returns an empty flux
     private Mono<Health> publishing() {
-        return transactionGenerator.scenarios()
+        return transactionGenerator
+                .scenarios()
                 .map(Scenario::getRate)
                 .reduce(0.0, (c, n) -> c + n)
                 .filter(sum -> sum <= 0)
@@ -67,7 +63,8 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
 
     // Returns up if any subscription is running and its rate is above zero, otherwise returns down
     private Mono<Health> subscribing() {
-        return mirrorSubscriber.getSubscriptions()
+        return mirrorSubscriber
+                .getSubscriptions()
                 .map(Scenario::getRate)
                 .reduce(0.0, (cur, next) -> cur + next)
                 .filter(sum -> sum > 0)

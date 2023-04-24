@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {getResponseLimit} from '../config';
@@ -875,7 +871,12 @@ describe('token formatTokenInfoRow tests', () => {
 });
 
 const verifyInvalidAndValidTokensFilters = (invalidQueries, validQueries, validator) => {
-  const acceptedParameters = new Set([constants.filterKeys.ACCOUNT_ID, constants.filterKeys.TIMESTAMP, constants.filterKeys.SERIAL_NUMBER, constants.filterKeys.TOKEN_TYPE]);
+  const acceptedParameters = new Set([
+    constants.filterKeys.ACCOUNT_ID,
+    constants.filterKeys.TIMESTAMP,
+    constants.filterKeys.SERIAL_NUMBER,
+    constants.filterKeys.TOKEN_TYPE,
+  ]);
 
   invalidQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for invalid ${JSON.stringify(query)}`, () => {

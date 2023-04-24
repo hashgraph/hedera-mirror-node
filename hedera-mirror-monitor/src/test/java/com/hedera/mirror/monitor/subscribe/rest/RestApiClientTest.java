@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.rest;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.subscribe.rest;
 
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.times;
@@ -26,6 +22,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.monitor.MirrorNodeProperties;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.rest.model.Links;
+import com.hedera.mirror.rest.model.NetworkNode;
+import com.hedera.mirror.rest.model.NetworkNodesResponse;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.List;
@@ -41,13 +43,6 @@ import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.monitor.MirrorNodeProperties;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.rest.model.Links;
-import com.hedera.mirror.rest.model.NetworkNode;
-import com.hedera.mirror.rest.model.NetworkNodesResponse;
-import com.hedera.mirror.rest.model.TransactionByIdResponse;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class RestApiClientTest {
@@ -77,7 +72,8 @@ class RestApiClientTest {
         NetworkNode networkNode1 = new NetworkNode();
         NetworkNode networkNode2 = new NetworkNode();
         NetworkNode networkNode3 = new NetworkNode();
-        var response1 = new NetworkNodesResponse().links(new Links().next(next + "&node.id=gt:1"))
+        var response1 = new NetworkNodesResponse()
+                .links(new Links().next(next + "&node.id=gt:1"))
                 .nodes(List.of(networkNode1, networkNode2));
         var response2 = new NetworkNodesResponse().links(new Links()).nodes(List.of(networkNode3));
 
@@ -97,8 +93,7 @@ class RestApiClientTest {
     @Test
     void getNodesEmpty() {
         var response = new NetworkNodesResponse().links(new Links()).nodes(List.of());
-        when(exchangeFunction.exchange(isA(ClientRequest.class)))
-                .thenReturn(response(response));
+        when(exchangeFunction.exchange(isA(ClientRequest.class))).thenReturn(response(response));
 
         StepVerifier.withVirtualTime(() -> restApiClient.getNodes())
                 .thenAwait(WAIT)
@@ -111,10 +106,10 @@ class RestApiClientTest {
     @Test
     void retrieve() {
         var response = new TransactionByIdResponse();
-        when(exchangeFunction.exchange(isA(ClientRequest.class)))
-                .thenReturn(response(response));
+        when(exchangeFunction.exchange(isA(ClientRequest.class))).thenReturn(response(response));
 
-        StepVerifier.withVirtualTime(() -> restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
+        StepVerifier.withVirtualTime(() ->
+                        restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
                 .thenAwait(WAIT)
                 .expectNext(response)
                 .expectComplete()
@@ -126,7 +121,8 @@ class RestApiClientTest {
     @Test
     void retrieveConnectError() {
         restApiClient = new RestApiClient(monitorProperties, WebClient.builder());
-        StepVerifier.withVirtualTime(() -> restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
+        StepVerifier.withVirtualTime(() ->
+                        restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
                 .thenAwait(WAIT)
                 .expectErrorMatches(t -> t.getCause() instanceof ConnectException)
                 .verify(WAIT);

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,18 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
 import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
 
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -30,12 +31,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.exception.FileOperationException;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -71,7 +66,8 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     private File getDirectory(ConsensusNode node, StreamFilename streamFilename) {
         var streamType = streamFilename.getStreamType();
-        var path = commonDownloaderProperties.getMirrorProperties()
+        var path = commonDownloaderProperties
+                .getMirrorProperties()
                 .getDataPath()
                 .resolve(STREAMS)
                 .resolve(streamType.getPath())

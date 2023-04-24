@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.redis;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity.redis;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
@@ -26,13 +22,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -40,13 +41,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.topic.StreamMessage;
-import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 @ExtendWith(MockitoExtension.class)
 class RedisEntityListenerTest {
@@ -86,7 +80,7 @@ class RedisEntityListenerTest {
             return null;
         });
 
-        //then
+        // then
         StepVerifier redisVerifier = sink.asFlux()
                 .subscribeOn(Schedulers.parallel())
                 .as(StepVerifier::create)
@@ -94,7 +88,8 @@ class RedisEntityListenerTest {
                 .thenCancel()
                 .verifyLater();
 
-        publisher.publishOn(Schedulers.parallel())
+        publisher
+                .publishOn(Schedulers.parallel())
                 .as(StepVerifier::create)
                 .expectNextCount(publishCount)
                 .expectComplete()
@@ -110,11 +105,10 @@ class RedisEntityListenerTest {
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
 
-        //submitAndSave two messages, verify publish logic called twice
+        // submitAndSave two messages, verify publish logic called twice
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2))
-                .executePipelined(any(SessionCallback.class));
+        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2)).executePipelined(any(SessionCallback.class));
     }
 
     @Test
@@ -122,14 +116,13 @@ class RedisEntityListenerTest {
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
 
-        //submitAndSave two different messages, then duplicates of each
+        // submitAndSave two different messages, then duplicates of each
         // verify publish was only attempted twice (duplicates are skipped over)
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2))
-                .executePipelined(any(SessionCallback.class));
+        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(2)).executePipelined(any(SessionCallback.class));
     }
 
     @Test
@@ -138,15 +131,14 @@ class RedisEntityListenerTest {
         TopicMessage topicMessage2 = topicMessage();
         TopicMessage topicMessage3 = topicMessage();
 
-        //same as above test, plus one new message at the end
+        // same as above test, plus one new message at the end
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
         submitAndSave(topicMessage3);
         // verify publish was only attempted three times (duplicates are skipped over)
-        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(3))
-                .executePipelined(any(SessionCallback.class));
+        verify(redisOperations, timeout(TIMEOUT.toMillis()).times(3)).executePipelined(any(SessionCallback.class));
     }
 
     protected TopicMessage topicMessage() {

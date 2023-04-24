@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,17 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.reader.record;
+
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
@@ -33,14 +36,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
@@ -56,7 +51,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         String filename = streamFileData.getFilename();
 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
-             ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
+                ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
             byte[] bytes = streamFileData.getBytes();
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(bytes);
@@ -108,8 +103,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest,
-                          RecordFile recordFile) throws IOException {
+    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, RecordFile recordFile)
+            throws IOException {
         int count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;

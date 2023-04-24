@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,19 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.domain.StreamFilename;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
 
 class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
 
@@ -56,8 +51,9 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(10));
         assertThat(Files.walk(dataPath)
-                .filter(p -> p.toString().contains(accountId))
-                .filter(p -> !p.toString().contains("sidecar"))
-                .noneMatch(p -> p.toFile().isFile())).isTrue();
+                        .filter(p -> p.toString().contains(accountId))
+                        .filter(p -> !p.toString().contains("sidecar"))
+                        .noneMatch(p -> p.toFile().isFile()))
+                .isTrue();
     }
 }

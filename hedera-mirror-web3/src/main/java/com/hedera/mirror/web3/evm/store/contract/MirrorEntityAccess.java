@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.store.contract;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.web3.evm.store.contract;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
@@ -26,19 +22,18 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import java.time.Instant;
-import java.util.Optional;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import java.time.Instant;
+import java.util.Optional;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
@@ -70,8 +65,9 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return false;
         }
 
-        return createdTimestamp == null || autoRenewPeriod == null ||
-                (createdTimestamp + autoRenewPeriod) > currentTime;
+        return createdTimestamp == null
+                || autoRenewPeriod == null
+                || (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override
@@ -134,7 +130,9 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return entityIdNumFromEvmAddress(address);
         }
 
-        return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
-                .map(AbstractEntity::getId).orElse(0L);
+        return entityRepository
+                .findByEvmAddressAndDeletedIsFalse(addressBytes)
+                .map(AbstractEntity::getId)
+                .orElse(0L);
     }
 }

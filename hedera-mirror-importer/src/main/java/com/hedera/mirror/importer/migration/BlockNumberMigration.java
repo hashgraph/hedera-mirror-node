@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,31 +12,30 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.Map;
 import javax.inject.Named;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
 @Named
 public class BlockNumberMigration extends RepeatableMigration {
 
     static final Map<HederaNetwork, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
-            MAINNET, Pair.of(1656461547557609267L, 34305852L)
-    );
+            MAINNET, Pair.of(1656461547557609267L, 34305852L));
 
     private final MirrorProperties mirrorProperties;
     private final RecordFileRepository recordFileRepository;
@@ -76,7 +70,8 @@ public class BlockNumberMigration extends RepeatableMigration {
         long correctConsensusEnd = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
 
-        recordFileRepository.findById(correctConsensusEnd)
+        recordFileRepository
+                .findById(correctConsensusEnd)
                 .map(RecordFile::getIndex)
                 .filter(blockNumber -> blockNumber != correctBlockNumber)
                 .ifPresent(blockNumber -> updateIndex(correctBlockNumber, blockNumber));

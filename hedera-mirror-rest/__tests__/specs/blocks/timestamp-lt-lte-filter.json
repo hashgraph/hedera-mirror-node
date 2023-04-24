@@ -52,7 +52,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/blocks?timestamp=lt:1676540001.234700000&timestamp=lte:1676540001.234600000"],
+  "urls": [
+    "/api/v1/blocks?timestamp=lt:1676540001.234700000&timestamp=lte:1676540001.234600000"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "blocks": [

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -45,6 +33,13 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -63,7 +58,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
-        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+        return TransactionReceipt.newBuilder()
+                .setStatus(responseCodeEnum)
                 .setTokenID(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build());
     }
 
@@ -118,8 +114,9 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(customFeeProto.getAllCollectorsAreExempt(), CustomFee::isAllCollectorsAreExempt)
                 .returns(customFeeProto.getFixedFee().getAmount(), CustomFee::getAmount)
                 .returns(EntityId.of(customFeeProto.getFeeCollectorAccountId()), CustomFee::getCollectorAccountId)
-                .returns(EntityId.of(customFeeProto.getFixedFee()
-                        .getDenominatingTokenId()), CustomFee::getDenominatingTokenId)
+                .returns(
+                        EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId()),
+                        CustomFee::getDenominatingTokenId)
                 .returns(null, CustomFee::getMaximumAmount)
                 .returns(0L, CustomFee::getMinimumAmount)
                 .returns(null, CustomFee::getNetOfTransfers)
@@ -143,7 +140,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionMinimal() {
         // Given
-        var recordItem = recordItemBuilder.tokenCreate()
+        var recordItem = recordItemBuilder
+                .tokenCreate()
                 .transactionBody(b -> b.clearCustomFees()
                         .clearFeeScheduleKey()
                         .clearFreezeKey()
@@ -181,7 +179,10 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionNoAutoAssociations() {
         // Given
-        var recordItem = recordItemBuilder.tokenCreate().record(r -> r.clearAutomaticTokenAssociations()).build();
+        var recordItem = recordItemBuilder
+                .tokenCreate()
+                .record(r -> r.clearAutomaticTokenAssociations())
+                .build();
         var transaction = domainBuilder.transaction().get();
         var tokenAccount = ArgumentCaptor.forClass(TokenAccount.class);
         var transactionBody = recordItem.getTransactionBody().getTokenCreation();
@@ -200,7 +201,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(tokenAccount.getAllValues())
                 .asInstanceOf(InstanceOfAssertFactories.list(TokenAccount.class))
                 .extracting(TokenAccount::getAccountId)
-                .containsExactlyInAnyOrder(EntityId.of(customFeeProto.getFeeCollectorAccountId()).getId(),
+                .containsExactlyInAnyOrder(
+                        EntityId.of(customFeeProto.getFeeCollectorAccountId()).getId(),
                         EntityId.of(transactionBody.getTreasury()).getId());
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
@@ -91,25 +92,25 @@ class EntityIdUtilsTest {
     @Test
     void serializesExpectedSolidityAddress() {
         final byte[] shardBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
         };
         final var shard = Ints.fromByteArray(shardBytes);
         final byte[] realmBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
         };
         final var realm = Longs.fromByteArray(realmBytes);
         final byte[] numBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+            (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
         final var num = Longs.fromByteArray(numBytes);
         final byte[] expected = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+            (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
         final var create2AddressBytes = Hex.decode("0102030405060708090a0b0c0d0e0f1011121314");
         final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
@@ -122,6 +123,7 @@ class EntityIdUtilsTest {
         final var actual = asEvmAddress(shard, realm, num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
+        final var typedContract = EntityIdUtils.asTypedEvmAddress(equivContract);
         final var anotherActual = asEvmAddress(equivContract);
         final var create2Actual = asEvmAddress(create2Contract);
 
@@ -129,6 +131,7 @@ class EntityIdUtilsTest {
         assertArrayEquals(expected, anotherActual);
         assertArrayEquals(expected, typedActual.toArray());
         assertArrayEquals(expected, typedToken.toArray());
+        assertArrayEquals(expected, typedContract.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
         assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
         assertEquals(equivContract, contractIdFromEvmAddress(actual));
