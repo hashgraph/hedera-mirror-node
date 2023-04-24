@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,16 @@ package com.hedera.mirror.importer.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileRepositoryTest extends AbstractRepositoryTest {
@@ -67,11 +62,17 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
         var rf3 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
         var rf4 = domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf4.getConsensusEnd() + 1L)).get()
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf4.getConsensusEnd() + 1L))
+                .get()
                 .isEqualTo(rf3);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf3.getConsensusEnd())).get().isEqualTo(rf1);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf2.getConsensusEnd())).get().isEqualTo(rf1);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf1.getConsensusEnd())).isEmpty();
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf3.getConsensusEnd()))
+                .get()
+                .isEqualTo(rf1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf2.getConsensusEnd()))
+                .get()
+                .isEqualTo(rf1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf1.getConsensusEnd()))
+                .isEmpty();
     }
 
     @Test
@@ -82,15 +83,25 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
         var max = Long.MAX_VALUE;
 
         assertThat(recordFileRepository.findNextBetween(0, max)).get().isEqualTo(rf1);
-        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max)).get().isEqualTo(rf2);
-        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max)).get().isEqualTo(rf3);
-        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max)).isEmpty();
+        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max))
+                .get()
+                .isEqualTo(rf2);
+        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max))
+                .get()
+                .isEqualTo(rf3);
+        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max))
+                .isEmpty();
 
         max = rf3.getConsensusEnd();
         assertThat(recordFileRepository.findNextBetween(0, max)).get().isEqualTo(rf1);
-        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max)).get().isEqualTo(rf2);
-        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max)).get().isEqualTo(rf3);
-        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max)).isEmpty();
+        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max))
+                .get()
+                .isEqualTo(rf2);
+        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max))
+                .get()
+                .isEqualTo(rf3);
+        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max))
+                .isEmpty();
     }
 
     @Test

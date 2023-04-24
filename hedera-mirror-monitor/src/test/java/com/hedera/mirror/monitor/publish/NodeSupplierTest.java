@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish;
 
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
@@ -28,6 +24,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
+import com.hedera.hashgraph.sdk.proto.Query;
+import com.hedera.hashgraph.sdk.proto.Response;
+import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.hashgraph.sdk.proto.ResponseHeader;
+import com.hedera.hashgraph.sdk.proto.Transaction;
+import com.hedera.hashgraph.sdk.proto.TransactionGetReceiptResponse;
+import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.TransactionResponse;
+import com.hedera.mirror.monitor.HederaNetwork;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.OperatorProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
+import com.hedera.mirror.rest.model.NetworkNode;
+import com.hedera.mirror.rest.model.ServiceEndpoint;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -50,25 +64,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
-import com.hedera.hashgraph.sdk.proto.Query;
-import com.hedera.hashgraph.sdk.proto.Response;
-import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
-import com.hedera.hashgraph.sdk.proto.ResponseHeader;
-import com.hedera.hashgraph.sdk.proto.Transaction;
-import com.hedera.hashgraph.sdk.proto.TransactionGetReceiptResponse;
-import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.TransactionResponse;
-import com.hedera.mirror.monitor.HederaNetwork;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.OperatorProperties;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
-import com.hedera.mirror.rest.model.NetworkNode;
-import com.hedera.mirror.rest.model.ServiceEndpoint;
 
 @CustomLog
 @ExtendWith(MockitoExtension.class)
@@ -148,7 +143,8 @@ class NodeSupplierTest {
     @Test
     void initWithRetry() {
         monitorProperties.getNodeValidation().setRetryBackoff(Duration.ofMillis(100L));
-        cryptoServiceStub.addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
                 .addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
                 .addTransaction(Mono.just(response(OK)));
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
@@ -291,13 +287,14 @@ class NodeSupplierTest {
     }
 
     private Response receipt(ResponseCodeEnum responseCode) {
-        ResponseHeader responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK)
-                .build();
+        ResponseHeader responseHeader =
+                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
         return Response.newBuilder()
                 .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
                         .setHeader(responseHeader)
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
+                        .setReceipt(TransactionReceipt.newBuilder()
+                                .setStatus(responseCode)
+                                .build())
                         .build())
                 .build();
     }

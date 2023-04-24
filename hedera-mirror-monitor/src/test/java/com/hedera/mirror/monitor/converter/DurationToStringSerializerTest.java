@@ -1,24 +1,20 @@
-package com.hedera.mirror.monitor.converter;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -60,17 +56,17 @@ class DurationToStringSerializerTest {
     @SuppressWarnings("unused")
     private static String[][] testCases() {
         String[][] testCases = {
-                {"0", "0s"},
-                {"1", "1s"},
-                {"60", "1m"},
-                {"61", "1m1s"},
-                {"3600", "1h"},
-                {"3660", "1h1m"},
-                {"3661", "1h1m1s"},
-                {"86400", "1d"},
-                {"90000", "1d1h"},
-                {"90060", "1d1h1m"},
-                {"90061", "1d1h1m1s"}
+            {"0", "0s"},
+            {"1", "1s"},
+            {"60", "1m"},
+            {"61", "1m1s"},
+            {"3600", "1h"},
+            {"3660", "1h1m"},
+            {"3661", "1h1m1s"},
+            {"86400", "1d"},
+            {"90000", "1d1h"},
+            {"90060", "1d1h1m"},
+            {"90061", "1d1h1m1s"}
         };
         return testCases;
     }

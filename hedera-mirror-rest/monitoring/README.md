@@ -11,7 +11,7 @@ It then checks the responses using a few simple checks for those APIs.
 The results of these checks are exposed as a set of REST APIs by this monitoring service as follows:
 
 | API                 | HTTP return code | Description                                                                                                                                          |
-|---------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | /api/v1/status      | 200 (OK)         | Provides a list of results of all tests run on all servers                                                                                           |
 | /api/v1/status/{id} | 200 (OK)         | If all tests pass for a server, then it returns the results                                                                                          |
 |                     | 4xx              | If any tests fail for a server, or if the server is not running, then it returns a 4xx error code to make it easy to integrate with alerting systems |
@@ -29,7 +29,7 @@ A dashboard polls the above-mentioned APIs and displays the results.
 - [ ] List of addresses of Hedera mirror nodes that you want to monitor
 - [ ] An existing topic ID of the target Hedera Mirror node environment if you want to run topic message tests
 - [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the
-  server.
+      server.
 - [ ] npm
 - [ ] PM2
 

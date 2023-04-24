@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.rest;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.subscribe.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeast;
@@ -32,6 +28,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.mirror.monitor.MirrorNodeProperties;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import com.hedera.mirror.monitor.subscribe.Scenario;
+import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,23 +66,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.mirror.monitor.MirrorNodeProperties;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.ScenarioProtocol;
-import com.hedera.mirror.monitor.ScenarioStatus;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.publish.PublishScenario;
-import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-import com.hedera.mirror.monitor.subscribe.Scenario;
-import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
-import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.rest.model.TransactionByIdResponse;
-import com.hedera.mirror.rest.model.TransactionDetail;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class RestSubscriberTest {
@@ -155,7 +150,8 @@ class RestSubscriberTest {
     @Test
     void onPublishWhenPublisherMatches() {
         restSubscriberProperties.setPublishers(Set.of(SCENARIO));
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
@@ -171,7 +167,8 @@ class RestSubscriberTest {
 
     @Test
     void subscribe() {
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         Collection<SubscribeResponse> responses = new ArrayList<>();
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe().doOnNext(responses::add))
@@ -200,7 +197,8 @@ class RestSubscriberTest {
     @Test
     void multipleSubscribers() {
         restSubscriberProperties.setSubscribers(2);
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
@@ -213,7 +211,8 @@ class RestSubscriberTest {
         verify(exchangeFunction, times(4)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
-                .allSatisfy(s -> assertThat(s).isNotNull()
+                .allSatisfy(s -> assertThat(s)
+                        .isNotNull()
                         .returns(2L, Scenario::getCount)
                         .returns(Map.of(), Scenario::getErrors)
                         .returns(restSubscriberProperties, Scenario::getProperties)
@@ -227,7 +226,8 @@ class RestSubscriberTest {
         RestSubscriberProperties restSubscriberProperties2 = new RestSubscriberProperties();
         restSubscriberProperties2.setName("test2");
         subscribeProperties.getRest().put(restSubscriberProperties2.getName(), restSubscriberProperties2);
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
@@ -241,7 +241,8 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
                 .doesNotHaveDuplicates()
-                .allSatisfy(s -> assertThat(s).isNotNull()
+                .allSatisfy(s -> assertThat(s)
+                        .isNotNull()
                         .returns(2L, Scenario::getCount)
                         .returns(Map.of(), Scenario::getErrors))
                 .extracting(Scenario::getName)
@@ -318,7 +319,8 @@ class RestSubscriberTest {
 
     @Test
     void limitReached() {
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
@@ -338,7 +340,8 @@ class RestSubscriberTest {
 
     @Test
     void limitExceeded() {
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK));
 
         StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
@@ -351,9 +354,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.getSubscriptions().blockFirst())
-                .isNotNull()
-                .returns(3L, Scenario::getCount);
+        assertThat(restSubscriber.getSubscriptions().blockFirst()).isNotNull().returns(3L, Scenario::getCount);
     }
 
     @Test
@@ -509,8 +510,8 @@ class RestSubscriberTest {
 
     private Mono<ClientResponse> response(HttpStatus httpStatus) {
         if (!httpStatus.is2xxSuccessful()) {
-            return Mono.defer(() -> Mono
-                    .error(WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)));
+            return Mono.defer(() -> Mono.error(
+                    WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)));
         }
 
         var transaction = new TransactionDetail();

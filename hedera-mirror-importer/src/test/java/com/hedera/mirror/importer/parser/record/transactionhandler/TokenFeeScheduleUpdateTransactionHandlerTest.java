@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FEE_NOT_SET;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
@@ -29,14 +25,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 
 class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -47,8 +42,10 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate()
-                .transactionBody(b -> b.setTokenId(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()))
+        var recordItem = recordItemBuilder
+                .tokenFeeScheduleUpdate()
+                .transactionBody(b -> b.setTokenId(
+                        TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()))
                 .build();
         return TransactionBody.newBuilder()
                 .setTokenFeeScheduleUpdate(recordItem.getTransactionBody().getTokenFeeScheduleUpdate());
@@ -94,7 +91,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionFractionalFee() {
         // Given
-        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate()
+        var recordItem = recordItemBuilder
+                .tokenFeeScheduleUpdate()
                 .transactionBody(b -> b.clearCustomFees().addCustomFees(recordItemBuilder.customFee(FRACTIONAL_FEE)))
                 .build();
         var transaction = domainBuilder.transaction().get();
@@ -128,7 +126,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionRoyaltyFee() {
         // Given
-        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate()
+        var recordItem = recordItemBuilder
+                .tokenFeeScheduleUpdate()
                 .transactionBody(b -> b.clearCustomFees().addCustomFees(recordItemBuilder.customFee(ROYALTY_FEE)))
                 .build();
         var transaction = domainBuilder.transaction().get();
@@ -163,7 +162,10 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionEmpty() {
         // Given
-        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate().transactionBody(b -> b.clearCustomFees()).build();
+        var recordItem = recordItemBuilder
+                .tokenFeeScheduleUpdate()
+                .transactionBody(b -> b.clearCustomFees())
+                .build();
         var transaction = domainBuilder.transaction().get();
         var customFee = ArgumentCaptor.forClass(CustomFee.class);
 
@@ -191,7 +193,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionUnknownFee() {
         // Given
-        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate()
+        var recordItem = recordItemBuilder
+                .tokenFeeScheduleUpdate()
                 .transactionBody(b -> b.clearCustomFees().addCustomFees(recordItemBuilder.customFee(FEE_NOT_SET)))
                 .build();
         var transaction = domainBuilder.transaction().get();

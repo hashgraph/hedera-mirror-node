@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reconciliation;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.reconciliation;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reconciliation;
 
 import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_CRYPTO_TRANSFERS;
 import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_FIFTY_BILLION;
@@ -32,19 +28,6 @@ import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties
 import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties.RemediationStrategy.FAIL;
 import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties.RemediationStrategy.RESET;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.api.ObjectAssert;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
@@ -60,6 +43,18 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ObjectAssert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BalanceReconciliationServiceTest extends IntegrationTest {
@@ -112,8 +107,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconcile();
 
         // then
-        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null)
-                .returns(0L, ReconciliationJob::getCount);
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null).returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -262,8 +256,14 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         // given
         balance(Map.of(2L, FIFTY_BILLION_HBARS));
         transfer(2, 3, 1);
-        domainBuilder.cryptoTransfer().customize(c -> c.amount(100).entityId(4).errata(ErrataType.DELETE)).persist();
-        domainBuilder.cryptoTransfer().customize(c -> c.amount(-100).entityId(2).errata(ErrataType.DELETE)).persist();
+        domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.amount(100).entityId(4).errata(ErrataType.DELETE))
+                .persist();
+        domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.amount(-100).entityId(2).errata(ErrataType.DELETE))
+                .persist();
         var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS - 1L, 3L, 1L)); // Errata rows not present
 
         // when
@@ -345,9 +345,11 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         var balanceFile1 = balance(Map.of(2L, 1L)); // Would fail if checked
         var balanceFile2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
         var balanceFile3 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
-        domainBuilder.reconciliationJob()
+        domainBuilder
+                .reconciliationJob()
                 .customize(r -> r.consensusTimestamp(balanceFile1.getConsensusTimestamp())
-                        .timestampStart(Instant.EPOCH).timestampEnd(Instant.EPOCH.plusSeconds(1)))
+                        .timestampStart(Instant.EPOCH)
+                        .timestampEnd(Instant.EPOCH.plusSeconds(1)))
                 .persist();
         reconciliationProperties.setStartDate(Instant.ofEpochSecond(0L, balanceFile2.getConsensusTimestamp()));
 
@@ -379,7 +381,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         // given
         balance(Map.of(2L, FIFTY_BILLION_HBARS));
         domainBuilder.cryptoTransfer().customize(c -> c.amount(100).entityId(3)).persist();
-        var missingTransfer = domainBuilder.cryptoTransfer().customize(c -> c.amount(-100).entityId(2));
+        var missingTransfer =
+                domainBuilder.cryptoTransfer().customize(c -> c.amount(-100).entityId(2));
         var last = balance(Map.of(2L, FIFTY_BILLION_HBARS - 100, 3L, 100L));
 
         // when
@@ -411,8 +414,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
                 .isEqualTo((double) status.ordinal());
     }
 
-    private ObjectAssert<ReconciliationJob> assertReconciliationJob(ReconciliationStatus status,
-                                                                    AccountBalanceFile accountBalanceFile) {
+    private ObjectAssert<ReconciliationJob> assertReconciliationJob(
+            ReconciliationStatus status, AccountBalanceFile accountBalanceFile) {
         assertMetric(status);
 
         var consensusTimestamp = accountBalanceFile != null ? accountBalanceFile.getConsensusTimestamp() : 0L;
@@ -441,7 +444,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         balances.forEach((accountId, balance) -> {
             var entityId = EntityId.of(accountId, EntityType.ACCOUNT);
-            domainBuilder.accountBalance()
+            domainBuilder
+                    .accountBalance()
                     .customize(a -> a.balance(balance).id(new AccountBalance.Id(timestamp, entityId)))
                     .persist();
         });
@@ -457,7 +461,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         balances.forEach((id, balance) -> {
             var accountId = EntityId.of(id.getAccountId(), EntityType.ACCOUNT);
             var tokenId = EntityId.of(id.getTokenId(), EntityType.TOKEN);
-            domainBuilder.tokenBalance()
+            domainBuilder
+                    .tokenBalance()
                     .customize(a -> a.balance(balance).id(new TokenBalance.Id(timestamp, accountId, tokenId)))
                     .persist();
         });
@@ -466,15 +471,22 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
     }
 
     private void transfer(long from, long to, long amount) {
-        domainBuilder.cryptoTransfer().customize(c -> c.amount(amount).entityId(to)).persist();
-        domainBuilder.cryptoTransfer().customize(c -> c.amount(-amount).entityId(from)).persist();
+        domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.amount(amount).entityId(to))
+                .persist();
+        domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.amount(-amount).entityId(from))
+                .persist();
     }
 
     private void tokenTransfer(long accountNum, long tokenNum, long amount) {
         long timestamp = domainBuilder.timestamp();
         EntityId accountId = EntityId.of(accountNum, EntityType.ACCOUNT);
         EntityId tokenId = EntityId.of(tokenNum, EntityType.TOKEN);
-        domainBuilder.tokenTransfer()
+        domainBuilder
+                .tokenTransfer()
                 .customize(c -> c.amount(amount).id(new TokenTransfer.Id(timestamp, tokenId, accountId)))
                 .persist();
     }

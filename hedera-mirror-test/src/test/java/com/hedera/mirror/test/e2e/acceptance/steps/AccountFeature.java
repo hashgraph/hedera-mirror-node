@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.steps;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,12 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-
-import io.cucumber.java.AfterAll;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-import java.util.Comparator;
-import java.util.List;
-import lombok.CustomLog;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -46,6 +30,17 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import io.cucumber.java.AfterAll;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import java.util.Comparator;
+import java.util.List;
+import lombok.CustomLog;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 
 @CustomLog
 @Data
@@ -76,21 +71,20 @@ public class AccountFeature extends AbstractFeature {
 
     @Given("I send {long} tℏ to {string}")
     public void treasuryDisbursement(long amount, String accountName) {
-        senderAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
 
         startingBalance = accountClient.getBalance(senderAccountId);
 
-        networkTransactionResponse = accountClient
-                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I send {long} tℏ to {string} alias not present in the network")
     public void createAccountOnTransferForAlias(long amount, String keyType) {
-        var recipientPrivateKey = "ED25519".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() :
-                PrivateKey.generateECDSA();
+        var recipientPrivateKey =
+                "ED25519".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() : PrivateKey.generateECDSA();
 
         receiverAccountId = recipientPrivateKey.toAccountId(0, 0);
         networkTransactionResponse = accountClient.sendCryptoTransfer(receiverAccountId, Hbar.fromTinybars(amount));
@@ -102,7 +96,8 @@ public class AccountFeature extends AbstractFeature {
     @Then("the transfer auto creates a new account with balance of transferred amount {long} tℏ")
     public void verifyAccountCreated(long amount) {
         var accountInfo = mirrorClient.getAccountDetailsUsingAlias(receiverAccountId);
-        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
+        var transactions = mirrorClient
+                .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
                 .getTransactions()
                 .stream()
                 .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
@@ -124,8 +119,8 @@ public class AccountFeature extends AbstractFeature {
     @When("I send {long} tℏ to newly created account")
     public void sendTinyHbars(long amount) {
         startingBalance = accountClient.getBalance(senderAccountId);
-        networkTransactionResponse = accountClient
-                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -134,8 +129,8 @@ public class AccountFeature extends AbstractFeature {
     public void sendTinyHbars(long amount, int accountNum) {
         senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
         startingBalance = accountClient.getBalance(senderAccountId);
-        networkTransactionResponse = accountClient
-                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -144,8 +139,8 @@ public class AccountFeature extends AbstractFeature {
     public void sendHbars(int amount, int accountNum) {
         senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
         startingBalance = accountClient.getBalance(senderAccountId);
-        networkTransactionResponse = accountClient
-                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.from(amount));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.from(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -157,14 +152,12 @@ public class AccountFeature extends AbstractFeature {
 
     @When("{string} transfers {long} tℏ from their approved balance to {string}")
     public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
-        senderAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
         receiverAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName)).getAccountId();
-        networkTransactionResponse = accountClient.sendApprovedCryptoTransfer(
-                senderAccountId,
-                receiverAccountId,
-                Hbar.fromTinybars(amount));
+                .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName))
+                .getAccountId();
+        networkTransactionResponse =
+                accountClient.sendApprovedCryptoTransfer(senderAccountId, receiverAccountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -196,7 +189,7 @@ public class AccountFeature extends AbstractFeature {
 
         assertThat(mirrorTransaction.getTransfers()).hasSizeGreaterThanOrEqualTo(2); // Minimal fee transfers
 
-        //verify transfer credit and debits balance out
+        // verify transfer credit and debits balance out
         long transferSum = 0;
         for (MirrorTransfer cryptoTransfer : mirrorTransaction.getTransfers()) {
             transferSum += cryptoTransfer.getAmount();

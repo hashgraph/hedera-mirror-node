@@ -1,24 +1,20 @@
-package com.hedera.mirror.monitor.publish.generator;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
@@ -28,27 +24,24 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import com.hedera.mirror.monitor.ScenarioStatus;
+import com.hedera.mirror.monitor.publish.PublishProperties;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
 import org.apache.commons.math3.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import com.hedera.mirror.monitor.ScenarioStatus;
-import com.hedera.mirror.monitor.publish.PublishProperties;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.PublishScenario;
-import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 class CompositeTransactionGeneratorTest {
 
@@ -76,7 +69,8 @@ class CompositeTransactionGeneratorTest {
         properties = new PublishProperties();
         properties.getScenarios().put(publishScenarioProperties1.getName(), publishScenarioProperties1);
         properties.getScenarios().put(publishScenarioProperties2.getName(), publishScenarioProperties2);
-        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p,
+        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(
+                p -> p,
                 p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 properties));
 
@@ -122,11 +116,14 @@ class CompositeTransactionGeneratorTest {
         double seconds = 5;
         for (int i = 0; i < totalTps * seconds; ) {
             List<PublishRequest> requests = generator.next();
-            requests.stream().map(r -> r.getScenario().getProperties().getType()).forEach(types::add);
+            requests.stream()
+                    .map(r -> r.getScenario().getProperties().getType())
+                    .forEach(types::add);
             i += requests.size();
         }
 
-        for (PublishScenarioProperties publishScenarioProperties : properties.getScenarios().values()) {
+        for (PublishScenarioProperties publishScenarioProperties :
+                properties.getScenarios().values()) {
             assertThat(types.count(publishScenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
@@ -212,8 +209,8 @@ class CompositeTransactionGeneratorTest {
         List<Integer> warmupCounts = counts.subList(0, warmUpSeconds);
         List<Integer> stableCounts = counts.subList(warmUpSeconds, counts.size());
         assertThat(warmupCounts).isSorted().allSatisfy(n -> assertThat(n * 1.0).isLessThan(totalTps));
-        assertThat(stableCounts).isNotEmpty()
-                .allSatisfy(n -> assertThat(n * 1.0).isCloseTo(totalTps, withinPercentage(5)));
+        assertThat(stableCounts).isNotEmpty().allSatisfy(n -> assertThat(n * 1.0)
+                .isCloseTo(totalTps, withinPercentage(5)));
     }
 
     @Test
@@ -262,10 +259,11 @@ class CompositeTransactionGeneratorTest {
 
     private void prepare() {
         // warmup so in tests the timing will be accurate
-        TransactionGenerator generator = Suppliers
-                .synchronizedSupplier(() -> new CompositeTransactionGenerator(p -> p,
+        TransactionGenerator generator = Suppliers.synchronizedSupplier(() -> new CompositeTransactionGenerator(
+                        p -> p,
                         p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                        properties)).get();
+                        properties))
+                .get();
         generator.next(0);
     }
 }

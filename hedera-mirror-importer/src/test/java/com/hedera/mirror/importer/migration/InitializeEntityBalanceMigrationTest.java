@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,13 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicLong;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
@@ -44,6 +32,13 @@ import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -163,37 +158,49 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     private void persistAccountBalance(long balance, EntityId entityId, long timestamp) {
-        domainBuilder.accountBalance()
+        domainBuilder
+                .accountBalance()
                 .customize(a -> a.balance(balance).id(new AccountBalance.Id(timestamp, entityId)))
                 .persist();
     }
 
     private void persistCryptoTransfer(long amount, long entityId, ErrataType errata, long timestamp) {
-        domainBuilder.cryptoTransfer()
-                .customize(c -> c.amount(amount).consensusTimestamp(timestamp).entityId(entityId).errata(errata))
+        domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.amount(amount)
+                        .consensusTimestamp(timestamp)
+                        .entityId(entityId)
+                        .errata(errata))
                 .persist();
     }
 
     private void setup() {
-        account = domainBuilder.entity()
+        account = domainBuilder
+                .entity()
                 .customize(e -> e.balance(0L).deleted(null).createdTimestamp(timestamp(Duration.ofSeconds(1L))))
                 .persist();
-        accountDeleted = domainBuilder.entity()
+        accountDeleted = domainBuilder
+                .entity()
                 .customize(e -> e.balance(0L).deleted(true).createdTimestamp(timestamp(Duration.ofSeconds(1))))
                 .persist();
-        topic = domainBuilder.entity()
-                .customize(e -> e.balance(null).createdTimestamp(timestamp(Duration.ofSeconds(1))).type(TOPIC))
+        topic = domainBuilder
+                .entity()
+                .customize(e -> e.balance(null)
+                        .createdTimestamp(timestamp(Duration.ofSeconds(1)))
+                        .type(TOPIC))
                 .persist();
 
         // First record file, it's before account balance files
-        domainBuilder.recordFile()
+        domainBuilder
+                .recordFile()
                 .customize(r -> r.consensusStart(timestamp(Duration.ofMinutes(10)))
                         .consensusEnd(timestamp(Duration.ofSeconds(2))))
                 .persist();
 
         // First account balance file
         long accountBalanceTimestamp1 = timestamp(Duration.ofMinutes(10));
-        accountBalanceFile1 = domainBuilder.accountBalanceFile()
+        accountBalanceFile1 = domainBuilder
+                .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp1))
                 .persist();
         persistAccountBalance(500L, account.toEntityId(), accountBalanceTimestamp1);
@@ -203,12 +210,16 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         persistCryptoTransfer(300L, account.getId(), null, accountBalanceTimestamp1);
 
         // The contract is created after the first account balance file
-        contract = domainBuilder.entity()
-                .customize(e -> e.balance(0L).createdTimestamp(timestamp(Duration.ofSeconds(1))).type(CONTRACT))
+        contract = domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L)
+                        .createdTimestamp(timestamp(Duration.ofSeconds(1)))
+                        .type(CONTRACT))
                 .persist();
 
         // Second record file
-        recordFile2 = domainBuilder.recordFile()
+        recordFile2 = domainBuilder
+                .recordFile()
                 .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
                         .consensusEnd(timestamp(Duration.ofSeconds(2))))
                 .persist();
@@ -221,7 +232,10 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
         // Second account balance file
         long accountBalanceTimestamp2 = timestamp(Duration.ofMinutes(2));
-        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(accountBalanceTimestamp2)).persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp2))
+                .persist();
         persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
         persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
 

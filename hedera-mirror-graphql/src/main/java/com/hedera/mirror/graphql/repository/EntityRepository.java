@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,15 @@ package com.hedera.mirror.graphql.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.graphql.data.GraphQlRepository;
+package com.hedera.mirror.graphql.repository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-
-import org.springframework.data.jpa.repository.Query;
-
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.graphql.data.GraphQlRepository;
 
 @GraphQlRepository
 public interface EntityRepository extends CrudRepository<Entity, Long> {

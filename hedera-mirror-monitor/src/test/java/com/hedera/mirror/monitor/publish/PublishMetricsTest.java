@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,21 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.commons.util.ReflectionUtils.getDeclaredConstructor;
 
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import io.grpc.Status;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
@@ -45,15 +49,6 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
-import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 class PublishMetricsTest {
 
@@ -125,16 +120,16 @@ class PublishMetricsTest {
         PublishResponse response = response().toBuilder().timestamp(null).build();
 
         publishMetrics.onSuccess(response);
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges()).isEmpty();
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges()).isEmpty();
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges())
+                .isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges())
+                .isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges())
+                .isEmpty();
 
         clearLog();
         publishMetrics.status();
-        assertThat(logOutput)
-                .asString()
-                .hasLineCount(1)
-                .contains("No publishers");
+        assertThat(logOutput).asString().hasLineCount(1).contains("No publishers");
     }
 
     @Test
@@ -174,16 +169,16 @@ class PublishMetricsTest {
         PublishRequest request = request().toBuilder().timestamp(null).build();
 
         publishMetrics.onError(new PublishException(request, new IllegalArgumentException()));
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges()).isEmpty();
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges()).isEmpty();
-        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges())
+                .isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges())
+                .isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges())
+                .isEmpty();
 
         clearLog();
         publishMetrics.status();
-        assertThat(logOutput)
-                .asString()
-                .hasLineCount(1)
-                .contains("No publishers");
+        assertThat(logOutput).asString().hasLineCount(1).contains("No publishers");
     }
 
     void onError(Throwable throwable, String status) {

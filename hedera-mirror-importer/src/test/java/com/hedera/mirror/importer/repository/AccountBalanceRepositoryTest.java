@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,21 @@ package com.hedera.mirror.importer.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.importer.repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
@@ -67,13 +62,13 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);
         accountBalance.setId(id);
-        accountBalance
-                .setTokenBalances(createTokenBalances(consensusTimestamp, accountNum, balance, numberOfTokenBalances));
+        accountBalance.setTokenBalances(
+                createTokenBalances(consensusTimestamp, accountNum, balance, numberOfTokenBalances));
         return accountBalanceRepository.save(accountBalance);
     }
 
-    private List<TokenBalance> createTokenBalances(long consensusTimestamp, int accountNum, long balance,
-                                                   int numberOfBalances) {
+    private List<TokenBalance> createTokenBalances(
+            long consensusTimestamp, int accountNum, long balance, int numberOfBalances) {
         List<TokenBalance> tokenBalanceList = new ArrayList<>();
         for (int i = 1; i <= numberOfBalances; i++) {
             TokenBalance tokenBalance = new TokenBalance();

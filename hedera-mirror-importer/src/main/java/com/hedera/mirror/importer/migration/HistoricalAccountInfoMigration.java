@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,18 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -44,14 +47,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.EntityRepository;
-
 @Named
 public class HistoricalAccountInfoMigration extends RepeatableMigration {
 
@@ -69,8 +64,10 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
     private Resource accountInfoPath;
 
     @Lazy
-    public HistoricalAccountInfoMigration(EntityRepository entityRepository, NamedParameterJdbcTemplate jdbcTemplate,
-                                          MirrorProperties mirrorProperties) {
+    public HistoricalAccountInfoMigration(
+            EntityRepository entityRepository,
+            NamedParameterJdbcTemplate jdbcTemplate,
+            MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.entityRepository = entityRepository;
         this.jdbcOperations = jdbcTemplate;
@@ -136,20 +133,19 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
 
     private void loadContractIds() throws IOException {
         try (BufferedReader reader = toReader(accountInfoContracts.getInputStream())) {
-            reader.lines()
-                    .filter(StringUtils::isNotBlank)
-                    .map(Long::parseLong)
-                    .forEach(contractIds::add);
+            reader.lines().filter(StringUtils::isNotBlank).map(Long::parseLong).forEach(contractIds::add);
             log.info("Loaded {} contract IDs", contractIds.size());
         }
     }
 
     private void fixContractEntities() {
-        int inserted = jdbcOperations.update("update entity set type = 'CONTRACT' where id in (:ids)",
+        int inserted = jdbcOperations.update(
+                "update entity set type = 'CONTRACT' where id in (:ids)",
                 new MapSqlParameterSource("ids", contractIds));
         log.info("Changed {} entity to be type contract", inserted);
 
-        inserted = jdbcOperations.update("update entity_history set type = 'CONTRACT' where id in (:ids)",
+        inserted = jdbcOperations.update(
+                "update entity_history set type = 'CONTRACT' where id in (:ids)",
                 new MapSqlParameterSource("ids", contractIds));
         log.info("Changed {} entity_history to be type contract", inserted);
     }
@@ -200,8 +196,8 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
         }
 
         // Accounts can't be undeleted
-        if (entity.getDeleted() == null ||
-                (entity.getDeleted() != accountInfo.getDeleted() && accountInfo.getDeleted())) {
+        if (entity.getDeleted() == null
+                || (entity.getDeleted() != accountInfo.getDeleted() && accountInfo.getDeleted())) {
             entity.setDeleted(accountInfo.getDeleted());
             updated = true;
         }

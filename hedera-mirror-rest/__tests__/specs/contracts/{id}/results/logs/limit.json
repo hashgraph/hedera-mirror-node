@@ -128,7 +128,9 @@
       }
     },
     {
-      "urls": ["/api/v1/contracts/62cf9068fed962cf9068fed962cf9068fed9dddd/results/logs?limit=1"],
+      "urls": [
+        "/api/v1/contracts/62cf9068fed962cf9068fed962cf9068fed9dddd/results/logs?limit=1"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "logs": [
@@ -242,7 +244,9 @@
       }
     },
     {
-      "urls": ["/api/v1/contracts/62cf9068fed962cf9068fed962cf9068fed9dddd/results/logs?limit=5"],
+      "urls": [
+        "/api/v1/contracts/62cf9068fed962cf9068fed962cf9068fed9dddd/results/logs?limit=5"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "logs": [

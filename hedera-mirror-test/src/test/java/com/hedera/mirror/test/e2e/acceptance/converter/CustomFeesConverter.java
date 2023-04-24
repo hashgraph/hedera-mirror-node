@@ -1,30 +1,20 @@
-package com.hedera.mirror.test.e2e.acceptance.converter;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import io.cucumber.java.DataTableType;
-import java.util.Map;
-import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.Strings;
+package com.hedera.mirror.test.e2e.acceptance.converter;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
@@ -33,6 +23,11 @@ import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
 import com.hedera.mirror.test.e2e.acceptance.steps.TokenFeature;
+import io.cucumber.java.DataTableType;
+import java.util.Map;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.util.Strings;
 
 @RequiredArgsConstructor
 public class CustomFeesConverter {
@@ -45,7 +40,8 @@ public class CustomFeesConverter {
 
         assessedCustomFee.setAmount(Long.parseLong(entry.get("amount")));
         assessedCustomFee.setCollectorAccountId(tokenFeature
-                .getRecipientAccountId(Integer.parseInt(entry.get("collector"))).toString());
+                .getRecipientAccountId(Integer.parseInt(entry.get("collector")))
+                .toString());
         assessedCustomFee.setTokenId(getToken(entry.get("token")));
 
         return assessedCustomFee;
@@ -79,7 +75,9 @@ public class CustomFeesConverter {
     }
 
     private String getToken(String tokenIndex) {
-        return Optional.ofNullable(getTokenId(tokenIndex)).map(TokenId::toString).orElse(null);
+        return Optional.ofNullable(getTokenId(tokenIndex))
+                .map(TokenId::toString)
+                .orElse(null);
     }
 
     private TokenId getTokenId(String tokenIndex) {

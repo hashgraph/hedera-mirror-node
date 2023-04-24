@@ -43,7 +43,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/schedules/0.0.2000", "/api/v1/schedules/0.2000", "/api/v1/schedules/2000"],
+  "urls": [
+    "/api/v1/schedules/0.0.2000",
+    "/api/v1/schedules/0.2000",
+    "/api/v1/schedules/2000"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "admin_key": {
