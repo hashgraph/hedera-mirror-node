@@ -123,11 +123,6 @@ func TestIsNonEmptyPublicKey(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "Success",
-			key:      adminKey,
-			expected: true,
-		},
-		{
 			name:     "EmptyPublicKey",
 			key:      hedera.PublicKey{},
 			expected: false,

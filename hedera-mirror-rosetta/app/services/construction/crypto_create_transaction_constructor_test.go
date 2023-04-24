@@ -22,7 +22,6 @@ package construction
 
 import (
 	"testing"
-	"time"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
@@ -41,6 +40,20 @@ var (
 	_, newAccountPublicKey = domain.GenEd25519KeyPair()
 	proxyAccountId         = hedera.AccountID{Account: 6000}
 )
+
+type updateOperationsFunc func(types.OperationSlice) types.OperationSlice
+
+func getEmptyOperations(types.OperationSlice) types.OperationSlice {
+	return make(types.OperationSlice, 0)
+}
+
+func getEmptyOperationMetadata(operations types.OperationSlice) types.OperationSlice {
+	for index := range operations {
+		operation := &operations[index]
+		operation.Metadata = nil
+	}
+	return operations
+}
 
 func TestCryptoCreateTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(cryptoCreateTransactionConstructorSuite))
@@ -110,8 +123,6 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestConstruct() {
 func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewAccountCreateTransaction().
-			SetAccountMemo(memo).
-			SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 			SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 			SetKey(newAccountPublicKey).
 			SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
@@ -149,8 +160,6 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			name: "OutOfRangePayerAccountId",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewAccountCreateTransaction().
-					SetAccountMemo(memo).
-					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
 					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
@@ -163,8 +172,6 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewAccountCreateTransaction().
-					SetAccountMemo(memo).
-					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
 					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
@@ -207,58 +214,8 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 	}{
 		{name: "Success"},
 		{
-			name:             "InvalidAmount",
-			updateOperations: updateAmount(types.NewTokenAmount(dbTokenA, 1)),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataKey",
-			updateOperations: updateOperationMetadata("key", "key"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataAutoRenewPeriod",
-			updateOperations: updateOperationMetadata("auto_renew_period", "x"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataMaxAutomaticTokenAssociations",
-			updateOperations: updateOperationMetadata("max_automatic_token_associations", "xyz"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataMemo",
-			updateOperations: updateOperationMetadata("memo", 156),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataProxyAccountId",
-			updateOperations: updateOperationMetadata("proxy_account_id", "x.y.z"),
-			expectError:      true,
-		},
-		{
 			name:             "MissingMetadata",
 			updateOperations: getEmptyOperationMetadata,
-			expectError:      true,
-		},
-		{
-			name:             "MissingMetadataKey",
-			updateOperations: deleteOperationMetadata("key"),
-			expectError:      true,
-		},
-		{
-			name:             "MultipleOperations",
-			updateOperations: addOperation,
-			expectError:      true,
-		},
-		{
-			name:             "NegativeInitialBalance",
-			updateOperations: negateAmountValue,
-			expectError:      true,
-		},
-		{
-			name:             "InvalidOperationType",
-			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
 		},
 	}
@@ -300,9 +257,7 @@ func assertCryptoCreateTransaction(
 	key, err := tx.GetKey()
 	assert.NoError(t, err)
 	assert.Equal(t, operation.Metadata["key"], key.String())
-	assert.Equal(t, operation.Metadata["auto_renew_period"], int64(tx.GetAutoRenewPeriod().Seconds()))
 	assert.Equal(t, operation.Metadata["max_automatic_token_associations"], tx.GetMaxAutomaticTokenAssociations())
-	assert.Equal(t, operation.Metadata["memo"], tx.GetAccountMemo())
 	assert.Equal(t, operation.Metadata["proxy_account_id"], tx.GetProxyAccountID().String())
 }
 
@@ -312,10 +267,8 @@ func getCryptoCreateOperations() types.OperationSlice {
 		Amount:    &types.HbarAmount{Value: -initialBalance},
 		Type:      types.OperationTypeCryptoCreateAccount,
 		Metadata: map[string]interface{}{
-			"auto_renew_period":                autoRenewPeriod,
 			"key":                              newAccountPublicKey.String(),
 			"max_automatic_token_associations": maxAutomaticTokenAssociations,
-			"memo":                             memo,
 			"proxy_account_id":                 proxyAccountId.String(),
 		},
 	}

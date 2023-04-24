@@ -33,18 +33,6 @@ const (
 	operationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	operationTypeCryptoTransfer      = "CRYPTOTRANSFER"
 	operationTypeFee                 = "FEE"
-	operationTypeTokenAssociate      = "TOKENASSOCIATE"
-	operationTypeTokenBurn           = "TOKENBURN"
-	operationTypeTokenCreate         = "TOKENCREATION"
-	operationTypeTokenDelete         = "TOKENDELETION"
-	operationTypeTokenDissociate     = "TOKENDISSOCIATE" // #nosec
-	operationTypeTokenFreeze         = "TOKENFREEZE"
-	operationTypeTokenGrantKyc       = "TOKENGRANTKYC"
-	operationTypeTokenMint           = "TOKENMINT"
-	operationTypeTokenRevokeKyc      = "TOKENREVOKEKYC"
-	operationTypeTokenUnfreeze       = "TOKENUNFREEZE"
-	operationTypeTokenUpdate         = "TOKENUPDATE"
-	operationTypeTokenWipe           = "TOKENWIPE"
 )
 
 var (
@@ -63,7 +51,6 @@ func SetupTestClient(serverCfg client.Server, operators []client.Operator) {
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	initializeCryptoScenario(ctx)
-	InitializeTokenScenario(ctx)
 }
 
 func getRosettaAccountIdentifier(accountId hedera.AccountID) *types.AccountIdentifier {

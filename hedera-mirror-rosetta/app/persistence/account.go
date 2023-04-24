@@ -102,19 +102,7 @@ const (
                                     )
                                     select
                                       adjusted_timestamp as consensus_timestamp,
-                                      coalesce(ab.balance, 0) balance,
-                                      coalesce((
-                                        select json_agg(json_build_object(
-                                          'decimals', t.decimals,
-                                          'token_id', tb.token_id,
-                                          'type', t.type,
-                                          'value', tb.balance
-                                        ))
-                                        from token_balance tb
-                                        join token t on t.token_id = tb.token_id
-                                        join genesis on t.created_timestamp > genesis.timestamp
-                                        where tb.consensus_timestamp = abm.max and tb.account_id = @account_id
-                                      ), '[]') token_balances
+                                      coalesce(ab.balance, 0) balance
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
