@@ -23,6 +23,7 @@ import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
@@ -95,6 +96,13 @@ class ContractController {
                 .callType(callType)
                 .isEstimate(request.isEstimate())
                 .build();
+    }
+
+    /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
+    @ExceptionHandler
+    @ResponseStatus(NOT_IMPLEMENTED)
+    private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
