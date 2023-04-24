@@ -60,6 +60,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     static final String SIDECAR_FOLDER = "sidecar/";
     private static final String SEPARATOR = "/";
 
+    private static final String TEMPLATE_NODE_ID_PREFIX = "%%s%s%%s%s%%s%s%%s%s%%s".formatted(SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR);
+    private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%%s%s%%s%%s%s%%s".formatted(SEPARATOR, SEPARATOR);
+
     private final CommonDownloaderProperties commonDownloaderProperties;
 
     private final ConcurrentMap<ConsensusNode, PathParameterProperties> nodePathParamsMap = new ConcurrentHashMap<>();
@@ -170,14 +173,13 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private String getAutoAlgorithmPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var currentTime = System.currentTimeMillis();
         var pathParam = nodePathParamsMap.get(consensusNode);
-        var accountIdPrefix =  getPrefix(consensusNode, streamFilename);
+        var accountIdPrefix = getPrefix(consensusNode, streamFilename);
         if (pathParam.pathExpirationTimestampMap() > currentTime) {
            return accountIdPrefix;
         }
         try {
             // Listing files from accountNodeId path
-            var listResponse = listOnly(streamFilename, accountIdPrefix)
-                    .block();
+            var listResponse = listOnly(streamFilename, accountIdPrefix).block();
             // If files are available at the old bucket path continue using AUTO
             if (listResponse != null && !listResponse.contents().isEmpty()) {
                 nodePathParamsMap.put(
@@ -205,21 +207,12 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     @NotNull
     private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        var prefixBuilder = new StringBuilder()
-                .append(getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()))
-                .append(SEPARATOR)
-                .append(commonDownloaderProperties.getMirrorProperties().getShard())
-                .append(SEPARATOR)
-                .append(consensusNode.getNodeId())
-                .append(SEPARATOR)
-                .append(streamFilename.getStreamType().toString().toLowerCase())
-                .append(SEPARATOR);
-
-        if (streamFilename.getFileType() == SIDECAR) {
-            prefixBuilder.append(SIDECAR_FOLDER);
-        }
-
-        return prefixBuilder.toString();
+        return TEMPLATE_NODE_ID_PREFIX.formatted(
+                getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
+                commonDownloaderProperties.getMirrorProperties().getShard(),
+                consensusNode.getNodeId(),
+                streamFilename.getStreamType().toString().toLowerCase(),
+                getSidecarFolder(streamFilename));
     }
 
     @NotNull
@@ -238,14 +231,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     @NotNull
     private String getPrefix(ConsensusNode node, StreamFilename streamFilename) {
         var streamType = streamFilename.getStreamType();
-        var nodeAccount = node.getNodeAccountId().toString();
-        var prefix = streamType.getPath() + SEPARATOR + streamType.getNodePrefix() + nodeAccount + SEPARATOR;
-
-        if (streamFilename.getFileType() == SIDECAR) {
-            prefix += SIDECAR_FOLDER;
-        }
-
-        return prefix;
+        return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(
+                streamType.getPath(), streamType.getNodePrefix(), node.getNodeAccountId(), getSidecarFolder(streamFilename));
     }
 
     @NotNull
@@ -259,5 +246,10 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             log.warn("Unable to parse stream filename for {}", key, e);
             return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
         }
+    }
+
+    @NotNull
+    private static String getSidecarFolder(StreamFilename streamFilename) {
+        return streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "";
     }
 }
