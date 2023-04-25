@@ -68,9 +68,8 @@ spec:
       enabled: true
       test:
         gitBranch: main
-        schedule: "0 6 * * *"
         target:
-          namespace: integration
+          namespace: performance
     traefik:
       service:
         annotations:
