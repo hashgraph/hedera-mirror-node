@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
 import java.util.List;

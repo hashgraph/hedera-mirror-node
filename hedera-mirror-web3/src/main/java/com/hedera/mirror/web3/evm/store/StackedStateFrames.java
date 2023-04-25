@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.store;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
@@ -111,7 +112,7 @@ public class StackedStateFrames<K> {
      * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
      * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
      * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that actually
-     * hits the database (via the ground truth accessors), all subsequent executions will fetch the same values
+     * hits the database (via the database accessors), all subsequent executions will fetch the same values
      * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
      * using this method.)
      */
@@ -129,8 +130,9 @@ public class StackedStateFrames<K> {
      * For example, a spy.  You can do that with this method, but be sure your new TOS has the current TOS as its
      * upstream.
      */
+    @VisibleForTesting
     @NonNull
-    public CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
+    CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
         if (!frame.getUpstream().equals(Optional.of(stack))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         }
@@ -144,7 +146,7 @@ public class StackedStateFrames<K> {
      */
     @VisibleForTesting
     @NonNull
-    public CachingStateFrame<K> replaceEntireStack(@NonNull final CachingStateFrame<K> frame) {
+    CachingStateFrame<K> replaceEntireStack(@NonNull final CachingStateFrame<K> frame) {
         stack = stackBase = frame;
         return stack;
     }
