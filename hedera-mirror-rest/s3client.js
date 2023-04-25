@@ -18,8 +18,7 @@
  * ‍
  */
 
-import AWS from 'aws-sdk';
-import querystring from 'querystring';
+import {GetObjectCommand, S3} from "@aws-sdk/client-s3";
 
 import config from './config';
 import {cloudProviders, defaultCloudProviderEndpoints} from './constants';
@@ -29,29 +28,28 @@ class S3Client {
     this.s3 = s3;
     this.hasCredentials = hasCredentials;
     this.gcpProjectId = gcpProjectId;
+    this.httpRequest = null;
+
+    this.s3.middlewareStack.add(
+      (next, context) => (args) => {
+        if (gcpProjectId) {
+          args.request.query.userProject = this.gcpProjectId;
+        }
+        this.httpRequest = args.request;
+        return next(args);
+      },
+      {
+        step: "build",
+      }
+    );
   }
 
-  getObject(params, callback) {
-    let request;
-    if (this.hasCredentials) {
-      request = this.s3.getObject(params, callback);
-    } else {
-      request = this.s3.makeUnauthenticatedRequest('getObject', params, callback);
-    }
+  getHttpRequest() {
+    return this.httpRequest;
+  }
 
-    if (this.gcpProjectId) {
-      const userProject = this.gcpProjectId;
-      request.on('build', () => {
-        const {httpRequest} = request;
-        const query = {
-          ...querystring.parse(httpRequest.search()),
-          userProject,
-        };
-        httpRequest.path = `${httpRequest.pathname()}?${querystring.stringify(query)}`;
-      });
-    }
-
-    return request;
+  getObject(params, abortSignal) {
+    return this.s3.send(new GetObjectCommand(params), { abortSignal });
   }
 
   getConfig() {
@@ -70,20 +68,24 @@ const buildS3ConfigFromStreamsConfig = () => {
   const isGCP = cloudProvider === cloudProviders.GCP;
 
   const endpoint = hasEndpointOverride ? endpointOverride : defaultCloudProviderEndpoints[cloudProvider];
-  const s3ForcePathStyle = hasEndpointOverride || isGCP;
+  const forcePathStyle = hasEndpointOverride || isGCP;
 
   const s3Config = {
+    credentials: {
+      accessKeyId: '',
+      secretAccessKey: '',
+    },
     endpoint,
+    forcePathStyle,
     httpOptions,
     maxRetries,
     region,
-    s3ForcePathStyle,
   };
 
   if (!!accessKey && !!secretKey) {
     logger.info('Building s3Config with provided access/secret key');
-    s3Config.accessKeyId = accessKey;
-    s3Config.secretAccessKey = secretKey;
+    s3Config.credentials.accessKeyId = accessKey;
+    s3Config.credentials.secretAccessKey = secretKey;
   } else {
     logger.info('Building s3Config with no credentials');
   }
@@ -100,7 +102,7 @@ const buildS3ConfigFromStreamsConfig = () => {
  */
 const createS3Client = () => {
   const {s3Config, gcpProjectId} = buildS3ConfigFromStreamsConfig();
-  return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId, gcpProjectId);
+  return new S3Client(new S3(s3Config), !!s3Config.credentials.accessKeyId, gcpProjectId);
 };
 
 export default {

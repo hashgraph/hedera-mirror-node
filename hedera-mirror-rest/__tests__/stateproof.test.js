@@ -390,8 +390,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
   };
 
   test('with all files downloaded successfully', async () => {
-    const getObjectStub = sinon.stub().callsFake((params, callback) => ({
-      createReadStream: () => {
+    const getObjectStub = sinon.stub().callsFake((params, callback) => {
         const stream = new Readable({
           objectMode: true,
         });
@@ -405,9 +404,9 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
           }
           this.push(null);
         };
-        return stream;
-      },
-    }));
+        return Promise.resolve({Body: stream});
+    });
+
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
@@ -415,8 +414,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
   });
 
   test('with all files failed to download', async () => {
-    const getObjectStub = sinon.stub().callsFake((params, callback) => ({
-      createReadStream: () => {
+    const getObjectStub = sinon.stub().callsFake((params, callback) => {
         let handler;
         const stream = new Readable();
         stream._read = function (size) {
@@ -426,9 +424,8 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
             }, 1000);
           }
         };
-        return stream;
-      },
-    }));
+        return Promise.resolve({Body: stream});
+    });
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
@@ -437,8 +434,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
   });
 
   test('with download failed for 0.0.3', async () => {
-    const getObjectStub = sinon.stub().callsFake((params, callback) => ({
-      createReadStream: () => {
+    const getObjectStub = sinon.stub().callsFake((params, callback) => {
         let handler;
         const stream = new Readable();
         stream._read = function (size) {
@@ -459,9 +455,8 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
             this.push(null);
           }
         };
-        return stream;
-      },
-    }));
+        return Promise.resolve({Body: stream});
+    });
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);

@@ -18,9 +18,6 @@
  * ‍
  */
 
-import AWSMock from 'aws-sdk-mock';
-import querystring from 'querystring';
-
 import config from '../config';
 import {cloudProviders, defaultCloudProviderEndpoints} from '../constants';
 import s3client from '../s3client';
@@ -49,52 +46,51 @@ describe('createS3Client with valid config', () => {
     expect(s3Client).toBeTruthy();
 
     const s3Config = s3Client.getConfig();
-    if (streamsConfig.endpointOverride) {
-      expect(s3Config.endpoint).toEqual(streamsConfig.endpointOverride);
-    } else if (streamsConfig.cloudProvider === cloudProviders.S3) {
-      expect(s3Config.endpoint).toEqual(defaultCloudProviderEndpoints.S3);
-    } else {
-      expect(s3Config.endpoint).toEqual(defaultCloudProviderEndpoints.GCP);
+    const endpoint = await s3Config.endpoint();
+    let endpointUrl = `${endpoint.protocol}//${endpoint.hostname}`;
+    if (endpoint.port) {
+      endpointUrl += `:${endpoint.port}`;
     }
 
-    if (streamsConfig.region) {
-      expect(s3Config.region).toEqual(streamsConfig.region);
+    if (streamsConfig.endpointOverride) {
+      expect(endpointUrl).toEqual(streamsConfig.endpointOverride);
+    } else if (streamsConfig.cloudProvider === cloudProviders.S3) {
+      expect(endpointUrl).toEqual(defaultCloudProviderEndpoints.S3);
     } else {
-      expect(s3Config.region).toEqual('us-east-1');
+      expect(endpointUrl).toEqual(defaultCloudProviderEndpoints.GCP);
     }
+
+    const expectedRegion = streamsConfig.region ? streamsConfig.region : 'us-east-1';
+    expect(await s3Config.region()).toEqual(expectedRegion);
 
     if (!streamsConfig.accessKey || !streamsConfig.secretKey) {
       expect(s3Client.getHasCredentials()).toBeFalsy();
     } else {
       expect(s3Client.getHasCredentials()).toBeTruthy();
-      expect(s3Config.accessKeyId).toEqual(streamsConfig.accessKey);
-      expect(s3Config.secretAccessKey).toEqual(streamsConfig.secretKey);
       expect(s3Config.credentials).toBeTruthy();
-      expect(s3Config.credentials.accessKeyId).toEqual(streamsConfig.accessKey);
+      const credentials = await s3Config.credentials();
+      expect(credentials.accessKeyId).toEqual(streamsConfig.accessKey);
+      expect(credentials.secretAccessKey).toEqual(streamsConfig.secretKey);
     }
 
-    // run a request to make sure the userProject query param is / isn't added
-    const request = s3Client.getObject({
+    const abortController = new AbortController();
+    abortController.abort();
+    const commandParams = {
       Bucket: 'demo-bucket',
       Key: 'foobar/foobar.txt',
-    });
-    request.on('send', () => request.abort());
+    };
+
     try {
-      await request.promise();
+      await s3Client.getObject(commandParams, abortController.signal);
     } catch (err) {
       //
     }
 
+    const httpRequest = s3Client.getHttpRequest();
     if (streamsConfig.cloudProvider === cloudProviders.GCP && streamsConfig.gcpProjectId) {
-      expect(querystring.parse(request.httpRequest.search())).toEqual(
-        expect.objectContaining({
-          userProject: streamsConfig.gcpProjectId,
-        })
-      );
+      expect(httpRequest.query).toMatchObject({userProject: `${streamsConfig.gcpProjectId}`});
     } else {
-      expect(Object.keys(querystring.parse(request.httpRequest.search()))).not.toEqual(
-        expect.arrayContaining(['userProject'])
-      );
+      expect(httpRequest.query).not.toMatchObject({userProject: `${streamsConfig.gcpProjectId}`})
     }
   };
 
@@ -125,14 +121,6 @@ describe('createS3Client with valid config', () => {
     {
       name: 'valid config with endpointOverride',
       override: {endpointOverride: 'https://s3.us-east-2.amazonaws.com'},
-    },
-    {
-      name: 'valid config with null region',
-      override: {region: null},
-    },
-    {
-      name: 'valid config with empty region',
-      override: {region: ''},
     },
     {
       name: 'valid config with null accessKey',
@@ -170,45 +158,30 @@ describe('createS3Client with valid config', () => {
   });
 });
 
-describe('S3Client.getObject', () => {
-  const params = {
-    Bucket: 'sample-bucket',
-    Key: 'sample-key',
+describe('createS3Client with invalid regions', () => {
+  const verifyInvalid = async (streamsConfig, s3Client) => {
+    const s3Config = s3Client.getConfig();
+    await expect(s3Config.region()).rejects.toThrow('Region is missing');
+
+    const abortController = new AbortController();
+    abortController.abort();
+    const commandParams = {
+      Bucket: 'demo-bucket',
+      Key: 'foobar/foobar.txt',
+    };
+    const request = s3Client.getObject(commandParams, abortController.signal);
+    await expect(request).rejects.toThrow('Region is missing');
   };
-  const getObjectMessage = 'getObject is called when credentials are provided';
-  const makeUnauthenticatedRequestMessage = 'makeUnauthenticatedRequest is called when no credentials are provided';
 
-  beforeEach(() => {
-    AWSMock.mock('S3', 'getObject', (_params, callback) => {
-      callback(null, getObjectMessage);
-    });
-    AWSMock.mock('S3', 'makeUnauthenticatedRequest', (method, _params, callback) => {
-      callback(null, makeUnauthenticatedRequestMessage);
-    });
-  });
 
-  afterEach(() => {
-    AWSMock.restore();
-  });
-
-  test('with credentials provided', async () => {
+  test('null region', async () => {
+    overrideStreamsConfig({region: null});
     const s3Client = s3client.createS3Client();
-    await new Promise((resolve) => {
-      s3Client.getObject(params, (err, data) => {
-        expect(data).toEqual(getObjectMessage);
-        resolve();
-      });
-    });
+    await verifyInvalid(config.stateproof.streams, s3Client);
   });
 
-  test('without credentials', async () => {
-    overrideStreamsConfig({secretKey: ''});
-    const s3Client = s3client.createS3Client();
-    await new Promise((resolve) => {
-      s3Client.getObject(params, (err, data) => {
-        expect(data).toEqual(makeUnauthenticatedRequestMessage);
-        resolve();
-      });
-    });
+  test('empty region', async () => {
+    overrideStreamsConfig({region: ''});
+    expect(() => { s3client.createS3Client(); }).toThrow('Region is missing');
   });
 });

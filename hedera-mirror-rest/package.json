@@ -19,10 +19,10 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
+    "@aws-sdk/client-s3": "^3.319.0",
     "@godaddy/terminus": "^4.11.2",
     "@hashgraph/proto": "^2.12.0",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1348.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.2",
     "compression": "^1.7.4",
@@ -51,10 +51,10 @@
   },
   "bundledDependencies": [
     "@awaitjs/express",
+    "@aws-sdk/client-s3",
     "@godaddy/terminus",
     "@hashgraph/proto",
     "asn1js",
-    "aws-sdk",
     "bigint-buffer",
     "body-parser",
     "compression",
@@ -83,7 +83,6 @@
   ],
   "devDependencies": {
     "app-root-path": "^3.1.0",
-    "aws-sdk-mock": "^5.8.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",

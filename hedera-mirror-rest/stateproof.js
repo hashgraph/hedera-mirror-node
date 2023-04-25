@@ -175,34 +175,43 @@ const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) =
         RequestPayer: 'requester',
       };
 
-      return new Promise((resolve) => {
-        const buffers = [];
-        s3Client
-          .getObject(params)
-          .createReadStream()
-          .on('data', (chunk) => {
-            buffers.push(Buffer.from(chunk));
-          })
-          .on('end', () => {
+      return new Promise(async (resolve) => {
+        s3Client.getObject(params).then(
+            (data) => {
+              const buffers = [];
+              data.Body
+                .on('data', (chunk) => {
+                  buffers.push(Buffer.from(chunk))
+                })
+                .on('end', () => {
+                  resolve({
+                    partialFilePath,
+                    data: Buffer.concat(buffers)
+                  })
+                })
+                // error may happen if there is an s3 transient error.
+                // capture the error and return it, otherwise Promise.all will fail
+                .on('error', (error) => {
+                  logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
+                  resolve({
+                    partialFilePath,
+                    error,
+                  });
+                })
+          },
+          // error will happen if the node does not have the requested file
+          (error) => {
+            logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
             resolve({
               partialFilePath,
-              data: Buffer.concat(buffers),
-            });
-          })
-          // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
-          // error. so capture the error and return it, otherwise Promise.all will fail
-          .on('error', (err) => {
-            logger.error(`Failed to download ${utils.JSONStringify(params)}`, err);
-            resolve({
-              partialFilePath,
-              err,
+              error,
             });
           });
       });
     })
   );
 
-  const downloaded = _.filter(fileObjects, (fileObject) => !fileObject.err);
+  const downloaded = _.filter(fileObjects, (fileObject) => !fileObject.error);
   logger.debug(
     `Downloaded ${downloaded.length} file objects from bucket ${bucketName}: ${_.map(
       downloaded,
