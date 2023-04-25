@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
@@ -44,7 +45,6 @@ public record EthTxData(
         byte[] s) {
 
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {

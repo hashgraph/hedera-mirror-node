@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
@@ -29,8 +45,15 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
-
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -45,20 +68,10 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Provider;
-
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.BasicHbarCentExchange;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
-import com.hedera.services.fees.pricing.AssetsLoader;
-import com.hedera.services.hapi.utils.fees.FeeBuilder;
-import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.utils.accessors.AccessorFactory;
 
 public class PrecompilePricingUtils {
 

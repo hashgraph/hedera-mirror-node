@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.fees.calculation.usage.consensus;
 
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -20,12 +21,11 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.TX_HASH_SIZE;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public final class ConsensusOpsUsage {

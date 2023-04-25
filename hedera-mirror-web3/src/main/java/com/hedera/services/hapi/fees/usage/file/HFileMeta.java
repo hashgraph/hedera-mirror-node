@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.hapi.fees.usage.file;
 
 import com.google.common.base.MoreObjects;
-
 import com.hedera.services.jproto.JKey;
 
 public class HFileMeta {

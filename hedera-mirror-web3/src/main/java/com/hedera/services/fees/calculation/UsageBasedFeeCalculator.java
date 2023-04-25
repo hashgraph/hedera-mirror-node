@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.fees.calculation;
 
 import static com.hedera.services.fees.calculation.utils.PricedUsageCalculator.numSimpleKeys;
@@ -5,8 +21,15 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.annotations.GenericPriceMultiplier;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
+import com.hedera.services.hapi.utils.fees.FeeObject;
+import com.hedera.services.hapi.utils.fees.SigValueObj;
 import com.hedera.services.jproto.JKey;
-
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -15,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,20 +45,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.annotations.GenericPriceMultiplier;
-import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
-import com.hedera.services.hapi.utils.fees.FeeObject;
-import com.hedera.services.hapi.utils.fees.SigValueObj;
-import com.hedera.services.utils.accessors.TxnAccessor;
 
 public class UsageBasedFeeCalculator implements FeeCalculator {
     private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
@@ -79,7 +91,13 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     @Override
     public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
-        return feeGiven(accessor, payerKey, view, usagePrices.pricesGiven(accessor.getFunction(), at, null), exchange.rate(at), true);
+        return feeGiven(
+                accessor,
+                payerKey,
+                view,
+                usagePrices.pricesGiven(accessor.getFunction(), at, null),
+                exchange.rate(at),
+                true);
     }
 
     private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
@@ -154,13 +172,13 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
         long totalComponentFee = componentUsage
                 + (bytesUsageFee
-                + verificationFee
-                + ramStorageFee
-                + storageFee
-                + evmGasFee
-                + txValueFee
-                + bytesResponseFee
-                + storageBytesResponseFee);
+                        + verificationFee
+                        + ramStorageFee
+                        + storageFee
+                        + evmGasFee
+                        + txValueFee
+                        + bytesResponseFee
+                        + storageBytesResponseFee);
 
         if (totalComponentFee < componentCoefficients.getMin()) {
             totalComponentFee = componentCoefficients.getMin();
@@ -211,7 +229,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         final var sigUsage = accessor.usageGiven(numPayerKeys);
         return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());
     }
-
 
     private TxnResourceUsageEstimator getTxnUsageEstimator(TxnAccessor accessor) {
         var txn = accessor.getTxn();

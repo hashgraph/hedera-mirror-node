@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.fees.calculation.utils;
 
 import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.hapi.fees.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.hapi.fees.usage.token.meta.TokenMintMeta;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.hapi.fees.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.hapi.fees.usage.token.meta.TokenMintMeta;
-import com.hedera.services.utils.accessors.TxnAccessor;
 
 @Singleton
 public class OpUsageCtxHelper {
@@ -35,9 +35,7 @@ public class OpUsageCtxHelper {
     private final StateView workingView;
 
     @Inject
-    public OpUsageCtxHelper(
-            final StateView workingView
-    ) {
+    public OpUsageCtxHelper(final StateView workingView) {
         this.workingView = workingView;
     }
 
@@ -51,17 +49,17 @@ public class OpUsageCtxHelper {
         ExtantCryptoContext cryptoContext = null;
         if (account != null) {
             // TODO
-//            cryptoContext = ExtantCryptoContext.newBuilder()
-//                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
-//                    .setCurrentMemo(account.getMemo())
-//                    .setCurrentExpiry(account.getExpiry())
-//                    .setCurrentlyHasProxy(account.getProxy() != null)
-//                    .setCurrentNumTokenRels(account.getNumAssociations())
-//                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
-//                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
-//                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-//                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
-//                    .build();
+            //            cryptoContext = ExtantCryptoContext.newBuilder()
+            //                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+            //                    .setCurrentMemo(account.getMemo())
+            //                    .setCurrentExpiry(account.getExpiry())
+            //                    .setCurrentlyHasProxy(account.getProxy() != null)
+            //                    .setCurrentNumTokenRels(account.getNumAssociations())
+            //                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+            //                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+            //                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+            //                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
+            //                    .build();
         } else {
             cryptoContext = ExtantCryptoContext.newBuilder()
                     .setCurrentExpiry(
@@ -83,22 +81,22 @@ public class OpUsageCtxHelper {
         final var id = accessor.getPayer();
         final var accountEntityNum =
                 id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
-        //need HederaAccount here
+        // need HederaAccount here
         final var account = workingView.accounts().get(accountEntityNum);
         ExtantCryptoContext cryptoContext;
         if (account != null) {
             // TODO
-//            cryptoContext = ExtantCryptoContext.newBuilder()
-//                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
-//                    .setCurrentMemo(account.getMemo())
-//                    .setCurrentExpiry(account.getExpiry())
-//                    .setCurrentlyHasProxy(account.getProxy() != null)
-//                    .setCurrentNumTokenRels(account.getNumAssociations())
-//                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
-//                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
-//                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-//                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
-//                    .build();
+            //            cryptoContext = ExtantCryptoContext.newBuilder()
+            //                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+            //                    .setCurrentMemo(account.getMemo())
+            //                    .setCurrentExpiry(account.getExpiry())
+            //                    .setCurrentlyHasProxy(account.getProxy() != null)
+            //                    .setCurrentNumTokenRels(account.getNumAssociations())
+            //                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+            //                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+            //                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+            //                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
+            //                    .build();
         } else {
             cryptoContext = ExtantCryptoContext.newBuilder()
                     .setCurrentExpiry(accessor.getTxn()
@@ -125,8 +123,8 @@ public class OpUsageCtxHelper {
         if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
             final var token = accessor.getTxn().getTokenMint().getToken();
             final var now = accessor.getTxnId().getTransactionValidStart().getSeconds();
-            //final var tokenIfPresent = workingView.tokenWith(token);
-            //lifeTime = tokenIfPresent.map(t -> Math.max(0L, t.expiry() - now)).orElse(0L);
+            // final var tokenIfPresent = workingView.tokenWith(token);
+            // lifeTime = tokenIfPresent.map(t -> Math.max(0L, t.expiry() - now)).orElse(0L);
         }
         return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(accessor.getTxn(), subType, lifeTime);
     }

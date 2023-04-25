@@ -13,19 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
-
-import com.google.protobuf.GeneratedMessageV3;
-
-import com.hedera.services.jproto.JKey;
-
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.codec.DecoderException;
-import java.util.List;
-import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -73,6 +62,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static java.util.Objects.requireNonNull;
+
+import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.jproto.JKey;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.function.Function;
+import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
 
@@ -132,6 +131,7 @@ public final class MiscUtils {
             default -> throw new Exception("Unknown HederaFunctionality for " + txn);
         };
     }
+
     public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
         try {
             return functionOf(trans);
@@ -140,7 +140,6 @@ public final class MiscUtils {
         }
     };
 
-
     public static JKey asFcKeyUnchecked(final Key key) {
         try {
             return JKey.mapKey(key);
@@ -148,6 +147,7 @@ public final class MiscUtils {
             throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
     }
+
     public static boolean hasUnknownFields(final GeneratedMessageV3 msg) {
         if (hasUnknownFieldsHere(msg)) {
             return true;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.hapi.utils.fees;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -67,8 +68,7 @@ public class FeeBuilder {
     public static final int BASIC_TX_RECORD_SIZE =
             BASIC_RECEIPT_SIZE + TX_HASH_SIZE + LONG_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE;
 
-    private FeeBuilder() {
-    }
+    private FeeBuilder() {}
 
     /**
      * Convert tinyCents to tinybars

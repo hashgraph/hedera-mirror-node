@@ -16,20 +16,17 @@
 
 package com.hedera.services.fees.calc;
 
+import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.hapi.utils.fees.FeeObject;
-
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 
 /**
  * A specialized fee calculator that throws an exception if any step of the fee calculation

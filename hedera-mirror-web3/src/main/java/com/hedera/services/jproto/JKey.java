@@ -17,9 +17,9 @@
 package com.hedera.services.jproto;
 
 import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.codec.DecoderException;
 
 /**
  * Maps to proto Key.

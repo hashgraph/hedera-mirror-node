@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.fees.calculation.utils;
 
 import com.hedera.services.fees.annotations.GenericPriceMultiplier;
@@ -5,16 +21,12 @@ import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
-
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.TxnAccessor;
-
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import javax.inject.Inject;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 public class PricedUsageCalculator {
 
@@ -61,7 +73,6 @@ public class PricedUsageCalculator {
         return calculator.fees(accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
-
     /**
      * Counts the simple keys present in a complex Hedera key.
      *
@@ -69,7 +80,7 @@ public class PricedUsageCalculator {
      * @return the number of simple keys in the leaves of the Hedera key.
      */
     public static int numSimpleKeys(final JKey key) {
-        //always return 1
+        // always return 1
         return 1;
     }
 }
