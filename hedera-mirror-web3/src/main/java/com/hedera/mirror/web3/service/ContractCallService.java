@@ -73,21 +73,21 @@ public class ContractCallService {
      * This method estimates the amount of gas required to execute a smart contract function. The estimation process
      * involves two steps:
      * <p>
-     * 1. Firstly, a call is made with the maximum gas value of 15 million to determine if the call estimation is
-     * possible. This step is intended to quickly identify any issues that would prevent the estimation from
-     * succeeding.
+     * 1. Firstly, a call is made with user inputted gas value (default and maximum value for this parameter is 15
+     * million) to determine if the call estimation is possible. This step is intended to quickly identify any issues
+     * that would prevent the estimation from succeeding.
      * <p>
      * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
-     * gas used in the first step, while the upper bound is half of the maximum gas value .
+     * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private String estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, properties.getMaxGasToUseLimit());
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
-        final var estimatedGas = binarySearch(params, gasUsedByInitialCall, properties.getMaxGasToUseLimit() / 2);
+        final var estimatedGas = binarySearch(params, gasUsedByInitialCall, params.getGas());
 
-        return Long.toHexString(estimatedGas);
+        return Bytes.ofUnsignedLong(estimatedGas).toHexString();
     }
 
     /**

@@ -576,6 +576,5 @@ Name                                                        | Default           
 `hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                                | Maximum time for contract bytecode's caching
 `hedera.mirror.web3.evm.fundingAccount`                     | 0x0000000000000000000000000000000000000062         | Default Hedera funding account
 `hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                                | Maximal procent of gas refunding
-`hedera.mirror.web3.evm.maxGasToUseLimit`                   | 15_000_000                                         | Maximal gas value for contract calls and estimate gas
 `hedera.mirror.web3.evm.network`                            | TESTNET                                            | Which Hedera network to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
 `hedera.mirror.web3.evm.rateLimit`                          | 100s                                               | Maximum RPS limit

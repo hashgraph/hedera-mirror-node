@@ -72,11 +72,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
-    @Min(21_000)
-    @Max(15_000_000)
-    private long maxGasToUseLimit = 15_000_000L;
-
-    @Getter
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
