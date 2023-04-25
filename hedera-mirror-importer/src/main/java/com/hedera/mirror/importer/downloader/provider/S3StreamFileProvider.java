@@ -16,23 +16,21 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
-import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.AUTO;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
 import com.hedera.mirror.importer.MirrorProperties;
 
-import com.hedera.mirror.importer.downloader.PathParameterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
-
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -49,25 +47,23 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @CustomLog
 @RequiredArgsConstructor
 public final class S3StreamFileProvider implements StreamFileProvider {
-    private record PathParameterProperties(CommonDownloaderProperties.PathType pathType, long pathExpirationTimestampMap) {}
-
     static final String SIDECAR_FOLDER = "sidecar/";
     private static final String SEPARATOR = "/";
-
-    private static final String TEMPLATE_NODE_ID_PREFIX = "%%s%s%%s%s%%s%s%%s%s%%s".formatted(SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR);
+    private static final String TEMPLATE_NODE_ID_PREFIX = "%%s%s%%s%s%%s%s%%s%s%%s".formatted(SEPARATOR, SEPARATOR,
+            SEPARATOR, SEPARATOR);
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%%s%s%%s%%s%s%%s".formatted(SEPARATOR, SEPARATOR);
-
     private final CommonDownloaderProperties commonDownloaderProperties;
-
     private final ConcurrentMap<ConsensusNode, PathParameterProperties> nodePathParamsMap = new ConcurrentHashMap<>();
-
     private final S3AsyncClient s3Client;
+
+    @NotNull
+    private static String getSidecarFolder(StreamFilename streamFilename) {
+        return streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "";
+    }
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
@@ -105,11 +101,10 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     /**
-     * List from the given prefix and just check if they exist.
-     * This method does not actually download the files.
+     * List from the given prefix and just check if they exist. This method does not actually download the files.
      *
      * @param lastFilename last downloaded file name
-     * @param prefix path to download files from
+     * @param prefix       path to download files from
      */
     @NotNull
     private Mono<ListObjectsV2Response> listOnly(StreamFilename lastFilename, String prefix) {
@@ -126,17 +121,16 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
-        return   Mono.fromFuture(s3Client.listObjectsV2(listRequest))
+        return Mono.fromFuture(s3Client.listObjectsV2(listRequest))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .doOnNext(ListObjectsV2Response::contents);
     }
 
     /**
-     * Get a file from the given prefix.
-     * This method actually downloads the files.
+     * Get a file from the given prefix. This method actually downloads the files.
      *
      * @param streamFilename last downloaded file name
-     * @param prefix path to download files from
+     * @param prefix         path to download files from
      */
     @NotNull
     private Mono<StreamFileData> getAuto(StreamFilename streamFilename, String prefix) {
@@ -162,21 +156,22 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 consensusNode,
                 nodeId -> new PathParameterProperties(commonDownloaderProperties.getPathType(), 0L));
 
-        return switch(pathParam.pathType()) {
+        return switch (pathParam.pathType()) {
             case ACCOUNT_ID -> getPrefix(consensusNode, streamFilename);
             case NODE_ID -> getNodeIdBasedPrefix(consensusNode, streamFilename);
-            case AUTO -> getAutoAlgorithmPrefix(consensusNode, streamFilename);
+            case AUTO -> getAutoAlgorithmPrefix(consensusNode, streamFilename, pathParam);
         };
     }
 
     @NotNull
-    private String getAutoAlgorithmPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
+    private String getAutoAlgorithmPrefix(ConsensusNode consensusNode, StreamFilename streamFilename,
+            PathParameterProperties pathParam) {
         var currentTime = System.currentTimeMillis();
-        var pathParam = nodePathParamsMap.get(consensusNode);
         var accountIdPrefix = getPrefix(consensusNode, streamFilename);
         if (pathParam.pathExpirationTimestampMap() > currentTime) {
-           return accountIdPrefix;
+            return accountIdPrefix;
         }
+
         try {
             // Listing files from accountNodeId path
             var listResponse = listOnly(streamFilename, accountIdPrefix).block();
@@ -186,7 +181,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         consensusNode,
                         new PathParameterProperties(
                                 AUTO,
-                                (System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis())));
+                                (System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval()
+                                        .toMillis())));
                 return accountIdPrefix;
             }
         } catch (Exception e) {
@@ -221,7 +217,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             return mirrorProperties.getNetworkPrefix().toLowerCase();
         } else {
             if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
-                throw new InvalidConfigurationException("Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork().toString());
+                throw new InvalidConfigurationException(
+                        "Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork());
             }
             // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
             return mirrorProperties.getNetwork().toString().toLowerCase();
@@ -232,7 +229,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private String getPrefix(ConsensusNode node, StreamFilename streamFilename) {
         var streamType = streamFilename.getStreamType();
         return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(
-                streamType.getPath(), streamType.getNodePrefix(), node.getNodeAccountId(), getSidecarFolder(streamFilename));
+                streamType.getPath(), streamType.getNodePrefix(), node.getNodeAccountId(),
+                getSidecarFolder(streamFilename));
     }
 
     @NotNull
@@ -248,8 +246,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         }
     }
 
-    @NotNull
-    private static String getSidecarFolder(StreamFilename streamFilename) {
-        return streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "";
+    private record PathParameterProperties(CommonDownloaderProperties.PathType pathType,
+                                           long pathExpirationTimestampMap) {
     }
 }

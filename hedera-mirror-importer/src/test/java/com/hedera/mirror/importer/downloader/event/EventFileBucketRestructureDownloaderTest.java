@@ -20,23 +20,20 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
-import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
 
