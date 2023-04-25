@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store;
+package com.hedera.mirror.web3.evm.store.accessor;
 
 import java.util.Optional;
 import lombok.NonNull;

@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store;
 
 import com.hedera.mirror.web3.evm.exception.EvmException;
-
 import java.io.Serial;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -188,9 +187,7 @@ public abstract class CachingStateFrame<K> {
     }
 
     /** Signals that a type error occurred with the _value_ type */
-
     public static class CacheAccessIncorrectType extends EvmException {
-
 
         @Serial
         private static final long serialVersionUID = 8163169205069277937L;

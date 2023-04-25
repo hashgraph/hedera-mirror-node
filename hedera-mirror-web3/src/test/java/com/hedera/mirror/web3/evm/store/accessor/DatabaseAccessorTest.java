@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store;
-
-import com.hedera.mirror.web3.evm.store.DatabaseAccessor;
+package com.hedera.mirror.web3.evm.store.accessor;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Optional;

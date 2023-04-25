@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +43,11 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
     @NonNull
     public Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        return databaseAccessors.get(klass).get(key).flatMap(o -> Optional.of(klass.cast(o)));
+        final var databaseAccessor = databaseAccessors.get(klass);
+        if (databaseAccessor == null) {
+            throw new NullPointerException("no available accessor for given klass");
+        }
+        return databaseAccessor.get(key).flatMap(o -> Optional.of(klass.cast(o)));
     }
 
     @Override
