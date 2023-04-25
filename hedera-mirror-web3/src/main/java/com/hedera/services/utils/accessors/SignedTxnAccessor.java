@@ -20,27 +20,10 @@ import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN
 import static com.hedera.services.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hedera.services.utils.MiscUtils.hasUnknownFields;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
-import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -55,20 +38,10 @@ import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.ethereum.EthTxData;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.StringUtils;
@@ -90,7 +63,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     private final int sigMapSize;
     private final int numSigPairs;
-    private int numImplicitCreations = UNKNOWN_NUM_IMPLICIT_CREATIONS;
     private final byte[] hash;
     private final byte[] txnBytes;
     private final byte[] utf8MemoBytes;
@@ -112,15 +84,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     private AccountID payer;
     private ScheduleID scheduleRef;
-
-    public static SignedTxnAccessor uncheckedFrom(final Transaction validSignedTxn) {
-        try {
-            return SignedTxnAccessor.from(validSignedTxn.toByteArray());
-        } catch (final Exception illegal) {
-            log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-            throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
-        }
-    }
 
     public static SignedTxnAccessor from(final byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
         return new SignedTxnAccessor(signedTxnWrapperBytes, null);
@@ -183,34 +146,14 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public boolean hasConsequentialUnknownFields() {
-        return usesUnknownFields;
-    }
-
-    @Override
     public EthTxData opEthTxData() {
         final var hapiTx = txn.getEthereumTransaction();
         return EthTxData.populateEthTxData(unwrapUnsafelyIfPossible(hapiTx.getEthereumData()));
     }
 
     @Override
-    public void setNumImplicitCreations(final int numImplicitCreations) {
-        this.numImplicitCreations = numImplicitCreations;
-    }
-
-    @Override
-    public int getNumImplicitCreations() {
-        return numImplicitCreations;
-    }
-
-    @Override
-    public boolean areImplicitCreationsCounted() {
-        return numImplicitCreations != UNKNOWN_NUM_IMPLICIT_CREATIONS;
-    }
-
-    @Override
-    public SignatureMap getSigMap() {
-        return sigMap;
+    public Map<String, Object> getSpanMap() {
+        return spanMap;
     }
 
     @Override
@@ -224,21 +167,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public long getOfferedFee() {
         return txn.getTransactionFee();
-    }
-
-    @Override
-    public byte[] getTxnBytes() {
-        return txnBytes;
-    }
-
-    @Override
-    public void setExpandedSigStatus(final ResponseCodeEnum status) {
-        this.expandedSigStatus = status;
-    }
-
-    @Override
-    public ResponseCodeEnum getExpandedSigStatus() {
-        return expandedSigStatus;
     }
 
     @Override
@@ -262,16 +190,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public byte[] getSignedTxnWrapperBytes() {
-        return signedTxnWrapperBytes;
-    }
-
-    @Override
-    public byte[] getMemoUtf8Bytes() {
-        return utf8MemoBytes;
-    }
-
-    @Override
     public String getMemo() {
         return memo;
     }
@@ -281,40 +199,8 @@ public class SignedTxnAccessor implements TxnAccessor {
         return hash;
     }
 
-    @Override
-    public boolean canTriggerTxn() {
-        return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
-    }
-
-    @Override
-    public boolean memoHasZeroByte() {
-        return memoHasZeroByte;
-    }
-
-    @Override
-    public boolean isTriggeredTxn() {
-        return scheduleRef != null;
-    }
-
-    @Override
-    public boolean throttleExempt() {
-        if (throttleExempt) {
-            return true;
-        }
-        final var p = getPayer();
-        if (p != null) {
-            // return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
-        }
-        return false;
-    }
-
     public void markThrottleExempt() {
         this.throttleExempt = true;
-    }
-
-    @Override
-    public boolean congestionExempt() {
-        return congestionExempt;
     }
 
     public void markCongestionExempt() {
@@ -322,39 +208,8 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public ScheduleID getScheduleRef() {
-        return scheduleRef;
-    }
-
-    @Override
     public void setScheduleRef(final ScheduleID scheduleRef) {
         this.scheduleRef = scheduleRef;
-    }
-
-    @Override
-    public String toLoggableString() {
-        return MoreObjects.toStringHelper(this)
-                .add("sigMapSize", sigMapSize)
-                .add("numSigPairs", numSigPairs)
-                .add("numImplicitCreations", numImplicitCreations)
-                .add("hash", hash)
-                .add("txnBytes", txnBytes)
-                .add("utf8MemoBytes", utf8MemoBytes)
-                .add("memo", memo)
-                .add("memoHasZeroByte", memoHasZeroByte)
-                .add("signedTxnWrapper", signedTxnWrapper)
-                .add("hash", hash)
-                .add("txnBytes", txnBytes)
-                .add("sigMap", sigMap)
-                .add("txnId", txnId)
-                .add("txn", txn)
-                .add("submitMessageMeta", submitMessageMeta)
-                .add("xferUsageMeta", xferUsageMeta)
-                .add("txnUsageMeta", txnUsageMeta)
-                .add("function", function)
-                .add("payer", payer)
-                .add("scheduleRef", scheduleRef)
-                .toString();
     }
 
     @Override
@@ -378,33 +233,6 @@ public class SignedTxnAccessor implements TxnAccessor {
             throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
         }
         return xferUsageMeta;
-    }
-
-    @Override
-    public SubmitMessageMeta availSubmitUsageMeta() {
-        if (function != ConsensusSubmitMessage) {
-            throw new IllegalStateException(
-                    "Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
-        }
-        return submitMessageMeta;
-    }
-
-    @Override
-    public boolean mintsWithMetadata() {
-        return function == TokenMint && txn.getTokenMint().getMetadataCount() > 0;
-    }
-
-    @Override
-    public Map<String, Object> getSpanMap() {
-        return spanMap;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
-        spanMap = Collections.unmodifiableMap(newSpanMap);
     }
 
     @Override
