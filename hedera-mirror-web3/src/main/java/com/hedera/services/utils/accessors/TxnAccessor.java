@@ -1,15 +1,5 @@
 package com.hedera.services.utils.accessors;
 
-import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
-
-import com.hedera.services.hapi.fees.usage.SigUsage;
-
-import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-
-import com.hedera.services.utils.ethereum.EthTxData;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -21,9 +11,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Map;
 
+import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.services.hapi.fees.usage.SigUsage;
+import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.ethereum.EthTxData;
+
 /**
- * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC
- * {@link Transaction}.
+ * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
 
@@ -35,8 +31,6 @@ public interface TxnAccessor {
     AccountID getPayer();
 
     TransactionID getTxnId();
-
-    HederaFunctionality getFunction();
 
     BaseTransactionMeta baseUsageMeta();
 
@@ -67,7 +61,7 @@ public interface TxnAccessor {
 
     TransactionBody getTxn();
 
-    long getGasLimitForContractTx();
+    HederaFunctionality getFunction();
 
     // --- Used to construct the record for any transaction ---
     String getMemo();
@@ -145,9 +139,4 @@ public interface TxnAccessor {
     default ResponseCodeEnum doPrecheck() {
         throw new UnsupportedOperationException();
     }
-
-    //void setStateView(StateView view);
-
-    //StateView getStateView();
-
 }

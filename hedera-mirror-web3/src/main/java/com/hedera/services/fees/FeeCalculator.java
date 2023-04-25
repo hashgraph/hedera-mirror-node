@@ -11,6 +11,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.sql.Time;
 import java.time.Instant;
 import java.util.Map;
 
@@ -23,5 +24,5 @@ public interface FeeCalculator {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant consensusTime);
+    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 }

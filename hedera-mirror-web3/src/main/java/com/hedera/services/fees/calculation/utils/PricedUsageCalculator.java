@@ -62,18 +62,6 @@ public class PricedUsageCalculator {
     }
 
 
-    public static void visitSimpleKeys(final JKey key, final Consumer<JKey> actionOnSimpleKey) {
-//        if (key.hasThresholdKey()) {
-//            key.getThresholdKey().getKeys().getKeysList().forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
-//        } else if (key.hasKeyList()) {
-//            key.getKeyList().getKeysList().forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
-//        } else {
-//            actionOnSimpleKey.accept(key);
-//        }
-        //TODO
-        actionOnSimpleKey.accept(key);
-    }
-
     /**
      * Counts the simple keys present in a complex Hedera key.
      *
@@ -81,13 +69,7 @@ public class PricedUsageCalculator {
      * @return the number of simple keys in the leaves of the Hedera key.
      */
     public static int numSimpleKeys(final JKey key) {
-        final var count = new AtomicInteger(0);
-        visitSimpleKeys(key, ignore -> count.incrementAndGet());
-        return count.get();
+        //always return 1
+        return 1;
     }
-
-    UsageAccumulator getHandleScopedAccumulator() {
-        return handleScopedAccumulator;
-    }
-
 }

@@ -29,8 +29,6 @@ import java.util.List;
  */
 public class FeeBuilder {
 
-    public static final long MAX_ENTITY_LIFETIME = 100L * 365L * 24L * 60L * 60L;
-
     public static final int LONG_SIZE = 8;
     public static final int FEE_MATRICES_CONST = 1;
     public static final int INT_SIZE = 4;
@@ -39,7 +37,6 @@ public class FeeBuilder {
     public static final int KEY_SIZE = 32;
     public static final int TX_HASH_SIZE = 48;
     public static final long RECEIPT_STORAGE_TIME_SEC = 180;
-    public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
     public static final int FEE_DIVISOR_FACTOR = 1000;
     public static final int HRS_DIVISOR = 3600;
     public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
@@ -48,30 +45,16 @@ public class FeeBuilder {
     public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
     public static final int CRYPTO_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + INT_SIZE + LONG_SIZE; // owner, spender ,
-    // amount
     public static final int TOKEN_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + LONG_SIZE; // owner, tokenNum,
-    // spender num, amount
     public static final int NFT_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + BOOL_SIZE; // owner, tokenNum,
-    // spender num, approvedForAll
 
     public static final int NFT_DELETE_ALLOWANCE_SIZE = 2 * BASIC_ENTITY_ID_SIZE; // owner, tokenID
 
-    /**
-     * Fields included: status, exchangeRate.
-     */
     public static final int BASIC_RECEIPT_SIZE = INT_SIZE + 2 * EXCHANGE_RATE_SIZE;
-    /**
-     * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration, generateRecord
-     */
     public static final int BASIC_TX_BODY_SIZE =
             BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
 
-    public static final int STATE_PROOF_SIZE = 2000;
     public static final int BASE_FILEINFO_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
-    public static final int BASIC_ACCOUNT_SIZE = 8 * LONG_SIZE + BOOL_SIZE;
-    /**
-     * Fields included: nodeTransactionPrecheckCode, responseType, cost
-     */
     public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
 
     public static final long BASIC_QUERY_HEADER = 212L;
@@ -122,7 +105,7 @@ public class FeeBuilder {
     /**
      * This method calculates number of keys
      *
-     * @param key key
+     * @param key   key
      * @param count count array
      * @return int array containing key metadata
      */

@@ -17,16 +17,16 @@
  * limitations under the License.
  * ‍
  */
-
 package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_1H;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
+
+import com.hedera.mirror.common.domain.entity.Entity;
 
 @Repository
 public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
@@ -34,20 +34,20 @@ public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
     @Query(
             value =
                     """
-                with latest_create as (
-                      select max(file_data.consensus_timestamp) as consensus_timestamp
-                      from file_data
-                      where file_data.entity_id = 112 and file_data.transaction_type in (17, 19)
-                      group by file_data.entity_id
-                      order by consensus_timestamp desc
-                    )
-                    select
-                    string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
-                    from file_data
-                    join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = 112 and file_data.transaction_type in (16, 17, 19)
-                      and ?1 >= l.consensus_timestamp
-                    group by file_data.entity_id""",
+                            with latest_create as (
+                                  select max(file_data.consensus_timestamp) as consensus_timestamp
+                                  from file_data
+                                  where file_data.entity_id = 112 and file_data.transaction_type in (17, 19)
+                                  group by file_data.entity_id
+                                  order by consensus_timestamp desc
+                                )
+                                select
+                                string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
+                                from file_data
+                                join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
+                                where file_data.entity_id = 112 and file_data.transaction_type in (16, 17, 19)
+                                  and ?1 >= l.consensus_timestamp
+                                group by file_data.entity_id""",
             nativeQuery = true)
     @Cacheable(
             cacheNames = "price_and_fee.exchange_rate",
@@ -59,20 +59,20 @@ public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
     @Query(
             value =
                     """
-                with latest_create as (
-                      select max(file_data.consensus_timestamp) as consensus_timestamp
-                      from file_data
-                      where file_data.entity_id = 111 and file_data.transaction_type in (17, 19)
-                      group by file_data.entity_id
-                      order by consensus_timestamp desc
-                    )
-                    select
-                    string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
-                    from file_data
-                    join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = 111 and file_data.transaction_type in (16, 17, 19)
-                      and ?1 >= l.consensus_timestamp
-                    group by file_data.entity_id""",
+                            with latest_create as (
+                                  select max(file_data.consensus_timestamp) as consensus_timestamp
+                                  from file_data
+                                  where file_data.entity_id = 111 and file_data.transaction_type in (17, 19)
+                                  group by file_data.entity_id
+                                  order by consensus_timestamp desc
+                                )
+                                select
+                                string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
+                                from file_data
+                                join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
+                                where file_data.entity_id = 111 and file_data.transaction_type in (16, 17, 19)
+                                  and ?1 >= l.consensus_timestamp
+                                group by file_data.entity_id""",
             nativeQuery = true)
     @Cacheable(
             cacheNames = "price_and_fee.fee_schedule",

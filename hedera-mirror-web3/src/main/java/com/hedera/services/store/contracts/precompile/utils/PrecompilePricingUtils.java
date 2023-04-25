@@ -1,6 +1,7 @@
 package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -28,21 +29,11 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.BasicHbarCentExchange;
-
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
-
-import com.hedera.services.fees.pricing.AssetsLoader;
-
-import com.hedera.services.hapi.utils.fees.FeeBuilder;
-
-import com.hedera.services.store.contracts.precompile.Precompile;
-
-import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.jproto.JKey;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -60,7 +51,24 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.hapi.utils.fees.FeeBuilder;
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.accessors.AccessorFactory;
+
 public class PrecompilePricingUtils {
+
+    public static final JKey EMPTY_KEY;
+
+    static {
+        EMPTY_KEY = asFcKeyUnchecked(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+    }
+
     static class CanonicalOperationsUnloadableException extends RuntimeException {
         public CanonicalOperationsUnloadableException(final Exception e) {
             super("Canonical prices for precompiles are not available", e);
@@ -68,8 +76,8 @@ public class PrecompilePricingUtils {
     }
 
     /**
-     * If we lack an entry (because of a bad data load), return a value that cannot reasonably be
-     * paid. In this case $1 Million Dollars.
+     * If we lack an entry (because of a bad data load), return a value that cannot reasonably be paid. In this case $1
+     * Million Dollars.
      */
     static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
 
@@ -125,7 +133,7 @@ public class PrecompilePricingUtils {
     }
 
     public long gasFeeInTinybars(
-            final TransactionBody.Builder txBody, final Instant consensusTime, final Precompile precompile) {
+            final TransactionBody.Builder txBody, final Timestamp timestamp, final Precompile precompile) {
         final var signedTxn = SignedTransaction.newBuilder()
                 .setBodyBytes(txBody.build().toByteString())
                 .setSigMap(SignatureMap.getDefaultInstance())
@@ -136,7 +144,7 @@ public class PrecompilePricingUtils {
 
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
         precompile.addImplicitCostsIn(accessor);
-        final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+        final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -167,7 +175,7 @@ public class PrecompilePricingUtils {
                 transactionBody.setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(timestamp)
                         .build()),
-                Instant.ofEpochSecond(blockTimestamp),
+                timestamp,
                 precompile);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);

@@ -31,7 +31,6 @@ import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.services.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.util.UtilOpsUsage;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 
 @Singleton
@@ -56,9 +55,6 @@ public class AccessorBasedUsages {
             TokenUnpause,
             UtilPrng);
 
-    private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
-
-    private final FileOpsUsage fileOpsUsage;
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;
     private final ConsensusOpsUsage consensusOpsUsage;
@@ -76,7 +72,6 @@ public class AccessorBasedUsages {
             ConsensusOpsUsage consensusOpsUsage,
             UtilOpsUsage utilOpsUsage
     ) {
-        this.fileOpsUsage = fileOpsUsage;
         this.tokenOpsUsage = tokenOpsUsage;
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.opUsageCtxHelper = opUsageCtxHelper;
@@ -101,12 +96,6 @@ public class AccessorBasedUsages {
             estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into);
         } else if (function == CryptoDeleteAllowance) {
             estimateCryptoDeleteAllowance(sigUsage, accessor, baseMeta, into);
-        } else if (function == ConsensusSubmitMessage) {
-            estimateSubmitMessage(sigUsage, accessor, baseMeta, into);
-        } else if (function == TokenFeeScheduleUpdate) {
-            estimateFeeScheduleUpdate(sigUsage, accessor, baseMeta, into);
-        } else if (function == FileAppend) {
-            estimateFileAppend(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenCreate) {
             estimateTokenCreate(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenBurn) {
@@ -130,20 +119,6 @@ public class AccessorBasedUsages {
 
     public boolean supports(HederaFunctionality function) {
         return supportedOps.contains(function);
-    }
-
-    private void estimateFeeScheduleUpdate(
-            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
-        final var op = accessor.getTxn().getTokenFeeScheduleUpdate();
-        final var opMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
-        final var usageCtx = opUsageCtxHelper.ctxForFeeScheduleUpdate(op);
-        tokenOpsUsage.feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, usageCtx, into);
-    }
-
-    private void estimateFileAppend(
-            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
-        final var opMeta = opUsageCtxHelper.metaForFileAppend(accessor.getTxn());
-        fileOpsUsage.fileAppendUsage(sigUsage, opMeta, baseMeta, into);
     }
 
     private void estimateCryptoTransfer(
@@ -177,12 +152,6 @@ public class AccessorBasedUsages {
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoDeleteAllowanceMeta = accessor.getSpanMapAccessor().getCryptoDeleteAllowanceMeta(accessor);
         cryptoOpsUsage.cryptoDeleteAllowanceUsage(sigUsage, baseMeta, cryptoDeleteAllowanceMeta, into);
-    }
-
-    private void estimateSubmitMessage(
-            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
-        final var submitMeta = accessor.availSubmitUsageMeta();
-        consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
     }
 
     private void estimateTokenCreate(

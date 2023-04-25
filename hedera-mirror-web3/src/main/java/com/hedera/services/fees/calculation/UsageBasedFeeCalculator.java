@@ -78,8 +78,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant now) {
-        return feeGiven(accessor, payerKey, view, usagePrices.activePrices(accessor), exchange.activeRate(now), true);
+    public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
+        return feeGiven(accessor, payerKey, view, usagePrices.pricesGiven(accessor.getFunction(), at, null), exchange.rate(at), true);
     }
 
     private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
@@ -191,7 +191,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
                 return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
-            } catch (InvalidTxBodyException e) {
+            } catch (Exception e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",
                         accessor.getSignedTxnWrapper(),

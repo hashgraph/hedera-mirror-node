@@ -1,6 +1,9 @@
 package com.hedera.services.utils.accessors;
 
 import static com.hedera.services.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hedera.services.utils.MiscUtils.hasUnknownFields;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -22,8 +25,27 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.Arrays;
 
 import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -37,27 +59,7 @@ import com.hedera.services.hapi.fees.usage.token.meta.CryptoTransferMeta;
 import com.hedera.services.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-
 import com.hedera.services.utils.ethereum.EthTxData;
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.commons.codec.binary.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.Arrays;
 
 public class SignedTxnAccessor implements TxnAccessor {
 
@@ -131,13 +133,21 @@ public class SignedTxnAccessor implements TxnAccessor {
         if (signedTxnBytes.isEmpty()) {
             txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
             sigMap = signedTxnWrapper.getSigMap();
-            hash = noThrowSha384HashOf(signedTxnWrapperBytes);
+            try {
+                hash = MessageDigest.getInstance("SHA-384").digest(signedTxnWrapperBytes);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
             usesUnknownFields |= hasUnknownFields(signedTxn);
             txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
             sigMap = signedTxn.getSigMap();
-            hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
+            try {
+                hash = MessageDigest.getInstance("SHA-384").digest(signedTxnWrapperBytes);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         txn = TransactionBody.parseFrom(txnBytes);
@@ -153,7 +163,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
         payer = getTxnId().getAccountID();
 
-        getFunction();
         setBaseUsageMeta();
         setOpUsageMeta();
     }
@@ -192,7 +201,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public HederaFunctionality getFunction() {
         if (function == null) {
-            function = MiscUtils.FUNCTION_EXTRACTOR.apply(getTxn());
+            function = FUNCTION_EXTRACTOR.apply(getTxn());
         }
         return function;
     }
@@ -216,7 +225,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     public ResponseCodeEnum getExpandedSigStatus() {
         return expandedSigStatus;
     }
-
 
     @Override
     public Transaction getSignedTxnWrapper() {
@@ -280,7 +288,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         }
         final var p = getPayer();
         if (p != null) {
-            return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
+            //return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
         }
         return false;
     }
@@ -376,7 +384,9 @@ public class SignedTxnAccessor implements TxnAccessor {
         return spanMap;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
         spanMap = Collections.unmodifiableMap(newSpanMap);
@@ -385,12 +395,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
         return SPAN_MAP_ACCESSOR;
-    }
-
-    @Override
-    public long getGasLimitForContractTx() {
-        return MiscUtils.getGasLimitForContractTx(
-                getTxn(), getFunction(), () -> getSpanMapAccessor().getEthTxDataMeta(this));
     }
 
     private void setBaseUsageMeta() {
