@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,11 +73,10 @@ class GrpcClientSDKTest {
         grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
         consensusServiceStub = new ConsensusServiceStub();
-        server =
-                InProcessServerBuilder.forName("test")
-                        .addService(consensusServiceStub)
-                        .build()
-                        .start();
+        server = InProcessServerBuilder.forName("test")
+                .addService(consensusServiceStub)
+                .build()
+                .start();
     }
 
     @AfterEach
@@ -112,17 +111,17 @@ class GrpcClientSDKTest {
         List<ConsensusTopicResponse> responses = Arrays.asList(response(1L), response(2L));
         consensusServiceStub.setResponses(Flux.fromIterable(responses));
 
-        StepVerifier.Step<SubscribeResponse> stepVerifier = StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription));
+        StepVerifier.Step<SubscribeResponse> stepVerifier =
+                StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription));
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
-        StepVerifier.Step<SubscribeResponse> stepVerifier2 = StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription2));
+        StepVerifier.Step<SubscribeResponse> stepVerifier2 =
+                StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription2));
 
         verifyResponses(stepVerifier, responses);
         verifyResponses(stepVerifier2, responses);
 
-        assertThat(subscription)
-                .returns(2L, GrpcSubscription::getCount)
-                .returns(Map.of(), GrpcSubscription::getErrors);
+        assertThat(subscription).returns(2L, GrpcSubscription::getCount).returns(Map.of(), GrpcSubscription::getErrors);
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors);
@@ -133,8 +132,7 @@ class GrpcClientSDKTest {
         properties.setLimit(2L);
         consensusServiceStub.getRequest().setLimit(2L);
         ConsensusTopicResponse response1 = response(1L);
-        consensusServiceStub.setResponses(
-                Flux.just(response1).delayElements(Duration.ofSeconds(1L)));
+        consensusServiceStub.setResponses(Flux.just(response1).delayElements(Duration.ofSeconds(1L)));
         StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription))
                 .thenAwait(WAIT)
                 .expectNextCount(1L)
@@ -144,8 +142,7 @@ class GrpcClientSDKTest {
         Timestamp consensusTimestamp = response1.getConsensusTimestamp();
         consensusServiceStub
                 .getRequest()
-                .setConsensusStartTime(
-                        consensusTimestamp.toBuilder().setNanos(consensusTimestamp.getNanos() + 1));
+                .setConsensusStartTime(consensusTimestamp.toBuilder().setNanos(consensusTimestamp.getNanos() + 1));
         consensusServiceStub.getRequest().setLimit(1L);
         consensusServiceStub.setResponses(Flux.just(response(2L)));
         StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription))
@@ -153,14 +150,13 @@ class GrpcClientSDKTest {
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(WAIT);
-        assertThat(subscription)
-                .returns(2L, GrpcSubscription::getCount)
-                .returns(Map.of(), GrpcSubscription::getErrors);
+        assertThat(subscription).returns(2L, GrpcSubscription::getCount).returns(Map.of(), GrpcSubscription::getErrors);
     }
 
     @Test
     void missingPublishTimestamp() {
-        consensusServiceStub.setResponses(Flux.just(ConsensusTopicResponse.newBuilder().build()));
+        consensusServiceStub.setResponses(
+                Flux.just(ConsensusTopicResponse.newBuilder().build()));
         StepVerifier.withVirtualTime(() -> grpcClientSDK.subscribe(subscription))
                 .thenAwait(WAIT)
                 .expectNextCount(1L)
@@ -203,18 +199,19 @@ class GrpcClientSDKTest {
                 .matches(s -> !s.isRunning());
     }
 
-    private void verifyResponses(StepVerifier.Step<SubscribeResponse> stepVerifier, List<ConsensusTopicResponse> stubbedResponses) {
-        stubbedResponses.forEach(response -> stepVerifier.thenAwait(TOPIC_RESPONSE_DELAY).expectNextCount(1L));
+    private void verifyResponses(
+            StepVerifier.Step<SubscribeResponse> stepVerifier, List<ConsensusTopicResponse> stubbedResponses) {
+        stubbedResponses.forEach(
+                response -> stepVerifier.thenAwait(TOPIC_RESPONSE_DELAY).expectNextCount(1L));
         stepVerifier.expectComplete().verify(WAIT);
     }
 
     private ConsensusTopicResponse response(Long sequenceNumber) {
         return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(
-                        Timestamp.newBuilder()
-                                .setSeconds(START_TIME.plusSeconds(sequenceNumber).getEpochSecond())
-                                .setNanos(START_TIME.getNano())
-                                .build())
+                .setConsensusTimestamp(Timestamp.newBuilder()
+                        .setSeconds(START_TIME.plusSeconds(sequenceNumber).getEpochSecond())
+                        .setNanos(START_TIME.getNano())
+                        .build())
                 .setSequenceNumber(sequenceNumber)
                 .setMessage(ByteString.copyFrom(Utility.generateMessage(256)))
                 .build();
@@ -231,19 +228,19 @@ class GrpcClientSDKTest {
     public class ConsensusServiceStub extends ConsensusServiceGrpc.ConsensusServiceImplBase {
 
         private Flux<ConsensusTopicResponse> responses = Flux.empty();
-        private ConsensusTopicQuery.Builder request =
-                ConsensusTopicQuery.newBuilder()
-                        .setConsensusEndTime(toTimestamp(properties.getEndTime()))
-                        .setConsensusStartTime(toTimestamp(properties.getStartTime()))
-                        .setLimit(properties.getLimit())
-                        .setTopicID(TopicID.newBuilder().setTopicNum(1000).build());
+        private ConsensusTopicQuery.Builder request = ConsensusTopicQuery.newBuilder()
+                .setConsensusEndTime(toTimestamp(properties.getEndTime()))
+                .setConsensusStartTime(toTimestamp(properties.getStartTime()))
+                .setLimit(properties.getLimit())
+                .setTopicID(TopicID.newBuilder().setTopicNum(1000).build());
 
         @Override
-        public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery,
-                                   StreamObserver<ConsensusTopicResponse> streamObserver) {
+        public void subscribeTopic(
+                ConsensusTopicQuery consensusTopicQuery, StreamObserver<ConsensusTopicResponse> streamObserver) {
             log.debug("subscribeTopic: {}", consensusTopicQuery);
             assertThat(consensusTopicQuery).isEqualTo(request.build());
-            responses.delayElements(TOPIC_RESPONSE_DELAY)
+            responses
+                    .delayElements(TOPIC_RESPONSE_DELAY)
                     .doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)

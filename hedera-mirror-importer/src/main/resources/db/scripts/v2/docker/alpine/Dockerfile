@@ -1,9 +1,10 @@
 # This file is auto generated from it's template,
 # see citusdata/tools/packaging_automation/templates/docker/alpine/alpine.tmpl.dockerfile.
-FROM postgres:14.5-alpine
+# Postgres version specified in Docker Hub citusdata/citus:11.2.0 reference in debian build
+FROM postgres:15.1-alpine
 ARG PG_CRON_DB='mirror_node'
-ARG PG_CRON_VERSION=1.5.1
-ARG PG_PARTMAN_VERSION=4.7.2
+ARG PG_CRON_VERSION=1.5.2
+ARG PG_PARTMAN_VERSION=4.7.3
 ARG VERSION=11.2.0
 
 LABEL maintainer="Citus Data https://citusdata.com" \
@@ -44,7 +45,7 @@ RUN apk add --no-cache \
 #--------End of Citus Build
 
 # Install pg_cron and pg_partman
-RUN apk add --no-cache --virtual .fetch-deps build-base ca-certificates clang llvm13 openssl \
+RUN apk add --no-cache --virtual .fetch-deps build-base ca-certificates clang llvm15 openssl \
     && wget -O /pg_cron.tar.gz https://github.com/citusdata/pg_cron/archive/v$PG_CRON_VERSION.tar.gz \
     && tar xvzf pg_cron.tar.gz \
     && cd pg_cron-$PG_CRON_VERSION \
@@ -54,7 +55,7 @@ RUN apk add --no-cache --virtual .fetch-deps build-base ca-certificates clang ll
     && cd .. && rm -rf pg_cron.tgz && rm -rf pg_cron-* \
     && apk del .fetch-deps
 
-RUN apk add --no-cache --virtual .fetch-deps build-base clang llvm13 \
+RUN apk add --no-cache --virtual .fetch-deps build-base clang llvm15 \
     && wget -O pg_partman.tar.gz "https://github.com/pgpartman/pg_partman/archive/v$PG_PARTMAN_VERSION.tar.gz" \
     && tar xvzf pg_partman.tar.gz \
     && cd pg_partman-$PG_PARTMAN_VERSION \

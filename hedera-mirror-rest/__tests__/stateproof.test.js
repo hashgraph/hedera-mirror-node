@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -391,20 +387,20 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
   test('with all files downloaded successfully', async () => {
     const getObjectStub = sinon.stub().callsFake((params, callback) => {
-        const stream = new Readable({
-          objectMode: true,
-        });
-        stream._read = function (size) {
-          this.push(params.Key);
-          let start = 0;
-          while (start < extraFileContent.length) {
-            const end = start + sliceSize;
-            this.push(extraFileContent.slice(start, end));
-            start = end;
-          }
-          this.push(null);
-        };
-        return Promise.resolve({Body: stream});
+      const stream = new Readable({
+        objectMode: true,
+      });
+      stream._read = function (size) {
+        this.push(params.Key);
+        let start = 0;
+        while (start < extraFileContent.length) {
+          const end = start + sliceSize;
+          this.push(extraFileContent.slice(start, end));
+          start = end;
+        }
+        this.push(null);
+      };
+      return Promise.resolve({Body: stream});
     });
 
     stubS3ClientGetObject(getObjectStub);
@@ -415,16 +411,16 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
   test('with all files failed to download', async () => {
     const getObjectStub = sinon.stub().callsFake((params, callback) => {
-        let handler;
-        const stream = new Readable();
-        stream._read = function (size) {
-          if (!handler) {
-            handler = setTimeout(() => {
-              this.emit('error', new Error('oops'));
-            }, 1000);
-          }
-        };
-        return Promise.resolve({Body: stream});
+      let handler;
+      const stream = new Readable();
+      stream._read = function (size) {
+        if (!handler) {
+          handler = setTimeout(() => {
+            this.emit('error', new Error('oops'));
+          }, 1000);
+        }
+      };
+      return Promise.resolve({Body: stream});
     });
     stubS3ClientGetObject(getObjectStub);
 
@@ -435,27 +431,27 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
   test('with download failed for 0.0.3', async () => {
     const getObjectStub = sinon.stub().callsFake((params, callback) => {
-        let handler;
-        const stream = new Readable();
-        stream._read = function (size) {
-          if (params.Key.search('0.0.3') !== -1) {
-            if (!handler) {
-              handler = setTimeout(() => {
-                this.emit('error', new Error('oops'));
-              }, 1000);
-            }
-          } else {
-            this.push(params.Key);
-            let start = 0;
-            while (start < extraFileContent.length) {
-              const end = start + sliceSize;
-              this.push(extraFileContent.slice(start, end));
-              start = end;
-            }
-            this.push(null);
+      let handler;
+      const stream = new Readable();
+      stream._read = function (size) {
+        if (params.Key.search('0.0.3') !== -1) {
+          if (!handler) {
+            handler = setTimeout(() => {
+              this.emit('error', new Error('oops'));
+            }, 1000);
           }
-        };
-        return Promise.resolve({Body: stream});
+        } else {
+          this.push(params.Key);
+          let start = 0;
+          while (start < extraFileContent.length) {
+            const end = start + sliceSize;
+            this.push(extraFileContent.slice(start, end));
+            start = end;
+          }
+          this.push(null);
+        }
+      };
+      return Promise.resolve({Body: stream});
     });
     stubS3ClientGetObject(getObjectStub);
 

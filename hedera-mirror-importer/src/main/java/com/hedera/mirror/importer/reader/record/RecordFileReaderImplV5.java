@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,20 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.reader.record;
+
 import com.google.common.primitives.Longs;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
+import com.hedera.mirror.importer.reader.AbstractStreamObject;
+import com.hedera.mirror.importer.reader.HashObject;
+import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -35,16 +40,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.importer.reader.AbstractStreamObject;
-import com.hedera.mirror.importer.reader.HashObject;
-import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @Named
 public class RecordFileReaderImplV5 implements RecordFileReader {
@@ -62,9 +57,10 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         // should not wrap, directly or indirectly, the second DigestInputStream. The BufferedInputStream after the
         // first DigestInputStream is needed to avoid digesting some class ID fields twice.
         try (DigestInputStream digestInputStream = new DigestInputStream(
-                new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
-                messageDigestMetadata);
-             ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
+                        new BufferedInputStream(
+                                new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
+                        messageDigestMetadata);
+                ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
             byte[] bytes = streamFileData.getBytes();
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(bytes);
@@ -93,8 +89,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setVersion(VERSION);
     }
 
-    private void readBody(ValidatedDataInputStream vdis, DigestInputStream metadataDigestInputStream,
-                          RecordFile recordFile) throws IOException {
+    private void readBody(
+            ValidatedDataInputStream vdis, DigestInputStream metadataDigestInputStream, RecordFile recordFile)
+            throws IOException {
         String filename = recordFile.getName();
 
         vdis.readInt(); // object stream version

@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 description = "Hedera Mirror Node Common"
 
-plugins {
-    id("java-conventions")
-}
+plugins { id("java-conventions") }
 
 dependencies {
     val testClasses by configurations.creating
@@ -47,6 +41,4 @@ dependencies {
     testClasses(sourceSets["test"].output)
 }
 
-java.sourceSets["main"].java {
-    srcDir("build/generated/sources/annotationProcessor/java/main")
-}
+java.sourceSets["main"].java { srcDir("build/generated/sources/annotationProcessor/java/main") }

@@ -1,7 +1,9 @@
 {
   "description": "Get blocks with no records returned",
   "setup": {},
-  "urls": ["/api/v1/blocks?block.number=gt:16&timestamp=lt:1676540001.234700000&order=asc&limit=1"],
+  "urls": [
+    "/api/v1/blocks?block.number=gt:16&timestamp=lt:1676540001.234700000&order=asc&limit=1"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "blocks": [],

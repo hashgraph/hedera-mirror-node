@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,17 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.listener;
+
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -33,13 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
@@ -54,6 +49,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Resource
     protected CompositeTopicListener topicListener;
+
     private Duration defaultInterval;
     private ListenerProperties.ListenerType defaultType;
 
@@ -89,7 +85,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectSubscription()
@@ -104,7 +101,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -124,7 +122,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -146,7 +145,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -165,7 +165,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -178,12 +179,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Test
     void startTimeEquals() {
         Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future));
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(future)
-                .topicId(topicId)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(future).topicId(topicId).build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -196,12 +196,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Test
     void startTimeAfter() {
         Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future.minusNanos(1)));
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(future)
-                .topicId(topicId)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(future).topicId(topicId).build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(topicMessage))
@@ -215,15 +214,15 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         Flux<TopicMessage> generator = Flux.concat(
                 domainBuilder.topicMessage(t -> t.topicId(0).consensusTimestamp(future.plusNanos(1L))),
                 domainBuilder.topicMessage(t -> t.topicId(1).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(t -> t.topicId(2).consensusTimestamp(future.plusNanos(3L)))
-        );
+                domainBuilder.topicMessage(t -> t.topicId(2).consensusTimestamp(future.plusNanos(3L))));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(EntityId.of(1L, EntityType.TOPIC))
                 .build();
 
-        topicListener.listen(filter)
+        topicListener
+                .listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(250))
@@ -237,12 +236,16 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void multipleSubscribers() {
         // @formatter:off
         Flux<TopicMessage> generator = Flux.concat(
-            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
-            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
-            domainBuilder.topicMessage(t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
-            domainBuilder.topicMessage(t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
-            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
-        );
+                domainBuilder.topicMessage(
+                        t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L))));
         // @formatter:on
 
         TopicMessageFilter filter1 = TopicMessageFilter.builder()

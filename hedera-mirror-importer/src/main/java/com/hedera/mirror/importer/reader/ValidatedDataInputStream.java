@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,11 @@ package com.hedera.mirror.importer.reader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.reader;
+
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,8 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-
 /**
  * A validated data input stream extends {@link DataInputStream} by providing methods to validate several types
  * of value read from the stream with expected value.
@@ -37,8 +32,8 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 public class ValidatedDataInputStream extends DataInputStream {
 
     private static final String NOT_EQUAL_ERROR_MESSAGE = "Unable to read %s: Expected %s but got %s";
-    private static final String NOT_IN_RANGE_ERROR_MESSAGE = "Unable to read %s: " +
-            "Expected value between %d and %d but got %d";
+    private static final String NOT_IN_RANGE_ERROR_MESSAGE =
+            "Unable to read %s: " + "Expected value between %d and %d but got %d";
     private static final int SIMPLE_SUM = 101;
 
     private final String resourceName;
@@ -72,13 +67,13 @@ public class ValidatedDataInputStream extends DataInputStream {
         return validate(expected, actual, sectionName, fieldName);
     }
 
-    public byte[] readLengthAndBytes(int minLength, int maxLength, boolean hasChecksum,
-            String type) throws IOException {
+    public byte[] readLengthAndBytes(int minLength, int maxLength, boolean hasChecksum, String type)
+            throws IOException {
         return readLengthAndBytes(minLength, maxLength, hasChecksum, null, type);
     }
 
-    public byte[] readLengthAndBytes(int minLength, int maxLength, boolean hasChecksum, String sectionName,
-            String type) throws IOException {
+    public byte[] readLengthAndBytes(int minLength, int maxLength, boolean hasChecksum, String sectionName, String type)
+            throws IOException {
         String typeLength = type + " length";
 
         int length = super.readInt();
@@ -109,19 +104,21 @@ public class ValidatedDataInputStream extends DataInputStream {
     private <T> T validate(T expected, T actual, String sectionName, String fieldName) {
         if (!Objects.equals(expected, actual)) {
             throw new InvalidStreamFileException(
-                    String.format(NOT_EQUAL_ERROR_MESSAGE, getFullFieldName(sectionName, fieldName),
-                            expected, actual));
+                    String.format(NOT_EQUAL_ERROR_MESSAGE, getFullFieldName(sectionName, fieldName), expected, actual));
         }
 
         return actual;
     }
 
-    private void validateBetween(int minimumExpected, int maximumExpected, int actual, String sectionName,
-            String fieldName) {
+    private void validateBetween(
+            int minimumExpected, int maximumExpected, int actual, String sectionName, String fieldName) {
         if (actual < minimumExpected || actual > maximumExpected) {
-            throw new InvalidStreamFileException(
-                    String.format(NOT_IN_RANGE_ERROR_MESSAGE, getFullFieldName(sectionName, fieldName),
-                            minimumExpected, maximumExpected, actual));
+            throw new InvalidStreamFileException(String.format(
+                    NOT_IN_RANGE_ERROR_MESSAGE,
+                    getFullFieldName(sectionName, fieldName),
+                    minimumExpected,
+                    maximumExpected,
+                    actual));
         }
     }
 

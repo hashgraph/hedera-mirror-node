@@ -1,4 +1,3 @@
-
 # K6 Performance Tests
 
 This module covers the [k6](https://k6.io/) based performance tests for Mirror Node APIs including rest, rosetta,
@@ -65,6 +64,7 @@ The following parameters can be used to configure a rest test:
 - DEFAULT_ACCOUNT_ID_TOKEN
 - DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
 - DEFAULT_ACCOUNT_BALANCE
+- DEFAULT_BALANCE_TIMESTAMP
 - DEFAULT_BLOCK_NUMBER
 - DEFAULT_BLOCK_HASH
 - DEFAULT_CONTRACT_ID
@@ -94,8 +94,8 @@ The following parameters can be used to configure a web3 test:
 - ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (Parent contract should be deployed)
-- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts should be deployed)
-- HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ViewContract contract in web3/reference should be deployed)
+- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/ErcTestContract.sol should be deployed)
+- HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (PrecompileTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/PrecompileTestContract.sol should be deployed)
 - KEY_TYPE - 64 character hex encoded key type without `0x` prefix
 - OPERATOR_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - SERIAL_NUMBER - 64 character hex encoded nft serial number without `0x` prefix
@@ -107,7 +107,9 @@ Example for ERC_CONTRACT deployment with js SDK
 
 ```js
 const contractCreate = await new ContractCreateFlow()
-  .setBytecode("HERE YOU NEED TO PUT BYTECODE FROM hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
+  .setBytecode(
+    "HERE YOU NEED TO PUT BYTECODE FROM hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json"
+  )
   .setGas(200_000)
   .execute(client);
 ```
@@ -235,19 +237,19 @@ a scenario divided by the run time of the test suite.
 
 With the test suite mode, a simplified markdown format report `report.md` will also be generated.
 
-| URL | VUS | Pass% | RPS | Avg. Req Duration | Skipped? | Comment |
-|----------|-----|-------|-----|-------------------|----------|---------|
-| /account/balance | 500 | 100.00 | 1390.03/s | 351.87ms | No       |         |
-| /block | 500 | 100.00 | 1655.40/s | 300.11ms | No       |         |
-| /block/transaction | 500 | 100.00 | 2840.99/s | 164.44ms | No       |         |
-| /construction/combine | 500 | 100.00 | 4615.40/s | 73.77ms | No       |         |
-| /construction/hash | 500 | 100.00 | 5876.76/s | 49.23ms | No       |         |
-| /construction/parse | 500 | 100.00 | 5738.85/s | 50.65ms | No       |         |
-| /construction/payloads | 500 | 100.00 | 5508.28/s | 56.44ms | No       |         |
-| /construction/preprocess | 500 | 100.00 | 5514.76/s | 52.88ms | No       |         |
-| /network/list | 500 | 100.00 | 6479.16/s | 44.77ms | No       |         |
-| /network/options | 500 | 100.00 | 5763.35/s | 51.97ms | No       |         |
-| /network/status | 500 | 100.00 | 3018.25/s | 160.10ms | No |         |
+| URL                      | VUS | Pass%  | RPS       | Avg. Req Duration | Skipped? | Comment |
+| ------------------------ | --- | ------ | --------- | ----------------- | -------- | ------- |
+| /account/balance         | 500 | 100.00 | 1390.03/s | 351.87ms          | No       |         |
+| /block                   | 500 | 100.00 | 1655.40/s | 300.11ms          | No       |         |
+| /block/transaction       | 500 | 100.00 | 2840.99/s | 164.44ms          | No       |         |
+| /construction/combine    | 500 | 100.00 | 4615.40/s | 73.77ms           | No       |         |
+| /construction/hash       | 500 | 100.00 | 5876.76/s | 49.23ms           | No       |         |
+| /construction/parse      | 500 | 100.00 | 5738.85/s | 50.65ms           | No       |         |
+| /construction/payloads   | 500 | 100.00 | 5508.28/s | 56.44ms           | No       |         |
+| /construction/preprocess | 500 | 100.00 | 5514.76/s | 52.88ms           | No       |         |
+| /network/list            | 500 | 100.00 | 6479.16/s | 44.77ms           | No       |         |
+| /network/options         | 500 | 100.00 | 5763.35/s | 51.97ms           | No       |         |
+| /network/status          | 500 | 100.00 | 3018.25/s | 160.10ms          | No       |         |
 
 ### Single Test
 

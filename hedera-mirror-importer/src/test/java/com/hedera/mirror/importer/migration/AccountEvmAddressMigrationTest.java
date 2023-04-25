@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,21 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
 import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
-
-import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -103,8 +98,10 @@ class AccountEvmAddressMigrationTest extends IntegrationTest {
 
     private void doInsertEntity(boolean history, long id, byte[] alias, byte[] evmAddress) {
         String suffix = history ? "_history" : "";
-        String sql = String.format("insert into entity%s (alias, created_timestamp, evm_address, id, num, realm, " +
-                "shard, timestamp_range, type) values (?,1,?,?,?,0,0,'[1,)','ACCOUNT')", suffix);
+        String sql = String.format(
+                "insert into entity%s (alias, created_timestamp, evm_address, id, num, realm, "
+                        + "shard, timestamp_range, type) values (?,1,?,?,?,0,0,'[1,)','ACCOUNT')",
+                suffix);
         jdbcOperations.update(sql, alias, evmAddress, id, id);
     }
 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +23,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -52,26 +58,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.schedule.Schedule;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
-
 class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long CREATE_TIMESTAMP = 1L;
     private static final long EXECUTE_TIMESTAMP = 500L;
     private static final String SCHEDULE_CREATE_MEMO = "ScheduleCreate memo";
-    private static final SchedulableTransactionBody SCHEDULED_TRANSACTION_BODY = SchedulableTransactionBody
-            .getDefaultInstance();
-    private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder().setShardNum(0).setRealmNum(0)
-            .setScheduleNum(2).build();
+    private static final SchedulableTransactionBody SCHEDULED_TRANSACTION_BODY =
+            SchedulableTransactionBody.getDefaultInstance();
+    private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder()
+            .setShardNum(0)
+            .setRealmNum(0)
+            .setScheduleNum(2)
+            .build();
     private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);
     private static final long SIGN_TIMESTAMP = 10L;
 
@@ -90,8 +88,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         return Stream.of(
                 Arguments.of(null, PAYER, "no payer expect same as creator"),
                 Arguments.of(PAYER, PAYER, "payer set to creator"),
-                Arguments.of(PAYER2, PAYER2, "payer different than creator")
-        );
+                Arguments.of(PAYER2, PAYER2, "payer different than creator"));
     }
 
     @BeforeEach
@@ -106,8 +103,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, payer, SCHEDULE_ID);
 
         // verify entity count
-        Entity expectedEntity = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
-                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        Entity expectedEntity = createEntity(
+                EntityId.of(SCHEDULE_ID),
+                SCHEDULE_REF_KEY,
+                null,
+                null,
+                false,
+                null,
+                SCHEDULE_CREATE_MEMO,
+                null,
+                CREATE_TIMESTAMP,
+                CREATE_TIMESTAMP);
 
         Schedule expectedSchedule = Schedule.builder()
                 .consensusTimestamp(CREATE_TIMESTAMP)
@@ -134,16 +140,28 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var expirationTime = recordItemBuilder.timestamp();
         var pubKeyPrefix = recordItemBuilder.bytes(16);
         var signature = recordItemBuilder.bytes(32);
-        var recordItem = recordItemBuilder.scheduleCreate()
+        var recordItem = recordItemBuilder
+                .scheduleCreate()
                 .receipt(r -> r.setScheduleID(SCHEDULE_ID))
-                .signatureMap(s -> s.clear().addSigPair(SignaturePair.newBuilder()
-                        .setPubKeyPrefix(pubKeyPrefix).setEd25519(signature)))
+                .signatureMap(s -> s.clear()
+                        .addSigPair(SignaturePair.newBuilder()
+                                .setPubKeyPrefix(pubKeyPrefix)
+                                .setEd25519(signature)))
                 .transactionBody(b -> b.setExpirationTime(expirationTime).setWaitForExpiry(true))
                 .build();
         var scheduleCreate = recordItem.getTransactionBody().getScheduleCreate();
         var timestamp = recordItem.getConsensusTimestamp();
-        var expectedEntity = createEntity(EntityId.of(SCHEDULE_ID), scheduleCreate.getAdminKey(), null, null, false,
-                null, scheduleCreate.getMemo(), null, timestamp, timestamp);
+        var expectedEntity = createEntity(
+                EntityId.of(SCHEDULE_ID),
+                scheduleCreate.getAdminKey(),
+                null,
+                null,
+                false,
+                null,
+                scheduleCreate.getMemo(),
+                null,
+                timestamp,
+                timestamp);
         var expectedSchedule = Schedule.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .creatorAccountId(recordItem.getPayerAccountId())
@@ -181,8 +199,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleDeleteTransaction(deletedTimestamp, SCHEDULE_ID);
 
         // then
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
-                true, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, deletedTimestamp);
+        Entity expected = createEntity(
+                EntityId.of(SCHEDULE_ID),
+                SCHEDULE_REF_KEY,
+                null,
+                null,
+                true,
+                null,
+                SCHEDULE_CREATE_MEMO,
+                null,
+                CREATE_TIMESTAMP,
+                deletedTimestamp);
         assertEquals(1, entityRepository.count());
         assertEntity(expected);
 
@@ -228,8 +255,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
         // verify schedule signatures
         List<TransactionSignature> expectedTransactionSignatureList = new ArrayList<>(defaultSignatureList);
-        expectedTransactionSignatureList.addAll(toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID,
-                firstSignatureMap));
+        expectedTransactionSignatureList.addAll(
+                toTransactionSignatureList(SIGN_TIMESTAMP, SCHEDULE_ID, firstSignatureMap));
         assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // second sign
@@ -241,8 +268,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
-                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        Entity expected = createEntity(
+                EntityId.of(SCHEDULE_ID),
+                SCHEDULE_REF_KEY,
+                null,
+                null,
+                false,
+                null,
+                SCHEDULE_CREATE_MEMO,
+                null,
+                CREATE_TIMESTAMP,
+                CREATE_TIMESTAMP);
         assertEquals(1, entityRepository.count());
         assertEntity(expected);
 
@@ -259,10 +295,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         SignatureMap signatureMap = getSigMap(3, true);
         SignaturePair first = signatureMap.getSigPair(0);
         SignaturePair third = signatureMap.getSigPair(2);
-        SignatureMap signatureMapWithDuplicate = signatureMap.toBuilder()
-                .addSigPair(first)
-                .addSigPair(third)
-                .build();
+        SignatureMap signatureMapWithDuplicate =
+                signatureMap.toBuilder().addSigPair(first).addSigPair(third).build();
 
         insertScheduleSign(SIGN_TIMESTAMP, signatureMapWithDuplicate, SCHEDULE_ID);
 
@@ -275,16 +309,35 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     void unknownSignatureType() {
         int unknownType = 999;
         ByteString sig = ByteString.copyFromUtf8("123");
-        UnknownFieldSet.Field unknownField = UnknownFieldSet.Field.newBuilder().addLengthDelimited(sig).build();
+        UnknownFieldSet.Field unknownField =
+                UnknownFieldSet.Field.newBuilder().addLengthDelimited(sig).build();
 
         SignatureMap.Builder signatureMap = SignatureMap.newBuilder()
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setContract(sig).build())
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setECDSA384(sig).build())
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setECDSASecp256K1(sig).build())
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setEd25519(sig).build())
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setRSA3072(sig).build())
-                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8))
-                        .setUnknownFields(UnknownFieldSet.newBuilder().addField(unknownType, unknownField).build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setContract(sig)
+                        .build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setECDSA384(sig)
+                        .build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setECDSASecp256K1(sig)
+                        .build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setEd25519(sig)
+                        .build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setRSA3072(sig)
+                        .build())
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(byteString(8))
+                        .setUnknownFields(UnknownFieldSet.newBuilder()
+                                .addField(unknownType, unknownField)
+                                .build())
                         .build());
 
         insertScheduleSign(SIGN_TIMESTAMP, signatureMap.build(), SCHEDULE_ID);
@@ -310,7 +363,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     @Test
     void unsupportedSignature() {
-        SignatureMap signatureMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
+        SignatureMap signatureMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder().build())
+                .build();
         insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID);
 
         // verify
@@ -345,8 +400,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID, responseCodeEnum);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
-                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        Entity expected = createEntity(
+                EntityId.of(SCHEDULE_ID),
+                SCHEDULE_REF_KEY,
+                null,
+                null,
+                false,
+                null,
+                SCHEDULE_CREATE_MEMO,
+                null,
+                CREATE_TIMESTAMP,
+                CREATE_TIMESTAMP);
         assertEquals(1, entityRepository.count());
         assertEntity(expected);
 
@@ -387,7 +451,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     private Transaction scheduledTransaction() {
-        return buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+        return buildTransaction(builder -> builder.getCryptoTransferBuilder()
+                .getTransfersBuilder()
                 .addAccountAmounts(accountAmount(PAYER.getAccountNum(), 1000))
                 .addAccountAmounts(accountAmount(NODE.getAccountNum(), 2000)));
     }
@@ -413,17 +478,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         return builder.build();
     }
 
-    private TransactionRecord createTransactionRecord(long consensusTimestamp, ScheduleID scheduleID,
-                                                      TransactionBody transactionBody, ResponseCodeEnum responseCode,
-                                                      boolean scheduledTransaction) {
-        var receipt = TransactionReceipt.newBuilder()
-                .setStatus(responseCode)
-                .setScheduleID(scheduleID);
+    private TransactionRecord createTransactionRecord(
+            long consensusTimestamp,
+            ScheduleID scheduleID,
+            TransactionBody transactionBody,
+            ResponseCodeEnum responseCode,
+            boolean scheduledTransaction) {
+        var receipt = TransactionReceipt.newBuilder().setStatus(responseCode).setScheduleID(scheduleID);
 
-        return buildTransactionRecord(recordBuilder -> {
-                    recordBuilder
-                            .setReceipt(receipt)
-                            .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
+        return buildTransactionRecord(
+                recordBuilder -> {
+                    recordBuilder.setReceipt(receipt).setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
 
                     if (scheduledTransaction) {
                         recordBuilder.setScheduleRef(scheduleID);
@@ -431,16 +496,20 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
                     recordBuilder.getReceiptBuilder().setAccountID(PAYER);
                 },
-                transactionBody, responseCode.getNumber());
+                transactionBody,
+                responseCode.getNumber());
     }
 
     private void insertScheduleCreateTransaction(long createdTimestamp, AccountID payer, ScheduleID scheduleID) {
         Transaction createTransaction = scheduleCreateTransaction(payer);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
-        var createTransactionRecord = createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody,
-                SUCCESS, false);
+        var createTransactionRecord =
+                createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody, SUCCESS, false);
 
-        var recordItem = RecordItem.builder().transactionRecord(createTransactionRecord).transaction(createTransaction).build();
+        var recordItem = RecordItem.builder()
+                .transactionRecord(createTransactionRecord)
+                .transaction(createTransaction)
+                .build();
         parseRecordItemAndCommit(recordItem);
     }
 
@@ -449,32 +518,42 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var transactionBody = getTransactionBody(transaction);
         var transactionRecord = createTransactionRecord(timestamp, scheduleId, transactionBody, SUCCESS, false);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build());
     }
 
     private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap, ScheduleID scheduleID) {
         Transaction signTransaction = scheduleSignTransaction(scheduleID, signatureMap);
         TransactionBody signTransactionBody = getTransactionBody(signTransaction);
-        var signTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, signTransactionBody,
-                SUCCESS, false);
+        var signTransactionRecord =
+                createTransactionRecord(signTimestamp, scheduleID, signTransactionBody, SUCCESS, false);
 
-        var recordItem = RecordItem.builder().transaction(signTransaction).transactionRecord(signTransactionRecord).build();
+        var recordItem = RecordItem.builder()
+                .transaction(signTransaction)
+                .transactionRecord(signTransactionRecord)
+                .build();
         parseRecordItemAndCommit(recordItem);
     }
 
-    private void insertScheduledTransaction(long signTimestamp, ScheduleID scheduleID,
-                                            ResponseCodeEnum responseCodeEnum) {
+    private void insertScheduledTransaction(
+            long signTimestamp, ScheduleID scheduleID, ResponseCodeEnum responseCodeEnum) {
         var transaction = scheduledTransaction();
         var transactionBody = getTransactionBody(transaction);
         var record = createTransactionRecord(signTimestamp, scheduleID, transactionBody, responseCodeEnum, true);
-        var recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        var recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
         parseRecordItemAndCommit(recordItem);
     }
 
-    private void assertScheduleInRepository(ScheduleID scheduleID, long createdTimestamp, AccountID payer,
-                                            Long executedTimestamp) {
+    private void assertScheduleInRepository(
+            ScheduleID scheduleID, long createdTimestamp, AccountID payer, Long executedTimestamp) {
         Long scheduleEntityId = EntityId.of(scheduleID).getId();
-        assertThat(scheduleRepository.findById(scheduleEntityId)).get()
+        assertThat(scheduleRepository.findById(scheduleEntityId))
+                .get()
                 .returns(createdTimestamp, from(Schedule::getConsensusTimestamp))
                 .returns(executedTimestamp, from(Schedule::getExecutedTimestamp))
                 .returns(scheduleEntityId, from(Schedule::getScheduleId))
@@ -487,23 +566,25 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertThat(transactionSignatureRepository.findAll()).isNotNull().hasSameElementsAs(expected);
     }
 
-    private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled,
-                                               ResponseCodeEnum responseCode) {
-        assertThat(transactionRepository.findById(consensusTimestamp)).get()
+    private void assertTransactionInRepository(
+            long consensusTimestamp, boolean scheduled, ResponseCodeEnum responseCode) {
+        assertThat(transactionRepository.findById(consensusTimestamp))
+                .get()
                 .returns(scheduled, from(com.hedera.mirror.common.domain.transaction.Transaction::isScheduled))
-                .returns(responseCode.getNumber(),
+                .returns(
+                        responseCode.getNumber(),
                         from(com.hedera.mirror.common.domain.transaction.Transaction::getResult));
     }
 
-    private List<TransactionSignature> toTransactionSignatureList(long timestamp, ScheduleID scheduleId,
-                                                                  SignatureMap signatureMap) {
-        return signatureMap.getSigPairList()
-                .stream()
+    private List<TransactionSignature> toTransactionSignatureList(
+            long timestamp, ScheduleID scheduleId, SignatureMap signatureMap) {
+        return signatureMap.getSigPairList().stream()
                 .map(pair -> {
                     TransactionSignature transactionSignature = new TransactionSignature();
                     transactionSignature.setConsensusTimestamp(timestamp);
                     transactionSignature.setEntityId(EntityId.of(scheduleId));
-                    transactionSignature.setPublicKeyPrefix(pair.getPubKeyPrefix().toByteArray());
+                    transactionSignature.setPublicKeyPrefix(
+                            pair.getPubKeyPrefix().toByteArray());
                     transactionSignature.setSignature(pair.getEd25519().toByteArray());
                     transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;

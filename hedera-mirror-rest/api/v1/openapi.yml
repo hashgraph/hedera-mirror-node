@@ -6,21 +6,21 @@ paths:
       description: Returns a list of all account entity items on the network.
       operationId: listAccounts
       parameters:
-        - $ref: '#/components/parameters/accountBalanceQueryParam'
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
-        - $ref: '#/components/parameters/balanceQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: "#/components/parameters/accountBalanceQueryParam"
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/accountPublicKeyQueryParam"
+        - $ref: "#/components/parameters/balanceQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountsResponse'
+                $ref: "#/components/schemas/AccountsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}:
@@ -30,22 +30,22 @@ paths:
         Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/transactionTypeQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/transactionTypeQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountBalanceTransactions'
+                $ref: "#/components/schemas/AccountBalanceTransactions"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/nfts:
@@ -92,23 +92,23 @@ paths:
 
       operationId: listNftByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/serialNumberQueryParam'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
+        - $ref: "#/components/parameters/spenderIdQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Nfts'
+                $ref: "#/components/schemas/Nfts"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/rewards:
@@ -118,21 +118,21 @@ paths:
         Returns information for all past staking reward payouts for an account.
       operationId: listStakingRewardsByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StakingRewardsResponse'
+                $ref: "#/components/schemas/StakingRewardsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/tokens:
@@ -142,21 +142,21 @@ paths:
         Returns information for all token relationships for an account.
       operationId: listTokenRelationshipByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenRelationshipResponse'
+                $ref: "#/components/schemas/TokenRelationshipResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto:
@@ -165,21 +165,21 @@ paths:
       description: Returns information for all crypto allowances for an account.
       operationId: listCryptoAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/spenderIdQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CryptoAllowancesResponse'
+                $ref: "#/components/schemas/CryptoAllowancesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/tokens:
@@ -214,22 +214,22 @@ paths:
 
       operationId: listTokenAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/spenderIdQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenAllowancesResponse'
+                $ref: "#/components/schemas/TokenAllowancesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
   /api/v1/balances:
@@ -238,21 +238,21 @@ paths:
       description: Returns a timestamped list of account balances on the network, limited to at most 50 token balances per account as outlined in HIP-367. This includes both HBAR and token balances for accounts.
       operationId: listAccountBalances
       parameters:
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/accountBalanceQueryParam'
-        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/accountBalanceQueryParam"
+        - $ref: "#/components/parameters/accountPublicKeyQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BalancesResponse'
+                $ref: "#/components/schemas/BalancesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - balances
   /api/v1/blocks:
@@ -261,19 +261,19 @@ paths:
       description: Returns a list of blocks on the network.
       operationId: listBlocks
       parameters:
-        - $ref: '#/components/parameters/blockNumberQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/blockNumberQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlocksResponse'
+                $ref: "#/components/schemas/BlocksResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - blocks
   /api/v1/blocks/{hashOrNumber}:
@@ -282,18 +282,18 @@ paths:
       description: Returns the block information by given hash or number.
       operationId: getByHashOrNumber
       parameters:
-        - $ref: '#/components/parameters/hashOrNumberPathParam'
+        - $ref: "#/components/parameters/hashOrNumberPathParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Block'
+                $ref: "#/components/schemas/Block"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - blocks
 
@@ -307,50 +307,50 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ContractCallRequest'
+              $ref: "#/components/schemas/ContractCallRequest"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractCallResponse'
+                $ref: "#/components/schemas/ContractCallResponse"
         400:
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         404:
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         415:
           description: Unsupported media type error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         429:
           description: Too many requests
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         500:
           description: Generic error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         501:
           description: Not implemented error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
       tags:
         - contracts
   /api/v1/contracts:
@@ -359,18 +359,18 @@ paths:
       description: Returns a list of all contract entity items on the network.
       operationId: listContracts
       parameters:
-        - $ref: '#/components/parameters/contractIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: "#/components/parameters/contractIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractsResponse'
+                $ref: "#/components/schemas/ContractsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}:
@@ -379,19 +379,19 @@ paths:
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/contractIdOrAddressPathParam"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResponse'
+                $ref: "#/components/schemas/ContractResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}/results:
@@ -400,24 +400,24 @@ paths:
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/blockHashQueryParam'
-        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
-        - $ref: '#/components/parameters/fromQueryParam'
-        - $ref: '#/components/parameters/internalQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/transactionIndexQueryParam'
+        - $ref: "#/components/parameters/contractIdOrAddressPathParam"
+        - $ref: "#/components/parameters/blockHashQueryParam"
+        - $ref: "#/components/parameters/contractsBlockNumberQueryParam"
+        - $ref: "#/components/parameters/fromQueryParam"
+        - $ref: "#/components/parameters/internalQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/transactionIndexQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultsResponse'
+                $ref: "#/components/schemas/ContractResultsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}/state:
@@ -426,22 +426,22 @@ paths:
       description: Returns a list of all contract's slots. If no timestamp is provided, returns the current state.
       operationId: listContractState
       parameters:
-        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/slotQueryParam'
-        - $ref: '#/components/parameters/stateTimestampQueryParam'
+        - $ref: "#/components/parameters/contractIdOrAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/slotQueryParam"
+        - $ref: "#/components/parameters/stateTimestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractStateResponse'
+                $ref: "#/components/schemas/ContractStateResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
@@ -450,25 +450,25 @@ paths:
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
-        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/timestampPathParam'
+        - $ref: "#/components/parameters/contractIdOrAddressPathParam"
+        - $ref: "#/components/parameters/timestampPathParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultDetails'
+                $ref: "#/components/schemas/ContractResultDetails"
         206:
           description: Partial Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultDetails'
+                $ref: "#/components/schemas/ContractResultDetails"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
   /api/v1/contracts/results:
@@ -477,23 +477,23 @@ paths:
       description: Returns a list of all ContractResults for all contract's function executions.
       operationId: listAllContractsResults
       parameters:
-        - $ref: '#/components/parameters/fromQueryParam'
-        - $ref: '#/components/parameters/blockHashQueryParam'
-        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
-        - $ref: '#/components/parameters/internalQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/transactionIndexQueryParam'
+        - $ref: "#/components/parameters/fromQueryParam"
+        - $ref: "#/components/parameters/blockHashQueryParam"
+        - $ref: "#/components/parameters/contractsBlockNumberQueryParam"
+        - $ref: "#/components/parameters/internalQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/transactionIndexQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultsResponse'
+                $ref: "#/components/schemas/ContractResultsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - contracts
   /api/v1/contracts/results/{transactionIdOrHash}:
@@ -502,25 +502,25 @@ paths:
       description: Returns a single ContractResult for a contract's function executions for a given transactionId or ethereum transaction hash.
       operationId: getContractResultByTransactionIdOrHash
       parameters:
-        - $ref: '#/components/parameters/transactionIdOrEthHashPathParam'
-        - $ref: '#/components/parameters/nonceQueryParamWithDefault'
+        - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
+        - $ref: "#/components/parameters/nonceQueryParamWithDefault"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultDetails'
+                $ref: "#/components/schemas/ContractResultDetails"
         206:
           description: Partial Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultDetails'
+                $ref: "#/components/schemas/ContractResultDetails"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
   /api/v1/contracts/results/{transactionIdOrHash}/actions:
@@ -529,21 +529,21 @@ paths:
       description: Returns a list of ContractActions for a contract's function executions for a given transactionId or ethereum transaction hash.
       operationId: getContractActionsByTransactionIdOrHash
       parameters:
-        - $ref: '#/components/parameters/transactionIdOrEthHashPathParam'
-        - $ref: '#/components/parameters/contractActionsIndexQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
+        - $ref: "#/components/parameters/contractActionsIndexQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractActionsResponse'
+                $ref: "#/components/schemas/ContractActionsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}/results/logs:
@@ -581,24 +581,24 @@ paths:
 
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/logIndexQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/logTopic0QueryParam'
-        - $ref: '#/components/parameters/logTopic1QueryParam'
-        - $ref: '#/components/parameters/logTopic2QueryParam'
-        - $ref: '#/components/parameters/logTopic3QueryParam'
+        - $ref: "#/components/parameters/contractIdOrAddressPathParam"
+        - $ref: "#/components/parameters/logIndexQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/logTopic0QueryParam"
+        - $ref: "#/components/parameters/logTopic1QueryParam"
+        - $ref: "#/components/parameters/logTopic2QueryParam"
+        - $ref: "#/components/parameters/logTopic3QueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractLogsResponse'
+                $ref: "#/components/schemas/ContractLogsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - contracts
   /api/v1/contracts/results/logs:
@@ -635,23 +635,23 @@ paths:
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
       operationId: listContractsLogs
       parameters:
-        - $ref: '#/components/parameters/logIndexQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/logTopic0QueryParam'
-        - $ref: '#/components/parameters/logTopic1QueryParam'
-        - $ref: '#/components/parameters/logTopic2QueryParam'
-        - $ref: '#/components/parameters/logTopic3QueryParam'
+        - $ref: "#/components/parameters/logIndexQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/logTopic0QueryParam"
+        - $ref: "#/components/parameters/logTopic1QueryParam"
+        - $ref: "#/components/parameters/logTopic2QueryParam"
+        - $ref: "#/components/parameters/logTopic3QueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractLogsResponse'
+                $ref: "#/components/schemas/ContractLogsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - contracts
   /api/v1/network/exchangerate:
@@ -660,20 +660,20 @@ paths:
       description: Returns the network's exchange rate, current and next.
       operationId: getNetworkExchangeRate
       parameters:
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkExchangeRateSetResponse'
+                $ref: "#/components/schemas/NetworkExchangeRateSetResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
         500:
-          $ref: '#/components/responses/ServiceUnavailableError'
+          $ref: "#/components/responses/ServiceUnavailableError"
       tags:
         - network
   /api/v1/network/fees:
@@ -682,21 +682,21 @@ paths:
       description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC. Currently only `ContractCall`, `ContractCreate` and `EthereumTransaction` transaction types are supported.
       operationId: getNetworkFees
       parameters:
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkFeesResponse'
+                $ref: "#/components/schemas/NetworkFeesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
         500:
-          $ref: '#/components/responses/ServiceUnavailableError'
+          $ref: "#/components/responses/ServiceUnavailableError"
       tags:
         - network
   /api/v1/network/nodes:
@@ -705,19 +705,19 @@ paths:
       description: Returns the network's list of nodes used in consensus
       operationId: getNetworkNodes
       parameters:
-        - $ref: '#/components/parameters/fileIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/nodeIdQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: "#/components/parameters/fileIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/nodeIdQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkNodesResponse'
+                $ref: "#/components/schemas/NetworkNodesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - network
   /api/v1/network/stake:
@@ -731,13 +731,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkStakeResponse'
+                $ref: "#/components/schemas/NetworkStakeResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
         500:
-          $ref: '#/components/responses/ServiceUnavailableError'
+          $ref: "#/components/responses/ServiceUnavailableError"
       tags:
         - network
   /api/v1/network/supply:
@@ -746,18 +746,18 @@ paths:
       description: Returns the network's released supply of hbars
       operationId: getNetworkSupply
       parameters:
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkSupplyResponse'
+                $ref: "#/components/schemas/NetworkSupplyResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - network
   /api/v1/schedules:
@@ -766,19 +766,19 @@ paths:
       description: Lists schedules on the network that govern the execution logic of scheduled transactions. This includes executed and non executed schedules.
       operationId: listSchedules
       parameters:
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/scheduleIdQueryParam'
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/scheduleIdQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SchedulesResponse'
+                $ref: "#/components/schemas/SchedulesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - schedules
   /api/v1/schedules/{scheduleId}:
@@ -787,18 +787,18 @@ paths:
       description: Returns schedule information based on the given schedule id
       operationId: getScheduleById
       parameters:
-        - $ref: '#/components/parameters/scheduleIdPathParam'
+        - $ref: "#/components/parameters/scheduleIdPathParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Schedule'
+                $ref: "#/components/schemas/Schedule"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - schedules
   /api/v1/transactions:
@@ -807,30 +807,30 @@ paths:
       description: Lists transactions on the network. This includes successful and unsuccessful transactions.
       operationId: listTransactions
       parameters:
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/transactionTypeQueryParam'
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
+        - $ref: "#/components/parameters/transactionTypeQueryParam"
         - name: result
           in: query
           description: The transaction success type.
           schema:
-            enum: [ success, fail ]
+            enum: [success, fail]
         - name: type
           in: query
           description: The transaction account balance modification type.
           schema:
-            enum: [ credit, debit ]
+            enum: [credit, debit]
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TransactionsResponse'
+                $ref: "#/components/schemas/TransactionsResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - transactions
   /api/v1/transactions/{transactionId}:
@@ -839,20 +839,20 @@ paths:
       description: Returns transaction information based on the given transaction id
       operationId: getTransactionById
       parameters:
-        - $ref: '#/components/parameters/transactionIdPathParam'
-        - $ref: '#/components/parameters/nonceQueryParam'
-        - $ref: '#/components/parameters/scheduledQueryParam'
+        - $ref: "#/components/parameters/transactionIdPathParam"
+        - $ref: "#/components/parameters/nonceQueryParam"
+        - $ref: "#/components/parameters/scheduledQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TransactionByIdResponse'
+                $ref: "#/components/schemas/TransactionByIdResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - transactions
   /api/v1/transactions/{transactionId}/stateproof:
@@ -861,9 +861,9 @@ paths:
       description: Returns the  contents of the address book file, signature files, and record file that can be used to validate the transaction occurred on the Hedera network given transaction id.
       operationId: getStateproofInfo
       parameters:
-        - $ref: '#/components/parameters/transactionIdPathParam'
-        - $ref: '#/components/parameters/nonceQueryParamWithDefault'
-        - $ref: '#/components/parameters/scheduledQueryParamWithDefault'
+        - $ref: "#/components/parameters/transactionIdPathParam"
+        - $ref: "#/components/parameters/nonceQueryParamWithDefault"
+        - $ref: "#/components/parameters/scheduledQueryParamWithDefault"
       responses:
         200:
           description: OK
@@ -871,14 +871,14 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/StateProofResponseCompact'
-                  - $ref: '#/components/schemas/StateProofResponseFull'
+                  - $ref: "#/components/schemas/StateProofResponseCompact"
+                  - $ref: "#/components/schemas/StateProofResponseFull"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/TransactionNotFound'
+          $ref: "#/components/responses/TransactionNotFound"
         502:
-          $ref: '#/components/responses/ServiceUnavailableError'
+          $ref: "#/components/responses/ServiceUnavailableError"
       tags:
         - transactions
   /api/v1/topics/{topicId}/messages:
@@ -887,14 +887,14 @@ paths:
       description: Returns the list of topic messages for the given topic id.
       operationId: listTopicMessagesById
       parameters:
-        - $ref: '#/components/parameters/topicIdPathParam'
+        - $ref: "#/components/parameters/topicIdPathParam"
         - name: encoding
           in: query
           example: base64
           schema:
             type: string
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
         - name: sequencenumber
           in: query
           example: 2
@@ -902,18 +902,18 @@ paths:
             format: int64
             minimum: 0
             type: integer
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicMessagesResponse'
+                $ref: "#/components/schemas/TopicMessagesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/TopicNotFound'
+          $ref: "#/components/responses/TopicNotFound"
       tags:
         - topics
   /api/v1/topics/{topicId}/messages/{sequenceNumber}:
@@ -922,7 +922,7 @@ paths:
       description: Returns a single topic message the given topic id and sequence number.
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
-        - $ref: '#/components/parameters/topicIdPathParam'
+        - $ref: "#/components/parameters/topicIdPathParam"
         - name: sequencenumber
           in: path
           required: true
@@ -938,11 +938,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicMessagesResponse'
+                $ref: "#/components/schemas/TopicMessagesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - topics
   /api/v1/topics/messages/{timestamp}:
@@ -951,18 +951,18 @@ paths:
       description: Returns a topic message the given the consensusTimestamp.
       operationId: getTopicMessagesByConsensusTimestamp
       parameters:
-        - $ref: '#/components/parameters/timestampPathParam'
+        - $ref: "#/components/parameters/timestampPathParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicMessage'
+                $ref: "#/components/schemas/TopicMessage"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - topics
   /api/v1/tokens:
@@ -971,21 +971,21 @@ paths:
       description: Returns a list of tokens on the network.
       operationId: listTokens
       parameters:
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/publicKeyQueryParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
-        - $ref: '#/components/parameters/tokenTypeQueryParam'
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/publicKeyQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
+        - $ref: "#/components/parameters/tokenTypeQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokensResponse'
+                $ref: "#/components/schemas/TokensResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - tokens
   /api/v1/tokens/{tokenId}:
@@ -994,15 +994,15 @@ paths:
       description: Returns token entity information given the id
       operationId: getTokenById
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/tokenInfoTimestampQueryParam'
+        - $ref: "#/components/parameters/tokenIdPathParam"
+        - $ref: "#/components/parameters/tokenInfoTimestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenInfo'
+                $ref: "#/components/schemas/TokenInfo"
               examples:
                 FungibleToken:
                   value:
@@ -1011,7 +1011,7 @@ paths:
                       key: 010101
                     auto_renew_account: 0.1.2
                     auto_renew_period:
-                    created_timestamp: '1234567890.000000001'
+                    created_timestamp: "1234567890.000000001"
                     deleted: false
                     decimals: 1000
                     expiry_timestamp:
@@ -1025,7 +1025,7 @@ paths:
                       key: 010101
                     max_supply: 9223372036854776000
                     memo: "token memo"
-                    modified_timestamp: '1234567890.000000001'
+                    modified_timestamp: "1234567890.000000001"
                     name: Token name
                     pause_key:
                       _type: ProtobufEncoded
@@ -1044,7 +1044,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 010101
                     custom_fees:
-                      created_timestamp: '1234567890.000000001'
+                      created_timestamp: "1234567890.000000001"
                       fixed_fees:
                         - amount: 100
                           collector_account_id: 0.1.5
@@ -1065,7 +1065,7 @@ paths:
                       key: 010101
                     auto_renew_account: 0.1.2
                     auto_renew_period:
-                    created_timestamp: '1234567890.000000001'
+                    created_timestamp: "1234567890.000000001"
                     deleted: false
                     decimals: 0
                     expiry_timestamp:
@@ -1079,7 +1079,7 @@ paths:
                       key: 010101
                     max_supply: 9223372036854776000
                     memo: "token memo"
-                    modified_timestamp: '1234567890.000000001'
+                    modified_timestamp: "1234567890.000000001"
                     name: Token name
                     pause_key:
                       _type: ProtobufEncoded
@@ -1098,7 +1098,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 010101
                     custom_fees:
-                      created_timestamp: '1234567890.000000001'
+                      created_timestamp: "1234567890.000000001"
                       fixed_fees:
                         - amount: 100
                           collector_account_id: 0.1.5
@@ -1112,9 +1112,9 @@ paths:
                             amount: 100
                             denominating_token_id: 0.10.7
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/balances:
@@ -1123,22 +1123,22 @@ paths:
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
       operationId: listTokenBalancesById
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/accountBalanceQueryParam'
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/accountPublicKeyQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/tokenIdPathParam"
+        - $ref: "#/components/parameters/accountBalanceQueryParam"
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/accountPublicKeyQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenBalancesResponse'
+                $ref: "#/components/schemas/TokenBalancesResponse"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts:
@@ -1147,20 +1147,20 @@ paths:
       description: Returns a list of non-fungible tokens
       operationId: listNfts
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: "#/components/parameters/tokenIdPathParam"
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Nfts'
+                $ref: "#/components/schemas/Nfts"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts/{serialNumber}:
@@ -1169,19 +1169,19 @@ paths:
       description: Returns information for a non-fungible token
       operationId: listNftBySerialnumber
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: "#/components/parameters/tokenIdPathParam"
+        - $ref: "#/components/parameters/serialNumberPathParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Nft'
+                $ref: "#/components/schemas/Nft"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
         404:
-          $ref: '#/components/responses/NotFoundError'
+          $ref: "#/components/responses/NotFoundError"
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions:
@@ -1190,26 +1190,26 @@ paths:
       description: Returns a list of transactions for a given non-fungible token
       operationId: listNftTransactions
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: "#/components/parameters/tokenIdPathParam"
+        - $ref: "#/components/parameters/serialNumberPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NftTransactionHistory'
+                $ref: "#/components/schemas/NftTransactionHistory"
         206:
           description: Partial Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NftTransactionHistory'
+                $ref: "#/components/schemas/NftTransactionHistory"
         400:
-          $ref: '#/components/responses/InvalidParameterError'
+          $ref: "#/components/responses/InvalidParameterError"
       tags:
         - tokens
 tags:
@@ -1237,32 +1237,32 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.79.0-SNAPSHOT
+  version: 0.80.0-SNAPSHOT
   license:
     name: Apache-2.0
-    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+    url: "https://www.apache.org/licenses/LICENSE-2.0.html"
   description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nBase url: [/api/v1](/api/v1)\n\nOpenAPI Spec: [/api/v1/docs/openapi.yml](/api/v1/docs/openapi.yml)"
   contact:
     name: Hedera Mirror Node Team
     email: mirrornode@hedera.com
-    url: 'https://github.com/hashgraph/hedera-mirror-node'
+    url: "https://github.com/hashgraph/hedera-mirror-node"
 externalDocs:
   description: Hedera REST API Docs
-  url: 'https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api'
+  url: "https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api"
 servers:
   - description: The current REST API server
-    url: ''
+    url: ""
   - description: The production REST API servers
-    url: '{scheme}://{network}.mirrornode.hedera.com'
+    url: "{scheme}://{network}.mirrornode.hedera.com"
     variables:
       scheme:
         default: https
         description: The URI scheme
-        enum: [ http, https ]
+        enum: [http, https]
       network:
         default: testnet
         description: The Hedera network in use
-        enum: [ mainnet-public, mainnet, previewnet, testnet ]
+        enum: [mainnet-public, mainnet, previewnet, testnet]
 components:
   schemas:
     AccountAlias:
@@ -1279,9 +1279,9 @@ components:
         - links
       properties:
         accounts:
-          $ref: '#/components/schemas/Accounts'
+          $ref: "#/components/schemas/Accounts"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     Allowance:
       type: object
       properties:
@@ -1291,25 +1291,25 @@ components:
           type: integer
           example: 100
         owner:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         spender:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         timestamp:
-          $ref: '#/components/schemas/TimestampRange'
+          $ref: "#/components/schemas/TimestampRange"
     BalancesResponse:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         balances:
           type: array
           items:
-            $ref: '#/components/schemas/AccountBalance'
+            $ref: "#/components/schemas/AccountBalance"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     ContractResponse:
       allOf:
-        - $ref: '#/components/schemas/Contract'
+        - $ref: "#/components/schemas/Contract"
         - type: object
           properties:
             bytecode:
@@ -1328,60 +1328,60 @@ components:
       type: object
       properties:
         contracts:
-          $ref: '#/components/schemas/Contracts'
+          $ref: "#/components/schemas/Contracts"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     ContractResultsResponse:
       type: object
       properties:
         results:
-          $ref: '#/components/schemas/ContractResults'
+          $ref: "#/components/schemas/ContractResults"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     ContractStateResponse:
       type: object
       properties:
         state:
           type: array
           items:
-            $ref: '#/components/schemas/ContractState'
+            $ref: "#/components/schemas/ContractState"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     ContractActionsResponse:
       type: object
       properties:
         actions:
-          $ref: '#/components/schemas/ContractActions'
+          $ref: "#/components/schemas/ContractActions"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     ContractLogsResponse:
       type: object
       properties:
         logs:
-          $ref: '#/components/schemas/ContractLogs'
+          $ref: "#/components/schemas/ContractLogs"
     CryptoAllowancesResponse:
       type: object
       properties:
         allowances:
-          $ref: '#/components/schemas/CryptoAllowances'
+          $ref: "#/components/schemas/CryptoAllowances"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     NetworkExchangeRateSetResponse:
       type: object
       properties:
         current_rate:
-          $ref: '#/components/schemas/ExchangeRate'
+          $ref: "#/components/schemas/ExchangeRate"
         next_rate:
-          $ref: '#/components/schemas/ExchangeRate'
+          $ref: "#/components/schemas/ExchangeRate"
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
     NetworkFeesResponse:
       type: object
       properties:
         fees:
-          $ref: '#/components/schemas/NetworkFees'
+          $ref: "#/components/schemas/NetworkFees"
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
     NetworkNodesResponse:
       type: object
       required:
@@ -1389,9 +1389,9 @@ components:
         - links
       properties:
         nodes:
-          $ref: '#/components/schemas/NetworkNodes'
+          $ref: "#/components/schemas/NetworkNodes"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     NetworkSupplyResponse:
       type: object
       properties:
@@ -1401,7 +1401,7 @@ components:
           type: string
         timestamp:
           allOf:
-            - $ref: '#/components/schemas/Timestamp'
+            - $ref: "#/components/schemas/Timestamp"
             - description: The consensus timestamp at which the released supply was valid
         total_supply:
           description: The network's total supply of hbars in tinybars
@@ -1411,25 +1411,25 @@ components:
       type: object
       properties:
         schedules:
-          $ref: '#/components/schemas/Schedules'
+          $ref: "#/components/schemas/Schedules"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     BlocksResponse:
       type: object
       properties:
         blocks:
-          $ref: '#/components/schemas/Blocks'
+          $ref: "#/components/schemas/Blocks"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     StakingRewardsResponse:
       type: object
       properties:
         rewards:
           type: array
           items:
-            $ref: '#/components/schemas/StakingReward'
+            $ref: "#/components/schemas/StakingReward"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     StateProofResponseFull:
       type: object
       required:
@@ -1560,53 +1560,53 @@ components:
       type: object
       properties:
         allowances:
-          $ref: '#/components/schemas/TokenAllowances'
+          $ref: "#/components/schemas/TokenAllowances"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     TokenBalancesResponse:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         balances:
-          $ref: '#/components/schemas/TokenDistribution'
+          $ref: "#/components/schemas/TokenDistribution"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     TokenRelationshipResponse:
       type: object
       properties:
         tokens:
           type: array
           items:
-            $ref: '#/components/schemas/TokenRelationship'
+            $ref: "#/components/schemas/TokenRelationship"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     TokensResponse:
       type: object
       properties:
         tokens:
-          $ref: '#/components/schemas/Tokens'
+          $ref: "#/components/schemas/Tokens"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     TopicMessagesResponse:
       type: object
       properties:
         messages:
-          $ref: '#/components/schemas/TopicMessages'
+          $ref: "#/components/schemas/TopicMessages"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     TransactionByIdResponse:
       type: object
       properties:
         transactions:
-          $ref: '#/components/schemas/TransactionDetails'
+          $ref: "#/components/schemas/TransactionDetails"
     TransactionsResponse:
       type: object
       properties:
         transactions:
-          $ref: '#/components/schemas/Transactions'
+          $ref: "#/components/schemas/Transactions"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     # API objects.
     AccountInfo:
       type: object
@@ -1630,17 +1630,17 @@ components:
         - stake_period_start
       properties:
         account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         alias:
-          $ref: '#/components/schemas/Alias'
+          $ref: "#/components/schemas/Alias"
         auto_renew_period:
           type: integer
           format: int64
           nullable: true
         balance:
-          $ref: '#/components/schemas/Balance'
+          $ref: "#/components/schemas/Balance"
         created_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         decline_reward:
           description: Whether the account declines receiving a staking reward
           type: boolean
@@ -1652,11 +1652,11 @@ components:
           format: int64
           nullable: true
         evm_address:
-          $ref: '#/components/schemas/EvmAddressNullable'
+          $ref: "#/components/schemas/EvmAddressNullable"
         expiry_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         max_automatic_token_associations:
           type: integer
           format: int32
@@ -1675,7 +1675,7 @@ components:
           type: boolean
         staked_account_id:
           allOf:
-            - $ref: '#/components/schemas/EntityId'
+            - $ref: "#/components/schemas/EntityId"
             - description: The account to which this account is staking
         staked_node_id:
           description: The id of the node to which this account is staking
@@ -1684,7 +1684,7 @@ components:
           nullable: true
         stake_period_start:
           allOf:
-            - $ref: '#/components/schemas/TimestampNullable'
+            - $ref: "#/components/schemas/TimestampNullable"
             - description: |
                 The staking period during which either the staking settings for this account changed (such as starting
                 staking or changing stakedNode) or the most recent reward was earned, whichever is later. If this
@@ -1716,7 +1716,7 @@ components:
     Accounts:
       type: array
       items:
-        $ref: '#/components/schemas/AccountInfo'
+        $ref: "#/components/schemas/AccountInfo"
     AccountBalance:
       type: object
       required:
@@ -1725,14 +1725,14 @@ components:
         - tokens
       properties:
         account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         balance:
           format: int64
           type: integer
         tokens:
           type: array
           items:
-            $ref: '#/components/schemas/TokenBalance'
+            $ref: "#/components/schemas/TokenBalance"
       example:
         account: 0.15.10
         balance: 80
@@ -1741,16 +1741,16 @@ components:
             balance: 8
     AccountBalanceTransactions:
       allOf:
-        - $ref: '#/components/schemas/AccountInfo'
+        - $ref: "#/components/schemas/AccountInfo"
         - type: object
           required:
             - transactions
             - links
           properties:
             transactions:
-              $ref: '#/components/schemas/Transactions'
+              $ref: "#/components/schemas/Transactions"
             links:
-              $ref: '#/components/schemas/Links'
+              $ref: "#/components/schemas/Links"
     Alias:
       description: RFC4648 no-padding base32 encoded account alias
       type: string
@@ -1765,7 +1765,7 @@ components:
         - tokens
       properties:
         timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         balance:
           format: int64
           nullable: true
@@ -1776,7 +1776,7 @@ components:
             type: object
             properties:
               token_id:
-                $ref: '#/components/schemas/EntityId'
+                $ref: "#/components/schemas/EntityId"
               balance:
                 format: int64
                 type: integer
@@ -1788,7 +1788,7 @@ components:
           - token_id: 0.0.200001
             balance: 8
     Bloom:
-      example: '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398'
+      example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
       format: binary
       nullable: true
       type: string
@@ -1797,7 +1797,7 @@ components:
       nullable: true
       properties:
         initial_transaction_id:
-          $ref: '#/components/schemas/TransactionId'
+          $ref: "#/components/schemas/TransactionId"
         number:
           example: 1
           format: int32
@@ -1810,27 +1810,27 @@ components:
       type: object
       properties:
         admin_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         auto_renew_account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         auto_renew_period:
           example: 7776000
           format: int64
           nullable: true
           type: integer
         contract_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         created_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         deleted:
           type: boolean
           example: false
         evm_address:
-          $ref: '#/components/schemas/EvmAddress'
+          $ref: "#/components/schemas/EvmAddress"
         expiration_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         file_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         max_automatic_token_associations:
           type: integer
           format: int32
@@ -1839,21 +1839,21 @@ components:
           example: contract memo
           type: string
         obtainer_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         permanent_removal:
           type: boolean
           nullable: true
         proxy_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         timestamp:
-          $ref: '#/components/schemas/TimestampRange'
+          $ref: "#/components/schemas/TimestampRange"
     Contracts:
       type: array
       items:
-        $ref: '#/components/schemas/Contract'
+        $ref: "#/components/schemas/Contract"
     ContractLog:
       allOf:
-        - $ref: '#/components/schemas/ContractResultLog'
+        - $ref: "#/components/schemas/ContractResultLog"
         - type: object
           properties:
             block_hash:
@@ -1867,10 +1867,10 @@ components:
               type: integer
             root_contract_id:
               allOf:
-                - $ref: '#/components/schemas/EntityId'
+                - $ref: "#/components/schemas/EntityId"
                 - description: The executed contract that created this contract log
             timestamp:
-              $ref: '#/components/schemas/Timestamp'
+              $ref: "#/components/schemas/Timestamp"
             transaction_hash:
               type: string
               description: A hex encoded transaction hash
@@ -1884,7 +1884,7 @@ components:
     ContractLogTopics:
       description: A list of hex encoded topics associated with this log event
       example:
-        - '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
+        - "0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300"
       items:
         type: string
       type: array
@@ -1899,22 +1899,23 @@ components:
           type: integer
         call_operation_type:
           description: The type of the call operation
-          enum: [ CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN ]
+          enum:
+            [CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN]
           example: CALL
           nullable: false
           type: string
         call_type:
           description: The type of the call
-          enum: [ NO_ACTION, CALL, CREATE, PRECOMPILE, SYSTEM ]
+          enum: [NO_ACTION, CALL, CREATE, PRECOMPILE, SYSTEM]
           example: CALL
           nullable: false
           type: string
         caller:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         caller_type:
           description: The entity type of the caller
           type: string
-          enum: [ ACCOUNT, CONTRACT ]
+          enum: [ACCOUNT, CONTRACT]
           example: ACCOUNT
           nullable: false
         from:
@@ -1942,32 +1943,32 @@ components:
           type: integer
         input:
           description: The hex encoded input data
-          example: '0x123456'
+          example: "0x123456"
           nullable: true
           type: string
         recipient:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         recipient_type:
           description: The entity type of the recipient
           type: string
-          enum: [ ACCOUNT, CONTRACT ]
+          enum: [ACCOUNT, CONTRACT]
           example: ACCOUNT
           nullable: true
         result_data:
           description: The hex encoded result data
-          example: '0x123456'
+          example: "0x123456"
           nullable: true
           type: string
         result_data_type:
           description: The type of the result data
-          enum: [ OUTPUT, REVERT_REASON, ERROR ]
+          enum: [OUTPUT, REVERT_REASON, ERROR]
           example: OUTPUT
           nullable: false
           type: string
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         to:
-          $ref: '#/components/schemas/EvmAddressNullable'
+          $ref: "#/components/schemas/EvmAddressNullable"
         value:
           description: The value of the transaction in tinybars
           example: 50000
@@ -1989,7 +1990,7 @@ components:
           type: integer
         bloom:
           allOf:
-            - $ref: '#/components/schemas/Bloom'
+            - $ref: "#/components/schemas/Bloom"
             - description: The hex encoded bloom filter of the contract result
         call_result:
           description: The hex encoded result returned by the function
@@ -1997,11 +1998,11 @@ components:
           nullable: true
           type: string
         contract_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         created_contract_ids:
           description: The list of smart contracts that were created by the function call.
           items:
-            $ref: '#/components/schemas/EntityId'
+            $ref: "#/components/schemas/EntityId"
           nullable: true
           type: array
         error_message:
@@ -2010,7 +2011,7 @@ components:
           nullable: true
           type: string
         from:
-          $ref: '#/components/schemas/EvmAddress'
+          $ref: "#/components/schemas/EvmAddress"
         function_parameters:
           description: The hex encoded parameters passed to the function
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
@@ -2040,19 +2041,19 @@ components:
           example: 0x1
           type: string
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         to:
-          $ref: '#/components/schemas/EvmAddressNullable'
+          $ref: "#/components/schemas/EvmAddressNullable"
     ContractResultDetails:
       allOf:
-        - $ref: '#/components/schemas/ContractResult'
+        - $ref: "#/components/schemas/ContractResult"
         - type: object
           properties:
             access_list:
               description: The hex encoded access_list of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0xabcd'
+              example: "0xabcd"
             address:
               description: The hex encoded evm address of contract
               example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
@@ -2078,7 +2079,7 @@ components:
               description: The hex encoded chain_id of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0x0127'
+              example: "0x0127"
             failed_initcode:
               description: The hex encoded initcode of a failed contract create transaction
               example: "0x856739"
@@ -2087,23 +2088,23 @@ components:
               description: The hex encoded gas_price of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0x4a817c800'
+              example: "0x4a817c800"
             hash:
               description: The hex encoded transaction hash
               example: "0x3531396130303866616264653464"
               type: string
             logs:
-              $ref: '#/components/schemas/ContractResultLogs'
+              $ref: "#/components/schemas/ContractResultLogs"
             max_fee_per_gas:
               description: The hex encoded max_fee_per_gas of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0x5'
+              example: "0x5"
             max_priority_fee_per_gas:
               description: The hex encoded max_priority_fee_per_gas of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0x100'
+              example: "0x100"
             nonce:
               description: The nonce of the wrapped ethereum transaction
               nullable: true
@@ -2114,14 +2115,14 @@ components:
               description: The hex encoded signature_r of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043'
+              example: "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043"
             s:
               description: The hex encoded signature_s of the wrapped ethereum transaction
               nullable: true
               type: string
-              example: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355'
+              example: "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355"
             state_changes:
-              $ref: '#/components/schemas/ContractResultStateChanges'
+              $ref: "#/components/schemas/ContractResultStateChanges"
             transaction_index:
               description: The position of the transaction in the block
               nullable: true
@@ -2143,18 +2144,18 @@ components:
       properties:
         address:
           description: The hex encoded EVM address of the contract
-          example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+          example: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
           pattern: ^0x[0-9A-Fa-f]{40}$
           type: string
         bloom:
           allOf:
-            - $ref: '#/components/schemas/Bloom'
+            - $ref: "#/components/schemas/Bloom"
             - description: The hex encoded bloom filter of the contract log
         contract_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         data:
           description: The hex encoded data of the contract log
-          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          example: "0x00000000000000000000000000000000000000000000000000000000000000fa"
           nullable: true
           type: string
         index:
@@ -2162,11 +2163,11 @@ components:
           example: 0
           type: integer
         topics:
-          $ref: '#/components/schemas/ContractLogTopics'
+          $ref: "#/components/schemas/ContractLogTopics"
     ContractResultLogs:
       type: array
       items:
-        $ref: '#/components/schemas/ContractResultLog'
+        $ref: "#/components/schemas/ContractResultLog"
     ContractState:
       type: object
       required:
@@ -2177,20 +2178,20 @@ components:
         - value
       properties:
         address:
-          $ref: '#/components/schemas/EvmAddress'
+          $ref: "#/components/schemas/EvmAddress"
         contract_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         slot:
           description: The hex encoded storage slot.
           format: binary
-          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          example: "0x00000000000000000000000000000000000000000000000000000000000000fa"
           nullable: false
           type: string
         value:
           description: The hex encoded value to the slot. `0x` implies no value written.
-          example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+          example: "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
           format: binary
           nullable: false
           type: string
@@ -2198,68 +2199,68 @@ components:
       type: object
       properties:
         address:
-          $ref: '#/components/schemas/EvmAddress'
+          $ref: "#/components/schemas/EvmAddress"
         contract_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         slot:
           description: The hex encoded storage slot changed.
           format: binary
-          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          example: "0x00000000000000000000000000000000000000000000000000000000000000fa"
           type: string
         value_read:
           description: The hex encoded value read from the storage slot.
-          example: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750'
+          example: "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
           format: binary
           type: string
         value_written:
           description: The hex encoded value written to the slot. `null` implies no value written.
-          example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+          example: "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
           format: binary
           nullable: true
           type: string
     ContractResultStateChanges:
       type: array
       items:
-        $ref: '#/components/schemas/ContractResultStateChange'
+        $ref: "#/components/schemas/ContractResultStateChange"
     ContractResults:
       type: array
       items:
-        $ref: '#/components/schemas/ContractResult'
+        $ref: "#/components/schemas/ContractResult"
     ContractActions:
       type: array
       items:
-        $ref: '#/components/schemas/ContractAction'
+        $ref: "#/components/schemas/ContractAction"
     ContractLogs:
       type: array
       items:
-        $ref: '#/components/schemas/ContractLog'
+        $ref: "#/components/schemas/ContractLog"
     CustomFees:
       type: object
       properties:
         created_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         fixed_fees:
           type: array
           items:
-            $ref: '#/components/schemas/FixedFee'
+            $ref: "#/components/schemas/FixedFee"
         fractional_fees:
           type: array
           items:
-            $ref: '#/components/schemas/FractionalFee'
+            $ref: "#/components/schemas/FractionalFee"
         royalty_fees:
           type: array
           items:
-            $ref: '#/components/schemas/RoyaltyFee'
+            $ref: "#/components/schemas/RoyaltyFee"
     CryptoAllowance:
       allOf:
-        - $ref: '#/components/schemas/Allowance'
+        - $ref: "#/components/schemas/Allowance"
         - properties:
             amount_granted:
               description: The granted amount of the spender's allowance in tinybars.
     CryptoAllowances:
       type: array
       items:
-        $ref: '#/components/schemas/CryptoAllowance'
+        $ref: "#/components/schemas/CryptoAllowance"
     EntityId:
       type: string
       description: "Network entity ID in the format of `shard.realm.num`"
@@ -2375,13 +2376,13 @@ components:
       description: A hex encoded hedera transaction hash.
       minLength: 96
       maxLength: 98
-      pattern: '^(0x)?[A-Fa-f0-9]{96}$'
+      pattern: "^(0x)?[A-Fa-f0-9]{96}$"
     EthereumHash:
       type: string
       description: A hex encoded ethereum transaction hash.
       minLength: 64
       maxLength: 66
-      pattern: '^(0x)?[A-Fa-f0-9]{64}$'
+      pattern: "^(0x)?[A-Fa-f0-9]{64}$"
     PositiveNumber:
       type: integer
       format: int64
@@ -2393,7 +2394,7 @@ components:
       format: binary
       minLength: 40
       maxLength: 42
-      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      pattern: "^(0x)?[A-Fa-f0-9]{40}$"
       example: "0000000000000000000000000000000000001f41"
     EvmAddressWithShardRealm:
       type: string
@@ -2410,7 +2411,7 @@ components:
       minLength: 40
       maxLength: 42
       nullable: true
-      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      pattern: "^(0x)?[A-Fa-f0-9]{40}$"
       example: "0x0000000000000000000000000000000000001f41"
     ExchangeRate:
       type: object
@@ -2439,9 +2440,9 @@ components:
           format: int64
           type: integer
         collector_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         denominating_token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
     FractionalFee:
       type: object
       properties:
@@ -2460,9 +2461,9 @@ components:
               format: int64
               type: integer
         collector_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         denominating_token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         maximum:
           example: 120
           format: int64
@@ -2493,7 +2494,7 @@ components:
               format: int64
               type: integer
         collector_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         fallback_fee:
           type: object
           properties:
@@ -2502,14 +2503,14 @@ components:
               format: int64
               type: integer
             denominating_token_id:
-              $ref: '#/components/schemas/EntityId'
+              $ref: "#/components/schemas/EntityId"
     Key:
       type: object
       nullable: true
       properties:
         _type:
           type: string
-          enum: [ ECDSA_SECP256K1, ED25519, ProtobufEncoded ]
+          enum: [ECDSA_SECP256K1, ED25519, ProtobufEncoded]
           example: ProtobufEncoded
         key:
           type: string
@@ -2546,7 +2547,7 @@ components:
           nullable: true
           type: string
         file_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         max_stake:
           description: The maximum stake (rewarded or not rewarded) this node can have as consensus weight
           type: integer
@@ -2563,7 +2564,7 @@ components:
           format: int64
           nullable: true
         node_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         node_id:
           description: An identifier for the node
           format: int64
@@ -2582,7 +2583,7 @@ components:
           nullable: true
           type: integer
         service_endpoints:
-          $ref: '#/components/schemas/ServiceEndpoints'
+          $ref: "#/components/schemas/ServiceEndpoints"
         stake:
           description: The node consensus weight at the beginning of the staking period
           format: int64
@@ -2604,20 +2605,20 @@ components:
           type: integer
         staking_period:
           allOf:
-            - $ref: '#/components/schemas/TimestampRangeNullable'
+            - $ref: "#/components/schemas/TimestampRangeNullable"
             - description: The timestamp range of the staking period
         timestamp:
-          $ref: '#/components/schemas/TimestampRange'
+          $ref: "#/components/schemas/TimestampRange"
       example:
         description: "address book 1"
-        file_id: '0.0.102'
+        file_id: "0.0.102"
         max_stake: 50000
-        memo: '0.0.4'
+        memo: "0.0.4"
         min_stake: 1000
-        node_account_id: '0.0.4'
-        node_cert_hash: '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16'
+        node_account_id: "0.0.4"
+        node_cert_hash: "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16"
         node_id: 1
-        public_key: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'
+        public_key: "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"
         reward_rate_start: 1000000
         service_endpoints:
           - ip_address_v4: 128.0.0.6
@@ -2626,15 +2627,15 @@ components:
         stake_not_rewarded: 19900
         stake_rewarded: 100
         staking_period:
-          from: '1655164800.000000000'
-          to: '1655251200.000000000'
+          from: "1655164800.000000000"
+          to: "1655251200.000000000"
         timestamp:
-          from: '187654.000123457'
+          from: "187654.000123457"
           to: null
     NetworkNodes:
       type: array
       items:
-        $ref: '#/components/schemas/NetworkNode'
+        $ref: "#/components/schemas/NetworkNode"
     NetworkFee:
       type: object
       properties:
@@ -2648,7 +2649,7 @@ components:
     NetworkFees:
       type: array
       items:
-        $ref: '#/components/schemas/NetworkFee'
+        $ref: "#/components/schemas/NetworkFee"
     NetworkStakeResponse:
       type: object
       required:
@@ -2676,7 +2677,7 @@ components:
           format: int64
         staking_period:
           allOf:
-            - $ref: '#/components/schemas/TimestampRange'
+            - $ref: "#/components/schemas/TimestampRange"
             - description: The timestamp range of the staking period
         staking_period_duration:
           description: The number of minutes in a staking period
@@ -2703,8 +2704,8 @@ components:
         node_reward_fee_fraction: 1.0
         stake_total: 35000000000000000
         staking_period:
-          from: '1655164800.000000000'
-          to: '1655251200.000000000'
+          from: "1655164800.000000000"
+          to: "1655251200.000000000"
         staking_period_duration: 1440
         staking_periods_stored: 365
         staking_reward_fee_fraction: 1.0
@@ -2714,11 +2715,11 @@ components:
       type: object
       properties:
         account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         created_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         delegating_spender:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         deleted:
           description: whether the nft or the token it belongs to has been deleted
           type: boolean
@@ -2727,15 +2728,15 @@ components:
           type: string
           format: byte
         modified_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         serial_number:
           example: 1
           format: int64
           type: integer
         spender:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
       example:
         account_id: "0.1.2"
         created_timestamp: "1234567890.000000001"
@@ -2752,14 +2753,14 @@ components:
         nfts:
           type: array
           items:
-            $ref: '#/components/schemas/Nft'
+            $ref: "#/components/schemas/Nft"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     NftTransactionTransfer:
       type: object
       properties:
         consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         is_approval:
           type: boolean
         nonce:
@@ -2768,13 +2769,13 @@ components:
         transaction_id:
           type: string
         receiver_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         sender_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         type:
-          $ref: '#/components/schemas/TransactionTypes'
+          $ref: "#/components/schemas/TransactionTypes"
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
       example:
         consensus_timestamp: "1618591023.997420021"
         id: "0.0.19789-1618591023-997420021"
@@ -2817,9 +2818,9 @@ components:
           type: object
           properties:
             from:
-              $ref: '#/components/schemas/TimestampRange'
+              $ref: "#/components/schemas/TimestampRange"
             to:
-              $ref: '#/components/schemas/TimestampRange'
+              $ref: "#/components/schemas/TimestampRange"
       example:
         count: 3
         gas_used: 300000
@@ -2836,43 +2837,43 @@ components:
     Blocks:
       type: array
       items:
-        $ref: '#/components/schemas/Block'
+        $ref: "#/components/schemas/Block"
     NftTransactionHistory:
       type: object
       properties:
         transactions:
           type: array
           items:
-            $ref: '#/components/schemas/NftTransactionTransfer'
+            $ref: "#/components/schemas/NftTransactionTransfer"
         links:
-          $ref: '#/components/schemas/Links'
+          $ref: "#/components/schemas/Links"
     Schedule:
       type: object
       properties:
         admin_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         creator_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         deleted:
           type: boolean
           example: false
         executed_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         expiration_time:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         memo:
           type: string
-          example: 'created on 02/10/2021'
+          example: "created on 02/10/2021"
         payer_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         schedule_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         signatures:
           type: array
           items:
-            $ref: '#/components/schemas/ScheduleSignature'
+            $ref: "#/components/schemas/ScheduleSignature"
         transaction_body:
           type: string
           format: byte
@@ -2882,12 +2883,12 @@ components:
     Schedules:
       type: array
       items:
-        $ref: '#/components/schemas/Schedule'
+        $ref: "#/components/schemas/Schedule"
     ScheduleSignature:
       type: object
       properties:
         consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         public_key_prefix:
           type: string
           format: byte
@@ -2898,7 +2899,8 @@ components:
           example: "3q2+7wABAQMLqgMMwQ=="
         type:
           type: string
-          enum: [ CONTRACT, ED25519, RSA_3072, ECDSA_384, ECDSA_SECP256K1, UNKNOWN ]
+          enum:
+            [CONTRACT, ED25519, RSA_3072, ECDSA_384, ECDSA_SECP256K1, UNKNOWN]
           example: "ED25519"
     ServiceEndpoint:
       type: object
@@ -2917,12 +2919,12 @@ components:
     ServiceEndpoints:
       type: array
       items:
-        $ref: '#/components/schemas/ServiceEndpoint'
+        $ref: "#/components/schemas/ServiceEndpoint"
     StakingReward:
       type: object
       properties:
         account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         amount:
           description: The number of tinybars awarded
           example: 10
@@ -2930,7 +2932,7 @@ components:
           type: integer
           nullable: false
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
       required:
         - account_id
         - amount
@@ -2947,7 +2949,7 @@ components:
         - amount
       properties:
         account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         amount:
           description: The number of tinybars awarded
           example: 10
@@ -2960,7 +2962,7 @@ components:
     StakingRewardTransfers:
       type: array
       items:
-        $ref: '#/components/schemas/StakingRewardTransfer'
+        $ref: "#/components/schemas/StakingRewardTransfer"
     Timestamp:
       type: string
       example: "1586567700.453054000"
@@ -2976,11 +2978,11 @@ components:
       properties:
         from:
           allOf:
-            - $ref: '#/components/schemas/Timestamp'
+            - $ref: "#/components/schemas/Timestamp"
             - description: The inclusive from timestamp in seconds
         to:
           allOf:
-            - $ref: '#/components/schemas/TimestampNullable'
+            - $ref: "#/components/schemas/TimestampNullable"
             - description: The exclusive to timestamp in seconds
     TimestampRangeNullable:
       type: object
@@ -2989,21 +2991,21 @@ components:
       properties:
         from:
           allOf:
-            - $ref: '#/components/schemas/Timestamp'
+            - $ref: "#/components/schemas/Timestamp"
             - description: The inclusive from timestamp in seconds
         to:
           allOf:
-            - $ref: '#/components/schemas/TimestampNullable'
+            - $ref: "#/components/schemas/TimestampNullable"
             - description: The exclusive to timestamp in seconds
     Token:
       type: object
       properties:
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         symbol:
           type: string
         admin_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         type:
           type: string
       required:
@@ -3018,14 +3020,14 @@ components:
         type: FUNGIBLE_COMMON
     TokenAllowance:
       allOf:
-        - $ref: '#/components/schemas/Allowance'
+        - $ref: "#/components/schemas/Allowance"
         - properties:
             token_id:
-              $ref: '#/components/schemas/EntityId'
+              $ref: "#/components/schemas/EntityId"
     TokenAllowances:
       type: array
       items:
-        $ref: '#/components/schemas/TokenAllowance'
+        $ref: "#/components/schemas/TokenAllowance"
     TokenBalance:
       type: object
       required:
@@ -3033,7 +3035,7 @@ components:
         - balance
       properties:
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         balance:
           format: int64
           type: integer
@@ -3046,7 +3048,7 @@ components:
         type: object
         properties:
           account:
-            $ref: '#/components/schemas/EntityId'
+            $ref: "#/components/schemas/EntityId"
           balance:
             format: int64
             type: integer
@@ -3060,16 +3062,16 @@ components:
       type: object
       properties:
         admin_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         auto_renew_account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         auto_renew_period:
           example: null
           format: int64
           nullable: true
           type: integer
         created_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         decimals:
           type: string
           example: 1000
@@ -3083,22 +3085,22 @@ components:
           nullable: true
           type: integer
         fee_schedule_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         freeze_default:
           type: boolean
           example: false
         freeze_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         initial_supply:
           type: string
           example: "1000000"
         kyc_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         max_supply:
           type: string
           example: "9223372036854775807"
         modified_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         name:
           type: string
           example: Token name
@@ -3106,35 +3108,35 @@ components:
           type: string
           example: "token memo"
         pause_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         pause_status:
           type: string
-          enum: [ NOT_APPLICABLE, PAUSED, UNPAUSED ]
+          enum: [NOT_APPLICABLE, PAUSED, UNPAUSED]
           example: UNPAUSED
         supply_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         supply_type:
           type: string
-          enum: [ FINITE, INFINITE ]
+          enum: [FINITE, INFINITE]
           example: INFINITE
         symbol:
           type: string
           example: ORIGINALRDKSE
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         total_supply:
           type: string
           example: "1000000"
         treasury_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         type:
           type: string
-          enum: [ FUNGIBLE_COMMON, NON_FUNGIBLE_UNIQUE ]
+          enum: [FUNGIBLE_COMMON, NON_FUNGIBLE_UNIQUE]
           example: FUNGIBLE_COMMON
         wipe_key:
-          $ref: '#/components/schemas/Key'
+          $ref: "#/components/schemas/Key"
         custom_fees:
-          $ref: '#/components/schemas/CustomFees'
+          $ref: "#/components/schemas/CustomFees"
     TokenRelationship:
       type: object
       properties:
@@ -3150,21 +3152,21 @@ components:
           example: 5
           nullable: false
         created_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         freeze_status:
           type: string
           description: The Freeze status of the account.
           example: UNFROZEN
-          enum: [ NOT_APPLICABLE, FROZEN, UNFROZEN ]
+          enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
           nullable: false
         kyc_status:
           type: string
           description: The KYC status of the account.
           example: GRANTED
-          enum: [ NOT_APPLICABLE, GRANTED, REVOKED ]
+          enum: [NOT_APPLICABLE, GRANTED, REVOKED]
           nullable: false
         token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
       required:
         - automatic_association
         - balance
@@ -3236,18 +3238,18 @@ components:
     Tokens:
       type: array
       items:
-        $ref: '#/components/schemas/Token'
+        $ref: "#/components/schemas/Token"
     TopicMessage:
       type: object
       properties:
         chunk_info:
-          $ref: '#/components/schemas/ChunkInfo'
+          $ref: "#/components/schemas/ChunkInfo"
         consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         message:
           type: string
         payer_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         running_hash:
           type: string
           format: byte
@@ -3258,7 +3260,7 @@ components:
           format: int64
           type: integer
         topic_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
       required:
         - consensus_timestamp
         - message
@@ -3284,7 +3286,7 @@ components:
     TopicMessages:
       type: array
       items:
-        $ref: '#/components/schemas/TopicMessage'
+        $ref: "#/components/schemas/TopicMessage"
     Transaction:
       type: object
       properties:
@@ -3296,9 +3298,9 @@ components:
           format: int64
           type: integer
         consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
         entity_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         max_fee:
           type: string
         memo_base64:
@@ -3306,29 +3308,29 @@ components:
           nullable: true
           type: string
         name:
-          $ref: '#/components/schemas/TransactionTypes'
+          $ref: "#/components/schemas/TransactionTypes"
         node:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         nonce:
           type: integer
           minimum: 0
         parent_consensus_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: "#/components/schemas/TimestampNullable"
         result:
           type: string
         scheduled:
           type: boolean
         staking_reward_transfers:
-          $ref: '#/components/schemas/StakingRewardTransfers'
+          $ref: "#/components/schemas/StakingRewardTransfers"
         token_transfers:
           type: array
           items:
             type: object
             properties:
               token_id:
-                $ref: '#/components/schemas/EntityId'
+                $ref: "#/components/schemas/EntityId"
               account:
-                $ref: '#/components/schemas/EntityId'
+                $ref: "#/components/schemas/EntityId"
               amount:
                 format: int64
                 type: integer
@@ -3349,7 +3351,7 @@ components:
             type: object
             properties:
               account:
-                $ref: '#/components/schemas/EntityId'
+                $ref: "#/components/schemas/EntityId"
               amount:
                 format: int64
                 type: integer
@@ -3361,7 +3363,7 @@ components:
         valid_duration_seconds:
           type: string
         valid_start_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
       example:
         bytes: null
         charged_tx_fee: 7
@@ -3411,7 +3413,7 @@ components:
         valid_start_timestamp: "1234567890.000000006"
     TransactionDetail:
       allOf:
-        - $ref: '#/components/schemas/Transaction'
+        - $ref: "#/components/schemas/Transaction"
         - type: object
           properties:
             assessed_custom_fees:
@@ -3423,13 +3425,13 @@ components:
                     format: int64
                     type: integer
                   collector_account_id:
-                    $ref: '#/components/schemas/EntityId'
+                    $ref: "#/components/schemas/EntityId"
                   effective_payer_account_ids:
                     type: array
                     items:
-                      $ref: '#/components/schemas/EntityId'
+                      $ref: "#/components/schemas/EntityId"
                   token_id:
-                    $ref: '#/components/schemas/EntityId'
+                    $ref: "#/components/schemas/EntityId"
             nft_transfers:
               type: array
               items:
@@ -3438,14 +3440,14 @@ components:
                   is_approval:
                     type: boolean
                   receiver_account_id:
-                    $ref: '#/components/schemas/EntityId'
+                    $ref: "#/components/schemas/EntityId"
                   sender_account_id:
-                    $ref: '#/components/schemas/EntityId'
+                    $ref: "#/components/schemas/EntityId"
                   serial_number:
                     format: int64
                     type: integer
                   token_id:
-                    $ref: '#/components/schemas/EntityId'
+                    $ref: "#/components/schemas/EntityId"
                 required:
                   - serial_number
                   - token_id
@@ -3517,12 +3519,12 @@ components:
     TransactionDetails:
       type: array
       items:
-        $ref: '#/components/schemas/TransactionDetail'
+        $ref: "#/components/schemas/TransactionDetail"
     TransactionId:
       type: object
       properties:
         account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: "#/components/schemas/EntityId"
         nonce:
           example: 0
           format: int32
@@ -3534,7 +3536,7 @@ components:
           type: boolean
           nullable: true
         transaction_valid_start:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: "#/components/schemas/Timestamp"
     TransactionIdStr:
       type: string
       description: A transaction id in string format.
@@ -3542,14 +3544,14 @@ components:
     Transactions:
       type: array
       items:
-        $ref: '#/components/schemas/Transaction'
+        $ref: "#/components/schemas/Transaction"
   responses:
     NotFoundError:
       description: Not Found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             _status:
               messages:
@@ -3559,7 +3561,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             _status:
               messages:
@@ -3569,7 +3571,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             _status:
               messages:
@@ -3579,7 +3581,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             _status:
               messages:
@@ -3590,7 +3592,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
           example:
             _status:
               messages:
@@ -3708,7 +3710,7 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        $ref: "#/components/schemas/EntityIdQuery"
     accountPublicKeyQueryParam:
       name: account.publickey
       in: query
@@ -3802,7 +3804,7 @@ components:
       required: true
       description: Entity id
       schema:
-        $ref: '#/components/schemas/EntityId'
+        $ref: "#/components/schemas/EntityId"
     fileIdQueryParam:
       name: file.id
       description: The ID of the file entity
@@ -3824,28 +3826,28 @@ components:
           summary: Example of id equals operator
           value: eq:0.0.200
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        $ref: "#/components/schemas/EntityIdQuery"
     scheduleIdPathParam:
       name: scheduleId
       in: path
       required: true
       description: Schedule id
       schema:
-        $ref: '#/components/schemas/EntityId'
+        $ref: "#/components/schemas/EntityId"
     tokenIdPathParam:
       name: tokenId
       in: path
       required: true
       description: Token id
       schema:
-        $ref: '#/components/schemas/EntityId'
+        $ref: "#/components/schemas/EntityId"
     topicIdPathParam:
       name: topicId
       in: path
       required: true
       description: Topic id
       schema:
-        $ref: '#/components/schemas/EntityId'
+        $ref: "#/components/schemas/EntityId"
     fromQueryParam:
       name: from
       in: query
@@ -3983,7 +3985,7 @@ components:
       description: The order in which items are listed
       example: desc
       schema:
-        enum: [ asc, desc ]
+        enum: [asc, desc]
         default: asc
     orderQueryParamDesc:
       name: order
@@ -3991,7 +3993,7 @@ components:
       description: The order in which items are listed
       example: asc
       schema:
-        enum: [ asc, desc ]
+        enum: [asc, desc]
         default: desc
     publicKeyQueryParam:
       name: publickey
@@ -4069,7 +4071,7 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        $ref: "#/components/schemas/EntityIdQuery"
     serialNumberPathParam:
       name: serialNumber
       in: path
@@ -4227,25 +4229,25 @@ components:
       explode: true
       description: The first topic associated with a contract log. Requires a timestamp range also be populated.
       schema:
-        $ref: '#/components/schemas/LogTopicQueryParam'
+        $ref: "#/components/schemas/LogTopicQueryParam"
     logTopic1QueryParam:
       name: topic1
       in: query
       description: The second topic associated with a contract log. Requires a timestamp range also be populated.
       schema:
-        $ref: '#/components/schemas/LogTopicQueryParam'
+        $ref: "#/components/schemas/LogTopicQueryParam"
     logTopic2QueryParam:
       name: topic2
       in: query
       description: The third topic associated with a contract log. Requires a timestamp range also be populated.
       schema:
-        $ref: '#/components/schemas/LogTopicQueryParam'
+        $ref: "#/components/schemas/LogTopicQueryParam"
     logTopic3QueryParam:
       name: topic3
       in: query
       description: The fourth topic associated with a contract log. Requires a timestamp range also be populated.
       schema:
-        $ref: '#/components/schemas/LogTopicQueryParam'
+        $ref: "#/components/schemas/LogTopicQueryParam"
     spenderIdQueryParam:
       name: spender.id
       description: The ID of the spender to return information for
@@ -4279,13 +4281,13 @@ components:
           summary: Example of id less than or equal to operator
           value: lte:0.0.200
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        $ref: "#/components/schemas/EntityIdQuery"
     transactionTypeQueryParam:
       name: transactiontype
       in: query
       example: cryptotransfer
       schema:
-        $ref: '#/components/schemas/TransactionTypes'
+        $ref: "#/components/schemas/TransactionTypes"
     transactionIdPathParam:
       name: transactionId
       in: path
@@ -4345,7 +4347,7 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        $ref: "#/components/schemas/EntityIdQuery"
     tokenTypeQueryParam:
       name: type
       in: query
@@ -4404,7 +4406,7 @@ components:
           value: eq:2
         hexEncoded:
           summary: Example of hex encoded block.number equals with no operator
-          value: '0xa0'
+          value: "0xa0"
         hexEncodedEqOperator:
           summary: Example of hex encoded block.number equals with equals operator
           value: eq:0xa0
@@ -4463,10 +4465,10 @@ components:
           value: eq:1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61
         32Byte0xPrefixNoOperator:
           summary: Example of 32 byte block.hash equals with 0x prefix and no operator
-          value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+          value: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
         48Byte0xPrefixNoOperator:
           summary: Example of 48 byte block.hash equals with 0x prefix and no operator
-          value: '0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61'
+          value: "0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
         32Byte0xPrefixEqOperator:
           summary: Example of 32 byte block.hash with 0x prefix and equals operator
           value: eq:0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
@@ -4507,4 +4509,4 @@ components:
         transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
         transactionHashWith0xPrefix:
-          value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+          value: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"

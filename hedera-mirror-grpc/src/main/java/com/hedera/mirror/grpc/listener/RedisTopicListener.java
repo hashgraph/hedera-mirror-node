@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,12 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.listener;
+
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -38,9 +36,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-
 @Lazy
 @Log4j2
 @Named
@@ -51,9 +46,10 @@ public class RedisTopicListener extends SharedTopicListener {
     private final SerializationPair<TopicMessage> messageSerializer;
     private final Map<String, Flux<TopicMessage>> topicMessages; // Topic name to active subscription
 
-    public RedisTopicListener(ListenerProperties listenerProperties,
-                              ReactiveRedisConnectionFactory connectionFactory,
-                              RedisSerializer<TopicMessage> redisSerializer) {
+    public RedisTopicListener(
+            ListenerProperties listenerProperties,
+            ReactiveRedisConnectionFactory connectionFactory,
+            RedisSerializer<TopicMessage> redisSerializer) {
         super(listenerProperties);
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
         this.messageSerializer = SerializationPair.fromSerializer(redisSerializer);
@@ -85,8 +81,8 @@ public class RedisTopicListener extends SharedTopicListener {
     private Flux<TopicMessage> subscribe(Topic topic) {
         Duration interval = listenerProperties.getInterval();
 
-        return container.flatMapMany(r -> r.receive(Collections.singletonList(topic), channelSerializer,
-                        messageSerializer))
+        return container
+                .flatMapMany(r -> r.receive(Collections.singletonList(topic), channelSerializer, messageSerializer))
                 .map(Message::getMessage)
                 .doOnCancel(() -> unsubscribe(topic))
                 .doOnComplete(() -> unsubscribe(topic))

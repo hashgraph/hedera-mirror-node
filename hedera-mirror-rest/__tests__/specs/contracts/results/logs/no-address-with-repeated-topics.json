@@ -62,7 +62,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results/logs?topic0=A&topic0=B&timestamp=1639010141.000000000"],
+  "urls": [
+    "/api/v1/contracts/results/logs?topic0=A&topic0=B&timestamp=1639010141.000000000"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "logs": [

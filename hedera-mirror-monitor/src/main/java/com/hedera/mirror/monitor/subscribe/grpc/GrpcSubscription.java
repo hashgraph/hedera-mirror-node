@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.grpc;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,18 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import java.time.Instant;
+package com.hedera.mirror.monitor.subscribe.grpc;
 
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessage;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.monitor.AbstractScenario;
 import com.hedera.mirror.monitor.ScenarioProtocol;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import java.time.Instant;
 
 class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicMessage> {
 
@@ -43,8 +38,8 @@ class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicM
 
     TopicMessageQuery getTopicMessageQuery() {
         long limit = properties.getLimit();
-        Instant startTime = getLast().map(t -> t.consensusTimestamp.plusNanos(1))
-                .orElseGet(properties::getStartTime);
+        Instant startTime =
+                getLast().map(t -> t.consensusTimestamp.plusNanos(1)).orElseGet(properties::getStartTime);
 
         TopicMessageQuery topicMessageQuery = new TopicMessageQuery();
         topicMessageQuery.setEndTime(properties.getEndTime());
@@ -56,13 +51,19 @@ class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicM
 
     @Override
     public void onNext(TopicMessage topicResponse) {
-        log.trace("{}: Received message #{} with timestamp {}", this, topicResponse.sequenceNumber,
+        log.trace(
+                "{}: Received message #{} with timestamp {}",
+                this,
+                topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
 
         getLast().ifPresent(topicMessage -> {
             long expected = topicMessage.sequenceNumber + 1;
             if (topicResponse.sequenceNumber != expected) {
-                log.warn("{}: Expected sequence number {} but received {}", this, expected,
+                log.warn(
+                        "{}: Expected sequence number {} but received {}",
+                        this,
+                        expected,
                         topicResponse.sequenceNumber);
             }
         });

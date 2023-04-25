@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,18 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.util.Utility;
 import java.io.IOException;
 import java.util.Map;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 public class AccountEvmAddressMigration extends RepeatableMigration {
@@ -50,8 +45,8 @@ public class AccountEvmAddressMigration extends RepeatableMigration {
     // We search for aliases with a length of 35 since ECDSA secp256k1 aliases are 33 bytes w/ 2 bytes for proto prefix
     private void updateAlias(boolean history) {
         String suffix = history ? "_history" : "";
-        var query = String.format("select id, alias from entity%s where evm_address is null and length(alias) = 35",
-                suffix);
+        var query = String.format(
+                "select id, alias from entity%s where evm_address is null and length(alias) = 35", suffix);
         var update = String.format("update entity%s set evm_address = :evmAddress where id = :id", suffix);
 
         jdbcOperations.query(query, rs -> {

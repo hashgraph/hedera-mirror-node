@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,15 @@ package com.hedera.mirror.grpc.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.grpc.util;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
@@ -34,10 +33,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.NonTransientDataAccessResourceException;
 import org.springframework.dao.TransientDataAccessException;
 import reactor.core.Exceptions;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
-import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 
 @Log4j2
 @UtilityClass
@@ -73,7 +68,9 @@ public final class ProtoUtil {
     public static StatusRuntimeException toStatusRuntimeException(Throwable t) {
         if (Exceptions.isOverflow(t)) {
             return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-        } else if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException || t instanceof InvalidEntityException) {
+        } else if (t instanceof ConstraintViolationException
+                || t instanceof IllegalArgumentException
+                || t instanceof InvalidEntityException) {
             return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
         } else if (t instanceof EntityNotFoundException) {
             return clientError(t, Status.NOT_FOUND, t.getMessage());

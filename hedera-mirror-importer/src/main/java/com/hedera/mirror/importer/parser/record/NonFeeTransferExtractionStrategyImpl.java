@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,14 @@ package com.hedera.mirror.importer.parser.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,9 +31,6 @@ import java.util.Collections;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.domain.EntityIdService;
 
 /**
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
@@ -58,15 +53,24 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         if (body.hasCryptoTransfer()) {
             return body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         } else if (body.hasCryptoCreateAccount()) {
-            return extractForCreateEntity(body.getCryptoCreateAccount().getInitialBalance(), payerAccountId,
-                    transactionRecord.getReceipt().getAccountID(), transactionRecord);
+            return extractForCreateEntity(
+                    body.getCryptoCreateAccount().getInitialBalance(),
+                    payerAccountId,
+                    transactionRecord.getReceipt().getAccountID(),
+                    transactionRecord);
         } else if (body.hasContractCreateInstance()) {
-            return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
-                    contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
+            return extractForCreateEntity(
+                    body.getContractCreateInstance().getInitialBalance(),
+                    payerAccountId,
+                    contractIdToAccountId(transactionRecord.getReceipt().getContractID()),
+                    transactionRecord);
         } else if (body.hasContractCall()) {
 
-            EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
-                    body.getContractCall().getContractID()).orElse(EntityId.EMPTY);
+            EntityId contractId = entityIdService
+                    .lookup(
+                            transactionRecord.getReceipt().getContractID(),
+                            body.getContractCall().getContractID())
+                    .orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(contractId)) {
                 log.error(RECOVERABLE_ERROR + "Contract ID not found at {}", transactionRecord.getConsensusTimestamp());
                 return Collections.emptyList();

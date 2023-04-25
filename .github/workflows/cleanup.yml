@@ -27,11 +27,32 @@ jobs:
       - name: Delete old untagged images
         run: |
           set -ex
-          DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
-          IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
-          DIGESTS=$(gcloud container images list-tags "${IMAGE_PATH}" --limit=1000 --sort-by=TIMESTAMP \
-            --filter="tags:main-* AND timestamp.datetime < '${DELETE_BEFORE}'" --format="get(digest)")
-
-          for digest in ${DIGESTS[*]}; do
+          
+          DELETE_BEFORE_MS="$(date -d "-7 days" '+%s')000"
+          IMAGE_REPO=mirrornode/hedera-mirror-${{ matrix.module }}
+          IMAGE_PATH="gcr.io/$IMAGE_REPO"
+          BASE_REGISTRY_API_URL="https://gcr.io/v2/$IMAGE_REPO"
+          IMAGES_JSON_FILE="/tmp/images.json"
+          
+          curl "$BASE_REGISTRY_API_URL/tags/list" | \
+            # select manifests older than DELETE_BEFORE_MS, then select manifests with tag matching "main-.+"
+            jq --arg delete_before_ms "$DELETE_BEFORE_MS" '.manifest | to_entries |
+              map(select(.value.timeUploadedMs < $delete_before_ms)) |
+              map(select(.value.tag | map(test("main-.+")) | any))' | \
+            tee "$IMAGES_JSON_FILE"
+          
+          ALL_DIGESTS=($(cat "$IMAGES_JSON_FILE" | jq -r '[.[].key] | join(" ")'))
+          
+          MULTI_PLATFORM_DIGESTS=($(cat "$IMAGES_JSON_FILE" | \
+            jq -r 'map(select(.value.mediaType == "application/vnd.docker.distribution.manifest.list.v2+json")) |
+              [.[].key] | join(" ")'))
+          for digest in ${MULTI_PLATFORM_DIGESTS[*]}; do
+            # add child image digests to ALL_DIGESTS
+            CHILD_DIGESTS=($(curl "$BASE_REGISTRY_API_URL/manifests/$digest" | \
+              jq -r '[.manifests[].digest] | join(" ")'))
+            ALL_DIGESTS+=(${CHILD_DIGESTS[@]})
+          done
+          
+          for digest in ${ALL_DIGESTS[@]}; do
             gcloud container images delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
           done

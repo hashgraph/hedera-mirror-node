@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,39 +12,14 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish;
 
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.stub.StreamObserver;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeoutException;
-import lombok.Data;
-import lombok.extern.log4j.Log4j2;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TransferTransaction;
@@ -68,8 +38,32 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import io.grpc.Server;
+import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.StreamObserver;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeoutException;
+import lombok.CustomLog;
+import lombok.Data;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-@Log4j2
+@CustomLog
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TransactionPublisherTest {
@@ -124,9 +118,10 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publish() {
         PublishRequest request = request().build();
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r)
@@ -145,9 +140,10 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishWithLogResponse() {
         publishScenarioProperties.setLogResponse(true);
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -157,14 +153,17 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishWithReceipt() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().receipt(true).build())
+        transactionPublisher
+                .publish(request().receipt(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNull();
+                    assertThat(r)
+                            .extracting(PublishResponse::getTransactionRecord)
+                            .isNull();
                     return true;
                 })
                 .expectComplete()
@@ -174,14 +173,17 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishWithRecord() {
-        cryptoServiceStub.addQueries(Mono.just(record(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(record(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().sendRecord(true).build())
+        transactionPublisher
+                .publish(request().sendRecord(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNotNull();
+                    assertThat(r)
+                            .extracting(PublishResponse::getTransactionRecord)
+                            .isNotNull();
                     return true;
                 })
                 .expectComplete()
@@ -192,9 +194,10 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishPreCheckError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)));
+        cryptoServiceStub.addTransaction(Mono.just(response(errorResponseCode)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -205,10 +208,12 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishRetrySuccessful() {
-        cryptoServiceStub.addTransactions(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)),
-                Mono.just(response(ResponseCodeEnum.OK)));
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)))
+                .addTransaction(Mono.just(response(ResponseCodeEnum.OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -219,10 +224,12 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
-                Mono.just(response(errorResponseCode)));
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(errorResponseCode)))
+                .addTransaction(Mono.just(response(errorResponseCode)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -236,11 +243,13 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishRetrySameRequest() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
-                Mono.just(response(errorResponseCode)));
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(errorResponseCode)))
+                .addTransaction(Mono.just(response(errorResponseCode)));
 
         var request = request().build();
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -249,8 +258,9 @@ class TransactionPublisherTest {
                         .hasMessageContaining(errorResponseCode.toString()))
                 .verify(Duration.ofSeconds(2L));
 
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request)
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
@@ -261,9 +271,10 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishTimeout() {
         publishScenarioProperties.setTimeout(Duration.ofMillis(100L));
-        cryptoServiceStub.addTransactions(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
+        cryptoServiceStub.addTransaction(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
 
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
@@ -278,9 +289,12 @@ class TransactionPublisherTest {
         PublishRequest request = request().build();
         when(nodeSupplier.get()).thenThrow(new IllegalArgumentException("No valid nodes"));
 
-        transactionPublisher.publish(request)
+        transactionPublisher
+                .publish(request)
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertThat(t).isInstanceOf(PublishException.class).hasCauseInstanceOf(IllegalArgumentException.class))
+                .expectErrorSatisfies(t -> assertThat(t)
+                        .isInstanceOf(PublishException.class)
+                        .hasCauseInstanceOf(IllegalArgumentException.class))
                 .verify(Duration.ofSeconds(1L));
     }
 
@@ -289,7 +303,8 @@ class TransactionPublisherTest {
     void closeWhenDisabled() {
         publishProperties.setEnabled(false);
         transactionPublisher.close();
-        transactionPublisher.publish(request().build())
+        transactionPublisher
+                .publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(0L)
                 .expectComplete()
@@ -310,21 +325,22 @@ class TransactionPublisherTest {
     }
 
     private Response receipt(ResponseCodeEnum responseCode) {
-        ResponseHeader responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK)
-                .build();
+        ResponseHeader responseHeader =
+                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
         return Response.newBuilder()
                 .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
                         .setHeader(responseHeader)
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
+                        .setReceipt(TransactionReceipt.newBuilder()
+                                .setStatus(responseCode)
+                                .build())
                         .build())
                 .build();
     }
 
     private Response record(ResponseCodeEnum responseCode) {
-        ResponseHeader.Builder responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK);
-        TransactionReceipt.Builder transactionReceipt = TransactionReceipt.newBuilder().setStatus(responseCode);
+        ResponseHeader.Builder responseHeader = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK);
+        TransactionReceipt.Builder transactionReceipt =
+                TransactionReceipt.newBuilder().setStatus(responseCode);
         return Response.newBuilder()
                 .setTransactionGetRecord(TransactionGetRecordResponse.newBuilder()
                         .setHeader(responseHeader)
@@ -338,12 +354,14 @@ class TransactionPublisherTest {
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
 
-        void addQueries(Mono<Response>... query) {
-            queries.addAll(Arrays.asList(query));
+        CryptoServiceStub addQuery(Mono<Response> query) {
+            queries.add(query);
+            return this;
         }
 
-        void addTransactions(Mono<TransactionResponse>... transaction) {
-            transactions.addAll(Arrays.asList(transaction));
+        CryptoServiceStub addTransaction(Mono<TransactionResponse> transaction) {
+            transactions.add(transaction);
+            return this;
         }
 
         @Override

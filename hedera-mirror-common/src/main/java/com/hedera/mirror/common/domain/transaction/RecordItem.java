@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.transaction;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,31 @@ package com.hedera.mirror.common.domain.transaction;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain.transaction;
+
+import static lombok.AccessLevel.PRIVATE;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.StreamItem;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.ProtobufException;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,14 +46,6 @@ import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.util.Version;
-
-import com.hedera.mirror.common.domain.StreamItem;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.ProtobufException;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-
-import static lombok.AccessLevel.PRIVATE;
 
 @Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = PRIVATE)
@@ -64,6 +60,7 @@ public class RecordItem implements StreamItem {
     // Final fields
     @Builder.Default
     private final Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
+
     private final RecordItem parent;
     private final RecordItem previous;
     private final TransactionRecord transactionRecord;
@@ -80,7 +77,8 @@ public class RecordItem implements StreamItem {
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap = parseTransaction(transaction);
 
     @Getter(lazy = true)
-    private final EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
+    private final EntityId payerAccountId =
+            EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
     @Getter(lazy = true)
     private boolean successful = checkSuccess();
@@ -157,9 +155,9 @@ public class RecordItem implements StreamItem {
         }
 
         var status = transactionRecord.getReceipt().getStatus();
-        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
-                status == ResponseCodeEnum.SUCCESS ||
-                status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
+                || status == ResponseCodeEnum.SUCCESS
+                || status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 
     /**
@@ -174,8 +172,10 @@ public class RecordItem implements StreamItem {
             Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
 
             if (unknownFields.size() != 1) {
-                log.error("Unable to guess correct transaction type since there's not exactly one unknown field {}: {}",
-                        unknownFields, Hex.encodeHexString(body.toByteArray()));
+                log.error(
+                        "Unable to guess correct transaction type since there's not exactly one unknown field {}: {}",
+                        unknownFields,
+                        Hex.encodeHexString(body.toByteArray()));
                 return TransactionBody.DataCase.DATA_NOT_SET.getNumber();
             }
 
@@ -187,8 +187,19 @@ public class RecordItem implements StreamItem {
         return dataCase.getNumber();
     }
 
-    private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
+    /**
+     * Check whether ethereum transaction exist in the record item and returns it hash, if not return 32-byte representation of the transaction hash
+     *
+     * @return 32-byte transaction hash of this record item
+     */
+    public byte[] getTransactionHash() {
+        return Optional.ofNullable(getEthereumTransaction())
+                .map(EthereumTransaction::getHash)
+                .orElseGet(() -> Arrays.copyOfRange(
+                        DomainUtils.toBytes(getTransactionRecord().getTransactionHash()), 0, 32));
     }
+
+    private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {}
 
     public static class RecordItemBuilder {
 
@@ -196,9 +207,11 @@ public class RecordItem implements StreamItem {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
             if (transactionRecord.hasParentConsensusTimestamp() && previous != null) {
                 var parentTimestamp = transactionRecord.getParentConsensusTimestamp();
-                if (parentTimestamp.equals(previous.transactionRecord.getConsensusTimestamp())) { // check immediately preceding
+                if (parentTimestamp.equals(
+                        previous.transactionRecord.getConsensusTimestamp())) { // check immediately preceding
                     parent = previous;
-                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.transactionRecord.getConsensusTimestamp())) {
+                } else if (previous.parent != null
+                        && parentTimestamp.equals(previous.parent.transactionRecord.getConsensusTimestamp())) {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.transaction.TransactionType.TOKENCREATION;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
@@ -32,14 +35,6 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @CustomLog
 @Named
@@ -51,7 +46,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenFeeScheduleUpdate().getTokenId());
+        return EntityId.of(
+                recordItem.getTransactionBody().getTokenFeeScheduleUpdate().getTokenId());
     }
 
     @Override
@@ -76,8 +72,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
      * @param customFeeList protobuf custom fee list
      * @return A list of collectors automatically associated with the token if it's a token create transaction
      */
-    Set<EntityId> updateCustomFees(Transaction transaction,
-                                   Collection<com.hederahashgraph.api.proto.java.CustomFee> customFeeList) {
+    Set<EntityId> updateCustomFees(
+            Transaction transaction, Collection<com.hederahashgraph.api.proto.java.CustomFee> customFeeList) {
         var autoAssociatedAccounts = new HashSet<EntityId>();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
@@ -109,8 +105,7 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
                     chargedInAttachedToken = false;
                     break;
                 default:
-                    log.error(RECOVERABLE_ERROR + "Invalid CustomFee FeeCase at {}: {}", consensusTimestamp,
-                            feeCase);
+                    log.error(RECOVERABLE_ERROR + "Invalid CustomFee FeeCase at {}: {}", consensusTimestamp, feeCase);
                     continue;
             }
 

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,19 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
 import java.util.ArrayList;
@@ -38,12 +39,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.common.domain.History;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -140,8 +135,10 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
         if (contract.getTimestampRange().hasUpperBound()) {
             table = String.format("%s_history", TABLE_NAME);
         }
-        String sql = String.format("insert into %s (id,created_timestamp,evm_address,num,realm,shard,type," +
-                "timestamp_range) values (?,?,?,?,?,?,?::entity_type,?::int8range)", table);
+        String sql = String.format(
+                "insert into %s (id,created_timestamp,evm_address,num,realm,shard,type,"
+                        + "timestamp_range) values (?,?,?,?,?,?,?::entity_type,?::int8range)",
+                table);
         jdbcOperations.update(
                 sql,
                 contract.getId(),
@@ -151,8 +148,7 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
                 contract.getRealm(),
                 contract.getShard(),
                 contract.getType().toString(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(contract.getTimestampRange())
-        );
+                PostgreSQLGuavaRangeType.INSTANCE.asString(contract.getTimestampRange()));
     }
 
     private MigrationContract persistCurrentContract(MigrationContract contract, boolean clearEvmAddress) {
@@ -161,16 +157,16 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
             contract.setEvmAddress(null);
         }
 
-        var lower = contract.getTimestampUpper() == null ? contract.getCreatedTimestamp() :
-                contract.getTimestampUpper();
+        var lower =
+                contract.getTimestampUpper() == null ? contract.getCreatedTimestamp() : contract.getTimestampUpper();
         contract.setTimestampRange(Range.atLeast(lower));
 
         persistContract(contract);
         return contract;
     }
 
-    private MigrationContract persistHistoricalContract(MigrationContract contract, boolean clearEvmAddress,
-                                                        long validDuration) {
+    private MigrationContract persistHistoricalContract(
+            MigrationContract contract, boolean clearEvmAddress, long validDuration) {
         contract = clone(contract);
         if (clearEvmAddress) {
             contract.setEvmAddress(null);

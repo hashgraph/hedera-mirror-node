@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,29 +12,13 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import javax.inject.Named;
-import lombok.NonNull;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
-import org.awaitility.Durations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
-
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
@@ -63,6 +42,22 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipRes
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import javax.inject.Named;
+import lombok.NonNull;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
+import org.awaitility.Durations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 @Log4j2
 @Named
@@ -74,13 +69,13 @@ public class MirrorNodeClient {
     private final RetryBackoffSpec retrySpec;
     private final RetryBackoffSpec retrySpecWithNotFound;
 
-    public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties,
-                            WebClient webClient, Web3Properties web3Properties) {
+    public MirrorNodeClient(
+            AcceptanceTestProperties acceptanceTestProperties, WebClient webClient, Web3Properties web3Properties) {
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.webClient = webClient;
-        this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl()) ? webClient : webClient.mutate()
-                .baseUrl(web3Properties.getBaseUrl())
-                .build();
+        this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl())
+                ? webClient
+                : webClient.mutate().baseUrl(web3Properties.getBaseUrl()).build();
         var properties = acceptanceTestProperties.getRestPollingProperties();
         retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
                 .maxBackoff(properties.getMaxBackoff())
@@ -89,11 +84,12 @@ public class MirrorNodeClient {
          * RetryBackoffSpec is immutable. Starting with the configuration of retrySpec, define a new spec
          * with a different filter that prevents retry of NOT_FOUND in addition to BAD_REQUEST.
          */
-        retrySpecWithNotFound = retrySpec.filter(t -> !(t instanceof WebClientResponseException wcre &&
-                (wcre.getStatusCode() == HttpStatus.BAD_REQUEST || wcre.getStatusCode() == HttpStatus.NOT_FOUND)));
+        retrySpecWithNotFound = retrySpec.filter(t -> !(t instanceof WebClientResponseException wcre
+                && (wcre.getStatusCode() == HttpStatus.BAD_REQUEST || wcre.getStatusCode() == HttpStatus.NOT_FOUND)));
     }
 
-    public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
+    public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery)
+            throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         SubscriptionHandle subscription = topicMessageQuery
@@ -115,10 +111,8 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
-    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(SDKClient sdkClient,
-                                                                    TopicMessageQuery topicMessageQuery,
-                                                                    int numMessages,
-                                                                    long latency) throws Throwable {
+    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(
+            SDKClient sdkClient, TopicMessageQuery topicMessageQuery, int numMessages, long latency) throws Throwable {
         latency = latency <= 0 ? acceptanceTestProperties.getMessageTimeout().toSeconds() : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds.", numMessages, latency);
 
@@ -140,12 +134,19 @@ public class MirrorNodeClient {
 
         if (!messageLatch.await(latency, TimeUnit.SECONDS)) {
             stopwatch.stop();
-            log.error("{} messages were expected within {} s. {} not yet received after {}", numMessages, latency,
-                    messageLatch.getCount(), stopwatch);
+            log.error(
+                    "{} messages were expected within {} s. {} not yet received after {}",
+                    numMessages,
+                    latency,
+                    messageLatch.getCount(),
+                    stopwatch);
         } else {
             stopwatch.stop();
-            log.info("Success, received {} out of {} messages received in {}.", numMessages - messageLatch
-                    .getCount(), numMessages, stopwatch);
+            log.info(
+                    "Success, received {} out of {} messages received in {}.",
+                    numMessages - messageLatch.getCount(),
+                    numMessages,
+                    stopwatch);
         }
 
         subscriptionResponse.setElapsedTime(stopwatch);
@@ -159,14 +160,17 @@ public class MirrorNodeClient {
 
     public MirrorCryptoAllowanceResponse getAccountCryptoAllowance(String accountId) {
         log.debug("Verify account '{}''s crypto allowance is returned by Mirror Node", accountId);
-        return callRestEndpoint("/accounts/{accountId}/allowances/crypto",
-                MirrorCryptoAllowanceResponse.class, accountId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/crypto", MirrorCryptoAllowanceResponse.class, accountId);
     }
 
     public MirrorCryptoAllowanceResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
         log.debug("Verify account '{}''s crypto allowance for {} is returned by Mirror Node", accountId, spenderId);
-        return callRestEndpoint("/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
-                MirrorCryptoAllowanceResponse.class, accountId, spenderId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
+                MirrorCryptoAllowanceResponse.class,
+                accountId,
+                spenderId);
     }
 
     public MirrorContractResponse getContractInfo(String contractId) {
@@ -186,13 +190,13 @@ public class MirrorNodeClient {
 
     public MirrorContractResultResponse getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultResponse.class,
-                transactionId);
+        return callRestEndpoint(
+                "/contracts/results/{transactionId}", MirrorContractResultResponse.class, transactionId);
     }
 
     public ContractCallResponse contractsCall(String data, String to, String from) {
-        ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, from,
-                100000000, 100000000, to, 0);
+        ContractCallRequest contractCallRequest =
+                new ContractCallRequest("latest", data, false, from, 100000000, 100000000, to, 0);
 
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, contractCallRequest);
     }
@@ -217,15 +221,20 @@ public class MirrorNodeClient {
 
     public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
         log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
-        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId,
-                serialNumber);
+        return callRestEndpoint(
+                "/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId, serialNumber);
     }
 
     public MirrorNftTransactionsResponse getNftTransactions(TokenId tokenId, Long serialNumber) {
-        log.debug("Get list of transactions for token '{}' and serial number '{}' from Mirror Node", tokenId,
+        log.debug(
+                "Get list of transactions for token '{}' and serial number '{}' from Mirror Node",
+                tokenId,
                 serialNumber);
-        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}/transactions",
-                MirrorNftTransactionsResponse.class, tokenId, serialNumber);
+        return callRestEndpoint(
+                "/tokens/{tokenId}/nfts/{serialNumber}/transactions",
+                MirrorNftTransactionsResponse.class,
+                tokenId,
+                serialNumber);
     }
 
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
@@ -240,33 +249,42 @@ public class MirrorNodeClient {
 
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
-        return callRestEndpoint("/transactions?timestamp={timestamp}",
-                MirrorTransactionsResponse.class, timestamp);
+        return callRestEndpoint("/transactions?timestamp={timestamp}", MirrorTransactionsResponse.class, timestamp);
     }
 
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/transactions/{transactionId}",
-                MirrorTransactionsResponse.class, transactionId);
+        return callRestEndpoint("/transactions/{transactionId}", MirrorTransactionsResponse.class, transactionId);
     }
 
     public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
-        log.debug("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId,
+        log.debug(
+                "Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node",
+                accountId,
                 tokenId);
-        return callRestEndpoint("/accounts/{accountId}/tokens?token.id={tokenId}",
-                MirrorTokenRelationshipResponse.class, accountId, tokenId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/tokens?token.id={tokenId}",
+                MirrorTokenRelationshipResponse.class,
+                accountId,
+                tokenId);
     }
 
     public MirrorAccountResponse getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
-        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class,
+        return callRestEndpoint(
+                "/accounts/{accountId}",
+                MirrorAccountResponse.class,
                 TestUtil.getAliasFromPublicKey(accountId.aliasKey));
     }
 
     public MirrorAccountResponse getAccountDetailsUsingEvmAddress(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
-        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class,
-                accountId.evmAddress);
+        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, accountId.evmAddress);
+    }
+
+    public MirrorAccountResponse getAccountDetailsByAccountId(@NonNull AccountId accountId) {
+        log.debug("Retrieving account details for accountId '{}'", accountId);
+        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, accountId.toString());
     }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
@@ -275,7 +293,8 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        return webClient.get()
+        return webClient
+                .get()
                 .uri(uri.replace("/api/v1", ""), uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -286,7 +305,8 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpointWithNotFound(String uri, Class<T> classType, Object... uriVariables) {
-        return webClient.get()
+        return webClient
+                .get()
                 .uri(uri.replace("/api/v1", ""), uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -297,7 +317,8 @@ public class MirrorNodeClient {
     }
 
     private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        return web3Client.post()
+        return web3Client
+                .post()
                 .uri(uri)
                 .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)

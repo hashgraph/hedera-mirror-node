@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,24 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import static com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork.OTHER;
 
+import com.google.common.base.Stopwatch;
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
+import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,18 +46,6 @@ import lombok.Value;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.util.CollectionUtils;
 
-import com.hedera.hashgraph.sdk.AccountBalanceQuery;
-import com.hedera.hashgraph.sdk.AccountCreateTransaction;
-import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
-
 @CustomLog
 @Named
 @Value
@@ -64,11 +60,13 @@ public class SDKClient implements AutoCloseable {
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient,
-                     StartupProbe startupProbe)
+    public SDKClient(
+            AcceptanceTestProperties acceptanceTestProperties,
+            MirrorNodeClient mirrorNodeClient,
+            StartupProbe startupProbe)
             throws InterruptedException, TimeoutException {
-        defaultOperator = new ExpandedAccountId(acceptanceTestProperties.getOperatorId(),
-                acceptanceTestProperties.getOperatorKey());
+        defaultOperator = new ExpandedAccountId(
+                acceptanceTestProperties.getOperatorId(), acceptanceTestProperties.getOperatorKey());
         this.mirrorNodeClient = mirrorNodeClient;
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.client = createClient();
@@ -93,7 +91,8 @@ public class SDKClient implements AutoCloseable {
             try {
                 new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
-                        .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                        .setGrpcDeadline(
+                                acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                         .setTransferAccountId(operatorId)
                         .execute(client);
                 log.info("Deleted temporary operator account {}", createdAccountId);
@@ -146,7 +145,7 @@ public class SDKClient implements AutoCloseable {
                         .getReceipt(client)
                         .accountId;
                 log.info("Created operator account {} with public key {}", accountId, publicKey);
-                return new ExpandedAccountId(accountId, privateKey, publicKey);
+                return new ExpandedAccountId(accountId, privateKey);
             }
         } catch (Exception e) {
             log.warn("Unable to create a regular operator account. Falling back to existing operator", e);
@@ -158,6 +157,7 @@ public class SDKClient implements AutoCloseable {
     private void validateClient() throws InterruptedException, TimeoutException {
         var network = client.getNetwork();
         Map<String, AccountId> validNodes = new LinkedHashMap<>();
+        var stopwatch = Stopwatch.createStarted();
 
         for (var nodeEntry : network.entrySet()) {
             var endpoint = nodeEntry.getKey();
@@ -167,9 +167,13 @@ public class SDKClient implements AutoCloseable {
                 validNodes.putIfAbsent(endpoint, nodeAccountId);
                 log.trace("Added node {} at endpoint {} to list of valid nodes", nodeAccountId, endpoint);
             }
+
+            if (validNodes.size() >= acceptanceTestProperties.getMaxNodes()) {
+                break;
+            }
         }
 
-        log.info("Validated {} of {} nodes", validNodes.size(), network.size());
+        log.info("Validated {} of {} endpoints in {}", validNodes.size(), network.size(), stopwatch);
         if (validNodes.size() == 0) {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
@@ -191,6 +195,8 @@ public class SDKClient implements AutoCloseable {
                     .setAccountId(nodeAccountId)
                     .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
+                    .setMaxAttempts(3)
+                    .setMaxBackoff(Duration.ofSeconds(2))
                     .execute(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", nodeAccountId);
             valid = true;

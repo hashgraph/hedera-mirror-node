@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,13 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -29,20 +27,17 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
-
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
 
     static final Map<HederaNetwork, Long> FIRST_NONZERO_REWARD_RATE_TIMESTAMP = Map.of(
             HederaNetwork.MAINNET, 1666310400447390002L,
-            HederaNetwork.TESTNET, 1659139200596847383L
-    );
+            HederaNetwork.TESTNET, 1659139200596847383L);
 
     // Recalculate pending reward since for some staking periods it's accumulated more than one time.
-    private static final String MIGRATION_SQL = """
+    private static final String MIGRATION_SQL =
+            """
             with crypto_transfer as (
               select *
               from crypto_transfer

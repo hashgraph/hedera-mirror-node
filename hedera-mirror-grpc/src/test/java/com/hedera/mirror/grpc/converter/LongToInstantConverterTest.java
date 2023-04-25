@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.converter;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.grpc.converter;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.grpc.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,10 +30,10 @@ class LongToInstantConverterTest {
     @DisplayName("Convert Long to Instant")
     @ParameterizedTest(name = "with input {0} and output {1}")
     @CsvSource({
-            ",",
-            "1564433324226490001, 2019-07-29T20:48:44.226490001Z",
-            "1564433324000000000, 2019-07-29T20:48:44Z",
-            "1, 1970-01-01T00:00:00.000000001Z"
+        ",",
+        "1564433324226490001, 2019-07-29T20:48:44.226490001Z",
+        "1564433324000000000, 2019-07-29T20:48:44Z",
+        "1, 1970-01-01T00:00:00.000000001Z"
     })
     void testConvert(Long input, Instant expected) {
         Instant result = LongToInstantConverter.INSTANCE.convert(input);

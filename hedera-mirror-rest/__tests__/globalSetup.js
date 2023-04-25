@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import crypto from 'crypto';
@@ -29,7 +25,7 @@ const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'xinatswirlds/citus:11.2.0-alpine';
+const v2DatabaseImage = 'mirrornodeswirldslabs/citus:11.2.0-alpine';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 

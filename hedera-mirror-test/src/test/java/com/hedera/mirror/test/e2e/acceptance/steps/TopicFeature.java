@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.steps;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,13 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
-
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-import io.grpc.StatusRuntimeException;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -56,8 +36,23 @@ import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import io.grpc.StatusRuntimeException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TopicFeature {
 
@@ -79,40 +74,32 @@ public class TopicFeature {
     public void createNewTopic() {
         testInstantReference = Instant.now();
 
-        submitKey = PrivateKey.generate();
+        submitKey = PrivateKey.generateED25519();
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-        NetworkTransactionResponse networkTransactionResponse = topicClient
-                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);
+        NetworkTransactionResponse networkTransactionResponse =
+                topicClient.createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
-        topicMessageQuery = new TopicMessageQuery()
-                .setTopicId(consensusTopicId)
-                .setStartTime(Instant.EPOCH);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
+        topicMessageQuery = new TopicMessageQuery().setTopicId(consensusTopicId).setStartTime(Instant.EPOCH);
     }
 
     @Given("I successfully create a new open topic")
     public void createNewOpenTopic() {
         testInstantReference = Instant.now();
 
-        NetworkTransactionResponse networkTransactionResponse = topicClient
-                .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), null);
+        NetworkTransactionResponse networkTransactionResponse =
+                topicClient.createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), null);
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         assertNotNull(topicId);
 
         consensusTopicId = topicId;
-        topicMessageQuery = new TopicMessageQuery()
-                .setTopicId(consensusTopicId)
-                .setStartTime(Instant.EPOCH);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, Instant.EPOCH);
+        topicMessageQuery = new TopicMessageQuery().setTopicId(consensusTopicId).setStartTime(Instant.EPOCH);
     }
 
     @When("I successfully update an existing topic")
@@ -139,8 +126,6 @@ public class TopicFeature {
             consensusTopicId = new TopicId(0, 0, Long.parseLong(topicId));
             topicMessageQuery.setTopicId(consensusTopicId);
         }
-
-        log.debug("Set TopicMessageQuery with topic: {}, StartTime: {}", consensusTopicId, Instant.EPOCH);
         messageSubscribeCount = 0;
     }
 
@@ -165,58 +150,39 @@ public class TopicFeature {
         messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
-        log.debug("Subscribe TopicMessageQuery startTime : {}", startTime);
-
         topicMessageQuery.setStartTime(startTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
     }
 
-    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a number of messages {int} I " +
-            "want to receive")
+    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a number of messages {int} I "
+            + "want to receive")
     public void setTopicListenParams(String startTimestamp, String endTimestamp, int numMessages) {
         messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp, Instant.now());
-        log.trace("Set TopicMessageQuery with topic: {}, startTime : {}. endTime : {}", consensusTopicId,
-                startTime, endTime);
 
-        topicMessageQuery
-                .setStartTime(startTime)
-                .setEndTime(endTime);
+        topicMessageQuery.setStartTime(startTime).setEndTime(endTime);
     }
 
     @Given("I provide a startSequence {int} and endSequence {int} and a number of messages {int} I want to receive")
     public void setTopicListenParams(int startSequence, int endSequence, int numMessages) {
         messageSubscribeCount = numMessages;
 
-        Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
-        Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
-        log.trace("Subscribe TopicMessageQuery startTime : {}. endTime : {}", startTime, endTime);
-
-        topicMessageQuery
-                .setStartTime(startTime)
-                .setEndTime(endTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}",
-                consensusTopicId, startTime, endTime);
+        Instant startTime =
+                topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
+        Instant endTime =
+                topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
+        topicMessageQuery.setStartTime(startTime).setEndTime(endTime);
     }
 
-    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a limit of {int} messages I " +
-            "want to receive")
+    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a limit of {int} messages I "
+            + "want to receive")
     public void setTopicListenParamswLimit(String startTimestamp, String endTimestamp, int limit) {
         messageSubscribeCount = limit;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp);
-        topicMessageQuery
-                .setStartTime(startTime)
-                .setEndTime(endTime)
-                .setLimit(limit);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}, endTime: {}, limit: {}",
-                consensusTopicId, startTime, endTime, limit);
+        topicMessageQuery.setStartTime(startTime).setEndTime(endTime).setLimit(limit);
     }
 
     @When("I subscribe to the topic")
@@ -226,23 +192,28 @@ public class TopicFeature {
     }
 
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
-    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+    @Retryable(
+            value = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-
     @SuppressWarnings("java:S2925")
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
-            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Sleeping {} ms",
-                    messageCount, i + 1, numGroups, milliSleep);
+            log.trace(
+                    "Emitted {} message(s) in batch {} of {} potential batches. Sleeping {} ms",
+                    messageCount,
+                    i + 1,
+                    numGroups,
+                    milliSleep);
         }
 
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+    @Retryable(
+            value = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishTopicMessages(int messageCount) {
@@ -251,14 +222,14 @@ public class TopicFeature {
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {AssertionError.class, PrecheckStatusException.class,
-            ReceiptStatusException.class},
+    @Retryable(
+            value = {AssertionError.class, PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishAndVerifyTopicMessages(int messageCount) {
         messageSubscribeCount = messageCount;
-        publishedTransactionReceipts = topicClient
-                .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
+        publishedTransactionReceipts = topicClient.publishMessagesToTopic(
+                consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
         assertEquals(messageCount, publishedTransactionReceipts.size());
     }
 
@@ -306,9 +277,6 @@ public class TopicFeature {
         }
 
         topicMessageQuery.setStartTime(startTime);
-
-        log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
-
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
 
@@ -355,24 +323,30 @@ public class TopicFeature {
         if (acceptanceProps.isEmitBackgroundMessages()) {
             log.debug("Emit a background message every second during subscription");
             scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(() -> {
-                try {
-                    topicClient.publishMessageToTopic(
-                            consensusTopicId,
-                            "backgroundMessage".getBytes(StandardCharsets.UTF_8),
-                            getSubmitKeys());
-                } catch (Exception e) {
-                    log.error("Error publishing to topic", e);
-                }
-            }, 0, 1, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(
+                    () -> {
+                        try {
+                            topicClient.publishMessageToTopic(
+                                    consensusTopicId,
+                                    "backgroundMessage".getBytes(StandardCharsets.UTF_8),
+                                    getSubmitKeys());
+                        } catch (Exception e) {
+                            log.error("Error publishing to topic", e);
+                        }
+                    },
+                    0,
+                    1,
+                    TimeUnit.SECONDS);
         }
 
         SubscriptionResponse subscriptionResponse;
 
         try {
-            subscriptionResponse = mirrorClient
-                    .subscribeToTopicAndRetrieveMessages(sdkClient, topicMessageQuery, messageSubscribeCount, latency);
-            assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
+            subscriptionResponse = mirrorClient.subscribeToTopicAndRetrieveMessages(
+                    sdkClient, topicMessageQuery, messageSubscribeCount, latency);
+            assertEquals(
+                    messageSubscribeCount,
+                    subscriptionResponse.getMirrorHCSResponses().size());
         } finally {
             if (scheduler != null) {
                 scheduler.shutdownNow();

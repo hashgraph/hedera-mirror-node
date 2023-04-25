@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,14 @@ package com.hedera.mirror.importer;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
 
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
-
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -46,9 +42,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
-
-import com.hedera.mirror.importer.util.Utility;
-
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -68,6 +61,7 @@ public class TestUtils {
         }
     };
 
+    @SuppressWarnings("unchecked")
     public static <T> T clone(T object) {
         try {
             return (T) BEAN_UTILS.cloneBean(object);
@@ -83,7 +77,7 @@ public class TestUtils {
     /**
      * Dynamically lookup method references for every getter in object with the given return type
      */
-    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<R> returnType) {
+    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<?> returnType) {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         Class<?> objectClass = object.getClass();
         Collection<Supplier<R>> getters = new ArrayList<>();
@@ -100,8 +94,8 @@ public class TestUtils {
                 }
 
                 MethodType functionType = handle.type();
-                var function = (Function<O, R>) LambdaMetafactory.metafactory(lookup, "apply",
-                                methodType(Function.class), functionType.erase(), handle, functionType)
+                var function = (Function<O, R>) LambdaMetafactory.metafactory(
+                                lookup, "apply", methodType(Function.class), functionType.erase(), handle, functionType)
                         .getTarget()
                         .invokeExact();
                 getters.add(() -> function.apply(object));
@@ -114,9 +108,11 @@ public class TestUtils {
     }
 
     public static File getResource(String path) {
-        ClassLoader[] classLoaders = {Thread
-                .currentThread().getContextClassLoader(), Utility.class.getClassLoader(),
-                ClassLoader.getSystemClassLoader()};
+        ClassLoader[] classLoaders = {
+            Thread.currentThread().getContextClassLoader(),
+            Utility.class.getClassLoader(),
+            ClassLoader.getSystemClassLoader()
+        };
         URL url = null;
 
         for (ClassLoader classLoader : classLoaders) {
@@ -167,14 +163,19 @@ public class TestUtils {
 
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
-        return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
-                .setAccountNum(Long.parseLong(parts[2])).build();
+        return AccountID.newBuilder()
+                .setShardNum(Long.parseLong(parts[0]))
+                .setRealmNum(Long.parseLong(parts[1]))
+                .setAccountNum(Long.parseLong(parts[2]))
+                .build();
     }
 
     public TransactionID toTransactionId(String transactionId) {
         var parts = transactionId.split("-");
-        return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))
-                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
+        return TransactionID.newBuilder()
+                .setAccountID(toAccountId(parts[0]))
+                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1])))
+                .build();
     }
 
     public Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
@@ -185,7 +186,10 @@ public class TestUtils {
     }
 
     public Timestamp toTimestamp(long seconds, long nanoseconds) {
-        return Timestamp.newBuilder().setSeconds(seconds).setNanos((int) nanoseconds).build();
+        return Timestamp.newBuilder()
+                .setSeconds(seconds)
+                .setNanos((int) nanoseconds)
+                .build();
     }
 
     public byte[] toByteArray(Key key) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -21,15 +22,14 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.StringValue;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 
 class TokenUpdateWrapperTest {
     @Test

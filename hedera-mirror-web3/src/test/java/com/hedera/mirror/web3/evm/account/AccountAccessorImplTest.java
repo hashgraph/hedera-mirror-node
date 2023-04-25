@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.account;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,18 @@ package com.hedera.mirror.web3.evm.account;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.evm.account;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-
 import com.hedera.mirror.web3.repository.EntityRepository;
-
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,10 +45,13 @@ class AccountAccessorImplTest {
 
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
+
     @Mock
     private EntityRepository entityRepository;
+
     @Mock
     private Entity account;
+
     @InjectMocks
     public AccountAccessorImpl accountAccessor;
 
@@ -81,7 +77,8 @@ class AccountAccessorImplTest {
 
     @Test
     void canonicalAliasAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArray())).thenReturn(Optional.of(account));
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArray()))
+                .thenReturn(Optional.of(account));
         final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }

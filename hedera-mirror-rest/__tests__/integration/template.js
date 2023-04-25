@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 /**
@@ -47,8 +43,8 @@ import server from '../../server';
 import {getModuleDirname} from '../testutils';
 import {JSONParse} from '../../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
-import {CreateBucketCommand, PutObjectCommand, S3} from "@aws-sdk/client-s3";
-import {Readable} from "stream";
+import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
+import {Readable} from 'stream';
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
 const walk = (dir, files = []) => {
@@ -231,20 +227,21 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
     });
 
     logger.debug(`creating s3 bucket ${bucketName}`);
-    await s3client.send(new CreateBucketCommand({ Bucket: bucketName }));
+    await s3client.send(new CreateBucketCommand({Bucket: bucketName}));
 
     logger.debug('uploading file objects to mock s3 service');
     const s3ObjectKeys = [];
     for (const filePath of walk(dataPath)) {
       const s3ObjectKey = path.relative(dataPath, filePath);
       const fileStream = fs.createReadStream(filePath);
-      await s3client
-        .send(new PutObjectCommand({
+      await s3client.send(
+        new PutObjectCommand({
           Bucket: bucketName,
           Key: s3ObjectKey,
           Body: Readable.from(fileStream),
           ACL: 'public-read',
-        }));
+        })
+      );
       s3ObjectKeys.push(s3ObjectKey);
     }
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);

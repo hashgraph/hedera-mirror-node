@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -60,90 +56,61 @@ public interface EntityListener {
         return true;
     }
 
-    default void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
-    }
+    default void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {}
 
-    default void onContract(Contract contract) {
-    }
+    default void onContract(Contract contract) {}
 
-    default void onContractAction(ContractAction contractAction) {
-    }
+    default void onContractAction(ContractAction contractAction) {}
 
-    default void onContractLog(ContractLog contractLog) {
-    }
+    default void onContractLog(ContractLog contractLog) {}
 
-    default void onContractStateChange(ContractStateChange contractStateChange) {
-    }
+    default void onContractStateChange(ContractStateChange contractStateChange) {}
 
-    default void onContractResult(ContractResult contractResult) throws ImporterException {
-    }
+    default void onContractResult(ContractResult contractResult) throws ImporterException {}
 
-    default void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
-    }
+    default void onCryptoAllowance(CryptoAllowance cryptoAllowance) {}
 
-    default void onCustomFee(CustomFee customFee) throws ImporterException {
-    }
+    default void onCustomFee(CustomFee customFee) throws ImporterException {}
 
-    default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
-    }
+    default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {}
 
-    default void onEntity(Entity entity) throws ImporterException {
-    }
+    default void onEntity(Entity entity) throws ImporterException {}
 
-    default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {
-    }
+    default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {}
 
-    default void onFileData(FileData fileData) throws ImporterException {
-    }
+    default void onFileData(FileData fileData) throws ImporterException {}
 
-    default void onLiveHash(LiveHash liveHash) throws ImporterException {
-    }
+    default void onLiveHash(LiveHash liveHash) throws ImporterException {}
 
-    default void onNetworkStake(NetworkStake networkStake) throws ImporterException {
-    }
+    default void onNetworkStake(NetworkStake networkStake) throws ImporterException {}
 
-    default void onNft(Nft nft) throws ImporterException {
-    }
+    default void onNft(Nft nft) throws ImporterException {}
 
-    default void onNftAllowance(NftAllowance nftAllowance) {
-    }
+    default void onNftAllowance(NftAllowance nftAllowance) {}
 
-    default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-    }
+    default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {}
 
-    default void onNodeStake(NodeStake nodeStake) throws ImporterException {
-    }
+    default void onNodeStake(NodeStake nodeStake) throws ImporterException {}
 
-    default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-    }
+    default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {}
 
-    default void onPrng(Prng prng) {
-    }
+    default void onPrng(Prng prng) {}
 
-    default void onSchedule(Schedule schedule) throws ImporterException {
-    }
+    default void onSchedule(Schedule schedule) throws ImporterException {}
 
-    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
-    }
+    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {}
 
-    default void onToken(Token token) throws ImporterException {
-    }
+    default void onToken(Token token) throws ImporterException {}
 
-    default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-    }
+    default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {}
 
-    default void onTokenAllowance(TokenAllowance tokenAllowance) {
-    }
+    default void onTokenAllowance(TokenAllowance tokenAllowance) {}
 
-    default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
-    }
+    default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {}
 
-    default void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-    }
+    default void onTopicMessage(TopicMessage topicMessage) throws ImporterException {}
 
-    default void onTransaction(Transaction transaction) throws ImporterException {
-    }
+    default void onTransaction(Transaction transaction) throws ImporterException {}
 
-    default void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
-    }
+    default void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {}
 }

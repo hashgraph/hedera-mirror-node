@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,17 @@ package com.hedera.mirror.web3.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.web3.config;
+
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 
 @Configuration
 @RequiredArgsConstructor
@@ -39,8 +34,6 @@ class RateLimitConfiguration {
         final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimit().getSeconds();
         final var limit = Bandwidth.simple(rateLimitPerSecond, Duration.ofSeconds(1));
 
-        return Bucket.builder()
-                .addLimit(limit)
-                .build();
+        return Bucket.builder().addLimit(limit).build();
     }
 }

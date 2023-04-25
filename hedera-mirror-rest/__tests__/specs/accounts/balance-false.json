@@ -48,7 +48,10 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "urls": ["/api/v1/accounts?balance=false", "/api/v1/accounts?balance=true&balance=false"],
+  "urls": [
+    "/api/v1/accounts?balance=false",
+    "/api/v1/accounts?balance=true&balance=false"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "accounts": [

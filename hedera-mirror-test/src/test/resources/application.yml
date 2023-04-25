@@ -2,7 +2,6 @@ hedera:
   mirror:
     test:
       acceptance:
-        messageTimeout: 20s
         # grpc endpoint
         mirrorNodeAddress: testnet.mirrornode.hedera.com:443
         network: testnet

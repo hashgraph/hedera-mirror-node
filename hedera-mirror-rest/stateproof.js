@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -177,27 +173,26 @@ const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) =
 
       return new Promise(async (resolve) => {
         s3Client.getObject(params).then(
-            (data) => {
-              const buffers = [];
-              data.Body
-                .on('data', (chunk) => {
-                  buffers.push(Buffer.from(chunk))
-                })
-                .on('end', () => {
-                  resolve({
-                    partialFilePath,
-                    data: Buffer.concat(buffers)
-                  })
-                })
-                // error may happen if there is an s3 transient error.
-                // capture the error and return it, otherwise Promise.all will fail
-                .on('error', (error) => {
-                  logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
-                  resolve({
-                    partialFilePath,
-                    error,
-                  });
-                })
+          (data) => {
+            const buffers = [];
+            data.Body.on('data', (chunk) => {
+              buffers.push(Buffer.from(chunk));
+            })
+              .on('end', () => {
+                resolve({
+                  partialFilePath,
+                  data: Buffer.concat(buffers),
+                });
+              })
+              // error may happen if there is an s3 transient error.
+              // capture the error and return it, otherwise Promise.all will fail
+              .on('error', (error) => {
+                logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
+                resolve({
+                  partialFilePath,
+                  error,
+                });
+              });
           },
           // error will happen if the node does not have the requested file
           (error) => {
@@ -206,7 +201,8 @@ const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) =
               partialFilePath,
               error,
             });
-          });
+          }
+        );
       });
     })
   );
@@ -356,10 +352,7 @@ const stateproof = {
   getStateProofForTransaction,
 };
 
-const acceptedStateProofParameters = new Set([
-  constants.filterKeys.NONCE,
-  constants.filterKeys.SCHEDULED
-]);
+const acceptedStateProofParameters = new Set([constants.filterKeys.NONCE, constants.filterKeys.SCHEDULED]);
 
 if (utils.isTestEnv()) {
   Object.assign(stateproof, {

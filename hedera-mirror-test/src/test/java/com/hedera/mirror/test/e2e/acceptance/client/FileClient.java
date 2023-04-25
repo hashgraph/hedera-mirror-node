@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.FileAppendTransaction;
 import com.hedera.hashgraph.sdk.FileCreateTransaction;
@@ -32,6 +25,8 @@ import com.hedera.hashgraph.sdk.FileInfoQuery;
 import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import javax.inject.Named;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class FileClient extends AbstractNetworkClient {
@@ -41,69 +36,57 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {
-        log.debug("Create new file");
-        String memo = getMemo("Create file");
+        var memo = getMemo("Create file");
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(content)
                 .setFileMemo(memo)
                 .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                fileCreateTransaction,
-                KeyList.of(sdkClient.getExpandedOperatorAccountId().getPrivateKey()));
-        FileId fileId = networkTransactionResponse.getReceipt().fileId;
-        log.debug("Created new file {}", fileId);
+        var keyList = KeyList.of(sdkClient.getExpandedOperatorAccountId().getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(fileCreateTransaction, keyList);
 
-        return networkTransactionResponse;
+        var fileId = response.getReceipt().fileId;
+        log.info("Created new file {} with {} B via {}", fileId, content.length, memo, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
-        log.debug("Update file");
-        String memo = getMemo("Update file");
-        FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
-                .setFileId(fileId)
-                .setFileMemo(memo)
-                .setTransactionMemo(memo);
+    public NetworkTransactionResponse updateFile(FileId fileId, byte[] contents) {
+        var memo = getMemo("Update file");
+        FileUpdateTransaction fileUpdateTransaction =
+                new FileUpdateTransaction().setFileId(fileId).setFileMemo(memo).setTransactionMemo(memo);
 
-        if (byteCode != null) {
-            fileUpdateTransaction.setContents(byteCode);
+        int count = 0;
+        if (contents != null) {
+            fileUpdateTransaction.setContents(contents);
+            count = contents.length;
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
-        log.debug("Updated file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
+        log.info("Updated file {} with {} B via {}", fileId, count, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse appendFile(FileId fileId, byte[] byteCode) {
-        String memo = "Append file";
-        log.debug(memo);
+    public NetworkTransactionResponse appendFile(FileId fileId, byte[] contents) {
+        var memo = getMemo("Append file");
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
-                .setContents(byteCode)
-                .setTransactionMemo(getMemo(memo));
+                .setContents(contents)
+                .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileAppendTransaction);
-        log.debug("Appended to file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileAppendTransaction);
+        log.info("Appended {} B to file {} via {}", contents.length, fileId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
-        String memo = "Delete file";
-        log.debug(memo);
-        FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
-                .setFileId(fileId)
-                .setTransactionMemo(getMemo(memo));
+        var memo = getMemo("Delete file");
+        FileDeleteTransaction fileUpdateTransaction =
+                new FileDeleteTransaction().setFileId(fileId).setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
-        log.debug("Deleted file {}", fileId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
+        log.info("Deleted file {} with memo '{}' via {}", fileId, memo, response.getTransactionId());
+        return response;
     }
 
     public FileInfo getFileInfo(FileId fileId) {

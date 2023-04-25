@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.ethereum;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,20 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-
 abstract class AbstractEthereumTransactionParserTest {
     protected static EthereumTransactionParser ethereumTransactionParser;
+
     @Resource
     protected final DomainBuilder domainBuilder = new DomainBuilder();
 
@@ -40,9 +36,8 @@ abstract class AbstractEthereumTransactionParserTest {
     @Test
     void decode() {
         var ethereumTransaction = ethereumTransactionParser.decode(getTransactionBytes());
-        assertThat(ethereumTransaction)
-                .isNotNull()
-                .satisfies(t -> assertThat(t.getChainId()).isNotEmpty());
+        assertThat(ethereumTransaction).isNotNull().satisfies(t -> assertThat(t.getChainId())
+                .isNotEmpty());
 
         validateEthereumTransaction(ethereumTransaction);
     }

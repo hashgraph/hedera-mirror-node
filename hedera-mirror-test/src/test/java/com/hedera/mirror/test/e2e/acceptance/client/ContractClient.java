@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
@@ -35,6 +28,8 @@ import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import javax.inject.Named;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class ContractClient extends AbstractNetworkClient {
@@ -43,10 +38,9 @@ public class ContractClient extends AbstractNetworkClient {
         super(sdkClient, retryTemplate);
     }
 
-    public NetworkTransactionResponse createContract(FileId fileId, long gas, Hbar payableAmount,
-                                                     ContractFunctionParameters contractFunctionParameters) {
-        log.debug("Create new contract");
-        String memo = getMemo("Create contract");
+    public NetworkTransactionResponse createContract(
+            FileId fileId, long gas, Hbar payableAmount, ContractFunctionParameters contractFunctionParameters) {
+        var memo = getMemo("Create contract");
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setBytecodeFileId(fileId)
@@ -62,39 +56,33 @@ public class ContractClient extends AbstractNetworkClient {
             contractCreateTransaction.setInitialBalance(payableAmount);
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(contractCreateTransaction);
-        ContractId contractId = networkTransactionResponse.getReceipt().contractId;
-        log.debug("Created new contract {}", contractId);
+        var response = executeTransactionAndRetrieveReceipt(contractCreateTransaction);
+        var contractId = response.getReceipt().contractId;
+        log.info("Created new contract {} with memo '{}' via {}", contractId, memo, response.getTransactionId());
 
-        TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
+        TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
 
-        return networkTransactionResponse;
+        return response;
     }
 
     public NetworkTransactionResponse updateContract(ContractId contractId) {
-        log.debug("Update contract {}", contractId);
-        String memo = getMemo("Update contract");
+        var memo = getMemo("Update contract");
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
                 .setContractMemo(memo)
                 .setTransactionMemo(memo);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
-        log.debug("Updated contract {}", contractId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
+        log.info("Updated contract {} with memo '{}' via {}", contractId, memo, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse deleteContract(ContractId contractId, AccountId transferAccountId,
-                                                     ContractId transferContractId) {
-        log.debug("Delete contract {}", contractId);
-        String memo = getMemo("Delete contract");
-        ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
-                .setContractId(contractId)
-                .setTransactionMemo(memo);
+    public NetworkTransactionResponse deleteContract(
+            ContractId contractId, AccountId transferAccountId, ContractId transferContractId) {
+        var memo = getMemo("Delete contract");
+        ContractDeleteTransaction contractDeleteTransaction =
+                new ContractDeleteTransaction().setContractId(contractId).setTransactionMemo(memo);
 
         // either AccountId or ContractId, not both
         if (transferAccountId != null) {
@@ -105,20 +93,17 @@ public class ContractClient extends AbstractNetworkClient {
             contractDeleteTransaction.setTransferContractId(transferContractId);
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(contractDeleteTransaction);
-        log.debug("Deleted contract {}", contractId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(contractDeleteTransaction);
+        log.info("Deleted contract {} with memo '{}' via {}", contractId, memo, response.getTransactionId());
+        return response;
     }
 
-    public record ExecuteContractResult(ContractFunctionResult contractFunctionResult,
-                                        NetworkTransactionResponse networkTransactionResponse) {
-    }
-
-    public ExecuteContractResult executeContract(ContractId contractId, long gas, String functionName,
-                                                 ContractFunctionParameters parameters, Hbar payableAmount) {
-        log.debug("Call contract {}'s function {}", contractId, functionName);
+    public ExecuteContractResult executeContract(
+            ContractId contractId,
+            long gas,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount) {
 
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -135,13 +120,13 @@ public class ContractClient extends AbstractNetworkClient {
             contractExecuteTransaction.setPayableAmount(payableAmount);
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
+        var response = executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
 
-        TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
+        TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
 
-        return new ExecuteContractResult(transactionRecord.contractFunctionResult, networkTransactionResponse);
+        log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
+        return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
@@ -149,7 +134,8 @@ public class ContractClient extends AbstractNetworkClient {
             return;
         }
 
-        log.trace("ContractFunctionResult for function {}, contractId: {}, gasUsed: {}, logCount: {}",
+        log.trace(
+                "ContractFunctionResult for function {}, contractId: {}, gasUsed: {}, logCount: {}",
                 functionName,
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
@@ -159,4 +145,7 @@ public class ContractClient extends AbstractNetworkClient {
     public String getClientAddress() {
         return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
     }
+
+    public record ExecuteContractResult(
+            ContractFunctionResult contractFunctionResult, NetworkTransactionResponse networkTransactionResponse) {}
 }

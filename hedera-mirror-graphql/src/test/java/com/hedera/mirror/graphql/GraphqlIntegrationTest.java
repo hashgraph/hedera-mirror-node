@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,11 @@ package com.hedera.mirror.graphql;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.graphql;
+
+import com.hedera.mirror.common.domain.DomainBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.annotation.Resource;
@@ -34,8 +31,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.support.TransactionOperations;
-
-import com.hedera.mirror.common.domain.DomainBuilder;
 
 @Import(GraphqlIntegrationTest.IntegrationTestConfiguration.class)
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/cleanup.sql")
@@ -62,8 +57,7 @@ public abstract class GraphqlIntegrationTest {
         }
 
         @Bean
-        DomainBuilder domainBuilder(EntityManager entityManager,
-                                    TransactionOperations transactionOperations) {
+        DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
             return new DomainBuilder(entityManager, transactionOperations);
         }
     }

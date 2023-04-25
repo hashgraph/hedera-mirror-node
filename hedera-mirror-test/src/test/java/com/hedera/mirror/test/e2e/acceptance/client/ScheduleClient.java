@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.util.List;
-import javax.inject.Named;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -35,6 +27,9 @@ import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import java.util.List;
+import javax.inject.Named;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class ScheduleClient extends AbstractNetworkClient {
@@ -43,9 +38,9 @@ public class ScheduleClient extends AbstractNetworkClient {
         super(sdkClient, retryTemplate);
     }
 
-    public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     KeyList signatureKeyList) {
-        String memo = getMemo("Create schedule");
+    public NetworkTransactionResponse createSchedule(
+            ExpandedAccountId payerAccountId, Transaction<?> transaction, KeyList signatureKeyList) {
+        var memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setPayerAccountId(payerAccountId.getAccountId())
@@ -62,48 +57,34 @@ public class ScheduleClient extends AbstractNetworkClient {
             signatureKeyList.forEach(k -> {
                 PrivateKey pk = (PrivateKey) k;
                 byte[] signature = pk.signTransaction(scheduleCreateTransaction);
-                scheduleCreateTransaction.addSignature(
-                        pk.getPublicKey(),
-                        signature);
+                scheduleCreateTransaction.addSignature(pk.getPublicKey(), signature);
             });
         }
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
-        ScheduleId scheduleId = networkTransactionResponse.getReceipt().scheduleId;
-        log.debug("Created new schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
+        var scheduleId = response.getReceipt().scheduleId;
+        log.info("Created new schedule {} with memo '{}' via {}", scheduleId, memo, response.getTransactionId());
+        return response;
     }
 
-    public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
-                                                   ScheduleId scheduleId) {
+    public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId, ScheduleId scheduleId) {
+        ScheduleSignTransaction scheduleSignTransaction =
+                new ScheduleSignTransaction().setScheduleId(scheduleId).setTransactionMemo(getMemo("Sign schedule"));
 
-        ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
-                .setScheduleId(scheduleId)
-                .setTransactionMemo(getMemo("Sign schedule"));
-
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                scheduleSignTransaction,
-                KeyList.of(expandedAccountId.getPrivateKey())
-        );
-        log.debug("Signed schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var keyList = KeyList.of(expandedAccountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(scheduleSignTransaction, keyList);
+        log.info("Signed schedule {} via {}", scheduleId, response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) {
-
-        log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setScheduleId(scheduleId)
                 .setTransactionMemo(getMemo("Delete schedule"));
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
-        log.debug("Deleted schedule {}", scheduleId);
-
-        return networkTransactionResponse;
+        var response = executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
+        log.info("Deleted schedule {} via {}", scheduleId, response.getTransactionId());
+        return response;
     }
 
     public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {

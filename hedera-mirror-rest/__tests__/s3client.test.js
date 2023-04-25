@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import config from '../config';
 import {cloudProviders, defaultCloudProviderEndpoints} from '../constants';
 import s3client from '../s3client';
-import {jest} from "@jest/globals";
+import {jest} from '@jest/globals';
 
 const defaultValidStreamsConfig = {
   cloudProvider: cloudProviders.S3,
@@ -90,7 +86,7 @@ describe('createS3Client with valid config', () => {
     if (streamsConfig.cloudProvider === cloudProviders.GCP && streamsConfig.gcpProjectId) {
       expect(httpRequest.query).toMatchObject({userProject: `${streamsConfig.gcpProjectId}`});
     } else {
-      expect(httpRequest.query).not.toMatchObject({userProject: `${streamsConfig.gcpProjectId}`})
+      expect(httpRequest.query).not.toMatchObject({userProject: `${streamsConfig.gcpProjectId}`});
     }
   };
 
@@ -173,7 +169,6 @@ describe('createS3Client with invalid regions', () => {
     await expect(request).rejects.toThrow('Region is missing');
   };
 
-
   test('null region', async () => {
     overrideStreamsConfig({region: null});
     const s3Client = s3client.createS3Client();
@@ -182,6 +177,8 @@ describe('createS3Client with invalid regions', () => {
 
   test('empty region', async () => {
     overrideStreamsConfig({region: ''});
-    expect(() => { s3client.createS3Client(); }).toThrow('Region is missing');
+    expect(() => {
+      s3client.createS3Client();
+    }).toThrow('Region is missing');
   });
 });

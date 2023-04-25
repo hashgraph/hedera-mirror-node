@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.utils;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,16 @@ package com.hedera.mirror.web3.evm.utils;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.evm.utils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -31,18 +29,19 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 class EvmTokenUtilsTest {
     private static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
+
     @Test
     void toAddress() {
         long shard = 1;
         long realm = 2;
         long num = 120;
         long accountNum = 220;
-        ContractID contractId = ContractID.newBuilder().setShardNum(shard).setRealmNum(realm).setContractNum(num)
+        ContractID contractId = ContractID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setContractNum(num)
                 .build();
         byte[] contractAddress = new byte[20];
         contractAddress[3] = (byte) shard;
@@ -62,7 +61,7 @@ class EvmTokenUtilsTest {
 
     @Test
     void evmKeyWithEcdsa() throws InvalidProtocolBufferException, DecoderException {
-        //hexed value of a serialized Key with ecdsa algorithm
+        // hexed value of a serialized Key with ecdsa algorithm
         final var ecdsaBytes = Hex.decodeHex("3a21ccd4f651636406f8a2a9902a2a604be1fb480dba6591ff4d992f8a6bc6abc137c7");
 
         final var result = EvmTokenUtils.evmKey(ecdsaBytes);
@@ -75,8 +74,9 @@ class EvmTokenUtilsTest {
 
     @Test
     void evmKeyWithEd25519() throws InvalidProtocolBufferException, DecoderException {
-        //hexed value of a serialized Key with ed25519 algorithm
-        final var keyWithEd25519 = Hex.decodeHex("1220000038746a20d630ceb81a24bd43798159108ec144e185c1c60a5e39fb933e2a");
+        // hexed value of a serialized Key with ed25519 algorithm
+        final var keyWithEd25519 =
+                Hex.decodeHex("1220000038746a20d630ceb81a24bd43798159108ec144e185c1c60a5e39fb933e2a");
 
         final var result = EvmTokenUtils.evmKey(keyWithEd25519);
 
@@ -88,7 +88,7 @@ class EvmTokenUtilsTest {
 
     @Test
     void evmKeyWithContractId() throws InvalidProtocolBufferException, DecoderException {
-        //hexed value of a serialized Key with contractId
+        // hexed value of a serialized Key with contractId
         final var keyWithContractId = Hex.decodeHex("0a070801100118c409");
         final var contractAddress = Address.fromHexString("0x00000001000000000000000100000000000004c4");
 
@@ -102,7 +102,7 @@ class EvmTokenUtilsTest {
 
     @Test
     void evmKeyWithDelegateContractId() throws InvalidProtocolBufferException, DecoderException {
-        //hexed value of a serialized Key with delegate contractId
+        // hexed value of a serialized Key with delegate contractId
         final var keyWithDelegateContractId = Hex.decodeHex("420318c509");
         final var delegateContractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
 
@@ -115,8 +115,8 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void evmKeyWithInvalidBytesLength()  {
-        assertThatThrownBy(()-> EvmTokenUtils.evmKey(new byte[36])).isInstanceOf(InvalidProtocolBufferException.class);
+    void evmKeyWithInvalidBytesLength() {
+        assertThatThrownBy(() -> EvmTokenUtils.evmKey(new byte[36])).isInstanceOf(InvalidProtocolBufferException.class);
     }
 
     @Test
@@ -130,13 +130,13 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void entityIdNumFromAddress(){
+    void entityIdNumFromAddress() {
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
         assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(contractAddress)).isEqualTo(1221);
     }
 
     @Test
-    void entityIdFromAddress(){
+    void entityIdFromAddress() {
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
         EntityId entityId = EntityId.of(0, 0, 1221, EntityType.CONTRACT);
 
@@ -144,19 +144,19 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void entityIdNumFromEthAddress(){
+    void entityIdNumFromEthAddress() {
         final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
         assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(ethAddress)).isZero();
     }
 
     @Test
-    void entityIdFromEthAddress(){
+    void entityIdFromEthAddress() {
         final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
         assertThat(EvmTokenUtils.entityIdFromEvmAddress(ethAddress)).isNull();
     }
 
     @Test
-    void entityIdFromEmptyAddress(){
+    void entityIdFromEmptyAddress() {
         EntityId entityId = EntityId.of(0, 0, 0, EntityType.CONTRACT);
         assertThat(EvmTokenUtils.entityIdFromEvmAddress(EMPTY_ADDRESS)).isEqualTo(entityId);
     }
