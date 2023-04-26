@@ -30,7 +30,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("mapStructVersion", "1.5.4.Final")
+    set("mapStructVersion", "1.5.5.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.22.3")
     set("reactorGrpcVersion", "1.2.4")
@@ -52,7 +52,7 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.8")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.9")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.11")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.18.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.47")
+        api("software.amazon.awssdk:bom:2.20.51")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
