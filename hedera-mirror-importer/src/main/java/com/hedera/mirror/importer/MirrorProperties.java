@@ -56,7 +56,7 @@ public class MirrorProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
 
-    //This value can be set depending on the prepod or adhoc env name.
+    // This value can be set depending on the prepod or adhoc env name.
     private String networkPrefix;
 
     @Min(0)
