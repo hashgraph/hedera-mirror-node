@@ -89,7 +89,7 @@ const (
 var stakingRewardAccountId = domain.MustDecodeEntityId(800)
 
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
-// NonFeeTransfers json string, TokenTransfers json string, and Token definition json string
+// and NonFeeTransfers json string.
 type transaction struct {
 	ConsensusTimestamp   int64
 	EntityId             *domain.EntityId

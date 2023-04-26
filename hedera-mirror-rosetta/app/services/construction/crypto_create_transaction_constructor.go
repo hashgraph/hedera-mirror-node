@@ -22,6 +22,7 @@ package construction
 
 import (
 	"context"
+	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -32,9 +33,11 @@ import (
 )
 
 type cryptoCreate struct {
+	AutoRenewPeriod               int64             `json:"auto_renew_period"`
 	InitialBalance                int64             `json:"-"`
 	Key                           *types.PublicKey  `json:"key" validate:"required"`
 	MaxAutomaticTokenAssociations uint32            `json:"max_automatic_token_associations"`
+	Memo                          string            `json:"memo"`
 	ProxyAccountId                *hedera.AccountID `json:"proxy_account_id"`
 	// Add support for ReceiverSigRequired if needed and when the format to present an unknown account as a rosetta
 	// AccountIdentifier id decided
@@ -57,8 +60,16 @@ func (c *cryptoCreateTransactionConstructor) Construct(
 		SetInitialBalance(hedera.HbarFromTinybar(cryptoCreate.InitialBalance)).
 		SetKey(cryptoCreate.Key.PublicKey)
 
+	if cryptoCreate.AutoRenewPeriod > 0 {
+		transaction.SetAutoRenewPeriod(time.Second * time.Duration(cryptoCreate.AutoRenewPeriod))
+	}
+
 	if cryptoCreate.MaxAutomaticTokenAssociations != 0 {
 		transaction.SetMaxAutomaticTokenAssociations(cryptoCreate.MaxAutomaticTokenAssociations)
+	}
+
+	if cryptoCreate.Memo != "" {
+		transaction.SetAccountMemo(cryptoCreate.Memo)
 	}
 
 	if cryptoCreate.ProxyAccountId != nil {
@@ -94,6 +105,12 @@ func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transactio
 		Amount:    &amount,
 		Metadata:  metadata,
 		Type:      c.GetOperationType(),
+	}
+
+	metadata["memo"] = cryptoCreateTransaction.GetAccountMemo()
+
+	if cryptoCreateTransaction.GetAutoRenewPeriod() != 0 {
+		metadata["auto_renew_period"] = int64(cryptoCreateTransaction.GetAutoRenewPeriod().Seconds())
 	}
 
 	if key, err := cryptoCreateTransaction.GetKey(); err != nil {
