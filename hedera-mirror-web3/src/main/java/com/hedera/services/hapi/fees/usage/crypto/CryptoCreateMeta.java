@@ -41,6 +41,7 @@ public class CryptoCreateMeta {
         this.maxAutomaticAssociations = builder.maxAutomaticAssociations;
     }
 
+    @SuppressWarnings("deprecation")
     private long getCryptoCreateTxnBaseSize(final CryptoCreateTransactionBody op) {
         long variableBytes = op.getMemoBytes().size();
         variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);

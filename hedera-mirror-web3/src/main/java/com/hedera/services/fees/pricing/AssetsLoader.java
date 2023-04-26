@@ -42,6 +42,7 @@ public class AssetsLoader {
      * @return the desired per-type prices, in USD
      * @throws IOException if the backing JSON resource cannot be loaded
      */
+    @SuppressWarnings("unchecked")
     public Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
         if (cachedCanonicalPrices != null) {
             return cachedCanonicalPrices;

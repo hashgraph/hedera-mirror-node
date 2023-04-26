@@ -92,6 +92,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         return new SignedTxnAccessor(signedTxnWrapperBytes, signedTxnWrapper);
     }
 
+    @SuppressWarnings("deprecation")
     protected SignedTxnAccessor(final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
             throws InvalidProtocolBufferException {
         this.signedTxnWrapperBytes = signedTxnWrapperBytes;

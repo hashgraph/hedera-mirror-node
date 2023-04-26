@@ -47,6 +47,7 @@ public class CryptoUpdateMeta {
         hasMaxAutomaticAssociations = builder.hasMaxAutomaticAssociations;
     }
 
+    @SuppressWarnings("deprecation")
     public CryptoUpdateMeta(CryptoUpdateTransactionBody cryptoUpdateTxnBody, long transactionValidStartSecs) {
         keyBytesUsed = cryptoUpdateTxnBody.hasKey() ? getAccountKeyStorageSize(cryptoUpdateTxnBody.getKey()) : 0;
         msgBytesUsed = bytesUsedInTxn(cryptoUpdateTxnBody) + keyBytesUsed;
@@ -93,6 +94,7 @@ public class CryptoUpdateMeta {
         return hasMaxAutomaticAssociations;
     }
 
+    @SuppressWarnings("deprecation")
     private int bytesUsedInTxn(CryptoUpdateTransactionBody op) {
         return BASIC_ENTITY_ID_SIZE
                 + op.getMemo().getValueBytes().size()

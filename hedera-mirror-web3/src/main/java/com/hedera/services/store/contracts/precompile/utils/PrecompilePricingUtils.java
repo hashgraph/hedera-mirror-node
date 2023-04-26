@@ -48,6 +48,9 @@ public class PrecompilePricingUtils {
     }
 
     static class CanonicalOperationsUnloadableException extends RuntimeException {
+
+        static final long serialVersionUID = 1L;
+
         public CanonicalOperationsUnloadableException(final Exception e) {
             super("Canonical prices for precompiles are not available", e);
         }
