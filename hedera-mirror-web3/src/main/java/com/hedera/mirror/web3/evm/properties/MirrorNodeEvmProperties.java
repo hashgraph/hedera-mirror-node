@@ -116,10 +116,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return maxGasRefundPercentage;
     }
 
-    public int cacheRecordsTtl() {
-        return 180;
-    }
-
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {

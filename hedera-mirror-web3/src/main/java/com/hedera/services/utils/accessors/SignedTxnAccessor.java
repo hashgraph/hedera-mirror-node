@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.fees.calculation.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
@@ -73,7 +72,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private final SignatureMap sigMap;
     private final TransactionID txnId;
     private final TransactionBody txn;
-    private SubmitMessageMeta submitMessageMeta;
     private CryptoTransferMeta xferUsageMeta;
     private BaseTransactionMeta txnUsageMeta;
     private HederaFunctionality function;
@@ -253,8 +251,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private void setOpUsageMeta() {
         if (function == CryptoTransfer) {
             setXferUsageMeta();
-        } else if (function == ConsensusSubmitMessage) {
-            setSubmitUsageMeta();
         } else if (function == TokenFeeScheduleUpdate) {
             setFeeScheduleUpdateMeta();
         } else if (function == TokenCreate) {
@@ -295,11 +291,6 @@ public class SignedTxnAccessor implements TxnAccessor {
             numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
         }
         xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
-    }
-
-    private void setSubmitUsageMeta() {
-        submitMessageMeta = new SubmitMessageMeta(
-                txn.getConsensusSubmitMessage().getMessage().size());
     }
 
     private void setFeeScheduleUpdateMeta() {

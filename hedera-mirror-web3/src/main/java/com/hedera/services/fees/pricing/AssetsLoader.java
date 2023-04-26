@@ -26,76 +26,12 @@ import java.util.Map;
 import javax.inject.Inject;
 
 public class AssetsLoader {
-    private static final String CAPACITIES_RESOURCE = "capacities.json";
-    private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";
     private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";
-
-    private Map<UsableResource, BigDecimal> cachedCapacities = null;
-    private Map<HederaFunctionality, BigDecimal> cachedConstWeights = null;
     private Map<HederaFunctionality, Map<SubType, BigDecimal>> cachedCanonicalPrices = null;
 
     @Inject
     public AssetsLoader() {
         // empty constructor for @Inject annotation.
-    }
-
-    /**
-     * Loads a map that, for each supported operation, gives the fraction of that operation's total
-     * price that should come from its constant term in the fee schedule.
-     *
-     * <p>This fraction is the "weight" of the constant term; and is currently set at 0.9 for
-     * operations that create new entities, and 0.2 for other operations.
-     *
-     * @return the "weight" of the constant term for each operation
-     * @throws IOException if the backing JSON resource cannot be loaded
-     */
-    Map<HederaFunctionality, BigDecimal> loadConstWeights() throws IOException {
-        if (cachedConstWeights != null) {
-            return cachedConstWeights;
-        }
-        try (final var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CONSTANT_WEIGHTS_RESOURCE)) {
-            final var om = new ObjectMapper();
-            final var constWeights = om.readValue(fin, Map.class);
-
-            final Map<HederaFunctionality, BigDecimal> typedConstWeights = new EnumMap<>(HederaFunctionality.class);
-            constWeights.forEach((funcName, weight) -> {
-                final var function = HederaFunctionality.valueOf((String) funcName);
-                final var bdWeight = BigDecimal.valueOf((Double) weight);
-                typedConstWeights.put(function, bdWeight);
-            });
-
-            cachedConstWeights = typedConstWeights;
-            return typedConstWeights;
-        }
-    }
-
-    /**
-     * Loads a map that, for each resource type available in the network, gives the "capacity" of
-     * that resource. These capacities do not have an absolute meaning, and are just compared to
-     * infer the relative scarcity of each resource.
-     *
-     * @return the network "capacity" of each resource type
-     * @throws IOException if the backing JSON resource cannot be loaded
-     */
-    Map<UsableResource, BigDecimal> loadCapacities() throws IOException {
-        if (cachedCapacities != null) {
-            return cachedCapacities;
-        }
-        try (final var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CAPACITIES_RESOURCE)) {
-            final var om = new ObjectMapper();
-            final var capacities = om.readValue(fin, Map.class);
-
-            final Map<UsableResource, BigDecimal> typedCapacities = new EnumMap<>(UsableResource.class);
-            capacities.forEach((resourceName, amount) -> {
-                final var resource = UsableResource.valueOf((String) resourceName);
-                final var bdAmount =
-                        (amount instanceof Long val) ? BigDecimal.valueOf(val) : BigDecimal.valueOf((Integer) amount);
-                typedCapacities.put(resource, bdAmount);
-            });
-
-            cachedCapacities = typedCapacities;
-            return typedCapacities;
-        }
     }
 
     /**

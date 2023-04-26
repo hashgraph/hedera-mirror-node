@@ -24,7 +24,6 @@ import com.hedera.services.fees.pricing.ResourceProvider;
 import com.hedera.services.fees.pricing.UsableResource;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -77,29 +76,6 @@ public class UsageAccumulator {
     private long rbs;
     private long sbs;
     private long networkRbs;
-
-    public static UsageAccumulator fromGrpc(final FeeData usage) {
-        final var into = new UsageAccumulator();
-
-        /* Network */
-        final var networkUsage = usage.getNetworkdata();
-        into.setUniversalBpt(networkUsage.getBpt());
-        into.setVpt(networkUsage.getVpt());
-        into.setNetworkRbs(networkUsage.getRbh() * HRS_DIVISOR);
-
-        /* Node */
-        final var nodeUsage = usage.getNodedata();
-        into.setNumPayerKeys(nodeUsage.getVpt());
-        into.setBpr(nodeUsage.getBpr());
-        into.setSbpr(nodeUsage.getSbpr());
-
-        /* Service */
-        final var serviceUsage = usage.getServicedata();
-        into.setRbs(serviceUsage.getRbh() * HRS_DIVISOR);
-        into.setSbs(serviceUsage.getSbh() * HRS_DIVISOR);
-
-        return into;
-    }
 
     public void resetForTransaction(final BaseTransactionMeta baseMeta, final SigUsage sigUsage) {
         final int memoBytes = baseMeta.memoUtf8Bytes();

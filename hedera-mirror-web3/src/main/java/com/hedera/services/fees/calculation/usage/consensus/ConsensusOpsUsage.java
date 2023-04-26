@@ -16,10 +16,7 @@
 
 package com.hedera.services.fees.calculation.usage.consensus;
 
-import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
-import static com.hedera.services.hapi.utils.fees.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
-import static com.hedera.services.hapi.utils.fees.FeeBuilder.TX_HASH_SIZE;
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.*;
 
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -29,7 +26,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public final class ConsensusOpsUsage {
-    private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 
     @Inject
     public ConsensusOpsUsage() {
@@ -37,12 +33,8 @@ public final class ConsensusOpsUsage {
     }
 
     public void submitMessageUsage(
-            final SigUsage sigUsage,
-            final SubmitMessageMeta submitMeta,
-            final BaseTransactionMeta baseMeta,
-            final UsageAccumulator accumulator) {
+            final SigUsage sigUsage, final BaseTransactionMeta baseMeta, final UsageAccumulator accumulator) {
         accumulator.resetForTransaction(baseMeta, sigUsage);
-        accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.numMsgBytes());
         /* SubmitMessage receipts include a sequence number and running hash */
         final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
         accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);
