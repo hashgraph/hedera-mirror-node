@@ -78,7 +78,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         var sidecarFailedInitcode = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
-        if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
+        var contractCallOrCreate = isContractCreateOrCall(transactionBody);
+        if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
             // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
             return;
         }
@@ -87,15 +88,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
-        var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
                         : entityIdService.lookup(functionResult.getContractID()))
                 .orElse(EntityId.EMPTY);
         var isRecoverableError = EntityId.isEmpty(contractId)
-                && ((contractCallOrCreate && !EntityId.isEmpty(transaction.getEntityId()))
-                        || (!contractCallOrCreate
-                                && functionResult.getContractID() != ContractID.getDefaultInstance()));
+                && !contractCallOrCreate
+                && functionResult.getContractID() != ContractID.getDefaultInstance();
 
         if (isRecoverableError) {
             log.error(
