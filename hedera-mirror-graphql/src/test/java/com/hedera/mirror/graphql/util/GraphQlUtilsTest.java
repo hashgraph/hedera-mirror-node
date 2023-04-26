@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,18 @@ package com.hedera.mirror.graphql.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.util;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.graphql.viewmodel.Account;
+import com.hedera.mirror.graphql.viewmodel.EntityIdInput;
+import com.hedera.mirror.graphql.viewmodel.HbarUnit;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -34,14 +34,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.graphql.viewmodel.Account;
-import com.hedera.mirror.graphql.viewmodel.EntityIdInput;
-import com.hedera.mirror.graphql.viewmodel.HbarUnit;
-
 class GraphQlUtilsTest {
 
-    @CsvSource(nullValues = "null", textBlock = """
+    @CsvSource(
+            nullValues = "null",
+            textBlock =
+                    """
               null,     1,                         1
               HBAR,     null,                      null
               TINYBAR,  1,                         1
@@ -74,7 +72,8 @@ class GraphQlUtilsTest {
 
     @Test
     void toEntityId() {
-        var input = EntityIdInput.builder().withShard(0L).withRealm(0L).withNum(3L).build();
+        var input =
+                EntityIdInput.builder().withShard(0L).withRealm(0L).withNum(3L).build();
         assertThat(GraphQlUtils.toEntityId(input))
                 .isNotNull()
                 .returns(input.getShard(), EntityId::getShardNum)
@@ -91,19 +90,24 @@ class GraphQlUtilsTest {
     }
 
     @NullAndEmptySource
-    @ValueSource(strings = {
-            "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-            "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ="
-    })
+    @ValueSource(
+            strings = {
+                "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+                "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ="
+            })
     @ParameterizedTest
     void decodeBase32(String alias) {
         Base32 base32 = new Base32();
-        var node = Account.builder().withAlias(alias == null ? null : base32.encodeAsString(alias.getBytes())).build();
+        var node = Account.builder()
+                .withAlias(alias == null ? null : base32.encodeAsString(alias.getBytes()))
+                .build();
         byte[] decodedAlias = GraphQlUtils.decodeBase32(node.getAlias());
         assertThat(decodedAlias).isEqualTo(alias == null ? null : alias.getBytes());
     }
 
-    @CsvSource(textBlock = """
+    @CsvSource(
+            textBlock =
+                    """
              '', 0, 0
              0000000000000000000000000000000000000001, 20, 1
              0000000000000000000000000000000000FAfAfA, 20, 16448250
@@ -116,22 +120,21 @@ class GraphQlUtilsTest {
     @ParameterizedTest
     void decodeEvmAddress(String evmAddress, int expectedLength, long output) {
         var decodedEvmAddress = GraphQlUtils.decodeEvmAddress(evmAddress);
-        assertThat(decodedEvmAddress)
-                .hasSize(expectedLength)
-                .satisfies(e -> assertThat(output > 0 ? new BigInteger(e).longValue() : output).isEqualTo(output));
+        assertThat(decodedEvmAddress).hasSize(expectedLength).satisfies(e -> assertThat(
+                        output > 0 ? new BigInteger(e).longValue() : output)
+                .isEqualTo(output));
     }
 
     @NullAndEmptySource
-    @ValueSource(strings = {
-            "000000000000000000000000000000000000001",
-            "f5a56e2d52c817161883f50c441c3228cfe54d9fa",
-            "xyzabc"})
+    @ValueSource(
+            strings = {"000000000000000000000000000000000000001", "f5a56e2d52c817161883f50c441c3228cfe54d9fa", "xyzabc"
+            })
     @ParameterizedTest
     void invalidEvmAddress(String evmAddress) {
         assertThat(evmAddress)
                 .satisfiesAnyOf(
-                        e -> assertThatThrownBy(() -> GraphQlUtils.decodeEvmAddress(e)).isInstanceOf(IllegalArgumentException.class),
-                        e -> assertThat(GraphQlUtils.decodeEvmAddress(e)).isEmpty()
-                );
+                        e -> assertThatThrownBy(() -> GraphQlUtils.decodeEvmAddress(e))
+                                .isInstanceOf(IllegalArgumentException.class),
+                        e -> assertThat(GraphQlUtils.decodeEvmAddress(e)).isEmpty());
     }
 }

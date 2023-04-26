@@ -16,7 +16,9 @@ npx hardhat node
 node scripts/sample-script.js
 npx hardhat help
 ```
+
 ## Contract Management
+
 The Solidity contract utilized by the acceptance tests is defined in `src/test/resources/solidity/contracts/Parent.sol`.
 This one Solidity file defines both a parent and a child contract. Compiling `Parent.sol` results in two important
 artifacts that are committed to the repo whenever the contract changes.
@@ -25,6 +27,7 @@ artifacts that are committed to the repo whenever the contract changes.
 artifacts/contracts/Parent.sol/Parent.json
 artifacts/contracts/Parent.sol/Child.json
 ```
+
 The JSON files contain both the contract EVM bytecode and ABI for each contract. However, the parent contract references
 the child contract, and thus the bytecode within `Parent.json` includes the bytecode for the child contract. Therefore,
 only the parent contract need be deployed for either the Node based unit tests or the contract acceptance tests. In the

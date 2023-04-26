@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,21 +12,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-const chai = require("chai");
-chai.use(require('chai-as-promised'))
 
 const expect = chai.expect;
-const { ethers, waffle } = require("hardhat");
+const {ethers, waffle} = require('hardhat');
 const provider = waffle.provider;
 
-const childArtifactJson = require("../artifacts/contracts/Parent.sol/Child.json");
+const childArtifactJson = require('../artifacts/contracts/Parent.sol/Child.json');
 
-
-describe("ParentChild", function () {
-  it("Should contain zero balances on deployment", async function () {
-    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
+describe('ParentChild', function () {
+  it('Should contain zero balances on deployment', async function () {
+    const Parent = await ethers.getContractFactory('contracts/Parent.sol:Parent');
     const parent = await Parent.deploy();
     await parent.deployed();
 
@@ -37,18 +30,18 @@ describe("ParentChild", function () {
     expect(await provider.getBalance(parent.address)).to.equal(0);
   });
 
-  it("Should contain non zero parent balance on funded deployment", async function () {
-    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
-    const parent = await Parent.deploy({ value: ethers.utils.parseEther("0.1") });
+  it('Should contain non zero parent balance on funded deployment', async function () {
+    const Parent = await ethers.getContractFactory('contracts/Parent.sol:Parent');
+    const parent = await Parent.deploy({value: ethers.utils.parseEther('0.1')});
     await parent.deployed();
 
     // verify passed in defaults
     expect(await provider.getBalance(parent.address)).to.equal(100000000000000000n);
   });
 
-  it("Should contain zero child balance post createChild", async function () {
-    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
-    const parent = await Parent.deploy({ value: ethers.utils.parseEther("0.4") });
+  it('Should contain zero child balance post createChild', async function () {
+    const Parent = await ethers.getContractFactory('contracts/Parent.sol:Parent');
+    const parent = await Parent.deploy({value: ethers.utils.parseEther('0.4')});
     await parent.deployed();
 
     const [account1] = await ethers.getSigners();
@@ -62,10 +55,10 @@ describe("ParentChild", function () {
     expect(await provider.getBalance(contractFunctionResult.to)).to.equal(400000000000000000n); // parent from transaction
   });
 
-  it("Should contain non zero child balance post createChild with transfer amount", async function () {
-    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
-    const Child = await ethers.getContractFactory("contracts/Parent.sol:Child");
-    const parent = await Parent.deploy({ value: ethers.utils.parseEther("0.4") });
+  it('Should contain non zero child balance post createChild with transfer amount', async function () {
+    const Parent = await ethers.getContractFactory('contracts/Parent.sol:Parent');
+    const Child = await ethers.getContractFactory('contracts/Parent.sol:Child');
+    const parent = await Parent.deploy({value: ethers.utils.parseEther('0.4')});
     await parent.deployed();
 
     const [account1] = await ethers.getSigners();
@@ -91,8 +84,8 @@ describe("ParentChild", function () {
     expect(await provider.getBalance(childAddress)).to.equal(5); // child from transaction
   });
 
-  it("Should contain zero balances on create2Deploy to known EVM address", async function () {
-    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
+  it('Should contain zero balances on create2Deploy to known EVM address', async function () {
+    const Parent = await ethers.getContractFactory('contracts/Parent.sol:Parent');
     const parent = await Parent.deploy();
     await parent.deployed();
 
@@ -112,10 +105,11 @@ describe("ParentChild", function () {
     const event0 = contractDeployResult.events[0];
     expect(event0.logIndex).to.equal(0);
     expect(event0.event).to.equal('Create2Deploy');
-    expect(event0.args.addr).to.equal(childEvmAddress);+
-
-    // verify balance defaults
-    expect(await provider.getBalance(contractDeployResult.to)).to.equal(0); // parent from transaction
+    expect(event0.args.addr).to.equal(childEvmAddress);
+    +(
+      // verify balance defaults
+      expect(await provider.getBalance(contractDeployResult.to)).to.equal(0)
+    ); // parent from transaction
     expect(await provider.getBalance(childEvmAddress)).to.equal(0);
 
     // Vacate/self-destruct the child contract so its EVM address can be used for something else in the future.

@@ -17,10 +17,10 @@ hedera:
         port: 5432
         sslMode: DISABLE
         tls:
-          ca: ''
-          cert: ''
+          ca: ""
+          cert: ""
           enabled: false
-          key: ''
+          key: ""
         username: mirror_api
       log:
         level: info
@@ -28,13 +28,13 @@ hedera:
         enabled: true
         config:
           authentication: true
-          durationBuckets: [ 25, 100, 250, 500 ]
+          durationBuckets: [25, 100, 250, 500]
           password: password
-          requestSizeBuckets: [ ]
-          responseSizeBuckets: [ 100, 250, 500, 1000 ]
+          requestSizeBuckets: []
+          responseSizeBuckets: [100, 250, 500, 1000]
           swaggerOnly: true,
           username: metrics
-          uriPath: '/swagger'
+          uriPath: "/swagger"
         ipMetrics: false
       network:
         unreleasedSupplyAccounts:
@@ -53,10 +53,10 @@ hedera:
           - from: 0.0.400
             to: 0.0.750
         # valid values for currencyFormat are 'BOTH', 'HBARS', and 'TINYBARS'
-        currencyFormat: 'BOTH'
+        currencyFormat: "BOTH"
       openapi:
-        specFileName: 'openapi'
-        swaggerUIPath: 'docs'
+        specFileName: "openapi"
+        swaggerUIPath: "docs"
       port: 5551
       query:
         maxRepeatedQueryParameters: 100
@@ -65,12 +65,15 @@ hedera:
       response:
         compression: true
         headers:
-          default: { 'Cache-Control': 'public, max-age=1' }
+          default: { "Cache-Control": "public, max-age=1" }
           path:
-            /api/v1/network/fees: { 'Cache-Control': 'public, max-age=60' }
-            /api/v1/network/exchangerate: { 'Cache-Control': 'public, max-age=60' }
-            /api/v1/transactions/:transactionId: { 'Cache-Control': 'public, max-age=300' }
-            /api/v1/transactions/:transactionId/stateproof: { 'Cache-Control': 'public, max-age=600' }
+            /api/v1/network/fees: { "Cache-Control": "public, max-age=60" }
+            /api/v1/network/exchangerate:
+              { "Cache-Control": "public, max-age=60" }
+            /api/v1/transactions/:transactionId:
+              { "Cache-Control": "public, max-age=300" }
+            /api/v1/transactions/:transactionId/stateproof:
+              { "Cache-Control": "public, max-age=600" }
         includeHostInLink: false
         limit:
           default: 25
@@ -85,13 +88,13 @@ hedera:
         streams:
           accessKey:
           bucketName:
-          cloudProvider: 'S3'
+          cloudProvider: "S3"
           endpointOverride:
           gcpProjectId:
           httpOptions:
             connectTimeout: 2000
             timeout: 5000
           maxRetries: 3
-          network: 'DEMO'
-          region: 'us-east-1'
+          network: "DEMO"
+          region: "us-east-1"
           secretKey:

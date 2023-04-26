@@ -1,27 +1,28 @@
-package com.hedera.mirror.monitor.subscribe.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.subscribe.controller;
 
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
+import com.hedera.mirror.monitor.config.LoggingFilter;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.TestScenario;
 import java.util.Arrays;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,12 +32,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.monitor.ScenarioProtocol;
-import com.hedera.mirror.monitor.ScenarioStatus;
-import com.hedera.mirror.monitor.config.LoggingFilter;
-import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.TestScenario;
 
 @Log4j2
 @ExtendWith(MockitoExtension.class)
@@ -65,13 +60,16 @@ class SubscriberControllerTest {
         subscription2.setStatus(ScenarioStatus.RUNNING);
 
         SubscriberController subscriberController = new SubscriberController(mirrorSubscriber);
-        webTestClient = WebTestClient.bindToController(subscriberController).webFilter(new LoggingFilter()).build();
+        webTestClient = WebTestClient.bindToController(subscriberController)
+                .webFilter(new LoggingFilter())
+                .build();
         when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscription1, subscription2));
     }
 
     @Test
     void subscriptions() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber")
                 .exchange()
                 .expectStatus()
@@ -82,7 +80,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsWithProtocol() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber?protocol=REST")
                 .exchange()
                 .expectStatus()
@@ -93,7 +92,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsWithStatus() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber?status=COMPLETED")
                 .exchange()
                 .expectStatus()
@@ -104,7 +104,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsWithEmptyStatus() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber?status=")
                 .exchange()
                 .expectStatus()
@@ -115,7 +116,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsWithStatuses() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber?status=COMPLETED,RUNNING")
                 .exchange()
                 .expectStatus()
@@ -127,7 +129,8 @@ class SubscriberControllerTest {
     @Test
     void subscriptionsNotFound() {
         when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.empty());
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber?protocol=GRPC")
                 .exchange()
                 .expectStatus()
@@ -138,7 +141,8 @@ class SubscriberControllerTest {
     void subscriptionsByName() {
         subscription2.setName(subscription1.getName());
         subscription2.setId(2);
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/grpc1")
                 .exchange()
                 .expectStatus()
@@ -151,7 +155,8 @@ class SubscriberControllerTest {
     void subscriptionsByNameWithStatus() {
         subscription2.setName(subscription1.getName());
         subscription2.setId(2);
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/grpc1?status=COMPLETED")
                 .exchange()
                 .expectStatus()
@@ -162,7 +167,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsByNameNotFound() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/invalid")
                 .exchange()
                 .expectStatus()
@@ -173,7 +179,8 @@ class SubscriberControllerTest {
     void subscription() {
         subscription2.setName(subscription1.getName());
         subscription2.setId(2);
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/grpc1/2")
                 .exchange()
                 .expectStatus()
@@ -184,7 +191,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionIdNotFound1() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/grpc1/3")
                 .exchange()
                 .expectStatus()
@@ -193,7 +201,8 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionNameNotFound() {
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri("/api/v1/subscriber/invalid/1")
                 .exchange()
                 .expectStatus()

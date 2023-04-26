@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,9 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+package com.hedera.mirror.monitor.publish;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -42,6 +28,15 @@ import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Log4j2
 @Named
@@ -106,9 +101,8 @@ public class TransactionPublisher implements AutoCloseable {
         return execute(client, transaction);
     }
 
-    private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
-                                                                                    PublishRequest request,
-                                                                                    TransactionResponse transactionResponse) {
+    private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(
+            Client client, PublishRequest request, TransactionResponse transactionResponse) {
         PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())
@@ -116,9 +110,11 @@ public class TransactionPublisher implements AutoCloseable {
 
         if (request.isSendRecord()) {
             // TransactionId.getRecord() is inefficient doing a get receipt, a cost query, then the get record
-            return execute(client, new TransactionRecordQuery()
-                    .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
-                    .setTransactionId(transactionResponse.transactionId))
+            return execute(
+                            client,
+                            new TransactionRecordQuery()
+                                    .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
+                                    .setTransactionId(transactionResponse.transactionId))
                     .map(r -> builder.transactionRecord(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
             return execute(client, new TransactionReceiptQuery().setTransactionId(transactionResponse.transactionId))
@@ -145,16 +141,18 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
-        return nodeSupplier.refresh()
+        return nodeSupplier
+                .refresh()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())))
                 .flatMapMany(nodeMap -> Flux.range(0, publishProperties.getClients())
-                        .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap))))
-                );
+                        .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap)))));
     }
 
     private Client toClient(Map<String, AccountId> nodes) {
-        AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
-        PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
+        AccountId operatorId =
+                AccountId.fromString(monitorProperties.getOperator().getAccountId());
+        PrivateKey operatorPrivateKey =
+                PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
 
         Client client = Client.forNetwork(nodes);
         client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,19 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.PREVIEWNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.BlockNumberMigration.BLOCK_NUMBER_MAPPING;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -36,17 +36,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 class BlockNumberMigrationTest extends IntegrationTest {
 
-    private static final long CORRECT_CONSENSUS_END = BLOCK_NUMBER_MAPPING.get(TESTNET).getKey();
-    private static final long CORRECT_BLOCK_NUMBER = BLOCK_NUMBER_MAPPING.get(TESTNET).getValue();
+    private static final long CORRECT_CONSENSUS_END =
+            BLOCK_NUMBER_MAPPING.get(TESTNET).getKey();
+    private static final long CORRECT_BLOCK_NUMBER =
+            BLOCK_NUMBER_MAPPING.get(TESTNET).getValue();
 
     private final BlockNumberMigration blockNumberMigration;
     private final MirrorProperties mirrorProperties;
@@ -66,10 +63,10 @@ class BlockNumberMigrationTest extends IntegrationTest {
     void unsupportedNetwork() {
         var previousNetwork = mirrorProperties.getNetwork();
         mirrorProperties.setNetwork(PREVIEWNET);
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END))
-                .stream()
-                .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
-                .collect(Collectors.toList());
+        List<Tuple> expectedBlockNumbersAndConsensusEnd =
+                insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
+                        .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
+                        .collect(Collectors.toList());
 
         blockNumberMigration.doMigrate();
 
@@ -92,10 +89,10 @@ class BlockNumberMigrationTest extends IntegrationTest {
 
     @Test
     void ifCorrectConsensusEndNotFoundDoNothing() {
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END))
-                .stream()
-                .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
-                .collect(Collectors.toList());
+        List<Tuple> expectedBlockNumbersAndConsensusEnd =
+                insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
+                        .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
+                        .collect(Collectors.toList());
 
         blockNumberMigration.doMigrate();
 
@@ -104,19 +101,18 @@ class BlockNumberMigrationTest extends IntegrationTest {
 
     @Test
     void ifBlockNumberIsAlreadyCorrectDoNothing() {
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END))
-                .stream()
-                .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
-                .collect(Collectors.toList());
+        List<Tuple> expectedBlockNumbersAndConsensusEnd =
+                insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
+                        .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
+                        .collect(Collectors.toList());
 
-        final RecordFile targetRecordFile = domainBuilder.recordFile()
-                .customize(builder -> builder
-                        .consensusEnd(CORRECT_CONSENSUS_END)
-                        .index(CORRECT_BLOCK_NUMBER)
-                )
+        final RecordFile targetRecordFile = domainBuilder
+                .recordFile()
+                .customize(
+                        builder -> builder.consensusEnd(CORRECT_CONSENSUS_END).index(CORRECT_BLOCK_NUMBER))
                 .persist();
-        expectedBlockNumbersAndConsensusEnd.add(Tuple.tuple(targetRecordFile.getConsensusEnd(),
-                targetRecordFile.getIndex()));
+        expectedBlockNumbersAndConsensusEnd.add(
+                Tuple.tuple(targetRecordFile.getConsensusEnd(), targetRecordFile.getIndex()));
 
         blockNumberMigration.doMigrate();
 
@@ -145,7 +141,8 @@ class BlockNumberMigrationTest extends IntegrationTest {
             }
             final long currConsensusEnd = consensusEnd[i];
             final long currBlockNumber = blockNumber[i];
-            RecordFile recordFile = domainBuilder.recordFile()
+            RecordFile recordFile = domainBuilder
+                    .recordFile()
                     .customize(builder -> builder.consensusEnd(currConsensusEnd).index(currBlockNumber))
                     .persist();
             recordFiles.add(recordFile);

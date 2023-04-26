@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,11 @@ package com.hedera.mirror.common.domain.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hedera.mirror.common.exception.InvalidEntityException;
+package com.hedera.mirror.common.domain.entity;
 
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -46,15 +41,17 @@ public class EntityIdEndec {
     private static final long NUM_MASK = (1L << NUM_BITS) - 1;
 
     public static Long encode(long shardNum, long realmNum, long entityNum) {
-        if (shardNum > SHARD_MASK || shardNum < 0 ||
-                realmNum > REALM_MASK || realmNum < 0 ||
-                entityNum > NUM_MASK || entityNum < 0) {
-            throw new InvalidEntityException("Invalid entity ID: "
-                    + shardNum + "." + realmNum + "." + entityNum);
+        if (shardNum > SHARD_MASK
+                || shardNum < 0
+                || realmNum > REALM_MASK
+                || realmNum < 0
+                || entityNum > NUM_MASK
+                || entityNum < 0) {
+            throw new InvalidEntityException("Invalid entity ID: " + shardNum + "." + realmNum + "." + entityNum);
         }
-        return (entityNum & NUM_MASK) |
-                (realmNum & REALM_MASK) << NUM_BITS |
-                (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
+        return (entityNum & NUM_MASK)
+                | (realmNum & REALM_MASK) << NUM_BITS
+                | (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 
     public static EntityId decode(long encodedId, EntityType entityType) {

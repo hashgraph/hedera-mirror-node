@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
+import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -33,6 +25,9 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
@@ -48,7 +43,8 @@ class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusSubmitMessage().getTopicID());
+        return EntityId.of(
+                recordItem.getTransactionBody().getConsensusSubmitMessage().getTopicID());
     }
 
     @Override
@@ -60,8 +56,8 @@ class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getConsensusSubmitMessage();
         var transactionRecord = recordItem.getTransactionRecord();
         var receipt = transactionRecord.getReceipt();
-        int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
-                .getTopicRunningHashVersion();
+        int runningHashVersion =
+                receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt.getTopicRunningHashVersion();
         var topicMessage = new TopicMessage();
 
         // Handle optional fragmented topic message
@@ -71,7 +67,8 @@ class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
             topicMessage.setChunkTotal(chunkInfo.getTotal());
 
             if (chunkInfo.hasInitialTransactionID()) {
-                topicMessage.setInitialTransactionId(chunkInfo.getInitialTransactionID().toByteArray());
+                topicMessage.setInitialTransactionId(
+                        chunkInfo.getInitialTransactionID().toByteArray());
             }
         }
 

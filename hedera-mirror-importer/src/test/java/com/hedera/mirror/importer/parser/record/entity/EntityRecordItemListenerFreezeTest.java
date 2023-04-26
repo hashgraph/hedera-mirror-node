@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,13 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -29,8 +26,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 
@@ -47,12 +42,12 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
-        assertAll(
-                () -> assertRowCount(),
-                () -> assertTransactionAndRecord(transactionBody, record)
-        );
+        assertAll(() -> assertRowCount(), () -> assertTransactionAndRecord(transactionBody, record));
     }
 
     @Test
@@ -61,20 +56,19 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
-        assertAll(
-                () -> assertRowCount(),
-                () -> assertTransactionAndRecord(transactionBody, record)
-        );
+        assertAll(() -> assertRowCount(), () -> assertTransactionAndRecord(transactionBody, record));
     }
 
     private void assertRowCount() {
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count())
-        );
+                () -> assertEquals(3, cryptoTransferRepository.count()));
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody) {
@@ -82,8 +76,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum result) {
-        return buildTransactionRecord(recordBuilder -> {
-        }, transactionBody, result.getNumber());
+        return buildTransactionRecord(recordBuilder -> {}, transactionBody, result.getNumber());
     }
 
     @SuppressWarnings("deprecation")

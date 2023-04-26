@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -30,10 +28,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -57,7 +51,9 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder()
-                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
+                        .setFileID(FileID.newBuilder()
+                                .setFileNum(DEFAULT_ENTITY_NUM)
+                                .build()));
     }
 
     @Override
@@ -71,10 +67,14 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     void testSystemUndeleteForContract() {
         TransactionBody transactionBody = TransactionBody.newBuilder()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()))
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(DEFAULT_ENTITY_NUM)
+                                .build()))
                 .build();
 
-        testGetEntityIdHelper(transactionBody, getDefaultTransactionRecord().build(),
+        testGetEntityIdHelper(
+                transactionBody,
+                getDefaultTransactionRecord().build(),
                 EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, EntityType.CONTRACT));
     }
 
@@ -83,7 +83,9 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     void undeleteEmptyEntityIds(EntityId entityId) {
         TransactionBody transactionBody = TransactionBody.newBuilder()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()))
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(DEFAULT_ENTITY_NUM)
+                                .build()))
                 .build();
 
         when(entityIdService.lookup(contractId)).thenReturn(Optional.ofNullable(entityId));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
@@ -27,17 +28,15 @@ import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 
 class TokenCreateWrapperTest {
     private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();
@@ -70,7 +69,6 @@ class TokenCreateWrapperTest {
         assertEquals(List.of(tokenKeyWrapper), wrapper.getTokenKeys());
         assertEquals(List.of(), wrapper.getFixedFees());
     }
-
 
     @Test
     void getAdminKeyReturnsEmptyOptionalWhenNoAdminkeyIsPresent() {
@@ -187,8 +185,7 @@ class TokenCreateWrapperTest {
 
     @Test
     void keyValueWrapperWithEd25519KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
-        final var wrapper =
-                new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH - 1], new byte[] {}, null);
+        final var wrapper = new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH - 1], new byte[] {}, null);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
@@ -196,11 +193,7 @@ class TokenCreateWrapperTest {
     @Test
     void keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
         final var wrapper = new KeyValueWrapper(
-                false,
-                null,
-                new byte[] {},
-                new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1],
-                null);
+                false, null, new byte[] {}, new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1], null);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
@@ -390,12 +383,8 @@ class TokenCreateWrapperTest {
     void autoRenewAccountIsCheckedAsExpected() {
         final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(Collections.emptyList());
         assertTrue(wrapper.hasAutoRenewAccount());
-        assertEquals(
-                toGrpcAccountId(12345),
-                wrapper.getExpiry().autoRenewAccount());
+        assertEquals(toGrpcAccountId(12345), wrapper.getExpiry().autoRenewAccount());
         wrapper.inheritAutoRenewAccount(10);
-        assertEquals(
-                toGrpcAccountId(10),
-                wrapper.getExpiry().autoRenewAccount());
+        assertEquals(toGrpcAccountId(10), wrapper.getExpiry().autoRenewAccount());
     }
 }

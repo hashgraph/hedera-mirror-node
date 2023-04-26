@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.staking;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +25,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import org.awaitility.Durations;
@@ -37,10 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
 @ExtendWith(MockitoExtension.class)
 class EntityStakeCalculatorImplTest {
@@ -58,8 +53,8 @@ class EntityStakeCalculatorImplTest {
     @BeforeEach
     void setup() {
         entityProperties = new EntityProperties();
-        entityStakeCalculator = new EntityStakeCalculatorImpl(entityProperties, entityRepository,
-                entityStakeRepository);
+        entityStakeCalculator =
+                new EntityStakeCalculatorImpl(entityProperties, entityRepository, entityStakeRepository);
         when(entityStakeRepository.updated()).thenReturn(false);
     }
 
@@ -124,16 +119,14 @@ class EntityStakeCalculatorImplTest {
 
         // then
         // verify that only one task is done
-        await()
-                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.TWO_SECONDS)
                 .until(() -> (task1.isDone() || task2.isDone()) && (task1.isDone() != task2.isDone()));
         // unblock the remaining task
         semaphore.release();
 
         // verify that both tasks are done
-        await()
-                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.TWO_SECONDS)
                 .until(() -> task1.isDone() && task2.isDone());
         var inorder = inOrder(entityRepository, entityStakeRepository);

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository.upsert;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,16 @@ package com.hedera.mirror.importer.repository.upsert;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository.upsert;
 
 import static com.hedera.mirror.importer.util.Utility.toSnakeCase;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.hedera.mirror.common.domain.UpsertColumn;
+import com.hedera.mirror.common.domain.Upsertable;
+import com.hedera.mirror.importer.exception.FieldInaccessibleException;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -50,10 +49,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.jdbc.core.JdbcOperations;
-
-import com.hedera.mirror.common.domain.UpsertColumn;
-import com.hedera.mirror.common.domain.Upsertable;
-import com.hedera.mirror.importer.exception.FieldInaccessibleException;
 
 @Log4j2
 @Named
@@ -89,7 +84,8 @@ public class EntityMetadataRegistry {
             if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
                 var persistentAttribute = (SingularPersistentAttribute) attribute;
                 var embeddableType = (EmbeddableType<?>) persistentAttribute.getType();
-                embeddableType.getDeclaredSingularAttributes()
+                embeddableType
+                        .getDeclaredSingularAttributes()
                         .forEach(a -> columnMetadata.add(columnMetadata(schema, a, id)));
             } else {
                 columnMetadata.add(columnMetadata(schema, attribute, id));
@@ -102,15 +98,15 @@ public class EntityMetadataRegistry {
     }
 
     @SuppressWarnings("java:S4276")
-    private ColumnMetadata columnMetadata(Map<String, InformationSchemaColumns> schema,
-                                          Attribute<?, ?> attribute, boolean id) {
+    private ColumnMetadata columnMetadata(
+            Map<String, InformationSchemaColumns> schema, Attribute<?, ?> attribute, boolean id) {
         String name = attribute.getName();
         Field field = (Field) attribute.getJavaMember();
         Column column = field.getAnnotation(Column.class);
         UpsertColumn upsertColumn = field.getAnnotation(UpsertColumn.class);
-        String columnName = column != null && StringUtils.isNotBlank(column.name()) ?
-                toSnakeCase(column.name()) :
-                toSnakeCase(name);
+        String columnName = column != null && StringUtils.isNotBlank(column.name())
+                ? toSnakeCase(column.name())
+                : toSnakeCase(name);
 
         InformationSchemaColumns columnSchema = schema.get(columnName);
 
@@ -121,26 +117,38 @@ public class EntityMetadataRegistry {
         var getter = getter(field);
         var setter = setter(field);
         boolean updatable = !id && (column == null || column.updatable());
-        return new ColumnMetadata(columnSchema.getColumnDefault(), getter, id, columnName,
-                columnSchema.isNullable(), setter, attribute.getJavaType(), updatable, upsertColumn);
+        return new ColumnMetadata(
+                columnSchema.getColumnDefault(),
+                getter,
+                id,
+                columnName,
+                columnSchema.isNullable(),
+                setter,
+                attribute.getJavaType(),
+                updatable,
+                upsertColumn);
     }
 
     /*
      * Looks up column defaults in the information_schema.columns table.
      */
     private Map<String, InformationSchemaColumns> getColumnSchema(String tableName) {
-        String sql = """
+        String sql =
+                """
                 select column_name, regexp_replace(column_default, '::.*', '') as column_default,
                 is_nullable = 'YES' as nullable from information_schema.columns where table_name = ?
                 """;
 
-        var columnSchemas = jdbcOperations.query(sql, (rs, rowNum) -> {
-            var columnSchema = new InformationSchemaColumns();
-            columnSchema.setColumnName(rs.getString(1));
-            columnSchema.setColumnDefault(rs.getString(2));
-            columnSchema.setNullable(rs.getBoolean(3));
-            return columnSchema;
-        }, tableName);
+        var columnSchemas = jdbcOperations.query(
+                sql,
+                (rs, rowNum) -> {
+                    var columnSchema = new InformationSchemaColumns();
+                    columnSchema.setColumnName(rs.getString(1));
+                    columnSchema.setColumnDefault(rs.getString(2));
+                    columnSchema.setNullable(rs.getBoolean(3));
+                    return columnSchema;
+                },
+                tableName);
         var schema = columnSchemas.stream()
                 .collect(Collectors.toMap(InformationSchemaColumns::getColumnName, Function.identity()));
         if (schema.isEmpty()) {
@@ -152,16 +160,15 @@ public class EntityMetadataRegistry {
 
     private Set<String> getIdAttributes(EntityType<?> entityType) {
         try {
-            return entityType.getIdClassAttributes()
-                    .stream()
+            return entityType.getIdClassAttributes().stream()
                     .map(SingularAttribute::getName)
                     .collect(Collectors.toSet());
         } catch (IllegalArgumentException e) {
             SingularAttribute<?, ?> idAttribute = entityType.getId(Object.class);
 
             var attributeType = idAttribute.getPersistentAttributeType();
-            if (attributeType != Attribute.PersistentAttributeType.BASIC &&
-                    attributeType != Attribute.PersistentAttributeType.EMBEDDED) {
+            if (attributeType != Attribute.PersistentAttributeType.BASIC
+                    && attributeType != Attribute.PersistentAttributeType.EMBEDDED) {
                 throw new UnsupportedOperationException("Unsupported ID attribute " + entityType.getName());
             }
 
@@ -177,8 +184,10 @@ public class EntityMetadataRegistry {
             MethodType type = MethodType.methodType(field.getType());
             MethodHandle handle = lookup.findVirtual(field.getDeclaringClass(), methodName, type);
             MethodType functionType = handle.type();
-            return (Function<Object, Object>) LambdaMetafactory.metafactory(lookup, "apply",
-                    methodType(Function.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
+            return (Function<Object, Object>) LambdaMetafactory.metafactory(
+                            lookup, "apply", methodType(Function.class), functionType.erase(), handle, functionType)
+                    .getTarget()
+                    .invokeExact();
         } catch (Throwable t) {
             throw new FieldInaccessibleException(t);
         }
@@ -191,8 +200,10 @@ public class EntityMetadataRegistry {
             MethodType type = MethodType.methodType(void.class, field.getType());
             MethodHandle handle = lookup.findVirtual(field.getDeclaringClass(), methodName, type);
             MethodType functionType = handle.type();
-            return (BiConsumer<Object, Object>) LambdaMetafactory.metafactory(lookup, "accept",
-                    methodType(BiConsumer.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
+            return (BiConsumer<Object, Object>) LambdaMetafactory.metafactory(
+                            lookup, "accept", methodType(BiConsumer.class), functionType.erase(), handle, functionType)
+                    .getTarget()
+                    .invokeExact();
         } catch (Throwable t) {
             throw new FieldInaccessibleException(t);
         }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository.upsert;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository.upsert;
 
 import java.io.StringWriter;
 import java.text.MessageFormat;
@@ -42,13 +38,14 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
     @Override
     public String getCreateTempIndexQuery() {
         String columns = metadata.columns(ColumnMetadata::isId, "{0}");
-        return MessageFormat.format("create index if not exists {0}_idx on {0} ({1})",
-                getTemporaryTableName(), columns);
+        return MessageFormat.format(
+                "create index if not exists {0}_idx on {0} ({1})", getTemporaryTableName(), columns);
     }
 
     @Override
     public String getCreateTempTableQuery() {
-        return String.format("create temporary table if not exists %s on commit drop as table %s limit 0",
+        return String.format(
+                "create temporary table if not exists %s on commit drop as table %s limit 0",
                 getTemporaryTableName(), metadata.getTableName());
     }
 
@@ -85,8 +82,8 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("existingColumnsAs", metadata.columns("e.{0} as e_{0}"));
         velocityContext.put("idJoin", metadata.columns(ColumnMetadata::isId, "e.{0} = t.{0}", " and "));
         velocityContext.put("insertColumns", metadata.columns("{0}"));
-        velocityContext.put("notUpdatableColumn", metadata.column(c -> !c.isUpdatable(),
-                "coalesce({0}, e_{0}) is not null"));
+        velocityContext.put(
+                "notUpdatableColumn", metadata.column(c -> !c.isUpdatable(), "coalesce({0}, e_{0}) is not null"));
         velocityContext.put("updateColumns", metadata.columns(ColumnMetadata::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();
@@ -95,7 +92,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
     }
 
     private String closeRange(String input) {
-        return input.replace("e_timestamp_range",
-                "int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range");
+        return input.replace(
+                "e_timestamp_range", "int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range");
     }
 }

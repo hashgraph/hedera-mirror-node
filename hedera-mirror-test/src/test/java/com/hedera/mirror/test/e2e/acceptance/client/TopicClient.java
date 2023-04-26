@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.common.primitives.Longs;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
@@ -46,6 +31,16 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Named;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class TopicClient extends AbstractNetworkClient {
@@ -96,18 +91,16 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse deleteTopic(TopicId topicId) {
-        TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
-                .setTopicId(topicId)
-                .setTransactionMemo(getMemo("Delete Topic"));
+        TopicDeleteTransaction consensusTopicDeleteTransaction =
+                new TopicDeleteTransaction().setTopicId(topicId).setTransactionMemo(getMemo("Delete Topic"));
 
         var response = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
         log.info("Deleted topic {} via {}", topicId, response.getTransactionId());
         return response;
     }
 
-    public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
-                                                           KeyList submitKeys, int numMessages,
-                                                           boolean verify) {
+    public List<TransactionReceipt> publishMessagesToTopic(
+            TopicId topicId, String baseMessage, KeyList submitKeys, int numMessages, boolean verify) {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
@@ -140,8 +133,11 @@ public class TopicClient extends AbstractNetworkClient {
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}",
-                    new String(message, StandardCharsets.UTF_8), topicId, transactionRecord.consensusTimestamp);
+            log.trace(
+                    "Published message : '{}' to topicId : {} with consensusTimestamp: {}",
+                    new String(message, StandardCharsets.UTF_8),
+                    topicId,
+                    transactionRecord.consensusTimestamp);
         }
 
         return transactionId;
@@ -155,13 +151,15 @@ public class TopicClient extends AbstractNetworkClient {
 
             // note time stamp
             recordPublishInstants.put(
-                    transactionReceipt.topicSequenceNumber,
-                    getTransactionRecord(transactionId).consensusTimestamp);
+                    transactionReceipt.topicSequenceNumber, getTransactionRecord(transactionId).consensusTimestamp);
         } catch (Exception e) {
             log.error("Error retrieving transaction receipt", e);
         }
 
-        log.trace("Verified message published : '{}' to topicId : {} with sequence number : {}", message, topicId,
+        log.trace(
+                "Verified message published : '{}' to topicId : {} with sequence number : {}",
+                message,
+                topicId,
                 transactionReceipt.topicSequenceNumber);
 
         return transactionReceipt;

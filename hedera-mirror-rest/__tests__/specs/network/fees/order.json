@@ -36,7 +36,10 @@
   },
   "tests": [
     {
-      "urls": ["/api/v1/network/fees?order=ASC", "/api/v1/network/fees?order=asc"],
+      "urls": [
+        "/api/v1/network/fees?order=ASC",
+        "/api/v1/network/fees?order=asc"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "fees": [

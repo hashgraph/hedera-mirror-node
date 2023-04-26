@@ -25,7 +25,7 @@ const spender = __ENV.SPENDER_ADDRESS;
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallAllowance') // use unique scenario name among all tests
   .selector(selector)
-  .args([token,account,spender])
+  .args([token, account, spender])
   .to(contract)
   .build();
 

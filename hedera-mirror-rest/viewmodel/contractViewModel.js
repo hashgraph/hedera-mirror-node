@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import EntityId from '../entityId';
@@ -41,11 +37,9 @@ class ContractViewModel {
     this.deleted = entity.deleted;
     this.evm_address =
       entity.evmAddress !== null ? utils.toHexString(entity.evmAddress, true) : contractId.toEvmAddress();
-    this.expiration_timestamp = utils.nsToSecNs(utils.calculateExpiryTimestamp(
-      entity.autoRenewPeriod,
-      entity.createdTimestamp,
-      entity.expirationTimestamp
-    ));
+    this.expiration_timestamp = utils.nsToSecNs(
+      utils.calculateExpiryTimestamp(entity.autoRenewPeriod, entity.createdTimestamp, entity.expirationTimestamp)
+    );
     this.file_id = EntityId.parse(contract.fileId, {isNullable: true}).toString();
     this.max_automatic_token_associations = entity.maxAutomaticTokenAssociations;
     this.memo = entity.memo;

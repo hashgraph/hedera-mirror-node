@@ -1,38 +1,33 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.importer.repository;
 
-import java.util.List;
-import javax.annotation.Resource;
-import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.IterableAssert;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import java.util.List;
+import javax.annotation.Resource;
+import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.Test;
 
 class NftRepositoryTest extends AbstractRepositoryTest {
 
@@ -97,17 +92,25 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         nft5.setAccountId(newTreasury);
         nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
         long nftTokenId = nft1.getId().getTokenId().getId();
-        var tokenAccountOldTreasury = domainBuilder.tokenAccount()
-                .customize(ta -> ta.accountId(nft1.getAccountId().getId()).balance(3).tokenId(nftTokenId))
+        var tokenAccountOldTreasury = domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.accountId(nft1.getAccountId().getId()).balance(3).tokenId(nftTokenId))
                 .persist();
-        var tokenAccountNewTreasury = domainBuilder.tokenAccount()
+        var tokenAccountNewTreasury = domainBuilder
+                .tokenAccount()
                 .customize(ta -> ta.accountId(newTreasury.getId()).balance(1).tokenId(nftTokenId))
                 .persist();
 
         EntityId tokenId = nft1.getId().getTokenId();
         EntityId previousTreasury = nft1.getAccountId();
-        nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
-                consensusTimestamp, EntityId.of("0.0.200", EntityType.ACCOUNT).getId(), false);
+        nftRepository.updateTreasury(
+                tokenId.getId(),
+                previousTreasury.getId(),
+                newTreasury.getId(),
+                consensusTimestamp,
+                EntityId.of("0.0.200", EntityType.ACCOUNT).getId(),
+                false);
 
         assertAccountUpdated(nft1, newTreasury);
         assertAccountUpdated(nft2, newTreasury);
@@ -115,7 +118,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         assertThat(nftRepository.findById(nft4.getId())).get().isEqualTo(nft4);
         assertThat(nftRepository.findById(nft5.getId())).get().isEqualTo(nft5);
 
-        IterableAssert<NftTransfer> nftTransfers = assertThat(nftTransferRepository.findAll()).hasSize(3);
+        IterableAssert<NftTransfer> nftTransfers =
+                assertThat(nftTransferRepository.findAll()).hasSize(3);
         nftTransfers.extracting(NftTransfer::getReceiverAccountId).containsOnly(newTreasury);
         nftTransfers.extracting(NftTransfer::getSenderAccountId).containsOnly(previousTreasury);
         nftTransfers.extracting(n -> n.getId().getTokenId()).containsOnly(tokenId);
@@ -130,7 +134,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     }
 
     private void assertAccountUpdated(Nft nft, EntityId accountId) {
-        AbstractObjectAssert<?, Nft> nftAssert = assertThat(nftRepository.findById(nft.getId())).get();
+        AbstractObjectAssert<?, Nft> nftAssert =
+                assertThat(nftRepository.findById(nft.getId())).get();
         nftAssert.extracting(Nft::getAccountId).isEqualTo(accountId);
         nftAssert.extracting(Nft::getModifiedTimestamp).isNotEqualTo(nft.getModifiedTimestamp());
     }

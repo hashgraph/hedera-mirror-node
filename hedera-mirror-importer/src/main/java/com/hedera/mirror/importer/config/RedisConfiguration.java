@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,12 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.config;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
 import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
 import io.lettuce.core.metrics.MicrometerOptions;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -39,8 +36,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
-import com.hedera.mirror.common.domain.topic.StreamMessage;
-
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @AutoConfigureAfter({MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class})
 @Configuration
@@ -55,7 +50,8 @@ class RedisConfiguration {
 
     @Bean
     RedisSerializer<StreamMessage> redisSerializer() {
-        Jackson2JsonRedisSerializer<StreamMessage> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(StreamMessage.class);
+        Jackson2JsonRedisSerializer<StreamMessage> jackson2JsonRedisSerializer =
+                new Jackson2JsonRedisSerializer<>(StreamMessage.class);
         jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper(new MessagePackFactory()));
         return jackson2JsonRedisSerializer;
     }

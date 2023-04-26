@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-
-import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
-
-import lombok.RequiredArgsConstructor;
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
@@ -58,7 +51,8 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
             return;
         }
 
-        for (var nftAllowance : recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList()) {
+        for (var nftAllowance :
+                recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList()) {
             EntityId ownerId = EntityId.of(nftAllowance.getOwner());
             EntityId tokenId = EntityId.of(nftAllowance.getTokenId());
 
@@ -67,7 +61,8 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
                 var nft = new Nft(serialNumber, tokenId);
                 nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
                 entityListener.onNft(nft);
-                syntheticContractLogService.create(new ApproveAllowanceContractLog(recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
+                syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(
+                        recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
             }
         }
     }

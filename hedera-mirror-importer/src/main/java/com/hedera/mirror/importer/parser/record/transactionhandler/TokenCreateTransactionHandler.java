@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
-import com.hederahashgraph.api.proto.java.TokenAssociation;
-import javax.inject.Named;
-import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -44,6 +36,9 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
+import javax.inject.Named;
+import lombok.CustomLog;
 
 @CustomLog
 @Named
@@ -52,9 +47,11 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
     private final EntityProperties entityProperties;
     private final TokenFeeScheduleUpdateTransactionHandler tokenFeeScheduleUpdateTransactionHandler;
 
-    TokenCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                  EntityProperties entityProperties,
-                                  TokenFeeScheduleUpdateTransactionHandler tokenFeeScheduleUpdateTransactionHandler) {
+    TokenCreateTransactionHandler(
+            EntityIdService entityIdService,
+            EntityListener entityListener,
+            EntityProperties entityProperties,
+            TokenFeeScheduleUpdateTransactionHandler tokenFeeScheduleUpdateTransactionHandler) {
         super(entityIdService, entityListener, TransactionType.TOKENCREATION);
         this.entityProperties = entityProperties;
         this.tokenFeeScheduleUpdateTransactionHandler = tokenFeeScheduleUpdateTransactionHandler;
@@ -74,11 +71,11 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasAutoRenewAccount()) {
-            var autoRenewAccountId = entityIdService.lookup(transactionBody.getAutoRenewAccount())
+            var autoRenewAccountId = entityIdService
+                    .lookup(transactionBody.getAutoRenewAccount())
                     .orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(autoRenewAccountId)) {
-                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
-                        recordItem.getConsensusTimestamp());
+                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             } else {
                 entity.setAutoRenewAccountId(autoRenewAccountId.getId());
             }

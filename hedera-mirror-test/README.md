@@ -150,6 +150,7 @@ To execute run
 
 > **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a
 > subset of tags
+>
 > - `@acceptance and @topicmessagesbase` - all token acceptance scenarios
 > - `@acceptance and not @tokenbase` - all acceptance except token scenarios
 

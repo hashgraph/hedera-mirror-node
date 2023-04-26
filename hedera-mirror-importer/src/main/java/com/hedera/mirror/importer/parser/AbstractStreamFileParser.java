@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.importer.parser;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.parser;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
@@ -45,8 +40,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
 
-    protected AbstractStreamFileParser(MeterRegistry meterRegistry, ParserProperties parserProperties,
-                                       StreamFileRepository<T, Long> streamFileRepository) {
+    protected AbstractStreamFileParser(
+            MeterRegistry meterRegistry,
+            ParserProperties parserProperties,
+            StreamFileRepository<T, Long> streamFileRepository) {
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
         this.streamFileRepository = streamFileRepository;
@@ -55,12 +52,14 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
-        parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
-        parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
+        parseDurationMetricFailure =
+                parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
+        parseDurationMetricSuccess =
+                parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
 
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
-                .description("The difference in ms between the consensus time of the last transaction in the file " +
-                        "and the time at which the file was processed successfully")
+                .description("The difference in ms between the consensus time of the last transaction in the file "
+                        + "and the time at which the file was processed successfully")
                 .tag("type", parserProperties.getStreamType().toString())
                 .register(meterRegistry);
     }
@@ -79,8 +78,11 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             try {
                 doParse(streamFile);
 
-                log.info("Successfully processed {} items from {} in {}",
-                        streamFile.getCount(), streamFile.getName(), stopwatch);
+                log.info(
+                        "Successfully processed {} items from {} in {}",
+                        streamFile.getCount(),
+                        streamFile.getName(),
+                        stopwatch);
                 success = true;
                 Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
                 parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
@@ -120,7 +122,8 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         // Verify hash chain
         if (streamFile.getType().isChained() && !expectedHash.contentEquals(actualHash)) {
-            throw new HashMismatchException(name, expectedHash, actualHash, getClass().getSimpleName());
+            throw new HashMismatchException(
+                    name, expectedHash, actualHash, getClass().getSimpleName());
         }
 
         return true;
