@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
@@ -43,8 +44,13 @@ class TokenKeyWrapperTest {
         assertTrue(tokenKeyWrapper.isUsedForKycKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                4, new KeyValueWrapper(false, null, new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
-                new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH], null));
+                4,
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                        new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                        null));
         assertTrue(tokenKeyWrapper.isUsedForFreezeKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
@@ -52,8 +58,9 @@ class TokenKeyWrapperTest {
         assertTrue(tokenKeyWrapper.isUsedForWipeKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                16, new KeyValueWrapper(false, null, new byte[] {},
-                new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1], contractId));
+                16,
+                new KeyValueWrapper(
+                        false, null, new byte[] {}, new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1], contractId));
         assertTrue(tokenKeyWrapper.isUsedForSupplyKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(

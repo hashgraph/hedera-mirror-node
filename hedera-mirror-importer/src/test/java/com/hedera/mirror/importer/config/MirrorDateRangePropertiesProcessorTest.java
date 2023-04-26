@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.config;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
@@ -27,18 +23,6 @@ import static org.apache.commons.lang3.ObjectUtils.max;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doReturn;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
@@ -55,6 +39,17 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorDateRangePropertiesProcessorTest {
@@ -81,10 +76,14 @@ class MirrorDateRangePropertiesProcessorTest {
         var balanceDownloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         var recordDownloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        downloaderPropertiesList = List
-                .of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
-        mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(mirrorProperties,
-                downloaderPropertiesList, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
+        downloaderPropertiesList =
+                List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
+        mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(
+                mirrorProperties,
+                downloaderPropertiesList,
+                accountBalanceFileRepository,
+                eventFileRepository,
+                recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);
@@ -99,7 +98,8 @@ class MirrorDateRangePropertiesProcessorTest {
             StreamType streamType = downloaderProperties.getStreamType();
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate));
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
+                    .isEqualTo(expectedFilter);
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedDate);
     }
@@ -109,13 +109,16 @@ class MirrorDateRangePropertiesProcessorTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
         Instant past = STARTUP_TIME.minusSeconds(100);
 
-        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past))
+                .when(accountBalanceFileRepository)
+                .findLatest();
         doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
         doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .matches(s -> matches(s, past));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
@@ -126,13 +129,16 @@ class MirrorDateRangePropertiesProcessorTest {
     void notSetAndDatabaseNotEmpty() {
         Instant past = STARTUP_TIME.minusSeconds(100);
 
-        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past))
+                .when(accountBalanceFileRepository)
+                .findLatest();
         doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
         doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .matches(s -> matches(s, past));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
@@ -144,13 +150,16 @@ class MirrorDateRangePropertiesProcessorTest {
         Instant past = STARTUP_TIME.minusSeconds(100);
         mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
 
-        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past))
+                .when(accountBalanceFileRepository)
+                .findLatest();
         doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
         doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .matches(s -> matches(s, past));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, Utility.MAX_INSTANT_LONG));
         }
@@ -167,7 +176,8 @@ class MirrorDateRangePropertiesProcessorTest {
             StreamType streamType = downloaderProperties.getStreamType();
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate));
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
+                    .isEqualTo(expectedFilter);
         }
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(startDate);
     }
@@ -178,13 +188,16 @@ class MirrorDateRangePropertiesProcessorTest {
         Instant past = STARTUP_TIME.minusSeconds(100);
         mirrorProperties.setStartDate(past.minusNanos(nanos));
 
-        doReturn(streamFile(StreamType.BALANCE, past)).when(accountBalanceFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, past))
+                .when(accountBalanceFileRepository)
+                .findLatest();
         doReturn(streamFile(StreamType.EVENT, past)).when(eventFileRepository).findLatest();
         doReturn(streamFile(StreamType.RECORD, past)).when(recordFileRepository).findLatest();
 
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).matches(s -> matches(s, past));
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .matches(s -> matches(s, past));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(new DateRangeFilter(past, null));
         }
@@ -196,9 +209,15 @@ class MirrorDateRangePropertiesProcessorTest {
     void startDateAfterDatabase(long diffNanos) {
         Instant lastFileInstant = Instant.now().minusSeconds(200);
 
-        doReturn(streamFile(StreamType.BALANCE, lastFileInstant)).when(accountBalanceFileRepository).findLatest();
-        doReturn(streamFile(StreamType.EVENT, lastFileInstant)).when(eventFileRepository).findLatest();
-        doReturn(streamFile(StreamType.RECORD, lastFileInstant)).when(recordFileRepository).findLatest();
+        doReturn(streamFile(StreamType.BALANCE, lastFileInstant))
+                .when(accountBalanceFileRepository)
+                .findLatest();
+        doReturn(streamFile(StreamType.EVENT, lastFileInstant))
+                .when(eventFileRepository)
+                .findLatest();
+        doReturn(streamFile(StreamType.RECORD, lastFileInstant))
+                .when(recordFileRepository)
+                .findLatest();
 
         Instant startDate = lastFileInstant.plusNanos(diffNanos);
         mirrorProperties.setStartDate(startDate);
@@ -209,30 +228,38 @@ class MirrorDateRangePropertiesProcessorTest {
             StreamType streamType = downloaderProperties.getStreamType();
 
             Optional<StreamFile<?>> streamFile = streamFile(streamType, effectiveStartDate);
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).isEqualTo(streamFile);
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .isEqualTo(streamFile);
 
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }
     }
 
-    @ParameterizedTest(name = "startDate {0} endDate {1} database {2} violates (effective) start date <= " +
-            "end date constraint")
-    @CsvSource(value = {
-            "2020-08-18T09:00:05.124Z, 2020-08-18T09:00:05.123Z,",
-            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.124Z",
-            "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:06.123Z",
-            ", 2020-08-18T09:00:05.123Z, 2020-08-19T09:00:05.111Z",
-            ", 2020-08-18T09:00:05.123Z,"
-    })
+    @ParameterizedTest(
+            name = "startDate {0} endDate {1} database {2} violates (effective) start date <= " + "end date constraint")
+    @CsvSource(
+            value = {
+                "2020-08-18T09:00:05.124Z, 2020-08-18T09:00:05.123Z,",
+                "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.124Z",
+                "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:06.123Z",
+                ", 2020-08-18T09:00:05.123Z, 2020-08-19T09:00:05.111Z",
+                ", 2020-08-18T09:00:05.123Z,"
+            })
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant lastFileDate) {
         mirrorProperties.setStartDate(startDate);
         mirrorProperties.setEndDate(endDate);
 
         if (lastFileDate != null) {
-            doReturn(streamFile(StreamType.BALANCE, lastFileDate)).when(accountBalanceFileRepository).findLatest();
-            doReturn(streamFile(StreamType.EVENT, lastFileDate)).when(eventFileRepository).findLatest();
-            doReturn(streamFile(StreamType.RECORD, lastFileDate)).when(recordFileRepository).findLatest();
+            doReturn(streamFile(StreamType.BALANCE, lastFileDate))
+                    .when(accountBalanceFileRepository)
+                    .findLatest();
+            doReturn(streamFile(StreamType.EVENT, lastFileDate))
+                    .when(eventFileRepository)
+                    .findLatest();
+            doReturn(streamFile(StreamType.RECORD, lastFileDate))
+                    .when(recordFileRepository)
+                    .findLatest();
         }
 
         for (var downloaderProperties : downloaderPropertiesList) {
@@ -250,15 +277,16 @@ class MirrorDateRangePropertiesProcessorTest {
     }
 
     @ParameterizedTest(name = "filter [{0}, {1}], timestamp {2}, pass: {3}")
-    @CsvSource(value = {
-            "1, 1, 1, true",
-            "1, 10, 1, true",
-            "1, 10, 10, true",
-            "1, 10, 6, true",
-            "1, 10, 0, false",
-            "1, 10, 11, false",
-            "1, 10, -1, false",
-    })
+    @CsvSource(
+            value = {
+                "1, 1, 1, true",
+                "1, 10, 1, true",
+                "1, 10, 10, true",
+                "1, 10, 6, true",
+                "1, 10, 0, false",
+                "1, 10, 11, false",
+                "1, 10, -1, false",
+            })
     void filter(long start, long end, long timestamp, boolean expected) {
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), Instant.ofEpochSecond(0, end));
         assertThat(filter.filter(timestamp)).isEqualTo(expected);

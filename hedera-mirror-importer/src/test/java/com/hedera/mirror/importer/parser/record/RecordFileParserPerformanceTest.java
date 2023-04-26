@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,17 @@ package com.hedera.mirror.importer.parser.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
+import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
@@ -31,11 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
-import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @ActiveProfiles("performance")
 @Import(IntegrationTestConfiguration.class)
@@ -56,7 +51,9 @@ class RecordFileParserPerformanceTest {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
         var builder = recordFileBuilder.recordFile();
-        boolean workDone = false; // used just to assert that at least one cycle through the main "while" loop of this routine occurred.
+        boolean workDone =
+                false; // used just to assert that at least one cycle through the main "while" loop of this routine
+        // occurred.
         recordFileRepository.findLatest().ifPresent(builder::previous);
 
         performanceProperties.getTransactions().forEach(p -> {
@@ -78,6 +75,7 @@ class RecordFileParserPerformanceTest {
             builder.previous(recordFile);
         }
 
-        assertTrue(workDone); // Sonarcloud needs at least one assert per @Test, or else calls it a "critical" code smell
+        assertTrue(
+                workDone); // Sonarcloud needs at least one assert per @Test, or else calls it a "critical" code smell
     }
 }

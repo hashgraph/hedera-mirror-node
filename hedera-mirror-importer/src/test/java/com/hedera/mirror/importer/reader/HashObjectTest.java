@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,16 @@ package com.hedera.mirror.importer.reader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -33,27 +31,24 @@ import java.util.Objects;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-
 class HashObjectTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1226, 1, , 0, false",
-            "1228, 1, , 0, false",
-            "1226, 2, , 0, false",
-            "1226, 1, 2, 0, true",
-            "1226, 1, , 1, true",
-            "1226, 1, , 49, true",
-            "1226, 1, , 53, true",
-            "1226, 1, , 57, true",
-            "1226, 1, , 61, true",
+        "1226, 1, , 0, false",
+        "1228, 1, , 0, false",
+        "1226, 2, , 0, false",
+        "1226, 1, 2, 0, true",
+        "1226, 1, , 1, true",
+        "1226, 1, , 49, true",
+        "1226, 1, , 53, true",
+        "1226, 1, , 57, true",
+        "1226, 1, , 61, true",
     })
-    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate,
-                       boolean expectThrown) throws IOException {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos =
-                new DataOutputStream(bos)) {
+    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown)
+            throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(bos)) {
             // given
             dos.writeLong(classId);
             dos.writeInt(classVersion);

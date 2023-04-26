@@ -26,7 +26,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/0.0.1000/results/logs?timestamp=ne:1639010141.000000000"],
+  "urls": [
+    "/api/v1/contracts/0.0.1000/results/logs?timestamp=ne:1639010141.000000000"
+  ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

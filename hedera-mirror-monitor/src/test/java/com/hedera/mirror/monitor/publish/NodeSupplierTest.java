@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish;
 
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
@@ -28,30 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.stub.StreamObserver;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import lombok.CustomLog;
-import lombok.Data;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
 import com.hedera.hashgraph.sdk.proto.Query;
@@ -70,6 +42,28 @@ import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import com.hedera.mirror.rest.model.NetworkNode;
 import com.hedera.mirror.rest.model.ServiceEndpoint;
+import io.grpc.Server;
+import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.StreamObserver;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.time.Duration;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
+import lombok.Data;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @CustomLog
 @ExtendWith(MockitoExtension.class)
@@ -139,8 +133,8 @@ class NodeSupplierTest {
 
     @Test
     void init() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         nodeSupplier.init();
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         assertThat(nodeSupplier.get()).isEqualTo(node);
@@ -149,9 +143,11 @@ class NodeSupplierTest {
     @Test
     void initWithRetry() {
         monitorProperties.getNodeValidation().setRetryBackoff(Duration.ofMillis(100L));
-        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)),
-                Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)), Mono.just(response(OK)));
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub
+                .addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
+                .addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)))
+                .addTransaction(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
         nodeSupplier.init();
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         assertThat(nodeSupplier.get()).isEqualTo(node);
@@ -231,15 +227,15 @@ class NodeSupplierTest {
     @Timeout(3)
     void validationRecovers() {
         // Given node validated as bad
-        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
         assertThat(nodeSupplier.validateNode(node)).isFalse();
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
 
         // When it recovers
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         assertThat(nodeSupplier.validateNode(node)).isTrue();
 
         // Then it is marked as healthy
@@ -262,13 +258,13 @@ class NodeSupplierTest {
             monitorProperties.setNodes(Set.of(node, node2));
 
             // Validate good node
-            cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-            cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+            cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+            cryptoServiceStub.addTransaction(Mono.just(response(OK)));
             assertThat(nodeSupplier.validateNode(node)).isTrue();
 
             // Validate bad node
-            cryptoServiceStub2.addQueries(Mono.just(receipt(FREEZE_UPGRADE_IN_PROGRESS)));
-            cryptoServiceStub2.addTransactions(Mono.just(response(OK)));
+            cryptoServiceStub2.addQuery(Mono.just(receipt(FREEZE_UPGRADE_IN_PROGRESS)));
+            cryptoServiceStub2.addTransaction(Mono.just(response(OK)));
             assertThat(nodeSupplier.validateNode(node2)).isFalse();
 
             // Then only good node returned
@@ -285,19 +281,20 @@ class NodeSupplierTest {
     @Test
     @Timeout(3)
     void validationSucceeds() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransaction(Mono.just(response(OK)));
         assertThat(nodeSupplier.validateNode(node)).isTrue();
     }
 
     private Response receipt(ResponseCodeEnum responseCode) {
-        ResponseHeader responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(OK)
-                .build();
+        ResponseHeader responseHeader =
+                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
         return Response.newBuilder()
                 .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
                         .setHeader(responseHeader)
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
+                        .setReceipt(TransactionReceipt.newBuilder()
+                                .setStatus(responseCode)
+                                .build())
                         .build())
                 .build();
     }
@@ -314,12 +311,14 @@ class NodeSupplierTest {
         private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
         private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
 
-        void addQueries(Mono<Response>... query) {
-            queries.addAll(Arrays.asList(query));
+        CryptoServiceStub addQuery(Mono<Response> query) {
+            queries.add(query);
+            return this;
         }
 
-        void addTransactions(Mono<TransactionResponse>... transaction) {
-            transactions.addAll(Arrays.asList(transaction));
+        CryptoServiceStub addTransaction(Mono<TransactionResponse> transaction) {
+            transactions.add(transaction);
+            return this;
         }
 
         @Override

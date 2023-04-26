@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -48,12 +44,10 @@ public interface TransactionHandler {
     /**
      * Override to update fields of the ContractResult's (domain) fields.
      */
-    default void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
-    }
+    default void updateContractResult(ContractResult contractResult, RecordItem recordItem) {}
 
     /**
      * Override to update fields of the Transaction's (domain) fields.
      */
-    default void updateTransaction(Transaction transaction, RecordItem recordItem) {
-    }
+    default void updateTransaction(Transaction transaction, RecordItem recordItem) {}
 }

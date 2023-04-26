@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,21 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,14 +39,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 
 @ExtendWith(MockitoExtension.class)
 class CompositeStreamFileProviderTest {
@@ -67,8 +62,8 @@ class CompositeStreamFileProviderTest {
         properties = new CommonDownloaderProperties(new MirrorProperties());
         properties.getSources().add(new StreamSourceProperties());
         properties.getSources().add(new StreamSourceProperties());
-        compositeStreamFileProvider = new CompositeStreamFileProvider(properties, List.of(streamFileProvider1,
-                streamFileProvider2));
+        compositeStreamFileProvider =
+                new CompositeStreamFileProvider(properties, List.of(streamFileProvider1, streamFileProvider2));
     }
 
     @Test
@@ -94,7 +89,8 @@ class CompositeStreamFileProviderTest {
 
     @Test
     void getNoSuchKeyException() {
-        var error = new TransientProviderException(NoSuchKeyException.builder().message("No key").build());
+        var error = new TransientProviderException(
+                NoSuchKeyException.builder().message("No key").build());
         when(streamFileProvider1.get(NODE, FILENAME)).thenReturn(Mono.error(error));
         StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.get(NODE, FILENAME))
                 .thenAwait(WAIT)
@@ -147,8 +143,7 @@ class CompositeStreamFileProviderTest {
                 .verify(WAIT);
 
         Mockito.reset(streamFileProvider1, streamFileProvider2);
-        when(streamFileProvider1.get(NODE, FILENAME))
-                .thenReturn(Mono.just(DATA));
+        when(streamFileProvider1.get(NODE, FILENAME)).thenReturn(Mono.just(DATA));
 
         await("stream-provider-health")
                 .atMost(Duration.ofSeconds(5))

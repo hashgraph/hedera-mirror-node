@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,19 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,20 +43,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.66.0")
 class TokenAccountMigrationTest extends IntegrationTest {
 
-    private static final String REVERT_SQL = """
+    private static final String REVERT_SQL =
+            """
             drop table if exists token_account;
             drop table if exists token_account_history;
             create table token_account (
@@ -71,6 +67,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
             """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
+
     @Value("classpath:db/migration/v1/V1.66.1__token_account_history.sql")
     private final File migrationSql;
 
@@ -108,8 +105,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
                 b -> b.freezeStatus(TokenFreezeStatusEnum.FROZEN),
                 b -> b.kycStatus(TokenKycStatusEnum.GRANTED),
                 b -> b.associated(false),
-                b -> b.associated(true).automaticAssociation(true).createdTimestamp(-1)
-        );
+                b -> b.associated(true).automaticAssociation(true).createdTimestamp(-1));
 
         for (var customizer : customizers) {
             var next = update(last, customizer);
@@ -144,8 +140,9 @@ class TokenAccountMigrationTest extends IntegrationTest {
     }
 
     private TokenAccountRange convert(MigrationTokenAccount last, Long upperTimestamp) {
-        Range<Long> range = upperTimestamp != null ? Range.closedOpen(last.getModifiedTimestamp(), upperTimestamp) :
-                Range.atLeast(last.getModifiedTimestamp());
+        Range<Long> range = upperTimestamp != null
+                ? Range.closedOpen(last.getModifiedTimestamp(), upperTimestamp)
+                : Range.atLeast(last.getModifiedTimestamp());
         return TokenAccountRange.builder()
                 .accountId(last.getAccountId())
                 .associated(last.isAssociated())
@@ -176,7 +173,8 @@ class TokenAccountMigrationTest extends IntegrationTest {
     }
 
     private void persistMigrationTokenAccount(MigrationTokenAccount migrationTokenAccount) {
-        jdbcOperations.update("""
+        jdbcOperations.update(
+                """
                         insert into token_account (account_id, associated, automatic_association, created_timestamp,
                             freeze_status, kyc_status, modified_timestamp, token_id)
                             values (?, ?, ?, ?, ?, ?, ? ,?)
@@ -188,8 +186,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
                 migrationTokenAccount.getFreezeStatus().ordinal(),
                 migrationTokenAccount.getKycStatus().ordinal(),
                 migrationTokenAccount.getModifiedTimestamp(),
-                migrationTokenAccount.getTokenId()
-        );
+                migrationTokenAccount.getTokenId());
     }
 
     @SneakyThrows
@@ -197,8 +194,8 @@ class TokenAccountMigrationTest extends IntegrationTest {
         jdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private MigrationTokenAccount update(MigrationTokenAccount current,
-                                         Consumer<MigrationTokenAccount.MigrationTokenAccountBuilder> customizer) {
+    private MigrationTokenAccount update(
+            MigrationTokenAccount current, Consumer<MigrationTokenAccount.MigrationTokenAccountBuilder> customizer) {
         var nextBuilder = current.toBuilder();
         customizer.accept(nextBuilder);
         var next = nextBuilder.build();
@@ -232,32 +229,30 @@ class TokenAccountMigrationTest extends IntegrationTest {
         private long createdTimestamp;
         private TokenFreezeStatusEnum freezeStatus;
         private TokenKycStatusEnum kycStatus;
-        private Range timestampRange;
+        private Range<?> timestampRange;
         private long tokenId;
     }
 
     private List<TokenAccountRange> findAllTokenAccounts() {
-        return jdbcTemplate.query("select " +
-                        "account_id, " +
-                        "associated, " +
-                        "automatic_association, " +
-                        "created_timestamp, " +
-                        "freeze_status, " +
-                        "kyc_status, " +
-                        "lower(timestamp_range), " +
-                        "token_id " +
-                        "from token_account",
-                (rs, index) ->
-                        TokenAccountRange.builder()
-                                .accountId(rs.getLong("account_id"))
-                                .associated(rs.getBoolean("associated"))
-                                .automaticAssociation(rs.getBoolean("automatic_association"))
-                                .createdTimestamp(rs.getLong("created_timestamp"))
-                                .freezeStatus(TokenFreezeStatusEnum.values()[rs.getInt("freeze_status")])
-                                .kycStatus(TokenKycStatusEnum.values()[rs.getInt("kyc_status")])
-                                .timestampRange(Range.atLeast(rs.getLong(7)))
-                                .tokenId(rs.getLong("token_id"))
-                                .build()
-        );
+        return jdbcTemplate.query(
+                "select " + "account_id, "
+                        + "associated, "
+                        + "automatic_association, "
+                        + "created_timestamp, "
+                        + "freeze_status, "
+                        + "kyc_status, "
+                        + "lower(timestamp_range), "
+                        + "token_id "
+                        + "from token_account",
+                (rs, index) -> TokenAccountRange.builder()
+                        .accountId(rs.getLong("account_id"))
+                        .associated(rs.getBoolean("associated"))
+                        .automaticAssociation(rs.getBoolean("automatic_association"))
+                        .createdTimestamp(rs.getLong("created_timestamp"))
+                        .freezeStatus(TokenFreezeStatusEnum.values()[rs.getInt("freeze_status")])
+                        .kycStatus(TokenKycStatusEnum.values()[rs.getInt("kyc_status")])
+                        .timestampRange(Range.atLeast(rs.getLong(7)))
+                        .tokenId(rs.getLong("token_id"))
+                        .build());
     }
 }

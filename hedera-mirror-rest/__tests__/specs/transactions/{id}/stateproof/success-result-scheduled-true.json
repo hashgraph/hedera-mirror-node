@@ -10,17 +10,26 @@
     "sql": {
       "pathprefix": "data/db/stateproof",
       "funcs": ["addRecordFileWithBytes"],
-      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file_v5.sql", "transaction_v5.sql"]
+      "scripts": [
+        "address_book.sql",
+        "address_book_entry.sql",
+        "record_file_v5.sql",
+        "transaction_v5.sql"
+      ]
     }
   },
   "url": "/api/v1/transactions/0.0.1744-1614921773-715345860/stateproof?scheduled=true",
   "responseStatus": 200,
   "responseJson": {
-    "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
+    "address_books": [
+      "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"
+    ],
     "record_file": {
       "head": "e8c769dbbeb8d3f2e03952d041c8afe57ddc999fc13a233ae49cda8cbddfc4d7",
       "start_running_hash_object": "ec2142ea265aa0fe95a02ea4d9d5f4e36a88e0ace35a3afdb47d7438a2a2f65d",
-      "hashes_before": ["b04c4d67f177754b00b346427fc4c879f1176b3c179acd0db0e162bb32d69a36"],
+      "hashes_before": [
+        "b04c4d67f177754b00b346427fc4c879f1176b3c179acd0db0e162bb32d69a36"
+      ],
       "record_stream_object": "4a1b1a30e37ed0283fa800233e103b6674bcebb248c84a9141837764c6435cfb",
       "hashes_after": [
         "4370a2cbd598135bbfd32a7eb4362396d0ac1162d918091fad45a7e48f1bcf02",

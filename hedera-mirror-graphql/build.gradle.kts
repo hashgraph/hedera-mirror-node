@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import com.graphql_java_generator.plugin.conf.CustomScalarDefinition
@@ -47,7 +43,8 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+    runtimeOnly(
+        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.playtika.testcontainers:embedded-postgresql")
@@ -66,8 +63,11 @@ generatePojoConf {
     setCustomScalars(
         arrayOf(
             CustomScalarDefinition(
-                "Duration", "java.time.Duration", "", "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE", ""
-            ),
+                "Duration",
+                "java.time.Duration",
+                "",
+                "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE",
+                ""),
             CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", ""),
             CustomScalarDefinition("Object", "java.lang.Object", "", "graphql.scalars.Object", ""),
             CustomScalarDefinition(
@@ -75,24 +75,22 @@ generatePojoConf {
                 "java.time.Instant",
                 "",
                 "com.hedera.mirror.graphql.config.GraphQlTimestamp.INSTANCE",
-                ""
-            ),
-        )
-    )
+                ""),
+        ))
 }
 
 tasks.withType<JavaCompile> {
     dependsOn(tasks.generatePojo)
-    options.compilerArgs.addAll(
-        listOf(
-            "-Amapstruct.defaultComponentModel=jsr330",
-            "-Amapstruct.defaultInjectionStrategy=constructor",
-            "-Amapstruct.disableBuilders=true",
-            "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have been mapped
-        )
-    )
+    if (name == "compileJava") {
+        options.compilerArgs.addAll(
+            listOf(
+                "-Amapstruct.defaultComponentModel=jsr330",
+                "-Amapstruct.defaultInjectionStrategy=constructor",
+                "-Amapstruct.disableBuilders=true",
+                "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have
+                // been mapped
+            ))
+    }
 }
 
-java.sourceSets["main"].java {
-    srcDir(tasks.generatePojo)
-}
+java.sourceSets["main"].java { srcDir(tasks.generatePojo) }

@@ -18,6 +18,8 @@ hedera:
           checksum: 4
         errataMigration:
           checksum: 6
+        fixFungibleTokenTotalSupplyMigration:
+          checksum: 2
         historicalAccountInfoMigration:
           checksum: 3
         initializeEntityBalanceMigration:
@@ -96,7 +98,7 @@ spring:
   flyway:
     baselineOnMigrate: true
     connectRetries: 20
-    ignoreMigrationPatterns: [ "*:missing", "*:ignored" ]
+    ignoreMigrationPatterns: ["*:missing", "*:ignored"]
     password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
@@ -112,7 +114,7 @@ spring:
       partitionIdInterval: "'1000000'"
       partitionStartDate: "'3 years'"
       schema: ${hedera.mirror.importer.db.schema}
-      shardCount: 32
+      shardCount: 16
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
@@ -128,7 +130,7 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
   main:
-    allow-circular-references: true  # flywayInitializer -> java migrations -> jdbcTemplate -> flywayInitializer
+    allow-circular-references: true # flywayInitializer -> java migrations -> jdbcTemplate -> flywayInitializer
   task:
     scheduling:
       pool:

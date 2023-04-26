@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-public record ContractCallRequest(String block, String data, boolean estimate, String from, long gas, long gasPrice,
-                                  String to, long value) {}
+package com.hedera.mirror.test.e2e.acceptance.props;
+
+public record ContractCallRequest(
+        String block, String data, boolean estimate, String from, long gas, long gasPrice, String to, long value) {}

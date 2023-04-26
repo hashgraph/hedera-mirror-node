@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,21 @@ package com.hedera.mirror.importer.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.repository;
+
+import com.hedera.mirror.common.domain.entity.EntityStake;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.mirror.common.domain.entity.EntityStake;
-
 public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
 
-    @Query(value = """
+    @Query(
+            value =
+                    """
             with last_epoch_day as (
               select coalesce((select epoch_day from node_stake order by consensus_timestamp desc limit 1), -1) as epoch_day
             ), entity_stake_info as (
@@ -39,7 +36,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             )
             select account_id is null or epoch_day = -1 or epoch_day = end_stake_period
             from last_epoch_day, entity_stake_info, staking_reward_account
-            """, nativeQuery = true)
+            """,
+            nativeQuery = true)
     boolean updated();
 
     /**
@@ -66,7 +64,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * @return Number of entity state inserted and updated
      */
     @Modifying
-    @Query(value = """
+    @Query(
+            value =
+                    """
             with ending_period as (
               select epoch_day, consensus_timestamp
               from node_stake
@@ -125,7 +125,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                   staked_node_id_start = excluded.staked_node_id_start,
                   staked_to_me         = excluded.staked_to_me,
                   stake_total_start    = excluded.stake_total_start;
-            """, nativeQuery = true)
+            """,
+            nativeQuery = true)
     @Transactional
     int updateEntityStake();
 }

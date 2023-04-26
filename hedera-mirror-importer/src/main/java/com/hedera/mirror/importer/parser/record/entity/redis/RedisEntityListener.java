@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.redis;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,20 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity.redis;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
+import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
@@ -41,14 +44,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
-import com.hedera.mirror.common.domain.topic.StreamMessage;
-import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
-
 @ConditionOnEntityRecordParser
 @Log4j2
 @Named
@@ -61,9 +56,8 @@ public class RedisEntityListener implements BatchEntityListener {
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
     private final MeterRegistry meterRegistry;
-    private final LoadingCache<Long, String> channelNames = Caffeine.newBuilder()
-            .maximumSize(1000L)
-            .build(this::getChannelName);
+    private final LoadingCache<Long, String> channelNames =
+            Caffeine.newBuilder().maximumSize(1000L).build(this::getChannelName);
 
     private AtomicLong lastConsensusTimestamp;
     private Timer timer;

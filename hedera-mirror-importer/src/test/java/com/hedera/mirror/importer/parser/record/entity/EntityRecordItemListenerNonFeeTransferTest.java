@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,17 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -50,29 +49,30 @@ import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.util.Utility;
-
 /**
  * Integration tests relating to RecordItemParser and non_fee_transfer.
  */
 class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long PAYER_ACCOUNT_NUM = 1111;
-    private static final AccountID PAYER_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(PAYER_ACCOUNT_NUM).build();
+    private static final AccountID PAYER_ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(PAYER_ACCOUNT_NUM).build();
 
     // New account/contract or the recipient of a transfer/call.
     private static final long NEW_ACCOUNT_NUM = 2222;
-    private static final AccountID NEW_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(NEW_ACCOUNT_NUM).build();
+    private static final AccountID NEW_ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(NEW_ACCOUNT_NUM).build();
     private static final long NEW_CONTRACT_NUM = 2222;
-    private static final ContractID NEW_CONTRACT_ID = ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM).build();
+    private static final ContractID NEW_CONTRACT_ID =
+            ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM).build();
 
     private static final long NODE_ACCOUNT_NUM = 3;
-    private static final AccountID NODE_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(NODE_ACCOUNT_NUM).build();
+    private static final AccountID NODE_ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(NODE_ACCOUNT_NUM).build();
     private static final long TREASURY_ACCOUNT_NUM = 98;
     private static final long PROXY_ACCOUNT_NUM = 999;
-    private static final AccountID PROXY_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(PROXY_ACCOUNT_NUM).build();
+    private static final AccountID PROXY_ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(PROXY_ACCOUNT_NUM).build();
 
     private static final long NODE_FEE = 16;
     private static final long NETWORK_FEE = 32;
@@ -197,24 +197,20 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
     }
 
     private void assertEverything() {
-        assertAll(
-                () -> assertRepositoryRowCounts(),
-                () -> assertTransactions(),
-                () -> assertEntities()
-        );
+        assertAll(() -> assertRepositoryRowCounts(), () -> assertTransactions(), () -> assertEntities());
     }
 
     private void assertRepositoryRowCounts() {
         var expectedTransfersCount = expectedTransactions.stream()
-                .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size())
+                .mapToInt(
+                        t -> t.record.getTransferList().getAccountAmountsList().size())
                 .sum();
         assertAll(
                 () -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows"),
                 () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "entity rows"),
                 () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(), "crypto_transfer rows"),
-                () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(), "non_fee_transfer " +
-                        "rows")
-        );
+                () -> assertEquals(
+                        expectedNonFeeTransfersCount, nonFeeTransferRepository.count(), "non_fee_transfer " + "rows"));
     }
 
     private void assertTransactions() {
@@ -233,9 +229,11 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
         var body = transactionBody().setContractCall(inner);
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.build().toByteString())
                         .setSigMap(DEFAULT_SIG_MAP)
-                        .build().toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
@@ -243,38 +241,49 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var transaction = contractCall();
         var transactionBody = getTransactionBody(transaction);
         var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
-        var contractCallResult = recordBuilder.getContractCallResultBuilder()
+        var contractCallResult = recordBuilder
+                .getContractCallResultBuilder()
                 .setContractID(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
         var record = recordBuilder.setContractCallResult(contractCallResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
     }
 
     private Transaction contractCreate() {
-        var inner = ContractCreateTransactionBody.newBuilder()
-                .setInitialBalance(TRANSFER_AMOUNT);
+        var inner = ContractCreateTransactionBody.newBuilder().setInitialBalance(TRANSFER_AMOUNT);
 
         var body = transactionBody().setContractCreateInstance(inner);
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.build().toByteString())
                         .setSigMap(DEFAULT_SIG_MAP)
-                        .build().toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
+    @SuppressWarnings("deprecation")
     private void contractCreateWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCreate();
         var transactionBody = getTransactionBody(transaction);
         var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
-        var contractCreateResult = recordBuilder.getContractCreateResultBuilder()
+        var contractCreateResult = recordBuilder
+                .getContractCreateResultBuilder()
                 .addCreatedContractIDs(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
         var record = recordBuilder.setContractCreateResult(contractCreateResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoCreate() {
         var inner = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
@@ -284,9 +293,11 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
         var body = transactionBody().setCryptoCreateAccount(inner);
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.build().toByteString())
                         .setSigMap(DEFAULT_SIG_MAP)
-                        .build().toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
@@ -296,7 +307,10 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
     }
 
     private Transaction cryptoTransfer() {
@@ -307,24 +321,28 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var nonFeeTransfers = TransferList.newBuilder()
                 .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT))
                 .addAccountAmounts(accountAmount(entityNum, -TRANSFER_AMOUNT));
-        var inner = CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(nonFeeTransfers);
+        var inner = CryptoTransferTransactionBody.newBuilder().setTransfers(nonFeeTransfers);
 
         var body = transactionBody().setCryptoTransfer(inner.build());
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.build().toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.build().toByteString())
                         .setSigMap(DEFAULT_SIG_MAP)
-                        .build().toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
-    private void cryptoTransferWithTransferList(Transaction transaction, TransferList.Builder transferList,
-                                                ResponseCodeEnum rc) {
+    private void cryptoTransferWithTransferList(
+            Transaction transaction, TransferList.Builder transferList, ResponseCodeEnum rc) {
         var transactionBody = getTransactionBody(transaction);
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
     }
 
     private void cryptoTransferWithTransferList(TransferList.Builder transferList) {
@@ -379,17 +397,23 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
     }
 
     private void givenFailedCryptoTransferTransaction() {
-        cryptoTransferWithTransferList(cryptoTransfer(), transferListForFailedCryptoTransferItemized(),
+        cryptoTransferWithTransferList(
+                cryptoTransfer(),
+                transferListForFailedCryptoTransferItemized(),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
     }
 
     private void givenFailedCryptoTransferTransactionInvalidEntity() {
-        cryptoTransferWithTransferList(cryptoTransfer(100000000000L), transferListForFailedCryptoTransferItemized(),
+        cryptoTransferWithTransferList(
+                cryptoTransfer(100000000000L),
+                transferListForFailedCryptoTransferItemized(),
                 ResponseCodeEnum.INVALID_ACCOUNT_ID);
     }
 
     private void givenFailedCryptoTransferTransactionAggregatedTransfers() {
-        cryptoTransferWithTransferList(cryptoTransfer(), transferListForFailedCryptoTransferAggregated(),
+        cryptoTransferWithTransferList(
+                cryptoTransfer(),
+                transferListForFailedCryptoTransferAggregated(),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
     }
 
@@ -413,16 +437,17 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
                 .setMemo(MEMO)
                 .setNodeAccountID(NODE_ACCOUNT_ID)
                 .setTransactionID(Utility.getTransactionId(PAYER_ACCOUNT_ID))
-                .setTransactionValidDuration(Duration.newBuilder().setSeconds(VALID_DURATION_SECONDS).build());
+                .setTransactionValidDuration(
+                        Duration.newBuilder().setSeconds(VALID_DURATION_SECONDS).build());
     }
 
-    private TransactionRecord.Builder transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode,
-                                                        TransferList.Builder transferList) {
+    private TransactionRecord.Builder transactionRecord(
+            TransactionBody transactionBody, ResponseCodeEnum responseCode, TransferList.Builder transferList) {
         return transactionRecord(transactionBody, responseCode.getNumber(), transferList);
     }
 
-    private TransactionRecord.Builder transactionRecord(TransactionBody transactionBody, int responseCode,
-                                                        TransferList.Builder transferList) {
+    private TransactionRecord.Builder transactionRecord(
+            TransactionBody transactionBody, int responseCode, TransferList.Builder transferList) {
         var receipt = TransactionReceipt.newBuilder().setStatusValue(responseCode);
         if (responseCode == ResponseCodeEnum.SUCCESS.getNumber()) {
             if (transactionBody.hasCryptoCreateAccount()) {
@@ -434,8 +459,8 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
         return TransactionRecord.newBuilder()
                 .setReceipt(receipt)
-                .setConsensusTimestamp(Timestamp.newBuilder()
-                        .setSeconds(CONSENSUS_TIMESTAMP_SECONDS + expectedTransactions.size()))
+                .setConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(CONSENSUS_TIMESTAMP_SECONDS + expectedTransactions.size()))
                 .setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()))
                 .setTransactionHash(ByteString.copyFromUtf8("hash"))
                 .setTransactionID(transactionBody.getTransactionID())
@@ -443,8 +468,8 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
                 .setTransferList(transferList);
     }
 
-    private TransactionRecord.Builder transactionRecordSuccess(TransactionBody transactionBody,
-                                                               TransferList.Builder transferList) {
+    private TransactionRecord.Builder transactionRecordSuccess(
+            TransactionBody transactionBody, TransferList.Builder transferList) {
         return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, transferList);
     }
 

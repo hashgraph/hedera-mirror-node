@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,14 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.migration;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -36,10 +35,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
@@ -78,14 +73,15 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         jdbcTemplate.setFetchSize(100);
-        jdbcTemplate.query("select consensus_timestamp, function_result from contract_result " +
-                "order by consensus_timestamp asc", rs -> {
-
-            MigrationContractResult contractResult = resultRowMapper.mapRow(rs, rs.getRow());
-            if (process(contractResult)) {
-                count.incrementAndGet();
-            }
-        });
+        jdbcTemplate.query(
+                "select consensus_timestamp, function_result from contract_result "
+                        + "order by consensus_timestamp asc",
+                rs -> {
+                    MigrationContractResult contractResult = resultRowMapper.mapRow(rs, rs.getRow());
+                    if (process(contractResult)) {
+                        count.incrementAndGet();
+                    }
+                });
 
         log.info("Updated {} contract results in {}", count, stopwatch);
     }
@@ -146,20 +142,21 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
     }
 
     private void update(MigrationContractResult contractResult) {
-        jdbcTemplate.update("update contract_result set bloom = ?, call_result = ?, contract_id = ?, " +
-                        "created_contract_ids = ?, error_message = ? where consensus_timestamp = ?",
+        jdbcTemplate.update(
+                "update contract_result set bloom = ?, call_result = ?, contract_id = ?, "
+                        + "created_contract_ids = ?, error_message = ? where consensus_timestamp = ?",
                 contractResult.getBloom(),
                 contractResult.getCallResult(),
                 contractResult.getContractId(),
                 contractResult.getCreatedContractIds(),
                 contractResult.getErrorMessage(),
-                contractResult.getConsensusTimestamp()
-        );
+                contractResult.getConsensusTimestamp());
     }
 
     private void insert(MigrationContractLog contractLog) {
-        jdbcTemplate.update("insert into contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, " +
-                        "topic1, topic2, topic3) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        jdbcTemplate.update(
+                "insert into contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, "
+                        + "topic1, topic2, topic3) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 contractLog.getBloom(),
                 contractLog.getConsensusTimestamp(),
                 contractLog.getContractId(),
@@ -168,8 +165,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                 contractLog.getTopic0(),
                 contractLog.getTopic1(),
                 contractLog.getTopic2(),
-                contractLog.getTopic3()
-        );
+                contractLog.getTopic3());
     }
 
     @Data

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,17 @@ package com.hedera.mirror.web3.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+package com.hedera.mirror.web3.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CustomFeeRepositoryTest extends Web3IntegrationTest {
@@ -37,24 +30,16 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByTokenId() {
-        final var customFee = persistMultipleFees();
-        final var tokenId = customFee.getId() != null ? customFee.getId().getTokenId().getId() : 0L;
-        assertThat(customFeeRepository.findByTokenId(tokenId).get(0)).isEqualTo(customFee);
-    }
+        var customFee1 = domainBuilder.customFee().persist();
+        var customFee2 = domainBuilder
+                .customFee()
+                .customize(c -> c.id(customFee1.getId()).amount(12L))
+                .persist();
+        final var tokenId = customFee1.getId().getTokenId().getId();
 
-    private CustomFee persistMultipleFees() {
-        var rightEntityId = EntityId.of(0, 0, 12, EntityType.TOKEN);
-        var decoyEntityId = EntityId.of(0, 0, 13, EntityType.TOKEN);
-
-        for (int i = 0; i < 5; i++) {
-            domainBuilder.customFee().customize(fee -> fee
-                            .id(new CustomFee.Id(System.currentTimeMillis(), rightEntityId)))
-                    .persist();
-            domainBuilder.customFee().customize(fee -> fee
-                            .id(new CustomFee.Id(System.currentTimeMillis(), decoyEntityId)))
-                    .persist();
-        }
-        return domainBuilder.customFee().customize(fee ->
-                fee.id(new CustomFee.Id(System.currentTimeMillis(), rightEntityId))).persist();
+        assertThat(customFeeRepository.findByTokenId(tokenId))
+                .hasSize(2)
+                .extracting(CustomFee::getAmount)
+                .containsExactlyInAnyOrder(customFee1.getAmount(), customFee2.getAmount());
     }
 }

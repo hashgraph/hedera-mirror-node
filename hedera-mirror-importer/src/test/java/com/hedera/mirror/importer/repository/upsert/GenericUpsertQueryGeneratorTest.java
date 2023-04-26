@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository.upsert;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,21 @@ package com.hedera.mirror.importer.repository.upsert;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository.upsert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.github.vertical_blank.sqlformatter.languages.Dialect;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class GenericUpsertQueryGeneratorTest extends IntegrationTest {
@@ -42,15 +37,15 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     @Test
     void getCreateTempTableQuery() {
         UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(generator.getCreateTempTableQuery()).isEqualTo(
-                "create temporary table if not exists entity_temp on commit drop as table entity limit 0");
+        assertThat(generator.getCreateTempTableQuery())
+                .isEqualTo("create temporary table if not exists entity_temp on commit drop as table entity limit 0");
     }
 
     @Test
     void getCreateTempIndexQuery() {
         UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(generator.getCreateTempIndexQuery()).isEqualTo(
-                "create index if not exists entity_temp_idx on entity_temp (id)");
+        assertThat(generator.getCreateTempIndexQuery())
+                .isEqualTo("create index if not exists entity_temp_idx on entity_temp (id)");
     }
 
     @Test
@@ -77,7 +72,10 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     void getInsertQueryHistory() {
         UpsertQueryGenerator generator = factory.get(Entity.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
+        assertThat(format(generator.getUpsertQuery()))
+                .isEqualTo(
+                        format(
+                                """
                 with current as (
                   select e.*
                   from entity e
@@ -387,7 +385,10 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     void getInsertQueryNoHistory() {
         UpsertQueryGenerator generator = factory.get(Schedule.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
+        assertThat(format(generator.getUpsertQuery()))
+                .isEqualTo(
+                        format(
+                                """
                 with current as (
                   select
                     e.*

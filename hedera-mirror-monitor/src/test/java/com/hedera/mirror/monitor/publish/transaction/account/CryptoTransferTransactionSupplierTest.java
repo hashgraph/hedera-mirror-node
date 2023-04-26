@@ -1,24 +1,20 @@
-package com.hedera.mirror.monitor.publish.transaction.account;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish.transaction.account;
 
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.CRYPTO;
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.NFT;
@@ -28,15 +24,15 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.Test;
-
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.Test;
 
 class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -125,9 +121,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .extractingByKey(TOKEN_ID, LIST)
                 .hasSize(2)
                 .extracting("serial", "sender", "receiver")
-                .containsExactlyInAnyOrder(
-                        tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2),
-                        tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2));
+                .containsExactlyInAnyOrder(tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2), tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2));
     }
 
     @Test
@@ -158,8 +152,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                         .extractingByKey(nftTokenId, LIST)
                         .extracting("serial", "sender", "receiver")
                         .containsExactlyInAnyOrder(
-                                tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2),
-                                tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2)))
+                                tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2), tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2)))
                 .extracting(TransferTransaction::getHbarTransfers, MAP)
                 .hasSize(2)
                 .containsEntry(ACCOUNT_ID, transferAmount.negated())
@@ -167,7 +160,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return CryptoTransferTransactionSupplier.class;
     }
 }

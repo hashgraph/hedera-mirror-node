@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.subscribe;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.subscribe;
 
 import static com.hedera.mirror.monitor.subscribe.SubscribeMetrics.METRIC_DURATION;
 import static com.hedera.mirror.monitor.subscribe.SubscribeMetrics.METRIC_E2E;
@@ -27,6 +23,8 @@ import static com.hedera.mirror.monitor.subscribe.SubscribeMetrics.TAG_SCENARIO;
 import static com.hedera.mirror.monitor.subscribe.SubscribeMetrics.TAG_SUBSCRIBER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.monitor.ScenarioStatus;
+import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.StringWriter;
@@ -38,9 +36,6 @@ import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.monitor.ScenarioStatus;
-import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 
 class SubscribeMetricsTest {
 
@@ -134,7 +129,8 @@ class SubscribeMetricsTest {
         subscribeMetrics.onNext(response(testSubscription2));
         subscribeMetrics.status();
 
-        assertThat(logOutput).asString()
+        assertThat(logOutput)
+                .asString()
                 .hasLineCount(2)
                 .contains("GRPC scenario Test received 1 responses in 1s at 1.0/s. Errors: {}")
                 .contains("GRPC scenario Test received 1 responses in 1s at 1.0/s. Errors: {}");
@@ -158,13 +154,10 @@ class SubscribeMetricsTest {
         subscribeMetrics.onNext(response(testSubscription));
         subscribeMetrics.status();
 
-        assertThat(logOutput)
-                .asString()
-                .hasLineCount(1)
-                .contains("No subscribers");
+        assertThat(logOutput).asString().hasLineCount(1).contains("No subscribers");
     }
 
-    private SubscribeResponse response(Scenario scenario) {
+    private SubscribeResponse response(Scenario<?, ?> scenario) {
         Instant timestamp = Instant.now().minusSeconds(5L);
         return SubscribeResponse.builder()
                 .publishedTimestamp(timestamp)

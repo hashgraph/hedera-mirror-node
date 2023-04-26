@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.health;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.health;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,14 +47,15 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 @ExtendWith(SystemStubsExtension.class)
 class ReleaseHealthIndicatorTest {
 
-    private static final String HELM_RELEASE_PATH = "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases" +
-            "/mirror";
+    private static final String HELM_RELEASE_PATH =
+            "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases" + "/mirror";
     private static final String HOSTNAME = "test-pod";
     private static final String POD_REQUEST_PATH = "/api/v1/namespaces/test/pods/" + HOSTNAME;
     private static final Map<String, String> POD_LABELS = Map.of("app.kubernetes.io/instance", "mirror");
 
     @SystemStub
     private final EnvironmentVariables environmentVariables = new EnvironmentVariables("HOSTNAME", HOSTNAME);
+
     private final ReleaseHealthProperties properties = new ReleaseHealthProperties();
 
     private KubernetesMockServer server;
@@ -129,10 +126,7 @@ class ReleaseHealthIndicatorTest {
                 .withPath(POD_REQUEST_PATH)
                 .andReturn(200, pod(POD_LABELS))
                 .always();
-        server.expect()
-                .withPath(HELM_RELEASE_PATH)
-                .andReturn(404, null)
-                .always();
+        server.expect().withPath(HELM_RELEASE_PATH).andReturn(404, null).always();
 
         // when
         var health = healthIndicator.health().block();
@@ -178,10 +172,7 @@ class ReleaseHealthIndicatorTest {
     @Test
     void podNotFound() {
         // given
-        server.expect()
-                .withPath(POD_REQUEST_PATH)
-                .andReturn(404, null)
-                .always();
+        server.expect().withPath(POD_REQUEST_PATH).andReturn(404, null).always();
 
         // when
         var health = healthIndicator.health().block();

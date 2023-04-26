@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,22 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Longs;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TopicMessage;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
-
-import com.hedera.hashgraph.sdk.SubscriptionHandle;
-import com.hedera.hashgraph.sdk.TopicMessage;
 
 @Data
 @Log4j2
@@ -44,12 +41,19 @@ public class SubscriptionResponse {
         mirrorHCSResponses.add(new SubscriptionResponse.MirrorHCSResponse(topicMessage, Instant.now()));
         if (log.isTraceEnabled()) {
             String messageAsString = new String(topicMessage.contents, StandardCharsets.UTF_8);
-            log.trace("Received consensus timestamp: {} topic sequence number: , message: {}",
-                    topicMessage.consensusTimestamp, topicMessage.sequenceNumber, messageAsString);
+            log.trace(
+                    "Received consensus timestamp: {} topic sequence number: , message: {}",
+                    topicMessage.consensusTimestamp,
+                    topicMessage.sequenceNumber,
+                    messageAsString);
         }
     }
 
     public void handleThrowable(Throwable err, TopicMessage topicMessage) {
+        if (err instanceof StatusRuntimeException sre && sre.getStatus().getCode() == Status.Code.CANCELLED) {
+            return;
+        }
+
         log.error("GRPC error on subscription : {}", err.getMessage());
         responseError = err;
     }
@@ -66,19 +70,20 @@ public class SubscriptionResponse {
         int invalidMessages = 0;
         TopicMessage lastTopicMessage = null;
         for (MirrorHCSResponse mirrorHCSResponseResponse : mirrorHCSResponses) {
-            TopicMessage topicMessage = mirrorHCSResponseResponse
-                    .getTopicMessage();
+            TopicMessage topicMessage = mirrorHCSResponseResponse.getTopicMessage();
 
-            Instant publishInstant = Instant
-                    .ofEpochMilli(Longs.fromByteArray(topicMessage.contents));
+            Instant publishInstant = Instant.ofEpochMilli(Longs.fromByteArray(topicMessage.contents));
 
             long publishSeconds = publishInstant.getEpochSecond();
             long consensusSeconds = topicMessage.consensusTimestamp.getEpochSecond();
             long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
             long e2eSeconds = receiptSeconds - publishSeconds;
             long consensusToDelivery = receiptSeconds - consensusSeconds;
-            log.trace("Observed message {} with e2e {}s and consensusToDelivery {}s",
-                    topicMessage.consensusTimestamp, e2eSeconds, consensusToDelivery);
+            log.trace(
+                    "Observed message {} with e2e {}s and consensusToDelivery {}s",
+                    topicMessage.consensusTimestamp,
+                    e2eSeconds,
+                    consensusToDelivery);
 
             if (!validateResponse(lastTopicMessage, topicMessage)) {
                 invalidMessages++;
@@ -94,20 +99,23 @@ public class SubscriptionResponse {
         log.info("{} messages were successfully validated", mirrorHCSResponses.size());
     }
 
-    public boolean validateResponse(TopicMessage previousTopicMessage,
-                                    TopicMessage currentTopicMessage) {
+    public boolean validateResponse(TopicMessage previousTopicMessage, TopicMessage currentTopicMessage) {
         boolean validResponse = true;
 
         if (previousTopicMessage != null && currentTopicMessage != null) {
             if (previousTopicMessage.consensusTimestamp.isAfter(currentTopicMessage.consensusTimestamp)) {
-                log.error("Previous message {}, has a timestamp greater than current message {}",
-                        previousTopicMessage.consensusTimestamp, currentTopicMessage.consensusTimestamp);
+                log.error(
+                        "Previous message {}, has a timestamp greater than current message {}",
+                        previousTopicMessage.consensusTimestamp,
+                        currentTopicMessage.consensusTimestamp);
                 validResponse = false;
             }
 
             if (previousTopicMessage.sequenceNumber + 1 != currentTopicMessage.sequenceNumber) {
-                log.error("Previous message {}, has a sequenceNumber greater than current message {}",
-                        previousTopicMessage.sequenceNumber, currentTopicMessage.sequenceNumber);
+                log.error(
+                        "Previous message {}, has a sequenceNumber greater than current message {}",
+                        previousTopicMessage.sequenceNumber,
+                        currentTopicMessage.sequenceNumber);
                 validResponse = false;
             }
         }

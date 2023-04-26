@@ -86,7 +86,9 @@
       }
     },
     {
-      "urls": ["/api/v1/contracts/results/logs?index=lt:1&timestamp=lte:1639010151.000000000&limit=1&order=asc"],
+      "urls": [
+        "/api/v1/contracts/results/logs?index=lt:1&timestamp=lte:1639010151.000000000&limit=1&order=asc"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "logs": [
@@ -116,7 +118,9 @@
       }
     },
     {
-      "urls": ["/api/v1/contracts/results/logs?index=lte:1&timestamp=lte:1639010151.000000000&limit=1&order=asc"],
+      "urls": [
+        "/api/v1/contracts/results/logs?index=lte:1&timestamp=lte:1639010151.000000000&limit=1&order=asc"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "logs": [

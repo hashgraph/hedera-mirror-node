@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
@@ -33,6 +29,24 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.repository.ContractActionRepository;
+import com.hedera.mirror.importer.repository.ContractLogRepository;
+import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
+import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -69,25 +83,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
 
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractState;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.repository.ContractActionRepository;
-import com.hedera.mirror.importer.repository.ContractLogRepository;
-import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
-import com.hedera.mirror.importer.repository.ContractStateRepository;
-import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.ContractBytecode;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
@@ -112,7 +107,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @ParameterizedTest
     @CsvSource({"true,true", "false, false"})
     void contractCreate(boolean bytecodeSourceFileId, boolean hasAutoRenewAccount) {
-        var recordItem = recordItemBuilder.contractCreate()
+        var recordItem = recordItemBuilder
+                .contractCreate()
                 .transactionBody(b -> {
                     if (!bytecodeSourceFileId) {
                         b.clearFileID().setInitcode(recordItemBuilder.bytes(1));
@@ -122,7 +118,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     }
                     b.clearAutoRenewAccountId()
                             .setDeclineReward(true)
-                            .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
+                            .setStakedAccountId(
+                                    AccountID.newBuilder().setAccountNum(1L).build());
                 })
                 .build();
         var record = recordItem.getTransactionRecord();
@@ -138,8 +135,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(recordItem),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
-                () -> assertContractStateChanges(recordItem)
-        );
+                () -> assertContractStateChanges(recordItem));
     }
 
     // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
@@ -150,7 +146,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .setRealmNum(-4713217343126473096L)
                 .setContractNum(-9016639978277801310L)
                 .build();
-        var recordItem = recordItemBuilder.contractCreate()
+        var recordItem = recordItemBuilder
+                .contractCreate()
                 .receipt(r -> r.setContractID(invalidId))
                 .record(r -> r.getContractCreateResultBuilder().setContractID(invalidId))
                 .build();
@@ -169,21 +166,21 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(contractResultRepository.findAll())
                         .hasSize(1)
                         .first()
-                        .returns(0L, ContractResult::getContractId)
-        );
+                        .returns(0L, ContractResult::getContractId));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void contractCreateWithEvmAddress() {
         // no child tx, creates a single contract with evm address set
         byte[] evmAddress = domainBuilder.evmAddress();
-        RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID)
+        RecordItem recordItem = recordItemBuilder
+                .contractCreate(CONTRACT_ID)
                 .transactionBody(t -> t.setDeclineReward(false).setStakedNodeId(1L))
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .clearCreatedContractIDs()
                         .addCreatedContractIDs(CONTRACT_ID)
-                        .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))
-                ))
+                        .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))))
                 .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_23_0))
                 .build();
         var record = recordItem.getTransactionRecord();
@@ -199,18 +196,18 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(recordItem),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
-                () -> assertContractStateChanges(recordItem)
-        );
+                () -> assertContractStateChanges(recordItem));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void contractCreateWithEvmAddressAndChildCreate() {
         // given contractCreate with child contractCreate
         var parentEvmAddress = domainBuilder.evmAddress();
-        var parentRecordItem = recordItemBuilder.contractCreate()
+        var parentRecordItem = recordItemBuilder
+                .contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                        .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))
-                ))
+                        .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))))
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_23_0))
                 .sidecarRecords(s -> s.remove(0))
                 .build();
@@ -218,11 +215,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var contractCreateResult = parentRecordItem.getTransactionRecord().getContractCreateResult();
         var childContractId = contractCreateResult.getCreatedContractIDsList().stream()
                 .filter(c -> !c.equals(contractCreateResult.getContractID()))
-                .findFirst().get();
+                .findFirst()
+                .get();
         var childEvmAddress = domainBuilder.evmAddress();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
-        var childTransactionId = parentRecordItem.getTransactionRecord().getTransactionID().toBuilder().setNonce(1);
-        var childRecordItem = recordItemBuilder.contractCreate(childContractId)
+        var childTransactionId = parentRecordItem.getTransactionRecord().getTransactionID().toBuilder()
+                .setNonce(1);
+        var childRecordItem = recordItemBuilder
+                .contractCreate(childContractId)
                 .record(r -> r.setConsensusTimestamp(childConsensusTimestamp)
                         .setTransactionID(childTransactionId)
                         .setContractCreateResult(r.getContractCreateResultBuilder()
@@ -249,13 +249,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractCreateResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
                 () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
-                () -> assertContractStateChanges(childRecordItem)
-        );
+                () -> assertContractStateChanges(childRecordItem));
     }
 
     @Test
     void contractCreateFailedWithResult() {
-        RecordItem recordItem = recordItemBuilder.contractCreate()
+        RecordItem recordItem = recordItemBuilder
+                .contractCreate()
                 .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
@@ -269,13 +269,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEntities(),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertFailedContractCreate(transactionBody, record)
-        );
+                () -> assertFailedContractCreate(transactionBody, record));
     }
 
     @Test
     void contractCreateFailedWithoutResult() {
-        RecordItem recordItem = recordItemBuilder.contractCreate()
+        RecordItem recordItem = recordItemBuilder
+                .contractCreate()
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
                 .record(TransactionRecord.Builder::clearContractCreateResult)
                 .build();
@@ -289,8 +289,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEntities(),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertFailedContractCreate(transactionBody, record)
-        );
+                () -> assertFailedContractCreate(transactionBody, record));
     }
 
     @Test
@@ -304,24 +303,22 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
-                () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
-                , () -> assertEntities()
-                , () -> assertTransactionAndRecord(transactionBody, record)
-                , () -> assertFalse(getContractResult(record.getConsensusTimestamp()).isPresent())
-        );
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEntities(),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFalse(
+                        getContractResult(record.getConsensusTimestamp()).isPresent()));
     }
 
     @ParameterizedTest
     @CsvSource({"PLAIN, 5005, 5005", "PARSABLE_EVM, 0, 0", "CREATE2_EVM, , 5002"})
-    void contractUpdateAllToExisting(ContractIdType contractIdType, Long newAutoRenewAccount,
-                                     Long expectedAutoRenewAccount) {
+    void contractUpdateAllToExisting(
+            ContractIdType contractIdType, Long newAutoRenewAccount, Long expectedAutoRenewAccount) {
         // first create the contract
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, true, true, c -> {
-            c.obtainerId(null)
-                    .declineReward(true)
-                    .stakedAccountId(1L);
+            c.obtainerId(null).declineReward(true).stakedAccountId(1L);
             if (newAutoRenewAccount == null) {
                 c.autoRenewAccountId(expectedAutoRenewAccount);
             }
@@ -339,7 +336,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        var recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        var recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
@@ -351,22 +351,20 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
                         .returns(expectedAutoRenewAccount, Entity::getAutoRenewAccountId)
                         .returns(entity.getCreatedTimestamp(), Entity::getCreatedTimestamp)
-                        .returns(false, Entity::getDeclineReward)
-        );
+                        .returns(false, Entity::getDeclineReward));
     }
 
     @Test
     void contractUpdateAllWithMemoToExisting() {
         // first create the contract
         EntityId contractId = EntityId.of(CONTRACT_ID);
-        Entity contract = domainBuilder.entity()
-                .customize(c ->
-                        c.obtainerId(null)
-                                .id(contractId.getId())
-                                .num(contractId.getEntityNum())
-                                .stakedNodeId(1L)
-                                .type(CONTRACT)
-                )
+        Entity contract = domainBuilder
+                .entity()
+                .customize(c -> c.obtainerId(null)
+                        .id(contractId.getId())
+                        .num(contractId.getEntityNum())
+                        .stakedNodeId(1L)
+                        .type(CONTRACT))
                 .persist();
 
         // now update
@@ -375,7 +373,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -384,12 +385,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
-                        .returns(contract.getCreatedTimestamp(), Entity::getCreatedTimestamp)
-        );
+                        .returns(contract.getCreatedTimestamp(), Entity::getCreatedTimestamp));
     }
 
     @ParameterizedTest
-    @EnumSource(value = ContractIdType.class, names = {"PLAIN", "PARSABLE_EVM"})
+    @EnumSource(
+            value = ContractIdType.class,
+            names = {"PLAIN", "PARSABLE_EVM"})
     void contractUpdateAllToNew(ContractIdType contractIdType) {
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, false, false, c -> c.obtainerId(null));
 
@@ -398,7 +400,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -407,8 +412,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
-                        .returns(null, Entity::getCreatedTimestamp)
-        );
+                        .returns(null, Entity::getCreatedTimestamp));
     }
 
     @Test
@@ -419,7 +423,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         assertAll(
@@ -428,8 +435,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertThat(dbTransaction.getEntityId()).isEqualTo(setupResult.entity.toEntityId())
-        );
+                () -> assertThat(dbTransaction.getEntityId()).isEqualTo(setupResult.entity.toEntityId()));
     }
 
     @Test
@@ -439,7 +445,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -448,8 +457,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
-                        .returns(null, Entity::getCreatedTimestamp)
-        );
+                        .returns(null, Entity::getCreatedTimestamp));
     }
 
     @ParameterizedTest
@@ -459,10 +467,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = getContractTransactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
-                ContractTransactionType.UPDATE);
-        RecordItem recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        TransactionRecord record = getContractTransactionRecord(
+                transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.UPDATE);
+        RecordItem recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -472,8 +482,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractStateChanges(recordItem),
-                () -> assertThat(entityRepository.findAll()).containsExactly(setupResult.entity)
-        );
+                () -> assertThat(entityRepository.findAll()).containsExactly(setupResult.entity));
     }
 
     @ParameterizedTest
@@ -484,7 +493,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, permanentRemoval);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        RecordItem recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -501,12 +513,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .returns(true, Entity::getDeleted)
                         .returns(EntityId.of(PAYER), Entity::getObtainerId)
                         .returns(permanentRemoval, Entity::getPermanentRemoval)
-                        .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Entity::getTimestampRange)
-        );
+                        .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Entity::getTimestampRange));
     }
 
     @ParameterizedTest
-    @EnumSource(value = ContractIdType.class, names = {"PLAIN", "PARSABLE_EVM"})
+    @EnumSource(
+            value = ContractIdType.class,
+            names = {"PLAIN", "PARSABLE_EVM"})
     void contractDeleteToNew(ContractIdType contractIdType) {
         // The contract is not in db, it should still work for PLAIN and PARSABLE_EVM
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, false, false);
@@ -514,7 +527,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        RecordItem recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
 
         parseRecordItemAndCommit(recordItem);
         Entity entity = getTransactionEntity(record.getConsensusTimestamp());
@@ -533,9 +549,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .returns(null, Entity::getExpirationTimestamp)
                         .returns(null, Entity::getKey)
                         .returns(EntityId.of(PAYER), Entity::getObtainerId)
-                        .returns(null, Entity::getProxyAccountId)
-
-        );
+                        .returns(null, Entity::getProxyAccountId));
     }
 
     @Test
@@ -545,7 +559,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        RecordItem recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -556,19 +573,20 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(setupResult.entity.toEntityId()),
                 () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertThat(dbTransaction.getEntityId()).isEqualTo(setupResult.entity.toEntityId())
-        );
+                () -> assertThat(dbTransaction.getEntityId()).isEqualTo(setupResult.entity.toEntityId()));
     }
 
     @Test
     void contractDeleteToNewInvalidTransaction() {
         Transaction transaction = contractDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = getContractTransactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
-                ContractTransactionType.DELETE);
+        TransactionRecord record = getContractTransactionRecord(
+                transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.DELETE);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -576,8 +594,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertThat(transactionBody.getContractDeleteInstance().getContractID()).isNotNull()
-        );
+                () -> assertThat(transactionBody.getContractDeleteInstance().getContractID())
+                        .isNotNull());
     }
 
     @ParameterizedTest
@@ -601,10 +619,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractCallResult(contractCallTransactionBody, record),
                 () -> assertContractStateChanges(recordItem),
                 () -> assertContractAction(recordItem),
-                () -> assertThat(entityRepository.findAll()).contains(setupResult.entity)
-        );
+                () -> assertThat(entityRepository.findAll()).contains(setupResult.entity));
     }
 
+    @SuppressWarnings("deprecation")
     @ParameterizedTest
     @EnumSource(ContractIdType.class)
     void contractCallToExistingWithChildContractCreate(ContractIdType contractIdType) {
@@ -612,7 +630,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var setupResult = setupContract(CONTRACT_ID, contractIdType, true, true);
         var parentId = setupResult.entity.toEntityId();
 
-        var parentRecordItem = recordItemBuilder.contractCall()
+        var parentRecordItem = recordItemBuilder
+                .contractCall()
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .transactionBody(b -> b.setContractID(setupResult.protoContractId))
                 .record(r -> r.clearContractCallResult()
@@ -625,8 +644,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var record = parentRecordItem.getTransactionRecord();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
         var childContractId = record.getContractCallResult().getCreatedContractIDs(0);
-        var childTransactionId = record.getTransactionID().toBuilder().setNonce(1).build();
-        var childRecordItem = recordItemBuilder.contractCreate(childContractId)
+        var childTransactionId =
+                record.getTransactionID().toBuilder().setNonce(1).build();
+        var childRecordItem = recordItemBuilder
+                .contractCreate(childContractId)
                 .record(r -> r.setConsensusTimestamp(childConsensusTimestamp)
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
@@ -648,17 +669,16 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertEntities(parentId, EntityId.of(childContractId)),
-                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(),
-                        parentRecordItem.getTransactionRecord()),
-                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(),
-                        childRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(
+                        parentRecordItem.getTransactionBody(), parentRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(
+                        childRecordItem.getTransactionBody(), childRecordItem.getTransactionRecord()),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity),
                 () -> assertCreatedContract(childRecordItem),
                 () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
                 () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
-                () -> assertContractStateChanges(childRecordItem)
-        );
+                () -> assertContractStateChanges(childRecordItem));
     }
 
     @ParameterizedTest
@@ -667,14 +687,17 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // The contract is not in db, it should still work. Note for the create2 evm address,
         // ContractCallTransactionHandler will get the correct plain contractId from the transaction record instead
         // only cache the create2 evm address to verify it later
-        SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, false,
-                contractIdType == ContractIdType.CREATE2_EVM);
+        SetupResult setupResult =
+                setupContract(CONTRACT_ID, contractIdType, false, contractIdType == ContractIdType.CREATE2_EVM);
 
         Transaction transaction = contractCallTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
-        RecordItem recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
+        RecordItem recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -685,8 +708,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEntities(EntityId.of(CREATED_CONTRACT_ID)),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record),
-                () -> assertContractStateChanges(recordItem)
-        );
+                () -> assertContractStateChanges(recordItem));
     }
 
     @Test
@@ -702,7 +724,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var validStart = DomainUtils.timeStampInNanos(parentTransactionId.getTransactionValidStart());
 
         // when
-        RecordItem recordItemMint = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
+        RecordItem recordItemMint = recordItemBuilder
+                .tokenMint(TokenType.FUNGIBLE_COMMON)
                 .transactionBodyWrapper(b -> b.setTransactionID(childTransactionId))
                 .record(r -> r.setParentConsensusTimestamp(parentConsensusTimestamp))
                 .build();
@@ -722,13 +745,15 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(payerAccount, com.hedera.mirror.common.domain.transaction.Transaction::getPayerAccountId)
                 .returns(validStart, com.hedera.mirror.common.domain.transaction.Transaction::getValidStartNs)
                 .returns(1, com.hedera.mirror.common.domain.transaction.Transaction::getNonce)
-                .returns(recordItemCall.getConsensusTimestamp(),
+                .returns(
+                        recordItemCall.getConsensusTimestamp(),
                         com.hedera.mirror.common.domain.transaction.Transaction::getParentConsensusTimestamp);
     }
 
     @Test
     void contractCallFailedWithResult() {
-        RecordItem recordItem = recordItemBuilder.contractCall()
+        RecordItem recordItem = recordItemBuilder
+                .contractCall()
                 .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
@@ -742,27 +767,30 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
-                () -> assertFailedContractCallTransaction(transactionBody, record)
-        );
+                () -> assertFailedContractCallTransaction(transactionBody, record));
     }
 
     @Test
     void contractCallFailedWithoutResult() {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = getContractTransactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.CALL)
-                .toBuilder().clearContractCallResult().build();
+        TransactionRecord record = getContractTransactionRecord(
+                        transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.CALL)
+                .toBuilder()
+                .clearContractCallResult()
+                .build();
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
-                () -> assertFailedContractCallTransaction(transactionBody, record)
-        );
+                () -> assertFailedContractCallTransaction(transactionBody, record));
     }
 
     @Test
@@ -772,22 +800,25 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
-                () -> assertTransactionAndRecord(transactionBody, record)
-        );
+                () -> assertTransactionAndRecord(transactionBody, record));
     }
 
     // Test for bad entity id in a failed transaction
     @Test
     void contractCallBadContractId() {
         var badContractId = ContractID.newBuilder().setContractNum(-1L).build();
-        var recordItem = recordItemBuilder.contractCall(badContractId)
+        var recordItem = recordItemBuilder
+                .contractCall(badContractId)
                 .record(r -> r.clearContractCallResult())
                 .sidecarRecords(s -> s.clear())
                 .status(ResponseCodeEnum.INVALID_CONTRACT_ID)
@@ -806,8 +837,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertNull(dbTransaction.getEntityId())
-        );
+                () -> assertNull(dbTransaction.getEntityId()));
     }
 
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {
@@ -816,8 +846,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertNull(dbTransaction.getEntityId()),
-                () -> assertEquals(contractCreateBody.getInitialBalance(),
-                        dbTransaction.getInitialBalance()),
+                () -> assertEquals(contractCreateBody.getInitialBalance(), dbTransaction.getInitialBalance()),
                 () -> assertPartialContractCreateResult(transactionBody.getContractCreateInstance(), record));
     }
 
@@ -827,42 +856,44 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertThat(dbTransaction.getEntityId()).isNotNull(),
-                () -> assertEquals(EntityId.of(contractCallBody.getContractID()),
-                        dbTransaction.getEntityId()),
+                () -> assertEquals(EntityId.of(contractCallBody.getContractID()), dbTransaction.getEntityId()),
                 () -> assertPartialContractCallResult(contractCallBody, record));
     }
 
+    @SuppressWarnings("deprecation")
     private void assertContractEntity(RecordItem recordItem) {
         long createdTimestamp = recordItem.getConsensusTimestamp();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var adminKey = transactionBody.getAdminKey().toByteArray();
         var transaction = transactionRepository.findById(createdTimestamp).get();
         var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
-        byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
-                DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
+        byte[] evmAddress = contractCreateResult.hasEvmAddress()
+                ? DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue())
+                : null;
         EntityId entityId = transaction.getEntityId();
         Entity entity = getEntity(entityId);
-        Long expectedAutoRenewAccountId = transactionBody.hasAutoRenewAccountId() ?
-                transactionBody.getAutoRenewAccountId().getAccountNum() : null;
+        Long expectedAutoRenewAccountId = transactionBody.hasAutoRenewAccountId()
+                ? transactionBody.getAutoRenewAccountId().getAccountNum()
+                : null;
         EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
 
         ContractBytecode sidecarBytecode = null;
         var sidecarRecords = recordItem.getSidecarRecords();
         var contractId = contractCreateResult.getContractID();
         for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasBytecode() && contractId.equals(sidecarRecord.getBytecode().getContractId())) {
+            if (sidecarRecord.hasBytecode()
+                    && contractId.equals(sidecarRecord.getBytecode().getContractId())) {
                 sidecarBytecode = sidecarRecord.getBytecode();
                 break;
             }
         }
-        byte[] expectedInitcode = sidecarBytecode != null ? sidecarBytecode.getInitcode().toByteArray() :
-                null;
-        expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
-                DomainUtils.toBytes(transactionBody.getInitcode()) : expectedInitcode;
+        byte[] expectedInitcode =
+                sidecarBytecode != null ? sidecarBytecode.getInitcode().toByteArray() : null;
+        expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY
+                ? DomainUtils.toBytes(transactionBody.getInitcode())
+                : expectedInitcode;
 
-        assertThat(transaction)
-                .isNotNull()
-                .returns(transactionBody.getInitialBalance(), t -> t.getInitialBalance());
+        assertThat(transaction).isNotNull().returns(transactionBody.getInitialBalance(), t -> t.getInitialBalance());
 
         assertThat(entity)
                 .isNotNull()
@@ -894,9 +925,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     private void assertCreatedContract(RecordItem recordItem) {
         var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
-        byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
-                DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
-        EntityId createdId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        byte[] evmAddress = contractCreateResult.hasEvmAddress()
+                ? DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue())
+                : null;
+        EntityId createdId =
+                EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         var contractAssert = assertThat(entityRepository.findById(createdId.getId()))
                 .get()
                 .returns(recordItem.getConsensusTimestamp(), Entity::getCreatedTimestamp)
@@ -919,10 +952,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         if (contractCreateInstance.hasStakedAccountId()) {
             var accountId = EntityId.of(contractCreateInstance.getStakedAccountId());
-            contractAssert.returns(accountId.getId(), Entity::getStakedAccountId)
+            contractAssert
+                    .returns(accountId.getId(), Entity::getStakedAccountId)
                     .returns(-1L, Entity::getStakedNodeId);
         } else {
-            contractAssert.returns(contractCreateInstance.getStakedNodeId(), Entity::getStakedNodeId)
+            contractAssert
+                    .returns(contractCreateInstance.getStakedNodeId(), Entity::getStakedNodeId)
                     .returns(null, Entity::getStakedAccountId);
         }
     }
@@ -943,13 +978,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }
 
         for (var contractAction : contractActions) {
-            var caller = contractAction.getCallerCase().equals(CALLING_CONTRACT) ?
-                    EntityId.of(contractAction.getCallingContract()) :
-                    EntityId.of(contractAction.getCallingAccount());
+            var caller = contractAction.getCallerCase().equals(CALLING_CONTRACT)
+                    ? EntityId.of(contractAction.getCallingContract())
+                    : EntityId.of(contractAction.getCallingAccount());
 
-            repositoryActions.filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
-                            && c.getCaller().equals(caller)
-                    )
+            repositoryActions
+                    .filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
+                            && c.getCaller().equals(caller))
                     .hasSize(1)
                     .first()
                     .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
@@ -962,7 +997,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(contractAction.getValue(), ContractAction::getValue)
                     .satisfies(c -> assertThat(c.getCaller()).isNotNull())
                     .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
-                    .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),
+                    .satisfiesAnyOf(
+                            c -> assertThat(c.getRecipientContract()).isNotNull(),
                             c -> assertThat(c.getRecipientAccount()).isNotNull(),
                             c -> assertThat(c.getRecipientAddress()).isNotEmpty());
             ++count;
@@ -971,13 +1007,15 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         repositoryActions.hasSize(count);
     }
 
-    private ObjectAssert<Entity> assertContractEntity(ContractUpdateTransactionBody expected,
-                                                      Timestamp consensusTimestamp) {
+    @SuppressWarnings("deprecation")
+    private ObjectAssert<Entity> assertContractEntity(
+            ContractUpdateTransactionBody expected, Timestamp consensusTimestamp) {
         Entity entity = getTransactionEntity(consensusTimestamp);
         long updatedTimestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
         var adminKey = expected.getAdminKey().toByteArray();
-        var expectedMaxAutomaticTokenAssociations = expected.hasMaxAutomaticTokenAssociations() ?
-                expected.getMaxAutomaticTokenAssociations().getValue() : null;
+        var expectedMaxAutomaticTokenAssociations = expected.hasMaxAutomaticTokenAssociations()
+                ? expected.getMaxAutomaticTokenAssociations().getValue()
+                : null;
 
         var contractAssert = assertThat(entity)
                 .isNotNull()
@@ -999,13 +1037,16 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         if (expected.hasStakedAccountId()) {
             long expectedAccountId = EntityId.of(expected.getStakedAccountId()).getId();
-            contractAssert.returns(expectedAccountId, Entity::getStakedAccountId)
+            contractAssert
+                    .returns(expectedAccountId, Entity::getStakedAccountId)
                     .returns(null, Entity::getStakedNodeId)
                     .returns(-1L, Entity::getStakePeriodStart);
         } else {
-            contractAssert.returns(expected.getStakedNodeId(), Entity::getStakedNodeId)
+            contractAssert
+                    .returns(expected.getStakedNodeId(), Entity::getStakedNodeId)
                     .returns(null, Entity::getStakedAccountId)
-                    .returns(Utility.getEpochDay(DomainUtils.timestampInNanosMax(consensusTimestamp)),
+                    .returns(
+                            Utility.getEpochDay(DomainUtils.timestampInNanosMax(consensusTimestamp)),
                             Entity::getStakePeriodStart);
         }
         return contractAssert;
@@ -1054,11 +1095,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
     }
 
-    private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
-                                      List<ContractLoginfo> logInfoList,
-                                      ObjectAssert<ContractResult> contractResult) {
-        List<Long> createdContractIds = result.getCreatedContractIDsList()
-                .stream()
+    @SuppressWarnings("deprecation")
+    private void assertContractResult(
+            long consensusTimestamp,
+            ContractFunctionResult result,
+            List<ContractLoginfo> logInfoList,
+            ObjectAssert<ContractResult> contractResult) {
+        List<Long> createdContractIds = result.getCreatedContractIDsList().stream()
                 .map(ContractID::getContractNum)
                 .collect(Collectors.toList());
 
@@ -1110,11 +1153,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             EntityId contractId = EntityId.of(contractStateChange.getContractId());
             for (var storageChange : contractStateChange.getStorageChangesList()) {
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
-                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
-                        .toByteArray() : null;
+                byte[] valueWritten = storageChange.hasValueWritten()
+                        ? storageChange.getValueWritten().getValue().toByteArray()
+                        : null;
 
-                contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
-                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                contractStateChanges
+                        .filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
+                                && c.getContractId() == contractId.getId()
+                                && Arrays.equals(c.getSlot(), slot))
                         .hasSize(1)
                         .first()
                         .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
@@ -1128,20 +1174,24 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertContractState(sidecarStateChanges, recordItem.getConsensusTimestamp());
     }
 
-    private void assertContractState(ArrayList<com.hedera.services.stream.proto.ContractStateChange> sidecarStateChanges,
-                                     long consensusTimestamp) {
+    private void assertContractState(
+            ArrayList<com.hedera.services.stream.proto.ContractStateChange> sidecarStateChanges,
+            long consensusTimestamp) {
         int count = 0;
         var contractStates = assertThat(contractStateRepository.findAll());
         for (var contractStateChange : sidecarStateChanges) {
             EntityId contractId = EntityId.of(contractStateChange.getContractId());
             for (var storageChange : contractStateChange.getStorageChangesList()) {
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
-                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
-                        .toByteArray() : null;
+                byte[] valueWritten = storageChange.hasValueWritten()
+                        ? storageChange.getValueWritten().getValue().toByteArray()
+                        : null;
 
                 if (valueWritten != null) {
-                    contractStates.filteredOn(c -> c.getModifiedTimestamp() == consensusTimestamp
-                                    && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                    contractStates
+                            .filteredOn(c -> c.getModifiedTimestamp() == consensusTimestamp
+                                    && c.getContractId() == contractId.getId()
+                                    && Arrays.equals(c.getSlot(), slot))
                             .hasSize(1)
                             .first()
                             .returns(DomainUtils.leftPadBytes(slot, 32), ContractState::getSlot);
@@ -1153,8 +1203,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         contractStates.hasSize(count);
     }
 
-    private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,
-                                                   TransactionRecord record) {
+    private void assertPartialContractCreateResult(
+            ContractCreateTransactionBody transactionBody, TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
@@ -1168,8 +1218,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertPartialContractResult(contractResult);
     }
 
-    private void assertPartialContractCallResult(ContractCallTransactionBody transactionBody,
-                                                 TransactionRecord record) {
+    private void assertPartialContractCallResult(
+            ContractCallTransactionBody transactionBody, TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
@@ -1194,29 +1244,33 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, ContractResult::getGasUsed);
     }
 
-    private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody,
-                                                           ContractTransactionType contractTransactionType) {
+    private TransactionRecord getContractTransactionRecord(
+            TransactionBody transactionBody, ContractTransactionType contractTransactionType) {
         return getContractTransactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, contractTransactionType);
     }
 
-    private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody, ResponseCodeEnum status,
-                                                           ContractTransactionType contractTransactionType) {
-        return buildTransactionRecord(recordBuilder -> {
-            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
+    @SuppressWarnings("deprecation")
+    private TransactionRecord getContractTransactionRecord(
+            TransactionBody transactionBody, ResponseCodeEnum status, ContractTransactionType contractTransactionType) {
+        return buildTransactionRecord(
+                recordBuilder -> {
+                    recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
 
-            switch (contractTransactionType) {
-                case CREATE:
-                    buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
-                    break;
-                case CALL:
-                    var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
-                    buildContractFunctionResult(contractFunctionResult);
-                    contractFunctionResult.removeCreatedContractIDs(0);
-                    break;
-                default:
-                    break;
-            }
-        }, transactionBody, status.getNumber());
+                    switch (contractTransactionType) {
+                        case CREATE:
+                            buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
+                            break;
+                        case CALL:
+                            var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
+                            buildContractFunctionResult(contractFunctionResult);
+                            contractFunctionResult.removeCreatedContractIDs(0);
+                            break;
+                        default:
+                            break;
+                    }
+                },
+                transactionBody,
+                status.getNumber());
     }
 
     private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {
@@ -1224,19 +1278,27 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo) {
-        return contractUpdateAllTransaction(contractId, setMemoWrapperOrMemo, b -> {
-        });
+        return contractUpdateAllTransaction(contractId, setMemoWrapperOrMemo, b -> {});
     }
 
-    private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo,
-                                                     Consumer<ContractUpdateTransactionBody.Builder> customizer) {
+    @SuppressWarnings("deprecation")
+    private Transaction contractUpdateAllTransaction(
+            ContractID contractId,
+            boolean setMemoWrapperOrMemo,
+            Consumer<ContractUpdateTransactionBody.Builder> customizer) {
         return buildTransaction(builder -> {
             ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
             contractUpdate.setAdminKey(keyFromString(KEY));
-            contractUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(400).build());
+            contractUpdate.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(400).build());
             contractUpdate.setContractID(contractId);
-            contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
-            contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
+            contractUpdate.setExpirationTime(
+                    Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
+            contractUpdate.setFileID(FileID.newBuilder()
+                    .setShardNum(0)
+                    .setRealmNum(0)
+                    .setFileNum(2000)
+                    .build());
             contractUpdate.setMaxAutomaticTokenAssociations(Int32Value.of(100));
             if (setMemoWrapperOrMemo) {
                 contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
@@ -1277,6 +1339,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return contractResultRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp));
     }
 
+    @SuppressWarnings("deprecation")
     private String getMemoFromContractUpdateTransactionBody(ContractUpdateTransactionBody body) {
         switch (body.getMemoFieldCase()) {
             case MEMOWRAPPER:
@@ -1293,7 +1356,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             return contractId;
         }
 
-        return contractId.toBuilder().clearContractNum().setEvmAddress(ByteString.copyFrom(evmAddress)).build();
+        return contractId.toBuilder()
+                .clearContractNum()
+                .setEvmAddress(ByteString.copyFrom(evmAddress))
+                .build();
     }
 
     private byte[] getEvmAddress(ContractIdType contractIdType, EntityId contractId) {
@@ -1327,21 +1393,24 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }
     }
 
-    private SetupResult setupContract(ContractID contractId, ContractIdType contractIdType, boolean persist,
-                                      boolean cache) {
+    private SetupResult setupContract(
+            ContractID contractId, ContractIdType contractIdType, boolean persist, boolean cache) {
         return setupContract(contractId, contractIdType, persist, cache, null);
     }
 
-    private SetupResult setupContract(ContractID contractId, ContractIdType contractIdType, boolean persist,
-                                      boolean cache, Consumer<Entity.EntityBuilder> customizer) {
+    private SetupResult setupContract(
+            ContractID contractId,
+            ContractIdType contractIdType,
+            boolean persist,
+            boolean cache,
+            Consumer<Entity.EntityBuilder<?, ?>> customizer) {
         EntityId entityId = EntityId.of(contractId);
         byte[] evmAddress = getEvmAddress(contractIdType, entityId);
         ContractID protoContractId = getContractId(CONTRACT_ID, evmAddress);
-        var builder = domainBuilder.entity()
-                .customize(c -> c.evmAddress(evmAddress)
-                        .id(entityId.getId())
-                        .num(entityId.getEntityNum())
-                        .type(CONTRACT));
+        var builder = domainBuilder.entity().customize(c -> c.evmAddress(evmAddress)
+                .id(entityId.getId())
+                .num(entityId.getEntityNum())
+                .type(CONTRACT));
         if (customizer != null) {
             builder.customize(customizer);
         }

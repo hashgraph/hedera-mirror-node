@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -32,6 +28,21 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.ContractResultService;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -56,21 +67,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.ContractResultService;
-import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
-import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
-import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionSignatureTest {
@@ -102,6 +98,9 @@ class TransactionSignatureTest {
     @Mock
     private FileDataRepository fileDataRepository;
 
+    @Mock
+    private SyntheticContractLogService syntheticContractLogService;
+
     private SignatureMap.Builder defaultSignatureMap;
 
     private List<TransactionSignature> defaultTransactionSignatures;
@@ -111,26 +110,31 @@ class TransactionSignatureTest {
     private Set<TransactionType> transactionSignatures;
 
     private static Stream<Arguments> provideDefaultTransactionSignatures() {
-        return new EntityProperties().getPersist().getTransactionSignatures()
-                .stream()
-                .map(Arguments::of);
+        return new EntityProperties()
+                .getPersist().getTransactionSignatures().stream().map(Arguments::of);
     }
 
     @BeforeEach
     void setup() {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
-        entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, contractResultService,
-                entityIdService, entityListener, entityProperties, nonFeeTransferExtractionStrategy,
-                transactionHandlerFactory);
+        entityRecordItemListener = new EntityRecordItemListener(
+                commonParserProperties,
+                contractResultService,
+                entityIdService,
+                entityListener,
+                entityProperties,
+                nonFeeTransferExtractionStrategy,
+                transactionHandlerFactory,
+                syntheticContractLogService);
         defaultSignatureMap = getDefaultSignatureMap();
-        defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
-                .stream()
+        defaultTransactionSignatures = defaultSignatureMap.getSigPairList().stream()
                 .map(pair -> {
                     TransactionSignature transactionSignature = new TransactionSignature();
                     transactionSignature.setConsensusTimestamp(CONSENSUS_TIMESTAMP);
                     transactionSignature.setEntityId(ENTITY_ID);
-                    transactionSignature.setPublicKeyPrefix(pair.getPubKeyPrefix().toByteArray());
+                    transactionSignature.setPublicKeyPrefix(
+                            pair.getPubKeyPrefix().toByteArray());
                     transactionSignature.setSignature(pair.getEd25519().toByteArray());
                     transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;
@@ -211,23 +215,25 @@ class TransactionSignatureTest {
         return getRecordItem(transactionType, responseCode, defaultSignatureMap.build());
     }
 
-    private RecordItem getRecordItem(TransactionType transactionType, ResponseCodeEnum responseCode,
-                                     SignatureMap signatureMap) {
+    private RecordItem getRecordItem(
+            TransactionType transactionType, ResponseCodeEnum responseCode, SignatureMap signatureMap) {
         TransactionBody transactionBody = getTransactionBody(transactionType);
         Transaction transaction = Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(transactionBody.toByteString())
-                                .setSigMap(signatureMap)
-                                .build()
-                                .toByteString()
-                )
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(transactionBody.toByteString())
+                        .setSigMap(signatureMap)
+                        .build()
+                        .toByteString())
                 .build();
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0, CONSENSUS_TIMESTAMP)))
-                .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
+                .setReceipt(
+                        TransactionReceipt.newBuilder().setStatus(responseCode).build())
                 .build();
-        return RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build();
+        return RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build();
     }
 
     private TransactionBody getTransactionBody(TransactionType transactionType) {
@@ -235,7 +241,9 @@ class TransactionSignatureTest {
         Descriptors.Descriptor descriptor = TransactionBody.getDescriptor();
         Descriptors.FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(transactionType.getProtoId());
         Message defaultInstance = builder.getFieldBuilder(fieldDescriptor).getDefaultInstanceForType();
-        return TransactionBody.newBuilder().setField(fieldDescriptor, defaultInstance).build();
+        return TransactionBody.newBuilder()
+                .setField(fieldDescriptor, defaultInstance)
+                .build();
     }
 
     private void assertTransactionSignatures(List<TransactionSignature> expected) {

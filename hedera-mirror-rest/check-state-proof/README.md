@@ -8,6 +8,7 @@ Refer to the [State Proof Alpha Design](https://github.com/hashgraph/hedera-mirr
 A node based CLI tool `check-state-proof` is provided here to showcase the steps necessary to independently check the validity of a transaction.
 
 ## Logic
+
 The CLI takes the following steps to prove legitimacy of provided transaction ID
 
 1. Obtain user input of transactionId and other params
@@ -36,26 +37,32 @@ record stream object | hashes_after)` matches the `hash in the end running hash 
 12. Return true if all verifications pass
 
 ## Requirements
+
 To run the CLI you must
+
 1. Install the node application
 2. Point to a mirror node with the State Proof Alpha REST API enabled.
 
 If you would like to configure your mirror node to support State Proof Alpha you can follow the configuration steps [Enable State Proof Alpha](../../docs/configuration.md#enable-state-proof-alpha)
 
 ### Install CLI
+
 The node based CLI tool `check-state-proof` can be installed as follows
+
 1. Ensure you've installed [NodeJS](https://nodejs.org/en/about/)
 2. Navigate to the `hedera-mirror-rest/check-state-proof` directory
-3. Npm install the tool -  `npm install -g .`
+3. Npm install the tool - `npm install -g .`
 
 To verify correct installation simply run `check-state-proof --help` or `npm start -- --help` to show usage instructions.
 
 ## Run Check-State-Proof CLI
+
 From command line run
 
 `check-state-proof -t <transactionId> -h <host> -e <environment> -f <filePath>`
 
 Usage options include
+
 ```.env
       --help           Show help                                       [boolean]
       --version        Show version number                             [boolean]
@@ -74,23 +81,24 @@ Usage options include
 > **_Note 1:_** The host value overrides the value of the environment.
 
 > **_Note 2:_** `npm start --` may be used in favor of `check-state-proof` if you don't install the tool globally
-e.g. `npm start -- -t <transactionId> -h <host> -e <previewnet|mainnet|testnet> -f <filePath>`
-
+> e.g. `npm start -- -t <transactionId> -h <host> -e <previewnet|mainnet|testnet> -f <filePath>`
 
 ### Sample Case
+
 To verify the sample case run the following command
 
 `check-state-proof -t 0.0.94139-1570800748-313194300 -f <absoluteDirPath>/stateProofSample.json`
 
 > **_Note_** The -f option requires an absolute filePath to be provided
 
-
 ### Environment
+
 The tool can be run against a public environment as follows
 
 `check-state-proof -t <transactionId> -e <previewnet|mainnet|testnet>`
 
 ### Custom Endpoint Case
+
 The tool can be run against a custom endpoint as follows
 
 `check-state-proof -t <transactionId> -h http://127.0.0.1:1234`
@@ -100,7 +108,7 @@ or
 `check-state-proof -t <transactionId> -h https://my-mirror-node.com`
 
 ### Input File
+
 The tool can be run using a provided input file containing the response from te State Proof Alpha API as follows
 
 `check-state-proof -t <transactionId> -f <filePath>`
-

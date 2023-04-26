@@ -368,7 +368,8 @@ testkube:
   enabled: false
   namespace: testkube
   test:
-    duration: 600s
+    duration: 300s
+    extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
     target:
@@ -413,7 +414,7 @@ traefik:
   resources:
     limits:
       cpu: 850m
-      memory: 1250Mi
+      memory: 2000Mi
     requests:
       cpu: 250m
       memory: 150Mi

@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,21 @@ package com.hedera.mirror.grpc.controller;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.grpc.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.api.proto.AddressBookQuery;
+import com.hedera.mirror.api.proto.ReactorNetworkServiceGrpc;
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -36,15 +40,6 @@ import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.api.proto.AddressBookQuery;
-import com.hedera.mirror.api.proto.ReactorNetworkServiceGrpc;
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @Log4j2
 class NetworkControllerTest extends GrpcIntegrationTest {
@@ -87,8 +82,8 @@ class NetworkControllerTest extends GrpcIntegrationTest {
 
         StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
                 .thenAwait(WAIT)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
-                        "than or equal to 0"))
+                .expectErrorSatisfies(t -> assertException(
+                        t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " + "than or equal to 0"))
                 .verify(WAIT);
     }
 
@@ -110,7 +105,9 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         AddressBookEntry addressBookEntry1 = addressBookEntry();
         AddressBookEntry addressBookEntry2 = addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
-                .setFileId(FileID.newBuilder().setFileNum(addressBook.getFileId().getEntityNum()).build())
+                .setFileId(FileID.newBuilder()
+                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .build())
                 .build();
 
         StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
@@ -127,7 +124,9 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         AddressBookEntry addressBookEntry1 = addressBookEntry();
         addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
-                .setFileId(FileID.newBuilder().setFileNum(addressBook.getFileId().getEntityNum()).build())
+                .setFileId(FileID.newBuilder()
+                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .build())
                 .setLimit(1)
                 .build();
 
@@ -142,7 +141,8 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     @Test
     void nullFields() {
         AddressBook addressBook = addressBook();
-        AddressBookEntry addressBookEntry = domainBuilder.addressBookEntry()
+        AddressBookEntry addressBookEntry = domainBuilder
+                .addressBookEntry()
                 .customize(a -> a.consensusTimestamp(CONSENSUS_TIMESTAMP)
                         .description(null)
                         .memo(null)
@@ -151,12 +151,15 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                         .stake(null))
                 .persist();
         AddressBookQuery query = AddressBookQuery.newBuilder()
-                .setFileId(FileID.newBuilder().setFileNum(addressBook.getFileId().getEntityNum()).build())
+                .setFileId(FileID.newBuilder()
+                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .build())
                 .build();
 
         StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
                 .thenAwait(WAIT)
-                .consumeNextWith(n -> assertThat(n).isNotNull()
+                .consumeNextWith(n -> assertThat(n)
+                        .isNotNull()
                         .returns("", NodeAddress::getDescription)
                         .returns(ByteString.EMPTY, NodeAddress::getMemo)
                         .returns(addressBookEntry.getNodeAccountId(), t -> EntityId.of(n.getNodeAccountId()))
@@ -169,11 +172,17 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     }
 
     private AddressBook addressBook() {
-        return domainBuilder.addressBook().customize(a -> a.startConsensusTimestamp(CONSENSUS_TIMESTAMP)).persist();
+        return domainBuilder
+                .addressBook()
+                .customize(a -> a.startConsensusTimestamp(CONSENSUS_TIMESTAMP))
+                .persist();
     }
 
     private AddressBookEntry addressBookEntry() {
-        return domainBuilder.addressBookEntry(1).customize(a -> a.consensusTimestamp(CONSENSUS_TIMESTAMP)).persist();
+        return domainBuilder
+                .addressBookEntry(1)
+                .customize(a -> a.consensusTimestamp(CONSENSUS_TIMESTAMP))
+                .persist();
     }
 
     @SuppressWarnings("deprecation")
@@ -191,7 +200,8 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         var serviceEndpoint = addressBookEntry.getServiceEndpoints().iterator().next();
         ByteString ipAddress = null;
         try {
-            ipAddress = ProtoUtil.toByteString(InetAddress.getByName(serviceEndpoint.getIpAddressV4()).getAddress());
+            ipAddress = ProtoUtil.toByteString(
+                    InetAddress.getByName(serviceEndpoint.getIpAddressV4()).getAddress());
         } catch (Exception e) {
             // Ignore
         }
@@ -204,9 +214,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     }
 
     private void assertException(Throwable t, Status.Code status, String message) {
-        assertThat(t).isNotNull()
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasMessageContaining(message);
+        assertThat(t).isNotNull().isInstanceOf(StatusRuntimeException.class).hasMessageContaining(message);
 
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) t;
         assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(status);
