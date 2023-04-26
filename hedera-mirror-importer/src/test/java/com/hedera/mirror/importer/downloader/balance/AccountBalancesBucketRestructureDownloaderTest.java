@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,32 +12,25 @@ package com.hedera.mirror.importer.downloader.balance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
+package com.hedera.mirror.importer.downloader.balance;
+
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
-import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
-import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
-import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
-import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
 
@@ -52,12 +40,18 @@ class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestr
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected Downloader<AccountBalanceFile, AccountBalance> getDownloader() {
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
-        return  new AccountBalancesDownloader(consensusNodeService,
-                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, dateRangeProcessor,
-                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider,
+        return new AccountBalancesDownloader(
+                consensusNodeService,
+                (BalanceDownloaderProperties) downloaderProperties,
+                meterRegistry,
+                dateRangeProcessor,
+                nodeSignatureVerifier,
+                signatureFileReader,
+                streamFileNotifier,
+                streamFileProvider,
                 protoBalanceFileReader);
     }
 
@@ -79,8 +73,7 @@ class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestr
                 "2023-04-06T21_45_00.000494Z_Balances.pb.gz",
                 "2023-04-06T22_00_00.067585Z_Balances.pb.gz",
                 "2023-04-06T22_15_00.134616Z_Balances.pb.gz",
-                "2023-04-06T22_30_00.104554Z_Balances.pb.gz"
-        ));
+                "2023-04-06T22_30_00.104554Z_Balances.pb.gz"));
     }
 
     @Test
@@ -88,12 +81,14 @@ class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestr
     void downloadFilesFromNewPathAutoMode() {
         // Changing bucket Path
         commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.AUTO);
-        //Reducing the pathRefresh interval to realistically test the node_id based path
+        // Reducing the pathRefresh interval to realistically test the node_id based path
         commonDownloaderProperties.setPathRefreshInterval(Duration.ofMillis(100));
-        fileCopier.from(getTestDataDir())
+        fileCopier
+                .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
                 .copy();
-        fileCopier.from(testnet)
+        fileCopier
+                .from(testnet)
                 .to(commonDownloaderProperties.getBucketName(), testnet.toString())
                 .copy();
         expectLastStreamFile(Instant.EPOCH);

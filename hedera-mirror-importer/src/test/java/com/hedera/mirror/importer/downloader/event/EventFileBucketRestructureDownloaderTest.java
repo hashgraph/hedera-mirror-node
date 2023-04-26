@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.event;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,12 @@ package com.hedera.mirror.importer.downloader.event;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.downloader.event;
+
+import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -41,7 +39,8 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
     @BeforeEach
     protected void beforeEach() {
         super.beforeEach();
-        setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts",
+        setTestFilesAndInstants(List.of(
+                "2020-04-11T04_51_35.001934Z.evts",
                 "2020-04-11T04_51_40.471976Z.evts",
                 "2020-04-11T04_51_45.028997Z.evts",
                 "2020-04-11T04_51_50.017047Z.evts"));
@@ -55,11 +54,18 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected Downloader<EventFile, EventItem> getDownloader() {
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
-        return new EventFileDownloader(consensusNodeService, (EventDownloaderProperties) downloaderProperties,
-                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
-                streamFileProvider, new EventFileReaderV3());
+        return new EventFileDownloader(
+                consensusNodeService,
+                (EventDownloaderProperties) downloaderProperties,
+                meterRegistry,
+                dateRangeProcessor,
+                nodeSignatureVerifier,
+                signatureFileReader,
+                streamFileNotifier,
+                streamFileProvider,
+                new EventFileReaderV3());
     }
 
     @Override
@@ -72,12 +78,14 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
     void downloadFilesFromNewPathAutoMode() {
         // Changing bucket Path
         commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.AUTO);
-        //Reducing the pathRefresh interval to realistically test the node_id based path
+        // Reducing the pathRefresh interval to realistically test the node_id based path
         commonDownloaderProperties.setPathRefreshInterval(Duration.ofMillis(100));
-        fileCopier.from(getTestDataDir())
+        fileCopier
+                .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
                 .copy();
-        fileCopier.from(testnet)
+        fileCopier
+                .from(testnet)
                 .to(commonDownloaderProperties.getBucketName(), testnet.toString())
                 .copy();
         expectLastStreamFile(Instant.EPOCH);
@@ -87,7 +95,6 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
         downloader.download();
         verifyStreamFiles(List.of(file3, file4));
     }
-
 
     @Override
     protected Duration getCloseInterval() {
