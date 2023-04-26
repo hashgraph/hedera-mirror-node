@@ -28,6 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -84,37 +85,15 @@ public class ContractCallService {
         HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
+        BinaryGasEstimator binaryGasEstimator = new BinaryGasEstimator(properties);
         final var gasUsedByInitialCall = processingResult.getGasUsed();
-        final var estimatedGas = binarySearch(params, gasUsedByInitialCall, params.getGas());
+        final var estimatedGas = binaryGasEstimator.search(
+                (rs, count) -> updateGasMetric(ETH_ESTIMATE_GAS, rs, count),
+                gas -> doProcessCall(params, gas),
+                gasUsedByInitialCall,
+                params.getGas());
 
         return Bytes.ofUnsignedLong(estimatedGas).toHexString();
-    }
-
-    /**
-     * Future work: move to another class and compare performance with interpolation algo.
-     */
-    private long binarySearch(final CallServiceParameters params, long lo, long hi) {
-        long prevGasLimit = lo;
-        int iterationsMade = 0;
-
-        do {
-            long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = doProcessCall(params, mid);
-            updateGasMetric(ETH_ESTIMATE_GAS, transactionResult, ++iterationsMade);
-            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
-            long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
-            if (err || gasUsed == 0) {
-                lo = mid;
-            } else {
-                hi = mid;
-                if (Math.abs(prevGasLimit - mid) < properties.getDiffBetweenIterations()) {
-                    lo = hi;
-                }
-            }
-            prevGasLimit = mid;
-        } while (lo + 1 < hi);
-
-        return hi;
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(

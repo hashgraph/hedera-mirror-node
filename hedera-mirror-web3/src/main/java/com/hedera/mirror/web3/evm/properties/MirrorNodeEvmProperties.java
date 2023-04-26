@@ -50,7 +50,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Positive
-    private long diffBetweenIterations = 1200L;
+    private long estimateGasIterationThreshold = 1200L;
 
     private boolean directTokenCall = true;
 
@@ -67,6 +67,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
 
+    // used by eth_estimateGas only
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 100;
