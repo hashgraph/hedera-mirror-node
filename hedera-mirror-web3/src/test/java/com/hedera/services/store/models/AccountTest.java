@@ -36,8 +36,6 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -58,7 +56,6 @@ class AccountTest {
 
     @BeforeEach
     void setUp() {
-
         subject = new Account(
                 subjectId,
                 defaultLongValue,
@@ -119,11 +116,5 @@ class AccountTest {
 
         // expect:
         assertEquals(desired, subject.toString());
-    }
-
-    @Test
-    void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-        var ex = assertThrows(InvalidTransactionException.class, something::run);
-        assertEquals(status, ex.getResponseCode());
     }
 }

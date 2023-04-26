@@ -82,6 +82,11 @@ public final class EntityIdUtils {
         }
     }
 
+    public static Id asModelId(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
+    }
+
     public static byte[] asEvmAddress(final AccountID id) {
         return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
@@ -136,6 +141,10 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static Address asTypedEvmAddress(final ContractID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
     public static Address asTypedEvmAddress(final AccountID id) {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
@@ -175,14 +184,6 @@ public final class EntityIdUtils {
                 .setShardNum(0L)
                 .setRealmNum(0L)
                 .setAccountNum(numFromCode(code))
-                .build();
-    }
-
-    public static TokenID asGrpcToken(final int num) {
-        return TokenID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setTokenNum(num)
                 .build();
     }
 
