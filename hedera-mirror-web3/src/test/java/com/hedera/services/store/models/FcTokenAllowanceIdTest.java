@@ -16,13 +16,10 @@
 
 package com.hedera.services.store.models;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,23 +60,6 @@ class FcTokenAllowanceIdTest {
     void gettersWork() {
         assertEquals(1L, subject.getTokenNum().longValue());
         assertEquals(2L, subject.getSpenderNum().longValue());
-    }
-
-    @Test
-    void deserializeWorks() throws IOException {
-        final var in = mock(SerializableDataInputStream.class);
-        final var newSubject = new FcTokenAllowanceId();
-        given(in.readInt()).willReturn(tokenNum.intValue()).willReturn(spenderNum.intValue());
-
-        newSubject.deserialize(in, FcTokenAllowanceId.CURRENT_VERSION);
-
-        assertEquals(subject, newSubject);
-    }
-
-    @Test
-    void serializableDetWorks() {
-        assertEquals(FcTokenAllowanceId.RELEASE_023X_VERSION, subject.getVersion());
-        assertEquals(FcTokenAllowanceId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
     }
 
     @Test
