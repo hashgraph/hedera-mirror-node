@@ -57,13 +57,6 @@ spec:
                   regex: (dev|integration|integration-docker|staging-lg|staging-sm)
                   sourceLabels: [namespace]
           replicaExternalLabelName: __replica__
-    promtail:
-      config:
-        snippets:
-          extraRelabelConfigs:
-            - action: drop
-              regex: (dev|integration|integration-docker|staging-lg|staging-sm)
-              source_labels: [namespace]
     testkube:
       enabled: true
       test:
