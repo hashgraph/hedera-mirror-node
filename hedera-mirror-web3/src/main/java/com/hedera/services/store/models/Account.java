@@ -16,20 +16,12 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociationsFrom;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.common.base.MoreObjects;
-import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import lombok.Builder;
-import lombok.Value;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
@@ -37,30 +29,27 @@ import org.hyperledger.besu.datatypes.Address;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
 
-@Value
-@Builder
 public class Account extends HederaEvmAccount {
-    Id id;
-    long expiry;
-    long balance;
-    boolean deleted = false;
-    boolean isSmartContract = false;
-    boolean isReceiverSigRequired = false;
-    long ownedNfts;
-    long autoRenewSecs;
-    String memo = "";
-    Id proxy;
-    Address accountAddress;
-    int autoAssociationMetadata;
-    TreeMap<EntityNum, Long> cryptoAllowances;
-    TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-    TreeSet<FcTokenAllowanceId> approveForAllNfts;
-    int numAssociations;
-    int numPositiveBalances;
-    int numTreasuryTitles;
+    final Id id;
+    final long expiry;
+    final long balance;
+    final boolean deleted = false;
+    final boolean isSmartContract = false;
+    final boolean isReceiverSigRequired = false;
+    final long ownedNfts;
+    final long autoRenewSecs;
+    final Id proxy;
+    final Address accountAddress;
+    final int autoAssociationMetadata;
+    final TreeMap<EntityNum, Long> cryptoAllowances;
+    final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+    final TreeSet<FcTokenAllowanceId> approveForAllNfts;
+    final int numAssociations;
+    final int numPositiveBalances;
+    final int numTreasuryTitles;
 
     public Account(Id id, long expiry, long balance, long ownedNfts, long autoRenewSecs,
-                   Id proxy, Address accountAddress, int autoAssociationMetadata,
+                   Id proxy, int autoAssociationMetadata,
                    TreeMap<EntityNum, Long> cryptoAllowances, TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances,
                    TreeSet<FcTokenAllowanceId> approveForAllNfts, int numAssociations, int numPositiveBalances,
                    int numTreasuryTitles) {
@@ -71,7 +60,7 @@ public class Account extends HederaEvmAccount {
         this.ownedNfts = ownedNfts;
         this.autoRenewSecs = autoRenewSecs;
         this.proxy = proxy;
-        this.accountAddress = accountAddress;
+        this.accountAddress = id.asEvmAddress();
         this.autoAssociationMetadata = autoAssociationMetadata;
         this.cryptoAllowances = cryptoAllowances;
         this.fungibleTokenAllowances = fungibleTokenAllowances;
@@ -87,63 +76,6 @@ public class Account extends HederaEvmAccount {
 
     public int getAlreadyUsedAutomaticAssociations() {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
-    }
-
-    /**
-     * Associated the given list of Tokens to this account.
-     *
-     * @param tokens                   List of tokens to be associated to the Account
-     * @param tokenStore               TypedTokenStore to validate if existing relationship with the tokens to be
-     *                                 associated with
-     * @param isAutomaticAssociation   whether these associations count against the max auto-associations limit
-     * @param shouldEnableRelationship whether the new relationships should be enabled unconditionally, no matter KYC
-     *                                 and freeze settings
-     * @param dynamicProperties        GlobalDynamicProperties to fetch the token associations limit and enforce it.
-     * @return the new token relationships formed by this association
-     */
-    public List<TokenRelationship> associateWith(
-            final List<Token> tokens,
-            final TypedTokenStore tokenStore,
-            final boolean isAutomaticAssociation,
-            final boolean shouldEnableRelationship,
-            final GlobalDynamicProperties dynamicProperties) {
-        final var proposedTotalAssociations = tokens.size() + numAssociations;
-        validateFalse(
-                exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
-                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-        final List<TokenRelationship> newModelRels = new ArrayList<>();
-        for (final var token : tokens) {
-            validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-            if (isAutomaticAssociation) {
-                incrementUsedAutomaticAssociations();
-            }
-            final var newRel = shouldEnableRelationship
-                    ? token.newEnabledRelationship(this)
-                    : token.newRelationshipWith(this, false);
-            numAssociations++;
-            newModelRels.add(newRel);
-        }
-        return newModelRels;
-    }
-
-    public void dissociateUsing(final List<Dissociation> dissociations, final OptionValidator validator) {
-        for (final var dissociation : dissociations) {
-            validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
-            dissociation.updateModelRelsSubjectTo(validator);
-            final var pastRel = dissociation.dissociatingAccountRel();
-            if (pastRel.isAutomaticAssociation()) {
-                decrementUsedAutomaticAssociations();
-            }
-            if (pastRel.getBalanceChange() != 0) {
-                numPositiveBalances--;
-            }
-            numAssociations--;
-        }
-    }
-
-    private boolean exceedsTokenAssociationLimit(MirrorNodeEvmProperties dynamicProperties, int totalAssociations) {
-        return dynamicProperties.areTokenAssociationsLimited()
-                && totalAssociations > dynamicProperties.maxTokensPerAccount();
     }
 
     /* NOTE: The object methods below are only overridden to improve

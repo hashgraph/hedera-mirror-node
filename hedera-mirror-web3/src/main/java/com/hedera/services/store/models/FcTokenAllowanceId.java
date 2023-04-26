@@ -36,9 +36,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.io.IOException;
 
 /**
- * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code
- * MerkleAccountState}. It consists of the information about the token for which allowance is
- * granted to and the spender who is granted the allowance.
+ * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code MerkleAccountState}.
+ * It consists of the information about the token for which allowance is granted to and the spender who is granted the
+ * allowance.
  *
  * <p>Having allowance on a token will grant the spender to transfer fungible or non-fungible token
  * units from the owner's account.
@@ -58,10 +58,6 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
     public FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
         this.tokenNum = tokenNum;
         this.spenderNum = spenderNum;
-    }
-
-    public static FcTokenAllowanceId from(final TokenID tokenId, final AccountID accountId) {
-        return new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
     }
 
     @Override

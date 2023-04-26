@@ -24,22 +24,12 @@ import static com.hedera.services.utils.BitPackUtils.codeFromNum;
 import static com.hedera.services.utils.BitPackUtils.isValidNum;
 import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static com.hedera.services.utils.BitPackUtils.perm64;
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 
-import com.hedera.services.store.models.Id;
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.datatypes.Address;
-
 
 /**
- * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in
- * structured data using this type, when compared to the {@code java.lang.Integer} boxed type.
+ * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in structured data
+ * using this type, when compared to the {@code java.lang.Integer} boxed type.
  */
 public class EntityNum implements Comparable<EntityNum> {
     public static final EntityNum MISSING_NUM = new EntityNum(0);
@@ -62,57 +52,6 @@ public class EntityNum implements Comparable<EntityNum> {
         return new EntityNum(value);
     }
 
-    public static EntityNum fromModel(final Id id) {
-        if (!areValidNums(id.shard(), id.realm())) {
-            return MISSING_NUM;
-        }
-        return fromLong(id.num());
-    }
-
-    public static EntityNum fromAccountId(final AccountID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getAccountNum());
-    }
-
-    public static EntityNum fromEvmAddress(final Address address) {
-        final var bytes = address.toArrayUnsafe();
-        return fromLong(numFromEvmAddress(bytes));
-    }
-
-    public static EntityNum fromMirror(final byte[] evmAddress) {
-        return EntityNum.fromLong(numFromEvmAddress(evmAddress));
-    }
-
-    public static EntityNum fromTokenId(final TokenID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getTokenNum());
-    }
-
-    public static EntityNum fromTopicId(final TopicID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getTopicNum());
-    }
-
-    public static EntityNum fromContractId(final ContractID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getContractNum());
-    }
-
-    public static EntityNum fromScheduleId(final ScheduleID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getScheduleNum());
-    }
-
     public int intValue() {
         return value;
     }
@@ -120,42 +59,6 @@ public class EntityNum implements Comparable<EntityNum> {
     public long longValue() {
         return numFromCode(value);
     }
-
-//    public AccountID toGrpcAccountId() {
-//        return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
-//    }
-//
-//    public EntityId toEntityId() {
-//        return STATIC_PROPERTIES.scopedEntityIdWith(numFromCode(value));
-//    }
-//
-//    public Id toId() {
-//        return STATIC_PROPERTIES.scopedIdWith(numFromCode(value));
-//    }
-//
-//    public ContractID toGrpcContractID() {
-//        return STATIC_PROPERTIES.scopedContractIdWith(numFromCode(value));
-//    }
-//
-//    public TokenID toGrpcTokenId() {
-//        return STATIC_PROPERTIES.scopedTokenWith(numFromCode(value));
-//    }
-//
-//    public ScheduleID toGrpcScheduleId() {
-//        return STATIC_PROPERTIES.scopedScheduleWith(numFromCode(value));
-//    }
-//
-//    public String toIdString() {
-//        return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
-//    }
-//
-//    public Address toEvmAddress() {
-//        return Address.wrap(Bytes.wrap(toRawEvmAddress()));
-//    }
-//
-//    public byte[] toRawEvmAddress() {
-//        return asEvmAddress(numFromCode(value));
-//    }
 
     @Override
     public int hashCode() {
@@ -175,12 +78,6 @@ public class EntityNum implements Comparable<EntityNum> {
 
         return this.value == that.value;
     }
-
-    static boolean areValidNums(final long shard, final long realm) {
-        return isValidNum(shard) && isValidNum(realm);
-    }
-
-
 
     @Override
     public String toString() {

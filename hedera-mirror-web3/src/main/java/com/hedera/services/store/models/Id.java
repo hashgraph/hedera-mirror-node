@@ -57,14 +57,6 @@ public record Id(long shard, long realm, long num) {
                 .build();
     }
 
-    public TopicID asGrpcTopic() {
-        return TopicID.newBuilder()
-                .setShardNum(shard)
-                .setRealmNum(realm)
-                .setTopicNum(num)
-                .build();
-    }
-
     public ContractID asGrpcContract() {
         return ContractID.newBuilder()
                 .setShardNum(shard)
