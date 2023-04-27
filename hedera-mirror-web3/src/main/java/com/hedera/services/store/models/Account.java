@@ -46,6 +46,7 @@ public class Account extends HederaEvmAccount {
     private final int numPositiveBalances;
     private final int numTreasuryTitles;
 
+    @SuppressWarnings("java:S107")
     public Account(
             Id id,
             long expiry,
