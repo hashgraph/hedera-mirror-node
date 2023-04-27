@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: testkube
-      version: 1.8.55
+      version: 1.11.174
   install:
     crds: CreateReplace
   interval: 90s
