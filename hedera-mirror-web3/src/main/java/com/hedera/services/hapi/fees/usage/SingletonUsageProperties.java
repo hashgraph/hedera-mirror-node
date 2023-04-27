@@ -22,6 +22,8 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 public enum SingletonUsageProperties implements UsageProperties {
     USAGE_PROPERTIES;
 
+    private SingletonUsageProperties() {}
+
     @Override
     public int accountAmountBytes() {
         return LONG_SIZE + BASIC_ENTITY_ID_SIZE;

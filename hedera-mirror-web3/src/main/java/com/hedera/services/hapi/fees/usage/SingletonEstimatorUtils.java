@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 public enum SingletonEstimatorUtils implements EstimatorUtils {
     ESTIMATOR_UTILS;
 
+    private SingletonEstimatorUtils() {}
+
     @Override
     public long baseNetworkRbs() {
         return BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC;
