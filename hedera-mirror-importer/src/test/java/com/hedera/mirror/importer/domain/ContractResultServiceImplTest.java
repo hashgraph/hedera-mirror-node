@@ -125,10 +125,10 @@ class ContractResultServiceImplTest {
         return Stream.of(
                 Arguments.of(withoutDefaultContractId, null, true),
                 Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
-                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(withDefaultContractId, null, false),
+                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, EntityId.EMPTY, false),
-                Arguments.of(contractCreate, EntityId.EMPTY, false),
+                Arguments.of(contractCreate, null, false),
                 Arguments.of(contractCreate, EntityId.of(0, 0, 5, EntityType.CONTRACT), false));
     }
 }
