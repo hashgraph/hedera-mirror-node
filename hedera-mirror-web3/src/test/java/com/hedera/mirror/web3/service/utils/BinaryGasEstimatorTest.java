@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BinaryGasEstimatorTest extends Web3IntegrationTest {
     private final BinaryGasEstimator binaryGasEstimator;
+    private final AtomicInteger iterations = new AtomicInteger(0);
 
     /**
      * @link BinaryGasEstimator is using slightly modified binary algorithm which is coupled to some exttend with the
@@ -54,10 +56,9 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
         "1_000_000, 1_000_000_000, 20"
     })
     void binarySearch(final long low, final long high, final int iterationLimit) {
-        AtomicInteger iterations = new AtomicInteger(0);
         // First call with no failing contract calls for gasUsed reference
         final var regularCall = binaryGasEstimator.search(
-                (a, b) -> iterations.incrementAndGet(), gas -> createTxnResult(low, false), low, high);
+                (a, b) -> iterations.addAndGet(b), gas -> createTxnResult(low, false), low, high);
 
         assertThat(regularCall).as("result must not go out of bounds").isBetween(low, high);
 
@@ -80,6 +81,19 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
                             + "only successful transactions")
                     .isGreaterThan(regularCall);
         }
+    }
+
+    @Test
+    void searchDoesntExceedMaxIterations() {
+        /*
+         * With such values for low and high, iterations would over the maximum of 20, we test the
+         * whether the condition in BinaryGasEstimator keeps the iteration under this 20 threshold.
+         */
+        final var low = 0;
+        final var high = Long.MAX_VALUE;
+        binaryGasEstimator.search((a, b) -> iterations.addAndGet(b), gas -> createTxnResult(0, false), low, high);
+
+        assertThat(iterations.get()).as("iteration limit").isLessThanOrEqualTo(20);
     }
 
     private HederaEvmTransactionProcessingResult createTxnResult(final long gasUsed, final boolean randomize) {
