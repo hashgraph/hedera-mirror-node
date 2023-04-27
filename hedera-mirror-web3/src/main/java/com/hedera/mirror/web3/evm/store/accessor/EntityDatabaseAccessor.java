@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.evm.store;
-
 /*
  * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
@@ -16,11 +14,10 @@ package com.hedera.mirror.web3.evm.store;
  * limitations under the License.
  */
 
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
+package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.web3.repository.TokenAccountRepository;
-
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -28,12 +25,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Id, TokenAccount>{
+public class EntityDatabaseAccessor extends DatabaseAccessor<Long, Entity> {
 
-    private final TokenAccountRepository tokenAccountRepository;
+    private final EntityRepository entityRepository;
 
     @Override
-    public @NonNull Optional<TokenAccount> get(@NonNull Id key) {
-        return tokenAccountRepository.findById(key);
+    public @NonNull Optional<Entity> get(@NonNull Long key) {
+        return entityRepository.findByIdAndDeletedIsFalse(key);
     }
 }

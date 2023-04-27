@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.evm.store;
-
 /*
  * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
@@ -16,11 +14,11 @@ package com.hedera.mirror.web3.evm.store;
  * limitations under the License.
  */
 
+package com.hedera.mirror.web3.evm.store.accessor;
+
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-
 import com.hedera.mirror.web3.repository.NftRepository;
-
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -28,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class NftDatabaseAccessor extends DatabaseAccessor<NftId, Nft>{
+public class NftDatabaseAccessor extends DatabaseAccessor<NftId, Nft> {
 
     private final NftRepository nftRepository;
 

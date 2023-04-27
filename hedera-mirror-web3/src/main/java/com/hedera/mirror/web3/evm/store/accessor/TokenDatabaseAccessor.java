@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.store;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,13 @@ package com.hedera.mirror.web3.evm.store;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-
-import com.hedera.mirror.web3.repository.NftAllowanceRepository;
-
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -33,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Id, NftAllowance> {
+public class TokenDatabaseAccessor extends DatabaseAccessor<TokenId, Token> {
 
-    private final NftAllowanceRepository nftAllowanceRepository;
+    private final TokenRepository tokenRepository;
 
     @Override
-    public @NonNull Optional<NftAllowance> get(@NonNull Id key) {
-        return nftAllowanceRepository.findById(key);
+    public @NonNull Optional<Token> get(@NonNull TokenId key) {
+        return tokenRepository.findById(key);
     }
 }

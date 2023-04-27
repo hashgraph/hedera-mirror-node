@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.evm.store;
-
 /*
  * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
@@ -16,10 +14,10 @@ package com.hedera.mirror.web3.evm.store;
  * limitations under the License.
  */
 
+package com.hedera.mirror.web3.evm.store.accessor;
+
 import com.hedera.mirror.common.domain.transaction.CustomFee;
-
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
-
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
@@ -28,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<CustomFee>>{
+public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<CustomFee>> {
 
     private final CustomFeeRepository customFeeRepository;
 

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.store;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,13 @@ package com.hedera.mirror.web3.evm.store;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-
-import com.hedera.mirror.web3.repository.EntityRepository;
-
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -32,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class EntityDatabaseAccessor extends DatabaseAccessor<Long, Entity> {
+public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Id, TokenAccount> {
 
-    private final EntityRepository entityRepository;
+    private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Entity> get(@NonNull Long key) {
-        return entityRepository.findByIdAndDeletedIsFalse(key);
+    public @NonNull Optional<TokenAccount> get(@NonNull Id key) {
+        return tokenAccountRepository.findById(key);
     }
 }
