@@ -22,40 +22,42 @@ import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociations
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 public class Account extends HederaEvmAccount {
-    final Id id;
-    final long expiry;
-    final long balance;
-    final boolean deleted = false;
-    final long ownedNfts;
-    final long autoRenewSecs;
+    private final Id id;
+    private final long expiry;
+    private final long balance;
+    private final boolean deleted;
+    private final long ownedNfts;
+
+    private final long autoRenewSecs;
     final Id proxy;
-    final Address accountAddress;
-    final int autoAssociationMetadata;
-    final TreeMap<EntityNum, Long> cryptoAllowances;
-    final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-    final TreeSet<FcTokenAllowanceId> approveForAllNfts;
-    final int numAssociations;
-    final int numPositiveBalances;
-    final int numTreasuryTitles;
+    private final Address accountAddress;
+    private final int autoAssociationMetadata;
+    private final SortedMap<EntityNum, Long> cryptoAllowances;
+    private final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+    private final SortedSet<FcTokenAllowanceId> approveForAllNfts;
+    private final int numAssociations;
+    private final int numPositiveBalances;
+    private final int numTreasuryTitles;
 
     public Account(
             Id id,
             long expiry,
             long balance,
+            boolean deleted,
             long ownedNfts,
             long autoRenewSecs,
             Id proxy,
             int autoAssociationMetadata,
-            TreeMap<EntityNum, Long> cryptoAllowances,
-            TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-            TreeSet<FcTokenAllowanceId> approveForAllNfts,
+            SortedMap<EntityNum, Long> cryptoAllowances,
+            SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances,
+            SortedSet<FcTokenAllowanceId> approveForAllNfts,
             int numAssociations,
             int numPositiveBalances,
             int numTreasuryTitles) {
@@ -63,6 +65,7 @@ public class Account extends HederaEvmAccount {
         this.id = id;
         this.expiry = expiry;
         this.balance = balance;
+        this.deleted = deleted;
         this.ownedNfts = ownedNfts;
         this.autoRenewSecs = autoRenewSecs;
         this.proxy = proxy;
@@ -84,9 +87,53 @@ public class Account extends HederaEvmAccount {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
     }
 
-    /* NOTE: The object methods below are only overridden to improve
-    readability of unit tests; this model object is not used in hash-based
-    collections, so the performance of these methods doesn't matter. */
+    public Id getId() {
+        return id;
+    }
+
+    public long getExpiry() {
+        return expiry;
+    }
+
+    public long getBalance() {
+        return balance;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public long getOwnedNfts() {
+        return ownedNfts;
+    }
+
+    public long getAutoRenewSecs() {
+        return autoRenewSecs;
+    }
+
+    public Id getProxy() {
+        return proxy;
+    }
+
+    public Address getAccountAddress() {
+        return accountAddress;
+    }
+
+    public SortedMap<EntityNum, Long> getCryptoAllowances() {
+        return cryptoAllowances;
+    }
+
+    public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+        return fungibleTokenAllowances;
+    }
+
+    public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
+        return approveForAllNfts;
+    }
+
+    public int getNumTreasuryTitles() {
+        return numTreasuryTitles;
+    }
 
     @Override
     public boolean equals(Object obj) {

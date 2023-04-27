@@ -17,7 +17,7 @@
 package com.hedera.services.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
@@ -44,8 +44,9 @@ class AccountTest {
                 subjectId,
                 defaultLongValue,
                 defaultLongValue,
+                false,
                 ownedNfts,
-                alreadyUsedAutoAssociations,
+                defaultLongValue,
                 Id.DEFAULT,
                 alreadyUsedAutoAssociations,
                 null,
@@ -54,6 +55,24 @@ class AccountTest {
                 numAssociations,
                 numPositiveBalances,
                 numTreasuryTitles);
+    }
+
+    @Test
+    void objectContractWorks() {
+        final var TEST_LONG_VALUE = 0;
+
+        assertEquals(subjectId, subject.getId());
+        assertEquals(TEST_LONG_VALUE, subject.getExpiry());
+        assertFalse(subject.isDeleted());
+        assertEquals(TEST_LONG_VALUE, subject.getBalance());
+        assertEquals(TEST_LONG_VALUE, subject.getAutoRenewSecs());
+        assertEquals(ownedNfts, subject.getOwnedNfts());
+        assertEquals(Id.DEFAULT, subject.getProxy());
+        assertEquals(subjectId.asEvmAddress(), subject.getAccountAddress());
+        assertNull(subject.getCryptoAllowances());
+        assertNull(subject.getFungibleTokenAllowances());
+        assertNull(subject.getApproveForAllNfts());
+        assertEquals(numTreasuryTitles, subject.getNumTreasuryTitles());
     }
 
     @Test
