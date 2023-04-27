@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.domain;
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.migration.SidecarContractMigration;
@@ -35,15 +38,20 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ContractResultServiceImplTest {
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final EntityProperties entityProperties = new EntityProperties();
@@ -73,14 +81,15 @@ class ContractResultServiceImplTest {
                 entityProperties, entityIdService, entityListener, sidecarContractMigration, transactionHandlerFactory);
     }
 
-    private static Stream<EntityId> provideEntities() {
-        return Stream.of(null, EntityId.EMPTY);
-    }
-
     @ParameterizedTest
     @MethodSource("provideEntities")
-    void invalidContractLogId(EntityId entityId) {
-        RecordItem recordItem = recordItemBuilder.contractCreate().build();
+    @SneakyThrows
+    void verifiesEntityLookup(
+            Function<RecordItemBuilder, RecordItem> recordBuilder,
+            EntityId entityId,
+            boolean recoverableError,
+            CapturedOutput capturedOutput) {
+        var recordItem = recordBuilder.apply(recordItemBuilder);
         var transaction = domainBuilder
                 .transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
@@ -91,24 +100,35 @@ class ContractResultServiceImplTest {
         contractResultService.process(recordItem, transaction);
 
         verify(entityListener, times(1)).onContractResult(any());
+
+        if (recoverableError) {
+            assertThat(capturedOutput.getAll()).containsIgnoringCase(RECOVERABLE_ERROR);
+        } else {
+            assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR);
+        }
     }
 
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void lookupReturnsEmptyId(EntityId entityId) {
-        RecordItem recordItem = recordItemBuilder
-                .tokenMint(TokenType.FUNGIBLE_COMMON)
-                .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult()))
-                .build();
-        var transaction = domainBuilder
-                .transaction()
-                .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
-                .get();
+    private static Stream<Arguments> provideEntities() {
+        Function<RecordItemBuilder, RecordItem> withDefaultContractId =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setContractCallResult(
+                                builder.contractFunctionResult(ContractID.getDefaultInstance())))
+                        .build();
+        Function<RecordItemBuilder, RecordItem> withoutDefaultContractId =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
+                        .build();
 
-        when(entityIdService.lookup((ContractID) any())).thenReturn(Optional.ofNullable(entityId));
+        Function<RecordItemBuilder, RecordItem> contractCreate =
+                (RecordItemBuilder builder) -> builder.contractCreate().build();
 
-        contractResultService.process(recordItem, transaction);
-
-        verify(entityListener, times(1)).onContractResult(any());
+        return Stream.of(
+                Arguments.of(withoutDefaultContractId, null, true),
+                Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
+                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
+                Arguments.of(withDefaultContractId, null, false),
+                Arguments.of(contractCreate, EntityId.EMPTY, false),
+                Arguments.of(contractCreate, EntityId.EMPTY, false),
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5, EntityType.CONTRACT), false));
     }
 }
