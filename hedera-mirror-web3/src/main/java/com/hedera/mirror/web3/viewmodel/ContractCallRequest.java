@@ -30,7 +30,7 @@ import lombok.Data;
 import org.hibernate.validator.group.GroupSequenceProvider;
 
 @Data
-@GroupSequenceProvider(TransferValidation.class)
+@GroupSequenceProvider(ContractCallRequestValidation.class)
 public class ContractCallRequest {
 
     private static final int ADDRESS_LENGTH = 40;
@@ -55,8 +55,11 @@ public class ContractCallRequest {
     @Min(0)
     private long gasPrice;
 
-    @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
-    @NotEmpty
+    @Hex(
+            minLength = ADDRESS_LENGTH,
+            maxLength = ADDRESS_LENGTH,
+            groups = {TransferCheck.class, ContractCallRequest.class})
+    @NotEmpty(groups = {TransferCheck.class, ContractCallRequest.class})
     private String to;
 
     @PositiveOrZero

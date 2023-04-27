@@ -20,12 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
 
-public class TransferValidation implements DefaultGroupSequenceProvider<ContractCallRequest> {
+public class ContractCallRequestValidation implements DefaultGroupSequenceProvider<ContractCallRequest> {
     @Override
     public List<Class<?>> getValidationGroups(ContractCallRequest request) {
         List<Class<?>> sequence = new ArrayList<>();
 
-        if (request != null && request.getValue() >= 1) {
+        if (request != null && request.isEstimate()) {
+            sequence.add(EstimateCheck.class);
+        } else if (request != null && request.getValue() >= 1) {
             sequence.add(TransferCheck.class);
         }
         sequence.add(ContractCallRequest.class);
