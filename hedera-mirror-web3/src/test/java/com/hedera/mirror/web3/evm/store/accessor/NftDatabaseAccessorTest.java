@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class NftDatabaseAccessorTest extends Web3IntegrationTest {
+class NftDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final NftDatabaseAccessor nftDatabaseAccessor;
 

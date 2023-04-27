@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
+class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final NftAllowanceDatabaseAccessor nftAllowanceDatabaseAccessor;
 
@@ -32,6 +32,6 @@ public class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
     void testGet() {
         final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId()).get()).isEqualTo(allowance);
+        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId())).contains(allowance);
     }
 }

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class TokenAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
+class TokenAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final TokenAllowanceDatabaseAccessor tokenAllowanceDatabaseAccessor;
 
