@@ -94,7 +94,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 .orElse(EntityId.EMPTY);
         var isRecoverableError = EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
-                && !functionResult.getContractID().equals(ContractID.getDefaultInstance());
+                && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
 
         if (isRecoverableError) {
             log.error(
