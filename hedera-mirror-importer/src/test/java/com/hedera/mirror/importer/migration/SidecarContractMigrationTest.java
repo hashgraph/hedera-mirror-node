@@ -123,6 +123,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
         sidecarContractMigration.migrate(contractBytecodes);
 
         // then
+        assertThat(entityRepository.findAll()).extracting(Entity::getType).containsOnly(CONTRACT);
         assertThat(entityHistoryRepository.findAll())
                 .extracting(EntityHistory::getType)
                 .containsOnly(CONTRACT);
