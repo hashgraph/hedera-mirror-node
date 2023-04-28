@@ -28,6 +28,11 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ *
+ * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
+ * immutability is required for this model in order to be used seamlessly in the state.
+ */
 public class Account extends HederaEvmAccount {
     private final Id id;
     private final long expiry;
@@ -80,6 +85,32 @@ public class Account extends HederaEvmAccount {
         this.numTreasuryTitles = numTreasuryTitles;
     }
 
+    /**
+     * Creates new instance of {@link Account} with updated ownedNfts in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param ownedNfts
+     * @return the new instance of {@link Account} with updated {@link #ownedNfts} property
+     */
+    private Account createNewAccountWithNewOwnedNfts(Account oldAccount, long ownedNfts) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -108,6 +139,10 @@ public class Account extends HederaEvmAccount {
         return ownedNfts;
     }
 
+    public Account setOwnedNfts(long newOwnedNfts) {
+        return createNewAccountWithNewOwnedNfts(this, newOwnedNfts);
+    }
+
     public long getAutoRenewSecs() {
         return autoRenewSecs;
     }
@@ -134,6 +169,10 @@ public class Account extends HederaEvmAccount {
 
     public int getNumTreasuryTitles() {
         return numTreasuryTitles;
+    }
+
+    public int getNumPositiveBalances() {
+        return numPositiveBalances;
     }
 
     @Override
