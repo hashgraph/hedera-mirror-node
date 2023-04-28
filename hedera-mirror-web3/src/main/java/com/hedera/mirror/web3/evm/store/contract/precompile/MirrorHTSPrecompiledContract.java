@@ -38,17 +38,12 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final TokenAccessor tokenAccessor) {
         // We need to check if a precompile call was made with preceding non-static frame. This would mean there might
         // be an operation
-        // which modifies state. Currently we do not support speculative writes, so we should throw na error.
+        // which modifies state. Currently, we do not support speculative writes, so we should throw na error.
         if (frameContainsNonStaticFrameInStack(frame)) {
             throw new UnsupportedOperationException("Precompile not supported for non-static frames");
         }
 
         return super.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
-    }
-
-    @Override
-    public String getName() {
-        return "MirrorHTS";
     }
 
     private boolean frameContainsNonStaticFrameInStack(final MessageFrame messageFrame) {
