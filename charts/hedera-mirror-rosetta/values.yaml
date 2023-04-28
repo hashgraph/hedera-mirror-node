@@ -120,6 +120,8 @@ middleware:
       prefixes:
         - "/rosetta"
 
+nameOverride: ""
+
 nodeSelector: {}
 
 podAnnotations: {}
