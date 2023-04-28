@@ -668,8 +668,7 @@ public class Token {
         }
         final var numBurned = serialNumbers.size();
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
-        // TODO create new token with treasury
-        return changeSupply(-numBurned, FAIL_INVALID, false);
+        return createNewTokenWithNewTreasury(changeSupply(-numBurned, FAIL_INVALID, false), newTreasury);
     }
 
     /**

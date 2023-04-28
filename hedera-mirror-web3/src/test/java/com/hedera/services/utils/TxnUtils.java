@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -36,8 +38,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 
 public class TxnUtils {
     public static com.swirlds.common.system.transaction.Transaction mockTransaction(final byte[] contents) {
