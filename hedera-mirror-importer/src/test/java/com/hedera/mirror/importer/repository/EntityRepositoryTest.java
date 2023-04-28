@@ -347,17 +347,6 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
                 .isEmpty();
     }
 
-    @Test
-    void updateContractType() {
-        Entity entity = domainBuilder.entity().persist();
-        Entity entity2 = domainBuilder.entity().persist();
-        entityRepository.updateContractType(List.of(entity.getId(), entity2.getId()));
-        assertThat(entityRepository.findAll())
-                .hasSize(2)
-                .extracting(Entity::getType)
-                .allMatch(e -> e == CONTRACT);
-    }
-
     private void persistCryptoTransfer(long amount, long consensusTimestamp, long entityId) {
         domainBuilder
                 .cryptoTransfer()

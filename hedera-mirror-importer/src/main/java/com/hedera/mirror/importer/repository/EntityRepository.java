@@ -35,8 +35,4 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     @Modifying
     @Query(value = "refresh materialized view entity_state_start", nativeQuery = true)
     void refreshEntityStateStart();
-
-    @Modifying
-    @Query(value = "update entity set type = 'CONTRACT' where id in (:ids) and type <> 'CONTRACT'", nativeQuery = true)
-    int updateContractType(Iterable<Long> ids);
 }
