@@ -19,9 +19,9 @@ package com.hedera.mirror.web3.service.utils;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BinaryGasEstimatorTest extends Web3IntegrationTest {
     private final BinaryGasEstimator binaryGasEstimator;
+    private final MirrorNodeEvmProperties properties;
     private final AtomicInteger iterations = new AtomicInteger(0);
 
     /**
@@ -45,7 +46,7 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
      * which counts the iterations count.
      */
     @DisplayName("binarySearch")
-    @ParameterizedTest(name = "#{index} (low {0}, high {1}")
+    @ParameterizedTest(name = "#{index} (low {0}, high {1}, iterationLimit{2}")
     @CsvSource({
         "21000, 100000, 7",
         "35000, 15_000_000, 14",
@@ -58,7 +59,7 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
     void binarySearch(final long low, final long high, final int iterationLimit) {
         // First call with no failing contract calls for gasUsed reference
         final var regularCall = binaryGasEstimator.search(
-                (a, b) -> iterations.addAndGet(b), gas -> createTxnResult(low, false), low, high);
+                (a, b) -> iterations.addAndGet(b), gas -> createTxnResult(low, true), low, high);
 
         assertThat(regularCall).as("result must not go out of bounds").isBetween(low, high);
 
@@ -67,20 +68,32 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
                 .isCloseTo(low, Percentage.withPercentage(20));
 
         assertThat(iterations.get()).as("iteration limit").isLessThanOrEqualTo(iterationLimit);
+    }
 
-        // because of the random success of the transactions if we have single iteration the regularCall can be equal to
-        // callWithFails
-        if (iterations.get() > 1) {
-            // Call with semi-randomly failing contract calls
-            final var callWithFails =
-                    binaryGasEstimator.search((a, b) -> {}, gas -> createTxnResult(low, true), low, high);
+    @DisplayName("binarySearchWithFailingCalls")
+    @ParameterizedTest(name = "#{index} (low {0}, high {1}, regularCallGasUsage{2}")
+    @CsvSource({
+        "21000, 100000, 21617",
+        "35000, 15_000_000, 35913",
+        "1_000_000, 1_000_000_000, 1000952",
+        "21000, 15_000_000, 21914",
+        "1_000_000, 1_000_000_000, 1000952"
+    })
+    void binarySearchWithFailingCalls(final long low, final long high, final int regularCallGasUsage) {
+        // Call where every second contract call fails
+        final var callResult = binaryGasEstimator.search(
+                (a, b) -> iterations.addAndGet(b), gas -> createTxnResult(low, failEverySecondCall()), low, high);
 
-            // asserting that every revert while executing is treated like INSUFFICIENT_GAS
-            assertThat(callWithFails)
-                    .as("estimated gas in search containing failed calls transactions is higher than the one with "
-                            + "only successful transactions")
-                    .isGreaterThan(regularCall);
-        }
+        assertThat(callResult).as("result must not go out of bounds").isBetween(low, high);
+        assertThat(iterations.get())
+                .as("iteration limit")
+                .isLessThanOrEqualTo(properties.getMaxGasEstimateRetriesCount());
+
+        // asserting that every revert while executing is treated like INSUFFICIENT_GAS
+        assertThat(callResult)
+                .as("estimated gas in search containing failed calls transactions is higher than the one with "
+                        + "only successful transactions")
+                .isGreaterThan(regularCallGasUsage);
     }
 
     @Test
@@ -93,14 +106,19 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
         final var high = Long.MAX_VALUE;
         binaryGasEstimator.search((a, b) -> iterations.addAndGet(b), gas -> createTxnResult(0, false), low, high);
 
-        assertThat(iterations.get()).as("iteration limit").isLessThanOrEqualTo(20);
+        assertThat(iterations.get())
+                .as("iteration limit")
+                .isLessThanOrEqualTo(properties.getMaxGasEstimateRetriesCount());
     }
 
-    private HederaEvmTransactionProcessingResult createTxnResult(final long gasUsed, final boolean randomize) {
-        final boolean isSuccessful = !randomize ? true : new Random().nextBoolean();
+    private HederaEvmTransactionProcessingResult createTxnResult(final long gasUsed, final boolean isSuccessful) {
         if (!isSuccessful) {
             return HederaEvmTransactionProcessingResult.failed(gasUsed, 0, 0, Optional.empty(), Optional.empty());
         }
         return HederaEvmTransactionProcessingResult.successful(null, gasUsed, 0, 0, null, Address.ZERO);
+    }
+
+    private boolean failEverySecondCall() {
+        return iterations.get() > 0 && iterations.get() % 2 == 0;
     }
 }

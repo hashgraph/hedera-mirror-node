@@ -67,6 +67,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
 
+    // maximum iteration count for estimate gas' search algorithm
+    @Getter
+    private int maxGasEstimateRetriesCount = 20;
+
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)

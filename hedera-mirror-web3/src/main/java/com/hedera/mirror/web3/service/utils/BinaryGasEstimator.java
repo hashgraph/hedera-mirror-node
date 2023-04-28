@@ -37,7 +37,7 @@ public class BinaryGasEstimator {
         int iterationsMade = 0;
         long totalGasUsed = 0;
 
-        while (lo + 1 < hi && iterationsMade < 20) {
+        while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {
             long mid = (hi + lo) / 2;
             HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
             iterationsMade++;
