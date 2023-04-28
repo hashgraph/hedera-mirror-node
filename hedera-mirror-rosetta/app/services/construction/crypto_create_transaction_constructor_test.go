@@ -34,6 +34,7 @@ import (
 
 const (
 	initialBalance                       = 10
+	maxAutomaticTokenAssociations uint32 = 10
 )
 
 var (
@@ -173,6 +174,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 			SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 			SetKey(newAccountPublicKey).
+			SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 			SetProxyAccountID(proxyAccountId).
 			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 	}
@@ -211,6 +213,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
+					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 					SetProxyAccountID(proxyAccountId).
 					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
 			},
@@ -224,6 +227,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
+					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 					SetProxyAccountID(proxyAccountId)
 			},
 			expectError: true,
@@ -347,6 +351,7 @@ func assertCryptoCreateTransaction(
 	assert.NoError(t, err)
 	assert.Equal(t, operation.Metadata["key"], key.String())
 	assert.Equal(t, operation.Metadata["auto_renew_period"], int64(tx.GetAutoRenewPeriod().Seconds()))
+	assert.Equal(t, operation.Metadata["max_automatic_token_associations"], tx.GetMaxAutomaticTokenAssociations())
 	assert.Equal(t, operation.Metadata["memo"], tx.GetAccountMemo())
 	assert.Equal(t, operation.Metadata["proxy_account_id"], tx.GetProxyAccountID().String())
 }
@@ -359,6 +364,7 @@ func getCryptoCreateOperations() types.OperationSlice {
 		Metadata: map[string]interface{}{
 			"auto_renew_period":                autoRenewPeriod,
 			"key":                              newAccountPublicKey.String(),
+			"max_automatic_token_associations": maxAutomaticTokenAssociations,
 			"memo":                             memo,
 			"proxy_account_id":                 proxyAccountId.String(),
 		},
