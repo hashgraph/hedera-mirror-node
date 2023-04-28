@@ -259,6 +259,19 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
+    @Test
+    void precompileCallRevertsForEstimateGas() {
+        final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000003e4";
+        final var serviceParameters =
+                serviceParameters(tokenNameCall, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Precompile not supported for non-static frames");
+    }
+
     private CallServiceParameters serviceParameters(
             String callData, long value, CallType callType, boolean isStatic, Address contract) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
