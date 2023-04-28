@@ -22,9 +22,12 @@ package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
-
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -157,7 +160,7 @@ public class TestUtils {
 
     public TransactionHash getTransactionHashFromSqlFunction(JdbcTemplate jdbcTemplate, byte[] hash) {
         var sql = "SELECT * from get_transaction_info_by_hash(?)";
-        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), (Object) hash);
+        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), hash);
         return results.iterator().hasNext() ? results.iterator().next() : null;
     }
 
@@ -170,6 +173,19 @@ public class TestUtils {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
                 .setAccountNum(Long.parseLong(parts[2])).build();
+    }
+
+    public static ContractID toContractId(Entity contract) {
+        var contractId =
+                ContractID.newBuilder().setShardNum(contract.getShard()).setRealmNum(contract.getRealm());
+
+        if (contract.getEvmAddress() != null) {
+            contractId.setEvmAddress(DomainUtils.fromBytes(contract.getEvmAddress()));
+        } else {
+            contractId.setContractNum(contract.getNum());
+        }
+
+        return contractId.build();
     }
 
     public TransactionID toTransactionId(String transactionId) {

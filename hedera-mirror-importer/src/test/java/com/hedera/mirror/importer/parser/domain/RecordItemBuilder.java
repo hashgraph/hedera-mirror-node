@@ -917,7 +917,17 @@ public class RecordItemBuilder {
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
-            var sidecarRecords = this.sidecarRecords.stream().map(r -> r.build()).collect(Collectors.toList());
+            var contractId = record.getReceipt().getContractID();
+
+            var sidecarRecords = this.sidecarRecords.stream()
+                    .map(r -> {
+                        if (r.hasBytecode() && !contractId.equals(ContractID.getDefaultInstance())) {
+                            r.getBytecodeBuilder().setContractId(contractId);
+                        }
+                        return r.setConsensusTimestamp(record.getConsensusTimestamp())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
 
             return recordItemBuilder
                     .transactionRecordBytes(record.toByteArray())
