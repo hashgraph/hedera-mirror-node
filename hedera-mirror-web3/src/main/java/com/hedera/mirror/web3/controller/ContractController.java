@@ -60,17 +60,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @RestController
 class ContractController {
-
-    static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
-
     private final ContractCallService contractCallService;
     private final Bucket bucket;
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
-        if (request.isEstimate()) {
-            throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
-        }
 
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
@@ -96,14 +90,15 @@ class ContractController {
                 .sender(sender)
                 .receiver(receiver)
                 .callData(data)
-                .providedGasLimit(request.getGas())
+                .gas(request.getGas())
                 .value(request.getValue())
                 .isStatic(isStaticCall)
                 .callType(callType)
+                .isEstimate(request.isEstimate())
                 .build();
     }
 
-    // This is temporary method till estimate_gas business logic got impl.
+    /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {

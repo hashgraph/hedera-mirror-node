@@ -61,6 +61,8 @@ public class ResponseCodeUtil {
             var haltReason = maybeHaltReason.get();
             if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
                 return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+            } else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
+                return ResponseCodeEnum.INSUFFICIENT_GAS;
             }
         }
 
