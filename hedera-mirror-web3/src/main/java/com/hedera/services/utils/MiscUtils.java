@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
 
+import com.hedera.services.jproto.JKey;
 import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.DecoderException;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
 
@@ -48,6 +50,13 @@ public final class MiscUtils {
         return x;
     }
 
+    public static JKey asFcKeyUnchecked(final Key key) {
+        try {
+            return JKey.mapKey(key);
+        } catch (final DecoderException impermissible) {
+            throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
+        }
+    }
 
     public static Optional<JKey> asUsableFcKey(final Key key) {
         try {

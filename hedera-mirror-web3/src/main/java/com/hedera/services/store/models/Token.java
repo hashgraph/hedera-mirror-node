@@ -13,30 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.models;
-
-import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
+import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.jproto.JKey;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Encapsulates the state and operations of a Hedera token.
@@ -54,9 +55,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
  */
 public class Token {
     private final Id id;
-    private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
-    private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
-    private final Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
+    private final List<UniqueToken> mintedUniqueTokens;
+    private final List<UniqueToken> removedUniqueTokens;
+    private final Map<Long, UniqueToken> loadedUniqueTokens;
     private final boolean supplyHasChanged;
     private final TokenType type;
     private final TokenSupplyType supplyType;
@@ -84,12 +85,40 @@ public class Token {
     private final long autoRenewPeriod;
     private final long lastUsedSerialNumber;
 
-    public Token(Id id, boolean supplyHasChanged, TokenType type, TokenSupplyType supplyType, long totalSupply,
-                 long maxSupply, JKey kycKey, JKey freezeKey, JKey supplyKey, JKey wipeKey, JKey adminKey,
-                 JKey feeScheduleKey, JKey pauseKey, boolean frozenByDefault, Account treasury,
-                 Account autoRenewAccount, boolean deleted, boolean paused, long expiry, boolean isNew, String memo,
-                 String name, String symbol, int decimals, long autoRenewPeriod, long lastUsedSerialNumber) {
+    public Token(
+            Id id,
+            List<UniqueToken> mintedUniqueTokens,
+            List<UniqueToken> removedUniqueTokens,
+            Map<Long, UniqueToken> loadedUniqueTokens,
+            boolean supplyHasChanged,
+            TokenType type,
+            TokenSupplyType supplyType,
+            long totalSupply,
+            long maxSupply,
+            JKey kycKey,
+            JKey freezeKey,
+            JKey supplyKey,
+            JKey wipeKey,
+            JKey adminKey,
+            JKey feeScheduleKey,
+            JKey pauseKey,
+            boolean frozenByDefault,
+            Account treasury,
+            Account autoRenewAccount,
+            boolean deleted,
+            boolean paused,
+            long expiry,
+            boolean isNew,
+            String memo,
+            String name,
+            String symbol,
+            int decimals,
+            long autoRenewPeriod,
+            long lastUsedSerialNumber) {
         this.id = id;
+        this.mintedUniqueTokens = mintedUniqueTokens;
+        this.removedUniqueTokens = removedUniqueTokens;
+        this.loadedUniqueTokens = loadedUniqueTokens;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
         this.supplyType = supplyType;
@@ -126,12 +155,77 @@ public class Token {
      * @return the new instance of {@link Token} with updated {@link #totalSupply} property
      */
     private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType, totalSupply,
-                oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey, oldToken.wipeKey,
-                oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey, oldToken.frozenByDefault,
-                oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted, oldToken.paused, oldToken.expiry,
-                oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol, oldToken.decimals,
-                oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated treasury in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param treasury
+     * @return new instance of {@link Token} with updated {@link #treasury} property
+     */
+    private Token createNewTokenWithNewTreasury(Token oldToken, Account treasury) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -143,12 +237,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #lastUsedSerialNumber} property
      */
     private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                lastUsedSerialNumber);
     }
 
     /**
@@ -159,12 +277,36 @@ public class Token {
      * @return new instance of {@link Token} with {@link #deleted} property set to true
      */
     private Token createNewDeletedToken(Token oldToken) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, true,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                true,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                lastUsedSerialNumber);
     }
 
     /**
@@ -176,12 +318,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #type} property
      */
     private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, tokenType, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, oldToken.kycKey, oldToken.freezeKey, oldToken.supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                tokenType,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                lastUsedSerialNumber);
     }
 
     /**
@@ -193,12 +359,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #kycKey} property
      */
     private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -210,12 +400,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #freezeKey} property
      */
     private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, kycKey, freezeKey, oldToken.supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -227,12 +441,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #supplyKey} property
      */
     private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, supplyKey,
-                oldToken.wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -244,12 +482,36 @@ public class Token {
      * @return new instance of {@link Token} with updated {@link #wipeKey} property
      */
     private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
-        return new Token(oldToken.id, oldToken.supplyHasChanged, oldToken.type, oldToken.supplyType,
-                oldToken.totalSupply, oldToken.maxSupply, kycKey, oldToken.freezeKey, oldToken.supplyKey,
-                wipeKey, oldToken.adminKey, oldToken.feeScheduleKey, oldToken.pauseKey,
-                oldToken.frozenByDefault, oldToken.treasury, oldToken.autoRenewAccount, oldToken.deleted,
-                oldToken.paused, oldToken.expiry, oldToken.isNew, oldToken.memo, oldToken.name, oldToken.symbol,
-                oldToken.decimals, oldToken.autoRenewPeriod, oldToken.lastUsedSerialNumber);
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber);
     }
 
     /**
@@ -279,13 +541,36 @@ public class Token {
         final var supplyKey = asUsableFcKey(op.getSupplyKey());
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
-        final var token = new Token(tokenId, false, mapToDomain(op.getTokenType()), op.getSupplyType(),
+        final var token = new Token(
+                tokenId,
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new HashMap<>(),
+                false,
+                mapToDomain(op.getTokenType()),
+                op.getSupplyType(),
+                0,
                 op.getMaxSupply(),
-                op.getMaxSupply(), kycKey.get(), freezeKey.get(), supplyKey.get(), wipeKey.get(), adminKey.get(),
-                feeScheduleKey.get(), pauseKey.get(), op.getFreezeDefault(), treasury, autoRenewAccount, false, false
-                , tokenExpiry, true, op.getMemo(), op.getName(), op.getSymbol(), op.getDecimals(),
-                op.getAutoRenewPeriod()
-                        .getSeconds(), 0);
+                kycKey.orElse(null),
+                freezeKey.orElse(null),
+                supplyKey.orElse(null),
+                wipeKey.orElse(null),
+                adminKey.orElse(null),
+                feeScheduleKey.orElse(null),
+                pauseKey.orElse(null),
+                op.getFreezeDefault(),
+                treasury,
+                autoRenewAccount,
+                false,
+                false,
+                tokenExpiry,
+                true,
+                op.getMemo(),
+                op.getName(),
+                op.getSymbol(),
+                op.getDecimals(),
+                op.getAutoRenewPeriod().getSeconds(),
+                0);
         return token;
     }
 
@@ -305,6 +590,7 @@ public class Token {
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token mint(final long amount, final boolean ignoreSupplyKey) {
+        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT);
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
@@ -323,9 +609,7 @@ public class Token {
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token mint(
-            final OwnershipTracker ownershipTracker,
-            final List<ByteString> metadata,
-            final RichInstant creationTime) {
+            final OwnershipTracker ownershipTracker, final List<ByteString> metadata, final RichInstant creationTime) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -345,8 +629,9 @@ public class Token {
             mintedUniqueTokens.add(uniqueToken);
             ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
         }
-        treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        return createNewTokenWithNewLastUsedSerialNumber(newToken, lastUsedSerialNumber);
+        var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
+        return createNewTokenWithNewLastUsedSerialNumber(
+                createNewTokenWithNewTreasury(newToken, newTreasury), lastUsedSerialNumber);
     }
 
     /**
@@ -356,19 +641,18 @@ public class Token {
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token burn(final long amount) {
+        validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT);
         return changeSupply(-amount, INVALID_TOKEN_BURN_AMOUNT, false);
     }
 
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param ownershipTracker     - a tracker of changes made to the nft ownership
-     * @param serialNumbers        - the serial numbers, representing the unique tokens which will be destroyed.
+     * @param ownershipTracker - a tracker of changes made to the nft ownership
+     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be destroyed.
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token burn(
-            final OwnershipTracker ownershipTracker,
-            final List<Long> serialNumbers) {
+    public Token burn(final OwnershipTracker ownershipTracker, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
@@ -379,17 +663,19 @@ public class Token {
             final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
             ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
-            removedUniqueTokens.add(new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[]{}));
+            removedUniqueTokens.add(
+                    new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
         final var numBurned = serialNumbers.size();
-        treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
+        var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
+        // TODO create new token with treasury
         return changeSupply(-numBurned, FAIL_INVALID, false);
     }
 
     /**
      * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
      *
-     * @param amount     - amount to be wiped
+     * @param amount - amount to be wiped
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public Token wipe(final long amount) {
@@ -397,7 +683,8 @@ public class Token {
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
                 "Fungible wipe can be invoked only on Fungible token type.");
-
+        baseWipeValidations();
+        amountWipeValidations(amount);
         final var newTotalSupply = totalSupply - amount;
         return createNewTokenWithNewTotalSupply(this, newTotalSupply);
     }
@@ -410,9 +697,7 @@ public class Token {
      * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token wipe(
-            final OwnershipTracker ownershipTracker,
-            final List<Long> serialNumbers) {
+    public Token wipe(final OwnershipTracker ownershipTracker, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
@@ -422,26 +707,10 @@ public class Token {
         }
 
         final var newTotalSupply = totalSupply - serialNumbers.size();
-        final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
-        final var account = accountRel.getAccount();
-        for (final long serialNum : serialNumbers) {
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
-            removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
-        }
-
-        if (newAccountBalance == 0) {
-            final var currentNumPositiveBalances = account.getNumPositiveBalances();
-            account.setNumPositiveBalances(currentNumPositiveBalances - 1);
-        }
-
-        account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
         return createNewTokenWithNewTotalSupply(this, newTotalSupply);
     }
 
-    private Token changeSupply(
-            final long amount,
-            final ResponseCodeEnum negSupplyCode,
-            final boolean ignoreSupplyKey) {
+    private Token changeSupply(final long amount, final ResponseCodeEnum negSupplyCode, final boolean ignoreSupplyKey) {
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
@@ -456,6 +725,17 @@ public class Token {
         return createNewTokenWithNewTotalSupply(this, newTotalSupply);
     }
 
+    private void baseWipeValidations() {
+        validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, "Cannot wipe Tokens without wipe key.");
+    }
+
+    private void amountWipeValidations(final long amount) {
+        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT);
+
+        final var newTotalSupply = totalSupply - amount;
+        validateTrue(
+                newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
+    }
 
     public Token delete() {
         validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);

@@ -13,22 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.BitPackUtils.codeFromNum;
-import static com.hedera.services.utils.BitPackUtils.isValidNum;
-import static com.hedera.services.utils.BitPackUtils.numFromCode;
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.services.utils.BitPackUtils.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.datatypes.Address;
-
-import com.hedera.services.store.models.Id;
-
-import static com.hedera.services.utils.BitPackUtils.perm64;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in structured data
@@ -61,12 +53,14 @@ public class EntityNum implements Comparable<EntityNum> {
         }
         return fromLong(grpc.getAccountNum());
     }
+
     public static EntityNum fromTokenId(final TokenID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getTokenNum());
     }
+
     public int intValue() {
         return value;
     }
