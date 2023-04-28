@@ -75,7 +75,7 @@ public class Token {
     private final Account autoRenewAccount;
     private final boolean deleted;
     private final boolean paused;
-    private final boolean autoRemoved = false;
+    private final boolean autoRemoved;
     private final long expiry;
     private final boolean isNew;
     private final String memo;
@@ -85,6 +85,7 @@ public class Token {
     private final long autoRenewPeriod;
     private final long lastUsedSerialNumber;
 
+    @SuppressWarnings("java:S107")
     public Token(
             Id id,
             List<UniqueToken> mintedUniqueTokens,
@@ -107,6 +108,7 @@ public class Token {
             Account autoRenewAccount,
             boolean deleted,
             boolean paused,
+            boolean autoRemoved,
             long expiry,
             boolean isNew,
             String memo,
@@ -136,6 +138,7 @@ public class Token {
         this.autoRenewAccount = autoRenewAccount;
         this.deleted = deleted;
         this.paused = paused;
+        this.autoRemoved = autoRemoved;
         this.expiry = expiry;
         this.isNew = isNew;
         this.memo = memo;
@@ -177,6 +180,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -218,6 +222,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -259,6 +264,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -299,6 +305,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 true,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -340,6 +347,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -381,6 +389,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -422,6 +431,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -463,6 +473,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -504,6 +515,7 @@ public class Token {
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
+                oldToken.autoRemoved,
                 oldToken.expiry,
                 oldToken.isNew,
                 oldToken.memo,
@@ -541,7 +553,7 @@ public class Token {
         final var supplyKey = asUsableFcKey(op.getSupplyKey());
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
-        final var token = new Token(
+        return new Token(
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -563,6 +575,7 @@ public class Token {
                 autoRenewAccount,
                 false,
                 false,
+                false,
                 tokenExpiry,
                 true,
                 op.getMemo(),
@@ -571,7 +584,6 @@ public class Token {
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
                 0);
-        return token;
     }
 
     // copied from TokenTypesManager in services
@@ -618,20 +630,20 @@ public class Token {
                 "Non-fungible mint can be invoked only on non-fungible token type");
         validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
         var newToken = changeSupply(metadataCount, FAIL_INVALID, false);
-        long lastUsedSerialNumber = this.lastUsedSerialNumber;
+        long newLastUsedSerialNumber = this.lastUsedSerialNumber;
 
         for (final ByteString m : metadata) {
-            lastUsedSerialNumber++;
+            newLastUsedSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
             // Treasury
             final var uniqueToken =
-                    new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
+                    new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
-            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
+            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), newLastUsedSerialNumber));
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
         return createNewTokenWithNewLastUsedSerialNumber(
-                createNewTokenWithNewTreasury(newToken, newTreasury), lastUsedSerialNumber);
+                createNewTokenWithNewTreasury(newToken, newTreasury), newLastUsedSerialNumber);
     }
 
     /**

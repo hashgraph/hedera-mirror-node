@@ -111,6 +111,7 @@ class TokenTest {
                 null,
                 false,
                 false,
+                false,
                 expiry,
                 true,
                 "the mother",
@@ -164,14 +165,6 @@ class TokenTest {
         assertNotNull(subject.getFeeScheduleKey());
         assertNotNull(subject.getPauseKey());
         assertFalse(subject.isPaused());
-    }
-
-    @Test
-    void okCreationRelationship() {
-        final var frzKey = someKey;
-        final var kycKey = someKey;
-        subject = subject.setFreezeKey(frzKey);
-        subject = subject.setKycKey(kycKey);
     }
 
     // will be added with TokenRelationship logic
@@ -293,6 +286,7 @@ class TokenTest {
                 null,
                 false,
                 false,
+                false,
                 expiry,
                 true,
                 "the mother",
@@ -408,6 +402,7 @@ class TokenTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void uniqueMintFailsAsExpected() {
         subject = new Token(
                 tokenId,
@@ -429,6 +424,7 @@ class TokenTest {
                 false,
                 treasuryAccount,
                 null,
+                false,
                 false,
                 false,
                 expiry,
@@ -475,6 +471,7 @@ class TokenTest {
                 false,
                 treasuryAccount,
                 null,
+                false,
                 false,
                 false,
                 expiry,

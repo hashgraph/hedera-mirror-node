@@ -19,12 +19,11 @@ package com.hedera.services.jproto;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 
-/** Maps to proto Key of type ECDSA_secp256k1Key */
+/**
+ * Maps to proto Key of type ECDSA_secp256k1Key
+ */
 public class JECDSASecp256k1Key extends JKey {
     private final byte[] ecdsaSecp256k1Key;
-
-    private static final byte ODD_PARITY = (byte) 0x03;
-    private static final byte EVEN_PARITY = (byte) 0x02;
     public static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
 
     public JECDSASecp256k1Key(final byte[] ecdsaSecp256k1Key) {
