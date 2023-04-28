@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,12 +18,19 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+package com.hedera.mirror.importer.parser.record.entity;
+
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
@@ -33,6 +38,25 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.repository.ContractActionRepository;
+import com.hedera.mirror.importer.repository.ContractLogRepository;
+import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
+import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -68,25 +92,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
-
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractState;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.repository.ContractActionRepository;
-import com.hedera.mirror.importer.repository.ContractLogRepository;
-import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
-import com.hedera.mirror.importer.repository.ContractStateRepository;
-import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.ContractBytecode;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -476,6 +481,86 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractStateChanges(recordItem),
                 () -> assertThat(entityRepository.findAll()).containsExactly(setupResult.entity)
         );
+    }
+
+    @Test
+    void contractUpdateSidecarMigrationNoExisting() {
+        // given
+        var runtimeBytecode = new byte[] {0, 1, 2};
+        var contractBytecode = ContractBytecode.newBuilder().setRuntimeBytecode(fromBytes(runtimeBytecode));
+        var sidecar = TransactionSidecarRecord.newBuilder().setMigration(true).setBytecode(contractBytecode);
+        var recordItem = recordItemBuilder
+                .contractUpdate()
+                .sidecarRecords(s -> s.add(sidecar))
+                .build();
+        var entityId =
+                EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        softly.assertThat(entityRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entityId.getId(), Entity::getId)
+                .returns(entityId.getEntityNum(), Entity::getNum)
+                .returns(entityId.getRealmNum(), Entity::getRealm)
+                .returns(entityId.getShardNum(), Entity::getShard)
+                .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
+                .returns(null, Entity::getTimestampUpper)
+                .returns(CONTRACT, Entity::getType);
+        softly.assertThat(entityHistoryRepository.count()).isZero();
+        softly.assertThat(contractRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entityId.getId(), Contract::getId)
+                .returns(runtimeBytecode, Contract::getRuntimeBytecode);
+    }
+
+    @Test
+    void contractUpdateSidecarMigrationExisting() {
+        // given
+        var entity = domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(null).type(ACCOUNT))
+                .persist();
+        var contract =
+                domainBuilder.contract().customize(c -> c.id(entity.getId())).persist();
+        var contractId = TestUtils.toContractId(entity);
+        var runtimeBytecode = new byte[] {0, 1, 2};
+        var contractBytecode = ContractBytecode.newBuilder().setRuntimeBytecode(fromBytes(runtimeBytecode));
+        var sidecar = TransactionSidecarRecord.newBuilder().setMigration(true).setBytecode(contractBytecode);
+        var recordItem = recordItemBuilder
+                .contractUpdate()
+                .sidecarRecords(s -> s.add(sidecar))
+                .receipt(r -> r.setContractID(contractId))
+                .transactionBody(b -> b.setContractID(contractId))
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        softly.assertThat(entityRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entity.getId(), Entity::getId)
+                .returns(entity.getNum(), Entity::getNum)
+                .returns(entity.getRealm(), Entity::getRealm)
+                .returns(entity.getShard(), Entity::getShard)
+                .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
+                .returns(null, Entity::getTimestampUpper)
+                .returns(CONTRACT, Entity::getType);
+        softly.assertThat(entityHistoryRepository.findAll())
+                .hasSize(1)
+                .extracting(e -> e.getType())
+                .containsOnly(CONTRACT);
+        softly.assertThat(contractRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(contract.getId(), Contract::getId)
+                .returns(runtimeBytecode, Contract::getRuntimeBytecode);
     }
 
     @ParameterizedTest

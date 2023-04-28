@@ -75,17 +75,19 @@ class CloudStorageConfiguration {
     }
 
     private AwsCredentialsProvider awsCredentialsProvider(StreamSourceProperties sourceProperties) {
+        var type = sourceProperties.getType();
+
         if (commonDownloaderProperties.isAnonymousCredentials()) {
-            log.info("Setting up S3 async client using anonymous credentials");
+            log.info("Setting up {} client using anonymous credentials", type);
             return AnonymousCredentialsProvider.create();
         } else if (sourceProperties.isStaticCredentials()) {
-            log.info("Setting up S3 async client using provided access/secret key");
+            log.info("Setting up {} client using provided access/secret key", type);
             var credentials = sourceProperties.getCredentials();
             return StaticCredentialsProvider.create(AwsBasicCredentials.create(credentials.getAccessKey(),
                     credentials.getSecretKey()));
         }
 
-        log.info("Setting up S3 async client using AWS Default Credentials Provider");
+        log.info("Setting up {} client using default credentials provider", type);
         return DefaultCredentialsProvider.create();
     }
 
