@@ -373,39 +373,11 @@ func (suite *transactionRepositorySuite) TestFindBetween() {
 
 func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGenesisTimestamp() {
 	// given
-	// token1 created at genesisTimestamp - 1 and token2 created at genesisTimestamp
 	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp-1, treasury).Persist()
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp, treasury).Persist()
 
 	transaction := tdomain.NewTransactionBuilder(dbClient, treasury, genesisTimestamp+10).Persist()
-	// add token transfers, should not be included in Transaction.Operations
 	transferTimestamp := transaction.ConsensusTimestamp
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId1).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(treasury).
-		Amount(-10).
-		TokenId(encodedTokenId1).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId2).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(treasury).
-		Amount(-10).
-		TokenId(encodedTokenId2).
-		Timestamp(transferTimestamp).
-		Persist()
 	// add crypto transfers
 	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-20).EntityId(treasury).Timestamp(transferTimestamp).Persist()
 	tdomain.NewCryptoTransferBuilder(dbClient).Amount(20).EntityId(3).Timestamp(transferTimestamp).Persist()
@@ -439,19 +411,6 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 	// then
 	assert.Nil(suite.T(), err)
 	assert.ElementsMatch(suite.T(), expected, actual)
-}
-
-func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
-	// given
-	expected := suite.setupDb()
-	t := NewTransactionRepository(dbClient)
-
-	// when
-	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assertTransactions(suite.T(), expected, actual)
 }
 
 func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
@@ -645,11 +604,6 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 	}
 	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Memo: []byte{}, Operations: operations2}
 
-	tdomain.NewTokenBuilder(dbClient, tokenId2.EncodedId, genesisTimestamp+3, firstEntityId.EncodedId).
-		Decimals(tokenDecimals).
-		InitialSupply(tokenInitialSupply).
-		Persist()
-
 	// token create transaction
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
@@ -677,7 +631,7 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		},
 	}
 
-	// nft create
+	// originally, this was an nft create.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -703,7 +657,7 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		},
 	}
 
-	// nft mint
+	// originally, this was an nft mint.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -729,7 +683,7 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		},
 	}
 
-	// nft transfer
+	// originally, this was an nft transfer.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -877,23 +831,5 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		expectedTransaction1, expectedTransaction2, expectedTransaction3, expectedTransaction4,
 		expectedTransaction5, expectedTransaction6, expectedTransaction7, expectedTransaction8,
 		expectedTransaction9,
-	}
-}
-
-func getFungibleTokenAmount(amount, decimals int64, tokenId domain.EntityId) *types.TokenAmount {
-	return &types.TokenAmount{
-		Decimals: decimals,
-		TokenId:  tokenId,
-		Type:     domain.TokenTypeFungibleCommon,
-		Value:    amount,
-	}
-}
-
-func getNftTokenAmount(amount, serialNumber int64, tokenId domain.EntityId) *types.TokenAmount {
-	return &types.TokenAmount{
-		SerialNumbers: []int64{serialNumber},
-		TokenId:       tokenId,
-		Type:          domain.TokenTypeNonFungibleUnique,
-		Value:         amount,
 	}
 }

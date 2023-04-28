@@ -48,15 +48,6 @@ const (
 )
 
 const (
-	encodedTokenId1 = int64(1000) + iota
-	encodedTokenId2
-	encodedTokenId3
-	encodedTokenId4
-	encodedTokenId5
-	encodedTokenId6
-)
-
-const (
 	accountDeleteTimestamp         = secondSnapshotTimestamp + 180
 	account1CreatedTimestamp       = firstSnapshotTimestamp - 100
 	account2DeletedTimestamp       = account1CreatedTimestamp - 1
@@ -78,15 +69,6 @@ const (
 var (
 	cryptoTransferAmounts = []int64{150, -178}
 	defaultContext        = context.Background()
-	token1TransferAmounts = []int64{10, -5, 153}
-	token2TransferAmounts = []int64{20, -7}
-	token3ReceivedSerials = []int64{3, 4, 5}
-	token3SentSerials     = []int64{5}
-
-	token1 domain.Token
-	token2 domain.Token
-	token3 domain.Token
-	token4 domain.Token
 
 	// account3 has ecdsaSecp256k1 alias, account4 has ed25519 alias, account5 has invalid alias
 	account3Alias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
@@ -120,63 +102,14 @@ func (suite *accountRepositorySuite) SetupSuite() {
 
 func (suite *accountRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	associatedTokenAccounts := make([]domain.TokenAccount, 0)
 
 	tdomain.NewEntityBuilder(dbClient, account1, account1CreatedTimestamp, domain.EntityTypeAccount).
 		Alias(suite.accountAlias).
 		Persist()
 
-	// persist tokens and tokenAccounts
-	token1 = tdomain.NewTokenBuilder(dbClient, encodedTokenId1, firstSnapshotTimestamp+1, treasury).Persist()
-	ta := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+2).Persist()
-	associatedTokenAccounts = append(associatedTokenAccounts, ta)
-
-	token2 = tdomain.NewTokenBuilder(dbClient, encodedTokenId2, firstSnapshotTimestamp+2, treasury).Persist()
-	ta2 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+2).
-		Historical(true).
-		TimestampRange(token2.CreatedTimestamp+2, dissociateTimestamp).
-		Persist()
-	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta2).
-		Associated(false, dissociateTimestamp).
-		Historical(false).
-		Persist()
-
-	token3 = tdomain.NewTokenBuilder(dbClient, encodedTokenId3, firstSnapshotTimestamp+3, treasury).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
-	ta3 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId3, token3.CreatedTimestamp+2).
-		Historical(true).
-		TimestampRange(token3.CreatedTimestamp+2, dissociateTimestamp).
-		Persist()
-	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta3).
-		Associated(false, dissociateTimestamp).
-		Historical(false).
-		Persist()
-
-	// account1's token4 balance is always 0
-	token4 = tdomain.NewTokenBuilder(dbClient, encodedTokenId4, firstSnapshotTimestamp+4, treasury).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
-	ta = tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId4, token4.CreatedTimestamp+2).Persist()
-	associatedTokenAccounts = append(associatedTokenAccounts, ta)
-
-	// token5 is created before firstSnapshotTimestamp
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId5, firstSnapshotTimestamp-1, treasury).Persist()
-	ta = tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId5, firstSnapshotTimestamp+2).Persist()
-	associatedTokenAccounts = append(associatedTokenAccounts, ta)
-
-	// token6 is created at firstSnapshotTimestamp
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId6, firstSnapshotTimestamp, treasury).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
-	ta = tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId6, firstSnapshotTimestamp+3).Persist()
-	associatedTokenAccounts = append(associatedTokenAccounts, ta)
-
 	// account balance files
 	tdomain.NewAccountBalanceFileBuilder(dbClient, firstSnapshotTimestamp).
 		AddAccountBalance(account1, initialAccountBalance).
-		AddTokenBalance(account1, encodedTokenId5, 12).
-		AddTokenBalance(account1, encodedTokenId6, 5).
 		Persist()
 	tdomain.NewAccountBalanceFileBuilder(dbClient, thirdSnapshotTimestamp).Persist()
 
@@ -220,117 +153,6 @@ func (suite *accountRepositorySuite) SetupTest() {
 		EntityId(account1).
 		Timestamp(accountDeleteTimestamp).
 		Persist()
-
-	// token transfers happened at <= first snapshot timestamp
-	tdomain.NewTokenTransferBuilder(dbClient).
-		Amount(17).
-		AccountId(account1).
-		Timestamp(firstSnapshotTimestamp - 1).
-		TokenId(encodedTokenId5).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		Amount(-2).
-		AccountId(account1).
-		Timestamp(firstSnapshotTimestamp).
-		TokenId(encodedTokenId5).
-		Persist()
-
-	// token transfers happened at > first snapshot timestamp
-	// token1 transfers, the last transfer happened at after dissociate timestamp
-	transferTimestamps := []int64{token1.CreatedTimestamp + 2, token1.CreatedTimestamp + 3, dissociateTimestamp + 1}
-	for i, amount := range token1TransferAmounts {
-		tdomain.NewTokenTransferBuilder(dbClient).
-			AccountId(account1).
-			Amount(amount).
-			Timestamp(transferTimestamps[i]).
-			TokenId(encodedTokenId1).
-			Persist()
-	}
-	// token2 transfers
-	transferTimestamps = []int64{token2.CreatedTimestamp + 2, token2.CreatedTimestamp + 3}
-	for i, amount := range token2TransferAmounts {
-		tdomain.NewTokenTransferBuilder(dbClient).
-			AccountId(account1).
-			Amount(amount).
-			Timestamp(transferTimestamps[i]).
-			TokenId(encodedTokenId2).
-			Persist()
-	}
-	// token5 transfer will not affect balance since token5 is created before first snapshot
-	tdomain.NewTokenTransferBuilder(dbClient).AccountId(account1).
-		Amount(100).
-		Timestamp(firstSnapshotTimestamp + 10).
-		TokenId(encodedTokenId5).
-		Persist()
-
-	// nft transfers happened at <= first snapshot timestamp
-	tdomain.NewNftTransferBuilder(dbClient).
-		SenderAccountId(treasury).
-		ReceiverAccountId(account1).
-		SerialNumber(1).
-		Timestamp(firstSnapshotTimestamp - 1).
-		TokenId(encodedTokenId6).
-		Persist()
-	tdomain.NewNftTransferBuilder(dbClient).
-		SenderAccountId(treasury).
-		ReceiverAccountId(account1).
-		SerialNumber(2).
-		Timestamp(firstSnapshotTimestamp).
-		TokenId(encodedTokenId6).
-		Persist()
-
-	// nft transfers happened at > first snapshot timestamp
-	// the net change for account is 2 (received 3 [3, 4, 5], and sent 1 [5])
-	transferTimestamp := token3.CreatedTimestamp + 3
-	for _, serial := range token3ReceivedSerials {
-		tdomain.NewNftTransferBuilder(dbClient).
-			ReceiverAccountId(account1).
-			SenderAccountId(treasury).
-			SerialNumber(serial).
-			Timestamp(transferTimestamp).
-			TokenId(encodedTokenId3).
-			Persist()
-		transferTimestamp++
-	}
-	// add a self transfer
-	tdomain.NewNftTransferBuilder(dbClient).
-		ReceiverAccountId(account1).
-		SenderAccountId(account1).
-		SerialNumber(token3ReceivedSerials[0]).
-		Timestamp(transferTimestamp).
-		TokenId(encodedTokenId3).
-		Persist()
-	transferTimestamp++
-	// transfer serial 5 from account1 to treasury
-	for _, serial := range token3SentSerials {
-		tdomain.NewNftTransferBuilder(dbClient).
-			ReceiverAccountId(treasury).
-			SenderAccountId(account1).
-			SerialNumber(serial).
-			Timestamp(transferTimestamp).
-			TokenId(encodedTokenId3).
-			Persist()
-		transferTimestamp++
-	}
-	// token6 transfer will not affect balance since token6 is created before first snapshot
-	tdomain.NewNftTransferBuilder(dbClient).
-		ReceiverAccountId(account1).
-		SenderAccountId(treasury).
-		SerialNumber(1).
-		Timestamp(firstSnapshotTimestamp + 10).
-		TokenId(encodedTokenId6).
-		Persist()
-
-	// dissociate other tokens before account delete timestamp
-	for _, ta := range associatedTokenAccounts {
-		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
-			Historical(true).
-			TimestampRange(ta.TimestampRange.Lower.Int, accountDeleteTimestamp-1).
-			Persist()
-		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
-			Associated(false, accountDeleteTimestamp-1).
-			Persist()
-	}
 
 	// accounts for GetAccountAlias tests
 	tdomain.NewEntityBuilder(dbClient, account3, account3CreatedTimestamp, domain.EntityTypeAccount).

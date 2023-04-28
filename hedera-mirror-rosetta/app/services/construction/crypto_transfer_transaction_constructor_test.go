@@ -47,7 +47,6 @@ var (
 		{accountId: accountIdB, amount: &types.HbarAmount{Value: 15}},
 	}
 	outOfRangeAccountId = hedera.AccountID{Shard: 2 << 15, Realm: 2 << 16, Account: 2<<32 + 5}
-	outOfRangeTokenId   = hedera.TokenID{Shard: 2 << 15, Realm: 2 << 16, Token: 2 << 32}
 )
 
 type transferOperation struct {
@@ -306,11 +305,6 @@ func assertCryptoTransferTransaction(
 func operationTransferStringify(operation types.Operation) string {
 	serialNumber := int64(0)
 	amount := operation.Amount
-	if tokenAmount, ok := amount.(*types.TokenAmount); ok {
-		if len(tokenAmount.SerialNumbers) > 0 {
-			serialNumber = tokenAmount.SerialNumbers[0]
-		}
-	}
 	return fmt.Sprintf("%s_%d_%s_%d_%d", operation.AccountId.ToSdkAccountId(), amount.GetValue(), amount.GetSymbol(),
 		amount.GetDecimals(), serialNumber)
 }

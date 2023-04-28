@@ -77,15 +77,12 @@ const (
 )
 
 type accountBalanceChange struct {
-	TokenAssociations string
-	TokenValues       string
 	Value             int64
 }
 
 type combinedAccountBalance struct {
 	ConsensusTimestamp int64
 	Balance            int64
-	TokenBalances      string
 }
 
 // accountRepository struct that has connection to the Database

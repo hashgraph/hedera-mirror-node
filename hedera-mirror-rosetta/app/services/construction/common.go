@@ -204,30 +204,22 @@ func parseTokenFreezeKyc(operationType string, transaction interfaces.Transactio
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	accountId, err := types.NewAccountIdFromSdkAccountId(account)
+	_, err := types.NewAccountIdFromSdkAccountId(account)
 	if err != nil {
 		return nil, nil, errors.ErrInvalidAccount
 	}
 
-	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payer)
+	_, err = types.NewAccountIdFromSdkAccountId(*payer)
 	if err != nil {
 		return nil, nil, errors.ErrInvalidAccount
 	}
 
-	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
+	_, err = domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
 		return nil, nil, errors.ErrInvalidToken
 	}
 
-	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
-	operation := types.Operation{
-		AccountId: accountId,
-		Amount:    types.NewTokenAmount(domainToken, 0),
-		Metadata:  map[string]interface{}{"payer": payer.String()},
-		Type:      operationType,
-	}
-
-	return types.OperationSlice{operation}, []types.AccountId{payerAccountId}, nil
+	return nil, nil, nil
 }
 
 func preprocessTokenFreezeKyc(
@@ -254,13 +246,7 @@ func preprocessTokenFreezeKyc(
 		return nil, nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
-	tokenAmount, ok := amount.(*types.TokenAmount)
-	if !ok {
-		return nil, nil, nil, errors.ErrInvalidCurrency
-	}
-	tokenId := tokenAmount.GetSdkTokenId()
-
-	return &payerAccountId, &operation.AccountId, &tokenId, nil
+	return &payerAccountId, &operation.AccountId, nil, nil
 }
 
 func validateOperations(operations types.OperationSlice, size int, opType string, expectNilAmount bool) *rTypes.Error {
