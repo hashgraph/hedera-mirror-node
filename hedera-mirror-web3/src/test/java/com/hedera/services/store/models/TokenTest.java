@@ -52,7 +52,6 @@ import org.mockito.Mockito;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNumPair;
 
 class TokenTest {
     private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();

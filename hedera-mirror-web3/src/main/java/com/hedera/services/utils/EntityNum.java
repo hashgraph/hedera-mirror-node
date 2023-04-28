@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.services.store.models.Id;
 
+import static com.hedera.services.utils.BitPackUtils.perm64;
+
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in structured data
  * using this type, when compared to the {@code java.lang.Integer} boxed type.
@@ -53,43 +55,18 @@ public class EntityNum implements Comparable<EntityNum> {
         return new EntityNum(value);
     }
 
-    public static EntityNum fromModel(final Id id) {
-        if (!areValidNums(id.shard(), id.realm())) {
-            return MISSING_NUM;
-        }
-        return fromLong(id.num());
-    }
-
     public static EntityNum fromAccountId(final AccountID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getAccountNum());
     }
-
-    public static EntityNum fromEvmAddress(final Address address) {
-        final var bytes = address.toArrayUnsafe();
-        return fromLong(numFromEvmAddress(bytes));
-    }
-
-    public static EntityNum fromMirror(final byte[] evmAddress) {
-        return EntityNum.fromLong(numFromEvmAddress(evmAddress));
-    }
-
     public static EntityNum fromTokenId(final TokenID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getTokenNum());
     }
-
-    public static EntityNum fromContractId(final ContractID grpc) {
-        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
-            return MISSING_NUM;
-        }
-        return fromLong(grpc.getContractNum());
-    }
-
     public int intValue() {
         return value;
     }
@@ -100,7 +77,7 @@ public class EntityNum implements Comparable<EntityNum> {
 
     @Override
     public int hashCode() {
-        return (int) MiscUtils.perm64(value);
+        return (int) perm64(value);
     }
 
     @Override

@@ -91,7 +91,6 @@ public class EntityIdServiceImpl implements EntityIdService {
             if (!EntityId.isEmpty(entityId)) {
                 return entityId;
             }
-            log.warn("Skipping entity ID {}", entityIdProto);
         }
         return EntityId.EMPTY;
     }

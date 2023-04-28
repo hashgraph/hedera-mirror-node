@@ -43,8 +43,8 @@ import server from '../../server';
 import {getModuleDirname} from '../testutils';
 import {JSONParse} from '../../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
-import S3 from 'aws-sdk/clients/s3';
-
+import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
+import {Readable} from 'stream';
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
 const walk = (dir, files = []) => {
@@ -215,35 +215,33 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
 
   const uploadFilesToS3 = async (endpoint) => {
     const dataPath = path.join(s3TestDataRoot, bucketName);
-    // use fake accessKeyId and secreteAccessKey, otherwise upload will fail
+    // use fake accessKeyId and secretAccessKey, otherwise upload will fail
     const s3client = new S3({
+      credentials: {
+        accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+        secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      },
       endpoint,
+      forcePathStyle: true,
       region: 'us-east-1',
-      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-      s3ForcePathStyle: true,
     });
 
     logger.debug(`creating s3 bucket ${bucketName}`);
-    await s3client
-      .makeUnauthenticatedRequest('createBucket', {
-        Bucket: bucketName,
-      })
-      .promise();
+    await s3client.send(new CreateBucketCommand({Bucket: bucketName}));
 
     logger.debug('uploading file objects to mock s3 service');
     const s3ObjectKeys = [];
     for (const filePath of walk(dataPath)) {
       const s3ObjectKey = path.relative(dataPath, filePath);
       const fileStream = fs.createReadStream(filePath);
-      await s3client
-        .upload({
+      await s3client.send(
+        new PutObjectCommand({
           Bucket: bucketName,
           Key: s3ObjectKey,
-          Body: fileStream,
+          Body: Readable.from(fileStream),
           ACL: 'public-read',
         })
-        .promise();
+      );
       s3ObjectKeys.push(s3ObjectKey);
     }
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
