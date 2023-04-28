@@ -29,10 +29,9 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+@SuppressWarnings("java:S6548")
 public enum SingletonEstimatorUtils implements EstimatorUtils {
     ESTIMATOR_UTILS;
-
-    private SingletonEstimatorUtils() {}
 
     @Override
     public long baseNetworkRbs() {
