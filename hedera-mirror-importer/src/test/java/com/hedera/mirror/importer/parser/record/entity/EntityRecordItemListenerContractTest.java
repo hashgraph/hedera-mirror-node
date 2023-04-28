@@ -560,6 +560,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
                 .returns(null, Entity::getTimestampUpper)
                 .returns(CONTRACT, Entity::getType);
+        softly.assertThat(entityHistoryRepository.findAll())
+                .hasSize(1)
+                .extracting(e -> e.getType())
+                .containsOnly(CONTRACT);
         softly.assertThat(contractRepository.findAll())
                 .hasSize(1)
                 .first()

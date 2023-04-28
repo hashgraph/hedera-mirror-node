@@ -20,7 +20,9 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.services.stream.proto.ContractBytecode;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import javax.inject.Named;
@@ -43,6 +45,7 @@ public class SidecarContractMigration {
             do update set runtime_bytecode = excluded.runtime_bytecode""";
 
     private final EntityHistoryRepository entityHistoryRepository;
+    private final EntityRepository entityRepository;
     private final JdbcOperations jdbcOperations;
 
     public void migrate(List<ContractBytecode> contractBytecodes) {
@@ -66,15 +69,19 @@ public class SidecarContractMigration {
             contractIds.add(entityId);
 
             if (contractIds.size() >= IN_CLAUSE_LIMIT) {
-                entityHistoryRepository.updateContractType(contractIds);
-                contractIds.clear();
+                updateContractType(contractIds);
             }
         }
 
-        if (!contractIds.isEmpty()) {
-            entityHistoryRepository.updateContractType(contractIds);
-        }
-
+        updateContractType(contractIds);
         log.info("Migrated {} sidecar contract entities in {}", contractBytecodes.size(), stopwatch);
+    }
+
+    private void updateContractType(Collection<Long> contractIds) {
+        if (!contractIds.isEmpty()) {
+            entityRepository.updateContractType(contractIds);
+            entityHistoryRepository.updateContractType(contractIds);
+            contractIds.clear();
+        }
     }
 }
