@@ -37,6 +37,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.function.LongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -67,6 +68,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     private static final Address TOKEN_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e4");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+    private static final LongFunction<String> hexValueOf =
+            value -> Bytes.ofUnsignedLong(value).toHexString();
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
@@ -78,13 +81,28 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         // multiplySimpleNumbers()
         final var pureFuncHash = "8070450f";
         final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    @Test
+    void estimateGasForPureCall() {
+        final var pureFuncHash = "8070450f";
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+        final var expectedGasUsed = 22152L;
+        final var serviceParameters =
+                serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 0);
+
+        persistEntities(false);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test
@@ -96,7 +114,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var successfulReadResponse =
                 "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047465737400000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -106,10 +124,23 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
+    void estimateGasForViewCall() {
+        final var viewFuncHash =
+                "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
+        final var expectedGasUsed = 23296L;
+        final var serviceParameters =
+                serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 0);
+
+        persistEntities(false);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+    }
+
+    @Test
     void transferFunds() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
-        final var serviceParameters = serviceParameters("0x", 7L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", 7L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
         persistEntities(true);
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
@@ -124,7 +155,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         // getAccountBalance(address)
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000004e20";
-        final var params = serviceParameters(balanceCall, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var params = serviceParameters(balanceCall, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -135,10 +166,26 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
+    void estimateGasForBalanceCall() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+        final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
+        final var expectedGasUsed = 22693L;
+        final var params =
+                serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 15_000_000L);
+
+        persistEntities(false);
+
+        final var isSuccessful = contractCallService.processCall(params);
+        assertThat(isSuccessful).isEqualTo(hexValueOf.apply(expectedGasUsed));
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters =
-                serviceParameters(revertFunctionSignature, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(revertFunctionSignature, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -155,7 +202,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @EnumSource(RevertFunctions.class)
     void testReverts(final RevertFunctions revertFunctions) {
         final var serviceParameters =
-                serviceParameters(revertFunctions.functionSignature, 0, ETH_CALL, true, REVERTER_CONTRACT_ADDRESS);
+                serviceParameters(revertFunctions.functionSignature, 0, ETH_CALL, true, REVERTER_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -172,7 +219,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         final var wrongFunctionSignature = "0x542ec32e";
         final var serviceParameters =
-                serviceParameters(wrongFunctionSignature, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(wrongFunctionSignature, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -186,7 +233,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void transferNegative() {
-        final var serviceParameters = serviceParameters("0x", -5L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", -5L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -195,7 +242,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters = serviceParameters("0x", 210000L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", 210000L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -212,7 +259,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         // transferHbarsToAddress(address)
         final var stateChangePayable = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
-        final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -225,13 +272,30 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
+    void estimateGasForStateChangeCall() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+        final var stateChangeHash =
+                "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
+        final var serviceParameters =
+                serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS, 0);
+        final var expectedGasUsed = 29579L;
+
+        persistEntities(false);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
     void stateChangeFails() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
 
         // writeToStorageSlot(string)
         final var stateChangeHash =
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(stateChangeHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters =
+                serviceParameters(stateChangeHash, 0, ETH_CALL, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
         persistEntities(false);
 
@@ -243,20 +307,17 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
-    void estimateGasSimpleCase() {
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-
-        // multiplySimpleNumbers()
-        final var pureFuncHash = "8070450f";
-        final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
-        final var serviceParameters =
-                serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
+    void estimateGasWithExactValue() {
+        final var viewFuncHash =
+                "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
+        final var expectedAndProvidedGas = 22535L;
+        final var serviceParameters = serviceParameters(
+                viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, expectedAndProvidedGas);
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isEqualTo(hexValueOf.apply(expectedAndProvidedGas));
     }
 
     @Test
@@ -286,7 +347,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     private CallServiceParameters serviceParameters(
-            String callData, long value, CallType callType, boolean isStatic, Address contract) {
+            String callData, long value, CallType callType, boolean isStatic, Address contract, long estimatedGas) {
+        final var isGasEstimate = callType == ETH_ESTIMATE_GAS;
+        final var gas = (isGasEstimate && estimatedGas > 0) ? estimatedGas : 120000L;
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         final var data = Bytes.fromHexString(callData);
         final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : contract;
@@ -296,7 +359,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .value(value)
                 .receiver(receiver)
                 .callData(data)
-                .providedGasLimit(120000L)
+                .gas(gas)
+                .isEstimate(isGasEstimate)
                 .isStatic(isStatic)
                 .callType(callType)
                 .build();

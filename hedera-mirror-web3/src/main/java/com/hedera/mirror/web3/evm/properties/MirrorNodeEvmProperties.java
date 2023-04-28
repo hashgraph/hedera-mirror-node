@@ -25,6 +25,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -44,9 +45,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private boolean approvedForAllEnabled = false;
 
-    @Getter
     @NotNull
     private HederaChainId chainId = HederaChainId.TESTNET;
+
+    @Getter
+    @Positive
+    private long estimateGasIterationThreshold = 1200L;
 
     private boolean directTokenCall = true;
 
@@ -55,26 +59,31 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotBlank
     private String evmVersion = EVM_VERSION;
 
-    @NotBlank
-    private String fundingAccount = "0x0000000000000000000000000000000000000062";
-
-    @Min(1)
-    @Max(100)
-    private int maxGasRefundPercentage = 20;
-
     @Getter
     @NotNull
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
 
+    @NotBlank
+    private String fundingAccount = "0x0000000000000000000000000000000000000062";
+
+    // maximum iteration count for estimate gas' search algorithm
     @Getter
-    @NotNull
-    @DurationMin(seconds = 100)
-    private Duration rateLimit = Duration.ofSeconds(100L);
+    private int maxGasEstimateRetriesCount = 20;
+
+    // used by eth_estimateGas only
+    @Min(1)
+    @Max(100)
+    private int maxGasRefundPercentage = 100;
 
     @Getter
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
+
+    @Getter
+    @NotNull
+    @DurationMin(seconds = 100)
+    private Duration rateLimit = Duration.ofSeconds(100L);
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
