@@ -210,7 +210,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
                 commonDownloaderProperties.getMirrorProperties().getShard(),
                 consensusNode.getNodeId(),
-                streamFilename.getStreamType().toString().toLowerCase(),
+                streamFilename.getStreamType().getNodeIdBasedSuffix(),
                 getSidecarFolder(streamFilename));
     }
 

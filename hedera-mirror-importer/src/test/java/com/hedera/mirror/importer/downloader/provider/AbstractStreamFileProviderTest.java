@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -53,13 +52,22 @@ abstract class AbstractStreamFileProviderTest {
         var mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         properties = new CommonDownloaderProperties(mirrorProperties);
+        customizeProperties(properties);
 
-        var path = Path.of("data", "recordstreams", "v6").toString();
-        fileCopier = FileCopier.create(TestUtils.getResource(path).toPath(), dataPath)
-                .to(getDirectory(), StreamType.RECORD.getPath());
+        var path = Path.of("data", "recordstreams", "v6");
+        fileCopier = getFileCopier(path, dataPath);
     }
 
-    protected abstract String getDirectory();
+    protected abstract FileCopier getFileCopier(Path fromPath, Path dataPath);
+
+    protected void customizeProperties(CommonDownloaderProperties properties) {
+        // Do nothing by default
+    }
+
+    protected Path getNodePath(ConsensusNode node) {
+        return Path.of(
+                StreamType.RECORD.getNodePrefix() + node.getNodeAccountId().toString());
+    }
 
     @Test
     void get() {
@@ -163,7 +171,7 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         fileCopier
                 .getTo()
-                .resolve(StreamType.RECORD.getNodePrefix() + node.getNodeAccountId())
+                .resolve(getNodePath(node))
                 .resolve("Invalid.file")
                 .toFile()
                 .createNewFile();

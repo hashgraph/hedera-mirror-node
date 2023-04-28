@@ -18,8 +18,12 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,8 +39,9 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected String getDirectory() {
-        return LocalStreamFileProvider.STREAMS;
+    protected FileCopier getFileCopier(Path fromPath, Path dataPath) {
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(LocalStreamFileProvider.STREAMS, StreamType.RECORD.getPath());
     }
 
     @Test

@@ -19,7 +19,11 @@ package com.hedera.mirror.importer.downloader.provider;
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
@@ -55,8 +59,9 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected String getDirectory() {
-        return properties.getBucketName();
+    protected FileCopier getFileCopier(Path fromPath, Path dataPath) {
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 
     private void startS3Proxy() throws Exception {
