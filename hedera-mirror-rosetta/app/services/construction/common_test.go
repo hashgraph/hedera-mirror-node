@@ -32,13 +32,13 @@ import (
 )
 
 const (
-	adminKeyStr		= "302a300506032b6570032100d619a3a22d6bd2a9e4b08f3d999df757e5a9ef0364c13b4b3356bc065b34fa01"
-	autoRenewPeriod int64	= 3600
-	memo			= "new memo"
+	adminKeyStr           = "302a300506032b6570032100d619a3a22d6bd2a9e4b08f3d999df757e5a9ef0364c13b4b3356bc065b34fa01"
+	autoRenewPeriod int64 = 3600
+	memo                  = "new memo"
 )
 
 var (
-	adminKey, _	= hedera.PublicKeyFromString(adminKeyStr)
+	adminKey, _ = hedera.PublicKeyFromString(adminKeyStr)
 )
 
 var defaultContext = context.Background()

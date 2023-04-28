@@ -26,7 +26,6 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
 
@@ -94,11 +93,6 @@ func NewAmount(amount *types.Amount) (Amount, *types.Error) {
 		}
 
 		return &HbarAmount{Value: value}, nil
-	}
-
-	tokenId, err := domain.EntityIdFromString(currency.Symbol)
-	if err != nil || tokenId.IsZero() {
-		return nil, errors.ErrInvalidToken
 	}
 
 	return nil, errors.ErrInvalidCurrency

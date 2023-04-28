@@ -77,7 +77,7 @@ const (
 )
 
 type accountBalanceChange struct {
-	Value             int64
+	Value int64
 }
 
 type accountBalance struct {

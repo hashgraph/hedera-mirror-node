@@ -52,29 +52,14 @@ func TestHbarAmountToRosettaAmount(t *testing.T) {
 }
 
 func TestNewAmountSuccess(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    *types.Amount
-		expected Amount
-	}{
-		{
-			name: "HbarAmount",
-			input: &types.Amount{
-				Value:    "5",
-				Currency: CurrencyHbar,
-			},
-			expected: &HbarAmount{Value: 5},
-		},
+	input := &types.Amount{
+		Value:    "5",
+		Currency: CurrencyHbar,
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual, err := NewAmount(tt.input)
-
-			assert.Nil(t, err)
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
+	expected := &HbarAmount{Value: 5}
+	actual, err := NewAmount(input)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
 }
 
 func TestNewAmountFailure(t *testing.T) {

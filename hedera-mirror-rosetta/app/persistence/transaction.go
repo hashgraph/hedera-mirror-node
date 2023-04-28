@@ -47,7 +47,7 @@ const (
 	andTransactionHashFilter  = " and transaction_hash = @hash"
 	orderByConsensusTimestamp = " order by consensus_timestamp"
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
-	// in json. 
+	// in json.
 	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
