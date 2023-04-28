@@ -80,7 +80,7 @@ type accountBalanceChange struct {
 	Value             int64
 }
 
-type combinedAccountBalance struct {
+type accountBalance struct {
 	ConsensusTimestamp int64
 	Balance            int64
 }
@@ -256,12 +256,12 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 	defer cancel()
 
 	// gets the most recent balance at or before timestamp
-	cb := &combinedAccountBalance{}
+	ab := &accountBalance{}
 	if err := db.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
-	).First(cb).Error; err != nil {
+	).First(ab).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
 			hErrors.ErrDatabaseError.Message,
@@ -270,13 +270,13 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		return 0, nil, hErrors.ErrDatabaseError
 	}
 
-	if cb.ConsensusTimestamp == 0 {
+	if ab.ConsensusTimestamp == 0 {
 		return 0, nil, hErrors.ErrNodeIsStarting
 	}
 
-	hbarAmount := types.HbarAmount{Value: cb.Balance}
+	hbarAmount := types.HbarAmount{Value: ab.Balance}
 
-	return cb.ConsensusTimestamp, &hbarAmount, nil
+	return ab.ConsensusTimestamp, &hbarAmount, nil
 }
 
 func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, consensusStart, consensusEnd int64) (
