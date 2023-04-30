@@ -20,7 +20,11 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.core.ResolvableType;
 
-/** Interface for a database accessor to get some domain type V with primary key K from the database */
+/** A database accessor to get some domain type V with primary key K from the database.
+ * <p>
+ * _Must_ be implemented by a type with _no_ generic parameters extending ... from this type.  This is so that
+ * it can figure out the generic parameters via `ResolvableType`.
+ **/
 public abstract class DatabaseAccessor<K, V> {
 
     @SuppressWarnings("unchecked")
