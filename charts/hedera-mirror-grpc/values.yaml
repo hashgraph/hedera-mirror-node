@@ -120,6 +120,8 @@ middleware:
       attempts: 3
       initialInterval: 250ms
 
+nameOverride: ""
+
 nodeSelector: {}
 
 podAnnotations: {}
