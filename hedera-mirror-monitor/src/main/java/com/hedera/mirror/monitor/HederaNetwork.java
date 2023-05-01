@@ -18,9 +18,9 @@ package com.hedera.mirror.monitor;
 
 import com.hedera.hashgraph.sdk.Client;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.SneakyThrows;
 
 @Getter
 public enum HederaNetwork {
@@ -46,6 +46,7 @@ public enum HederaNetwork {
         return mirrorNodeProperties;
     }
 
+    @SneakyThrows
     private Set<NodeProperties> nodes() {
         if (this == OTHER) {
             return Set.of();
@@ -55,8 +56,6 @@ public enum HederaNetwork {
             return client.getNetwork().entrySet().stream()
                     .map(e -> new NodeProperties(e.getValue().toString(), e.getKey()))
                     .collect(Collectors.toSet());
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
         }
     }
 }
