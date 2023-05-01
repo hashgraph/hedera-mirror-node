@@ -25,7 +25,7 @@ import * as accounts from './accounts.js';
 import * as accountsBalanceFalse from './accountsBalanceFalse.js';
 import * as accountsBalanceFalsePubkey from './accountsBalanceFalsePubkey.js';
 import * as accountsBalanceGt0 from './accountsBalanceGt0.js';
-import * as accountsBalanceGt0Pubkey from './accountsBalanceGt0Pubkey.js';
+import * as accountsBalanceGt0Pubkey from './accountsBalanceGte0Pubkey.js';
 import * as accountsBalanceNe from './accountsBalanceNe.js';
 import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
