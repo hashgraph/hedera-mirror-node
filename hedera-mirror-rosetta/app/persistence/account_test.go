@@ -69,10 +69,6 @@ const (
 var (
 	cryptoTransferAmounts = []int64{150, -178}
 	defaultContext        = context.Background()
-	token1TransferAmounts = []int64{10, -5, 153}
-	token2TransferAmounts = []int64{20, -7}
-	token3ReceivedSerials = []int64{3, 4, 5}
-	token3SentSerials     = []int64{5}
 
 	// account3 has ecdsaSecp256k1 alias, account4 has ed25519 alias, account5 has invalid alias
 	account3Alias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")

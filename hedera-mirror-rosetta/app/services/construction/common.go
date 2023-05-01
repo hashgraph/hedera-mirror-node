@@ -138,21 +138,6 @@ func parseOperationMetadata(
 	return nil
 }
 
-func parsePayerMetadata(validate *validator.Validate, metadata map[string]interface{}) (
-	*hedera.AccountID,
-	*rTypes.Error,
-) {
-	payerMetadata := payerMetadata{}
-	if err := parseOperationMetadata(validate, &payerMetadata, metadata); err != nil {
-		return nil, err
-	}
-	if isZeroAccountId(*payerMetadata.Payer) {
-		return nil, errors.ErrInvalidAccount
-	}
-
-	return payerMetadata.Payer, nil
-}
-
 func validateOperations(operations types.OperationSlice, size int, opType string, expectNilAmount bool) *rTypes.Error {
 	if len(operations) == 0 {
 		return errors.ErrEmptyOperations

@@ -70,6 +70,12 @@ func TestNewAmountFailure(t *testing.T) {
 		{name: "InvalidAmount", input: &types.Amount{Value: "abc", Currency: CurrencyHbar}},
 		{name: "InvalidCurrencySymbol", input: &types.Amount{Value: "1", Currency: &types.Currency{Symbol: "foobar"}}},
 		{
+			name: "InvalidCurrencySymbolWithSpecifiedDecimals",
+			input: &types.Amount{
+				Value:    "1",
+				Currency: &types.Currency{Decimals: 8, Symbol: "foobar"}},
+		},
+		{
 			name: "NegativeCurrencyDecimals",
 			input: &types.Amount{
 				Value:    "1",
