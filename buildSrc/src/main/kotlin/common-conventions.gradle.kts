@@ -112,7 +112,7 @@ spotless {
         indentWithSpaces(2)
         prettier().npmExecutable(npmExecutable)
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
-        targetExclude("**/node_modules/**")
+        targetExclude("**/node_modules/**", "**/package-lock.json")
         trimTrailingWhitespace()
     })
     sql {
@@ -126,6 +126,7 @@ spotless {
         endWithNewline()
         indentWithSpaces()
         target("**/*.xml")
+        targetExclude("**/node_modules/**", "**/package-lock.json")
         trimTrailingWhitespace()
     })
 }
