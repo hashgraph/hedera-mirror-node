@@ -44,7 +44,7 @@ public class MirrorNodeProperties {
 
         @Min(0)
         @Max(65535)
-        private int port = 5600;
+        private int port = 443;
 
         public String getEndpoint() {
             if (host.startsWith("in-process:")) {
