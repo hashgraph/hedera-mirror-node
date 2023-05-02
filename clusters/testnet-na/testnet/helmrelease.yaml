@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.78.1'
+      version: '0.79.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -35,6 +35,7 @@ spec:
       hostname: testnet.mirrornode.hedera.com
     importer:
       env:
+        HEDERA_MIRROR_IMPORTER_MIGRATION_SYNTHETICTOKENALLOWANCEOWNERMIGRATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
