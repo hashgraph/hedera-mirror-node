@@ -27,11 +27,12 @@ import org.hyperledger.besu.datatypes.Address;
 public class CallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;
-    long providedGasLimit;
+    long gas;
     long value;
     Bytes callData;
     boolean isStatic;
     CallType callType;
+    boolean isEstimate;
 
     public enum CallType {
         ETH_CALL,

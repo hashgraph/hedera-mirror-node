@@ -19,7 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.319.0",
+    "@aws-sdk/client-s3": "^3.321.1",
     "@godaddy/terminus": "^4.12.0",
     "@hashgraph/proto": "^2.12.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -29,7 +29,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-http-context": "^1.2.4",
-    "express-openapi-validator": "^5.0.3",
+    "express-openapi-validator": "^5.0.4",
     "extend": "^3.0.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
@@ -99,7 +99,7 @@
     "rewire": "^6.0.0",
     "sinon": "^15.0.4",
     "supertest": "^6.3.3",
-    "testcontainers": "^9.5.0"
+    "testcontainers": "^9.6.0"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",

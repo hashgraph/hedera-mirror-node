@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +78,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         var sidecarFailedInitcode = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
-        if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
+        var contractCallOrCreate = isContractCreateOrCall(transactionBody);
+        if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
             // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
             return;
         }
@@ -86,11 +88,15 @@ public class ContractResultServiceImpl implements ContractResultService {
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
-        var contractId = isContractCreateOrCall(transactionBody)
-                ? transaction.getEntityId()
-                : entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
-        if (EntityId.isEmpty(contractId)) {
-            contractId = EntityId.EMPTY;
+        var contractId = (contractCallOrCreate
+                        ? Optional.ofNullable(transaction.getEntityId())
+                        : entityIdService.lookup(functionResult.getContractID()))
+                .orElse(EntityId.EMPTY);
+        var isRecoverableError = EntityId.isEmpty(contractId)
+                && !contractCallOrCreate
+                && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
+
+        if (isRecoverableError) {
             log.error(
                     RECOVERABLE_ERROR + "Invalid contract id for contract result at {}",
                     recordItem.getConsensusTimestamp());

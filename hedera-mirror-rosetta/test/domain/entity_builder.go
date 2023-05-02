@@ -100,19 +100,6 @@ func NewEntityBuilder(dbClient interfaces.DbClient, id, timestamp int64, entityT
 	return &EntityBuilder{dbClient: dbClient, entity: entity}
 }
 
-func NewEntityBuilderFromToken(dbClient interfaces.DbClient, token domain.Token) *EntityBuilder {
-	entity := domain.Entity{
-		CreatedTimestamp: &token.CreatedTimestamp,
-		Id:               token.TokenId,
-		Num:              token.TokenId.EntityNum,
-		Realm:            token.TokenId.RealmNum,
-		Shard:            token.TokenId.ShardNum,
-		TimestampRange:   getTimestampRangeWithLower(token.CreatedTimestamp),
-		Type:             domain.EntityTypeToken,
-	}
-	return &EntityBuilder{dbClient: dbClient, entity: entity}
-}
-
 func getTimestampRangeWithLower(lower int64) pgtype.Int8range {
 	return pgtype.Int8range{
 		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},

@@ -30,22 +30,6 @@ import (
 
 var (
 	statusUnknown = "unknown"
-	tokenAmount   = &TokenAmount{
-		Decimals: 9,
-		TokenId:  tokenId,
-		Type:     domain.TokenTypeFungibleCommon,
-		Value:    6000,
-	}
-	tokenRosettaAmount = &types.Amount{
-		Value: "6000",
-		Currency: &types.Currency{
-			Symbol:   tokenId.String(),
-			Decimals: 9,
-			Metadata: map[string]interface{}{
-				"type": domain.TokenTypeFungibleCommon,
-			},
-		},
-	}
 )
 
 func customizeAmount(amount Amount) func(*Operation) {
@@ -127,11 +111,6 @@ func TestOperationToRosetta(t *testing.T) {
 			expected: expectedOperation(customizeRosettaAmount(hbarRosettaAmount)),
 		},
 		{
-			name:     "TokenAmount",
-			input:    exampleOperation(customizeAmount(tokenAmount)),
-			expected: expectedOperation(customizeRosettaAmount(tokenRosettaAmount)),
-		},
-		{
 			name:     "NilAmount",
 			input:    exampleOperation(customizeAmount(nil)),
 			expected: expectedOperation(customizeRosettaAmount(nil)),
@@ -157,13 +136,11 @@ func TestOperationToRosetta(t *testing.T) {
 func TestOperationSliceToRosetta(t *testing.T) {
 	operationSlice := OperationSlice{
 		*exampleOperation(customizeAmount(hbarAmount)),
-		*exampleOperation(customizeIndex(1), customizeAmount(tokenAmount)),
 		*exampleOperation(customizeIndex(2), customizeStatus("")),
 		*exampleOperation(customizeIndex(3), customizeStatus("unknown"), customizeAmount(nil)),
 	}
 	expected := []*types.Operation{
 		expectedOperation(customizeRosettaAmount(hbarRosettaAmount)),
-		expectedOperation(customizeRosettaIndex(1), customizeRosettaAmount(tokenRosettaAmount)),
 		expectedOperation(customizeRosettaIndex(2), customizeRosettaStatus(nil)),
 		expectedOperation(customizeRosettaIndex(3), customizeRosettaStatus(&statusUnknown),
 			customizeRosettaAmount(nil)),
