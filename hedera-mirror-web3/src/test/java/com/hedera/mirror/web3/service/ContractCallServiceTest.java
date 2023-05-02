@@ -94,7 +94,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForPureCall() {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var expectedGasUsed = 22152L;
+        final var expectedGasUsed = 22217L;
         final var serviceParameters =
                 serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
@@ -127,7 +127,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForViewCall() {
         final var viewFuncHash =
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
-        final var expectedGasUsed = 23296L;
+        final var expectedGasUsed = 23340L;
         final var serviceParameters =
                 serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 0);
 
@@ -169,14 +169,14 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForBalanceCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
-        final var expectedGasUsed = 22693L;
+        final var expectedGasUsed = 22715L;
         final var params =
                 serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, 15_000_000L);
 
         persistEntities(false);
 
-        final var isSuccessful = contractCallService.processCall(params);
-        assertThat(isSuccessful).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        final var estimatedGas = contractCallService.processCall(params);
+        assertThat(estimatedGas).isEqualTo(hexValueOf.apply(expectedGasUsed));
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -278,7 +278,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters =
                 serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS, 0);
-        final var expectedGasUsed = 29579L;
+        final var expectedGasUsed = 29601L;
 
         persistEntities(false);
 
@@ -310,9 +310,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasWithExactValue() {
         final var viewFuncHash =
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
-        final var expectedAndProvidedGas = 22535L;
+        final var expectedAndProvidedGas = 22579L;
         final var serviceParameters = serviceParameters(
-                viewFuncHash, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS, expectedAndProvidedGas);
+                viewFuncHash, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS, expectedAndProvidedGas);
 
         persistEntities(false);
 
@@ -324,7 +324,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void ercPrecompileCallRevertsForEstimateGas() {
         final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000003e4";
         final var serviceParameters =
-                serviceParameters(tokenNameCall, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(tokenNameCall, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS, 0L);
 
         persistEntities(false);
 
@@ -337,7 +337,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void precompileCallRevertsForEstimateGas() {
         final var freezeTokenCall = "0x7c93c87e00000000000000000000000000000000000000000000000000000000000003e4";
         final var serviceParameters =
-                serviceParameters(freezeTokenCall, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(freezeTokenCall, 0, ETH_ESTIMATE_GAS, false, ETH_CALL_CONTRACT_ADDRESS, 0L);
 
         persistEntities(false);
 
