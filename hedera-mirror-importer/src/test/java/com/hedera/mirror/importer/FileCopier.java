@@ -23,7 +23,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -40,35 +44,46 @@ public class FileCopier {
             StreamType.EVENT.getNodePrefix(), StreamType.EVENT.getNodeIdBasedSuffix(),
             StreamType.RECORD.getNodePrefix(), StreamType.RECORD.getNodeIdBasedSuffix());
 
-    private final Path from;
-    private final Path to;
-    private final FileFilter dirFilter;
-    private final FileFilter fileFilter;
-    private final PathType pathType;
+    Path from;
+    Path to;
+    FileFilter dirFilter;
+    FileFilter fileFilter;
+    PathType pathType;
+    Set<String> copyOnlyDirs;
+    FileCopier nextFileCopier;
 
     private FileCopier(
             @NonNull Path from,
             @NonNull Path to,
             @NonNull FileFilter dirFilter,
             @NonNull FileFilter fileFilter,
-            @NonNull PathType pathTYpe) {
+            @NonNull PathType pathTYpe,
+            @NonNull Set<String> copyOnlyDirs,
+            FileCopier nextFileCopier) {
         this.from = from;
         this.to = to;
         this.dirFilter = dirFilter;
         this.fileFilter = fileFilter;
         this.pathType = pathTYpe;
+        this.copyOnlyDirs = copyOnlyDirs;
+        this.nextFileCopier = nextFileCopier;
     }
 
     public static FileCopier create(Path from, Path to) {
-        return create(from, to, PathType.ACCOUNT_ID);
+        return create(from, to, PathType.ACCOUNT_ID, Collections.emptySet());
     }
 
-    public static FileCopier create(Path from, Path to, PathType pathTYpe) {
-        return new FileCopier(from, to, ALL_FILTER, ALL_FILTER, pathTYpe);
+    public static FileCopier create(Path from, Path to, PathType pathTYpe, Set<String> copyOnlyDirs) {
+        return create(from, to, pathTYpe, copyOnlyDirs, null);
+    }
+
+    public static FileCopier create(
+            Path from, Path to, PathType pathTYpe, Set<String> copyOnlyDirs, FileCopier nextFileCopier) {
+        return new FileCopier(from, to, ALL_FILTER, ALL_FILTER, pathTYpe, copyOnlyDirs, nextFileCopier);
     }
 
     public FileCopier from(Path source) {
-        return new FileCopier(from.resolve(source), to, dirFilter, fileFilter, pathType);
+        return new FileCopier(from.resolve(source), to, dirFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
     }
 
     public FileCopier from(String... source) {
@@ -78,7 +93,7 @@ public class FileCopier {
     public FileCopier filterDirectories(FileFilter newDirFilter) {
         FileFilter andFilter =
                 dirFilter == ALL_FILTER ? newDirFilter : f -> dirFilter.accept(f) || newDirFilter.accept(f);
-        return new FileCopier(from, to, andFilter, fileFilter, pathType);
+        return new FileCopier(from, to, andFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
     }
 
     public FileCopier filterDirectories(String wildcardPattern) {
@@ -88,7 +103,7 @@ public class FileCopier {
     public FileCopier filterFiles(FileFilter newFileFilter) {
         FileFilter andFilter =
                 fileFilter == ALL_FILTER ? newFileFilter : f -> fileFilter.accept(f) || newFileFilter.accept(f);
-        return new FileCopier(from, to, dirFilter, andFilter, pathType);
+        return new FileCopier(from, to, dirFilter, andFilter, pathType, copyOnlyDirs, nextFileCopier);
     }
 
     public FileCopier filterFiles(String wildcardPattern) {
@@ -96,7 +111,7 @@ public class FileCopier {
     }
 
     public FileCopier to(Path target) {
-        return new FileCopier(from, to.resolve(target), dirFilter, fileFilter, pathType);
+        return new FileCopier(from, to.resolve(target), dirFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
     }
 
     public FileCopier to(String... target) {
@@ -114,23 +129,44 @@ public class FileCopier {
             }
 
             if (log.isTraceEnabled()) {
-                Files.walk(to).forEach(p -> log.trace("Moved: {}", p));
+                try (Stream<Path> paths = Files.walk(to)) {
+                    paths.forEach(p -> log.trace("Moved: {}", p));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        if (nextFileCopier != null) {
+            log.debug("Invoking configured next file copier");
+            nextFileCopier.copy();
+        }
+    }
+
+    private List<String> getCandidateDirectoryNames() throws IOException {
+        try (Stream<Path> paths = Files.list(from)) {
+            return paths.filter(Files::isDirectory)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .filter(dir -> copyOnlyDirs.isEmpty() || copyOnlyDirs.contains(dir))
+                    .toList();
+        }
     }
 
     private void copyAccountIdFormat(Path from, Path to, FileFilter filter) throws IOException {
-        FileUtils.copyDirectory(from.toFile(), to.toFile(), filter);
+        if (copyOnlyDirs.isEmpty()) {
+            FileUtils.copyDirectory(from.toFile(), to.toFile(), filter);
+        } else {
+            var accountIdDirectoryNames = getCandidateDirectoryNames();
+            for (var directoryName : accountIdDirectoryNames) {
+                var sourcePath = from.resolve(directoryName);
+                var destinationPath = to.resolve(directoryName);
+                FileUtils.copyDirectory(sourcePath.toFile(), destinationPath.toFile(), filter);
+            }
+        }
     }
 
     private void copyNodeIdFormat(Path from, Path to, FileFilter filter) throws IOException {
-        var accountIdDirectoryNames = Files.list(from)
-                .filter(Files::isDirectory)
-                .map(Path::getFileName)
-                .map(Path::toString)
-                .toList();
 
         /*
          * Directories present at the base of the repo test data from path are of the format xxxxn.n.n which
@@ -147,6 +183,7 @@ public class FileCopier {
          * The network is a property value and has already been incorporated into the FileCopier to path. The remaining
          * items can be derived from the directory names.
          */
+        var accountIdDirectoryNames = getCandidateDirectoryNames();
         for (var directoryName : accountIdDirectoryNames) {
             String[] accountIdParts = directoryName.split("\\.");
             if (accountIdParts.length != 3) {
