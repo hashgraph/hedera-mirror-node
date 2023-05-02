@@ -46,9 +46,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * capturing the failure when one occurs.
  *
  * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
- * Token#mint(long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
+ * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
  * signature for a {@code NON_FUNGIBLE_UNIQUE} is
- * {@link Token#mint(OwnershipTracker, List, RichInstant)}.
+ * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
@@ -163,7 +163,7 @@ public class Token {
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
                 oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
+                true,
                 oldToken.type,
                 oldToken.supplyType,
                 totalSupply,
@@ -276,13 +276,14 @@ public class Token {
     }
 
     /**
-     * Creates new instance of {@link Token} with deleted property set to true in order to keep the object's
+     * Creates new instance of {@link Token} with deleted property in order to keep the object's
      * immutability and avoid entry points for changing the state.
      *
      * @param oldToken
-     * @return new instance of {@link Token} with {@link #deleted} property set to true
+     * @param isDeleted
+     * @return new instance of {@link Token} with {@link #deleted} property
      */
-    private Token createNewDeletedToken(Token oldToken) {
+    private Token createNewTokenWithDeletedFlag(Token oldToken, boolean isDeleted) {
         return new Token(
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
@@ -303,7 +304,7 @@ public class Token {
                 oldToken.frozenByDefault,
                 oldToken.treasury,
                 oldToken.autoRenewAccount,
-                true,
+                isDeleted,
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
@@ -597,18 +598,20 @@ public class Token {
     /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
+     * @param treasuryRel
      * @param amount
      * @param ignoreSupplyKey
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token mint(final long amount, final boolean ignoreSupplyKey) {
-        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT);
+    public TokenModificationResult mint(
+            final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
+        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
                 "Fungible mint can be invoked only on fungible token type");
 
-        return changeSupply(amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
+        return changeSupply(treasuryRel, amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
     }
 
     /**
@@ -616,12 +619,16 @@ public class Token {
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
      * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
+     * @param treasuryRel      - the relationship between the treasury account and the token
      * @param metadata         - a list of user-defined metadata, related to the nft instances.
      * @param creationTime     - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token mint(
-            final OwnershipTracker ownershipTracker, final List<ByteString> metadata, final RichInstant creationTime) {
+    public TokenModificationResult mint(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship treasuryRel,
+            final List<ByteString> metadata,
+            final RichInstant creationTime) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -629,7 +636,7 @@ public class Token {
                 FAIL_INVALID,
                 "Non-fungible mint can be invoked only on non-fungible token type");
         validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
-        var newToken = changeSupply(metadataCount, FAIL_INVALID, false);
+        var tokenMod = changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
         long newLastUsedSerialNumber = this.lastUsedSerialNumber;
 
         for (final ByteString m : metadata) {
@@ -642,29 +649,36 @@ public class Token {
             ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), newLastUsedSerialNumber));
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        return createNewTokenWithNewLastUsedSerialNumber(
-                createNewTokenWithNewTreasury(newToken, newTreasury), newLastUsedSerialNumber);
+        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        return new TokenModificationResult(
+                createNewTokenWithNewLastUsedSerialNumber(newToken, newLastUsedSerialNumber),
+                tokenMod.tokenRelationship());
     }
 
     /**
      * Burning fungible tokens reduces the supply and sets new balance to the treasuryRel
      *
+     * @param treasuryRel- the relationship between the treasury account and the token
      * @param amount
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token burn(final long amount) {
-        validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT);
-        return changeSupply(-amount, INVALID_TOKEN_BURN_AMOUNT, false);
+    public TokenModificationResult burn(final TokenRelationship treasuryRel, final long amount) {
+        validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
+        return changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
     }
 
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
      * @param ownershipTracker - a tracker of changes made to the nft ownership
-     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be destroyed.
-     * @return new instance of {@link Token} with updated fields to keep the object's immutability
+     * @param treasuryRel-     the relationship between the treasury account and the token
+     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
+     *                         destroyed.
      */
-    public Token burn(final OwnershipTracker ownershipTracker, final List<Long> serialNumbers) {
+    public TokenModificationResult burn(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship treasuryRel,
+            final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
@@ -680,48 +694,114 @@ public class Token {
         }
         final var numBurned = serialNumbers.size();
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
-        return createNewTokenWithNewTreasury(changeSupply(-numBurned, FAIL_INVALID, false), newTreasury);
+        var tokenMod = changeSupply(treasuryRel, -numBurned, FAIL_INVALID, false);
+        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        return new TokenModificationResult(newToken, tokenMod.tokenRelationship());
     }
 
     /**
      * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
      *
-     * @param amount - amount to be wiped
+     * @param accountRel - the relationship between the account which owns the tokens and the token
+     * @param amount     - amount to be wiped
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token wipe(final long amount) {
+    public TokenModificationResult wipe(final TokenRelationship accountRel, final long amount) {
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
                 "Fungible wipe can be invoked only on Fungible token type.");
-        baseWipeValidations();
-        amountWipeValidations(amount);
+        baseWipeValidations(accountRel);
+        amountWipeValidations(accountRel, amount);
+
         final var newTotalSupply = totalSupply - amount;
-        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+        final var newAccBalance = accountRel.getBalance() - amount;
+
+        var newAccountRel = accountRel;
+        if (newAccBalance == 0) {
+            final var currentNumPositiveBalances = accountRel.getAccount().getNumPositiveBalances();
+            var newAccount = accountRel.getAccount().setNumPositiveBalances(currentNumPositiveBalances - 1);
+            newAccountRel = accountRel.setAccount(newAccount);
+        }
+        return new TokenModificationResult(
+                createNewTokenWithNewTotalSupply(this, newTotalSupply), newAccountRel.setBalance(newAccBalance));
     }
 
     /**
-     * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the
-     * total supply.
+     * Wiping unique tokens removes the unique token instances, associated to the given account, as
+     * well as reduces the total supply.
      *
      * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
+     * @param accountRel       - the relationship between the account, which owns the tokens, and the
+     *                         token
      * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
-     * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
-    public Token wipe(final OwnershipTracker ownershipTracker, final List<Long> serialNumbers) {
+    public TokenModificationResult wipe(
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship accountRel,
+            final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
+        baseWipeValidations(accountRel);
         for (final var serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
             validateTrue(uniqueToken != null, FAIL_INVALID);
+            final var wipeAccountIsOwner =
+                    uniqueToken.getOwner().equals(accountRel.getAccount().getId());
+            validateTrue(wipeAccountIsOwner, ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
         }
 
         final var newTotalSupply = totalSupply - serialNumbers.size();
-        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+        final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
+        var account = accountRel.getAccount();
+        for (final long serialNum : serialNumbers) {
+            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
+            removedUniqueTokens.add(new UniqueToken(
+                    id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
+        }
+
+        if (newAccountBalance == 0) {
+            final var currentNumPositiveBalances = account.getNumPositiveBalances();
+            account = account.setNumPositiveBalances(currentNumPositiveBalances - 1);
+        }
+
+        var newAccountRel = accountRel.setAccount(account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size()));
+        newAccountRel = accountRel.setBalance(newAccountBalance);
+        return new TokenModificationResult(createNewTokenWithNewTotalSupply(this, newTotalSupply), newAccountRel);
     }
 
-    private Token changeSupply(final long amount, final ResponseCodeEnum negSupplyCode, final boolean ignoreSupplyKey) {
+    public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
+        var newRel =
+                new TokenRelationship(this, account, 0, false, !hasKycKey(), false, false, automaticAssociation, 0);
+        if (hasFreezeKey() && frozenByDefault) {
+            newRel = newRel.setFrozen(true);
+        }
+        return newRel;
+    }
+
+    /**
+     * Creates new {@link TokenRelationship} for the specified {@link Account} IMPORTANT: The provided account is set to
+     * KYC granted and unfrozen by default
+     *
+     * @param account the Account for which to create the relationship
+     * @return newly created {@link TokenRelationship}
+     */
+    public TokenRelationship newEnabledRelationship(final Account account) {
+        var rel = new TokenRelationship(this, account, 0, false, true, false, false, false, 0);
+        return rel;
+    }
+
+    private TokenModificationResult changeSupply(
+            final TokenRelationship treasuryRel,
+            final long amount,
+            final ResponseCodeEnum negSupplyCode,
+            final boolean ignoreSupplyKey) {
+        validateTrue(treasuryRel != null, FAIL_INVALID, "Cannot mint with a null treasuryRel");
+        validateTrue(
+                treasuryRel.hasInvolvedIds(id, treasury.getId()),
+                FAIL_INVALID,
+                "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
@@ -733,24 +813,52 @@ public class Token {
                     TOKEN_MAX_SUPPLY_REACHED,
                     "Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
         }
-        return createNewTokenWithNewTotalSupply(this, newTotalSupply);
+        var treasuryAccount = treasuryRel.getAccount();
+        final long newTreasuryBalance = treasuryRel.getBalance() + amount;
+        validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+        if (treasuryRel.getBalance() == 0 && amount > 0) {
+            // for mint op
+            treasuryAccount = treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
+        } else if (newTreasuryBalance == 0 && amount < 0) {
+            // for burn op
+            treasuryAccount = treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
+        }
+        var newTreasuryRel = treasuryRel.setAccount(treasuryAccount);
+        newTreasuryRel = newTreasuryRel.setBalance(newTreasuryBalance);
+        return new TokenModificationResult(createNewTokenWithNewTotalSupply(this, newTotalSupply), newTreasuryRel);
     }
 
-    private void baseWipeValidations() {
+    private void baseWipeValidations(final TokenRelationship accountRel) {
         validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, "Cannot wipe Tokens without wipe key.");
+
+        validateFalse(
+                treasury.getId().equals(accountRel.getAccount().getId()),
+                CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
+                "Cannot wipe treasury account of token.");
     }
 
-    private void amountWipeValidations(final long amount) {
-        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT);
+    private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
+        validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
         final var newTotalSupply = totalSupply - amount;
         validateTrue(
                 newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
+
+        final var newAccountBalance = accountRel.getBalance() - amount;
+        validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate account balance");
+    }
+
+    private String errorMessage(final String op, final long amount, final TokenRelationship rel) {
+        return "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
     }
 
     public Token delete() {
         validateTrue(hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        return createNewDeletedToken(this);
+        return createNewTokenWithDeletedFlag(this, true);
+    }
+
+    public Token setIsDeleted(boolean isDeleted) {
+        return createNewTokenWithDeletedFlag(this, isDeleted);
     }
 
     public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {

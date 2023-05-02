@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.models;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -22,11 +23,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.google.common.base.MoreObjects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -39,6 +39,9 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
  * of type {@code FUNGIBLE_COMMON}; the analogous signature for a {@code NON_FUNGIBLE_UNIQUE} is
  * {@code getOwnershipChanges())}, returning a type that is structurally equivalent to a {@code Pair<long[], long[]>} of
  * acquired and relinquished serial numbers.
+ *
+ * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
+ * immutability is required for this model in order to be used seamlessly in the state.
  */
 public class TokenRelationship {
     private final Token token;
@@ -52,9 +55,16 @@ public class TokenRelationship {
 
     private final long balanceChange;
 
-    public TokenRelationship(Token token, Account account, long balance, boolean frozen, boolean kycGranted,
-                             boolean destroyed, boolean notYetPersisted, boolean automaticAssociation,
-                             long balanceChange) {
+    public TokenRelationship(
+            Token token,
+            Account account,
+            long balance,
+            boolean frozen,
+            boolean kycGranted,
+            boolean destroyed,
+            boolean notYetPersisted,
+            boolean automaticAssociation,
+            long balanceChange) {
         this.token = token;
         this.account = account;
         this.balance = balance;
@@ -66,23 +76,133 @@ public class TokenRelationship {
         this.balanceChange = balanceChange;
     }
 
-    private TokenRelationship createCreateNewTokenRelationshipWithNewBalance(TokenRelationship tokenRel,
-                                                                             long balanceChange, long balance) {
-        return new TokenRelationship(tokenRel.token, tokenRel.account, balance,
-                tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, tokenRel.notYetPersisted,
-                tokenRel.automaticAssociation, balanceChange);
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated balance in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param balanceChange
+     * @param balance
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewTokenRelationshipWithNewBalance(
+            TokenRelationship oldTokenRel, long balanceChange, long balance) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                balanceChange);
     }
 
-    private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship tokenRel) {
-        return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
-                tokenRel.frozen, tokenRel.kycGranted, true, tokenRel.notYetPersisted,
-                tokenRel.automaticAssociation, balanceChange);
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated destroyed field in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship oldTokenRel) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                true,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                balanceChange);
     }
 
-    private TokenRelationship createCreateNewPersistedTokenRelationship(TokenRelationship tokenRel) {
-        return new TokenRelationship(tokenRel.token, tokenRel.account, tokenRel.balance,
-                tokenRel.frozen, tokenRel.kycGranted, tokenRel.destroyed, false,
-                tokenRel.automaticAssociation, balanceChange);
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated treasury in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param newAccount
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewTokenRelationshipWithNewTreasuryAccount(
+            TokenRelationship oldTokenRel, Account newAccount) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                newAccount,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
+    }
+
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param notYetPersisted
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewPersistedTokenRelationship(
+            TokenRelationship oldTokenRel, boolean notYetPersisted) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
+    }
+
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param newToken
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewTokenRelationshipWithToken(TokenRelationship oldTokenRel, Token newToken) {
+        return new TokenRelationship(
+                newToken,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
+    }
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated frozen field in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param frozen
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createCreateNewTokenRelationshipWithFrozenFlag(
+            TokenRelationship oldTokenRel, boolean frozen) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
     }
 
     public long getBalance() {
@@ -110,6 +230,10 @@ public class TokenRelationship {
         return frozen;
     }
 
+    public TokenRelationship setFrozen(boolean frozen) {
+        return createCreateNewTokenRelationshipWithFrozenFlag(this, frozen);
+    }
+
     public boolean isKycGranted() {
         return kycGranted;
     }
@@ -122,8 +246,16 @@ public class TokenRelationship {
         return token;
     }
 
+    public TokenRelationship setToken(Token newToken) {
+        return createCreateNewTokenRelationshipWithToken(this, newToken);
+    }
+
     public Account getAccount() {
         return account;
+    }
+
+    public TokenRelationship setAccount(Account newAccount) {
+        return createCreateNewTokenRelationshipWithNewTreasuryAccount(this, newAccount);
     }
 
     boolean hasInvolvedIds(Id tokenId, Id accountId) {
@@ -134,8 +266,8 @@ public class TokenRelationship {
         return notYetPersisted;
     }
 
-    public TokenRelationship markAsPersisted() {
-        return createCreateNewPersistedTokenRelationship(this);
+    public TokenRelationship setNotYetPersisted(boolean notYetPersisted) {
+        return createCreateNewPersistedTokenRelationship(this, notYetPersisted);
     }
 
     public boolean isDestroyed() {
