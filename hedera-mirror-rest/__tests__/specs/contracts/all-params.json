@@ -37,7 +37,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts?contract.id=8001&contract.id=8002&order=desc&limit=10"],
+  "urls": [
+    "/api/v1/contracts?contract.id=8001&contract.id=8002&order=desc&limit=10"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "contracts": [

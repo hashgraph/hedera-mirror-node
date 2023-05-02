@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.pubsub;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,13 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.Map;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
-
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -49,6 +34,16 @@ import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Map;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 
 @Log4j2
 @Named
@@ -75,13 +70,16 @@ public class PubSubRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error(RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
-                    consensusTimestamp, e.getMessage());
+            log.error(
+                    RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp,
+                    e.getMessage());
             entityId = EntityId.EMPTY;
         }
 
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entityId, recordItem);
-        Map<String, String> header = Map.of("consensusTimestamp", pubSubMessage.getConsensusTimestamp().toString());
+        Map<String, String> header = Map.of(
+                "consensusTimestamp", pubSubMessage.getConsensusTimestamp().toString());
         try {
             sendPubSubMessage(pubSubMessage, header, 0);
         } catch (Exception e) {
@@ -106,8 +104,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
                 fileBytes = body.getFileUpdate().getContents().toByteArray();
             }
 
-            FileData fileData = new FileData(consensusTimestamp, fileBytes, EntityId.of(fileID), recordItem
-                    .getTransactionType());
+            FileData fileData =
+                    new FileData(consensusTimestamp, fileBytes, EntityId.of(fileID), recordItem.getTransactionType());
             addressBookService.update(fileData);
         }
     }
@@ -119,9 +117,13 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
         var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
-        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(),
+        return new PubSubMessage(
+                consensusTimestamp,
+                entity,
+                recordItem.getTransactionType(),
                 new PubSubMessage.Transaction(recordItem.getTransactionBody(), recordItem.getSignatureMap()),
-                recordItem.getTransactionRecord(), nonFeeTransfers);
+                recordItem.getTransactionRecord(),
+                nonFeeTransfers);
     }
 
     /**
@@ -135,8 +137,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
         return nonFeeTransfers;
     }
 
-    private void setPublishCallback(ListenableFuture<String> publishResult, PubSubMessage message,
-                                    Map<String, String> header, int retryCount) {
+    private void setPublishCallback(
+            ListenableFuture<String> publishResult, PubSubMessage message, Map<String, String> header, int retryCount) {
         int retry = retryCount + 1;
         publishResult.addCallback(new ListenableFutureCallback<>() {
             @Override

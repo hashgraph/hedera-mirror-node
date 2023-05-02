@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.BitPackUtils.perm64;
@@ -21,7 +22,6 @@ import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.Comparator;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -32,7 +32,6 @@ public record Id(long shard, long realm, long num) {
     public static final Id DEFAULT = new Id(0, 0, 0);
     public static final Comparator<Id> ID_COMPARATOR =
             Comparator.comparingLong(Id::num).thenComparingLong(Id::shard).thenComparingLong(Id::realm);
-    public static final Id MISSING_ID = new Id(0, 0, 0);
 
     public static Id fromGrpcAccount(final AccountID id) {
         return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
@@ -44,10 +43,6 @@ public record Id(long shard, long realm, long num) {
 
     public static Id fromGrpcToken(final TokenID id) {
         return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
-    }
-
-    public static Id fromGrpcTopic(final TopicID id) {
-        return new Id(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
     }
 
     public AccountID asGrpcAccount() {
@@ -63,14 +58,6 @@ public record Id(long shard, long realm, long num) {
                 .setShardNum(shard)
                 .setRealmNum(realm)
                 .setTokenNum(num)
-                .build();
-    }
-
-    public TopicID asGrpcTopic() {
-        return TopicID.newBuilder()
-                .setShardNum(shard)
-                .setRealmNum(realm)
-                .setTopicNum(num)
                 .build();
     }
 

@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -137,7 +133,9 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
   let tokenTransferListCteWhereClause = '';
   if (!_.isUndefined(innerQuery)) {
     additionalFromTable = 'timestamp_range tr, ';
-    cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
+    cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(
+      CryptoTransfer.CONSENSUS_TIMESTAMP
+    )} >= tr.min
       AND ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
     tokenTransferListCteWhereClause = `WHERE ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
       AND ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
@@ -680,17 +678,18 @@ const transactionHashShardedQuery = `select ${TransactionHash.CONSENSUS_TIMESTAM
 
 const transactionHashShardedQueryEnabled = (() => {
   let result = undefined;
-  return () => (async () => {
-    if (result !== undefined) {
-      return result;
-    }
+  return () =>
+    (async () => {
+      if (result !== undefined) {
+        return result;
+      }
 
-    const {rows} = await pool.queryQuietly(`SELECT count(*) > 0 as enabled
+      const {rows} = await pool.queryQuietly(`SELECT count(*) > 0 as enabled
                        from pg_proc
                        where proname = 'get_transaction_info_by_hash'`);
-    result = rows[0].enabled;
-    return result;
-  })();
+      result = rows[0].enabled;
+      return result;
+    })();
 })();
 
 /**

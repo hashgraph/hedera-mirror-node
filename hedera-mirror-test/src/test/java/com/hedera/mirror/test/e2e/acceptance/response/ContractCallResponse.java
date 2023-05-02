@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,17 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.response;
+
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import javax.inject.Named;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
 @Data
 @Named

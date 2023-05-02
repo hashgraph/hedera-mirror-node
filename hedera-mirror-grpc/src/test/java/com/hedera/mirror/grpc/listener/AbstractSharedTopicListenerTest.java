@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,12 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.listener;
+
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -29,9 +27,6 @@ import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListenerTest {
 
@@ -55,7 +50,8 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .build();
 
         // create a fast subscriber to keep the shared flux open. the fast subscriber should receive all messages
-        var stepVerifierFast = topicListener.listen(filterFast)
+        var stepVerifierFast = topicListener
+                .listen(filterFast)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectNextSequence(LongStream.range(1, numMessages + 1).boxed().collect(Collectors.toList()))
@@ -71,11 +67,12 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
         // maxBufferSize messages so it definitely won't cause overflow with the SharedPollingTopicListener.
         // The wait also gives the subscriber threads chance to consume messages in slow environment.
         Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(maxBufferSize, future);
-        Flux<TopicMessage> secondBatch = domainBuilder
-                .topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
+        Flux<TopicMessage> secondBatch =
+                domainBuilder.topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
 
         // the slow subscriber
-        topicListener.listen(filterSlow)
+        topicListener
+                .listen(filterSlow)
                 .map(TopicMessage::getSequenceNumber)
                 .as(p -> StepVerifier.create(p, 1)) // initial request amount of 1
                 .thenRequest(1) // trigger subscription

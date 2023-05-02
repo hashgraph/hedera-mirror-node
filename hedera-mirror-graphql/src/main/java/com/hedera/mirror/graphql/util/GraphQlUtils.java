@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,15 @@ package com.hedera.mirror.graphql.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.graphql.util;
+
 import com.google.common.base.Splitter;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.graphql.viewmodel.HbarUnit;
+import com.hedera.mirror.graphql.viewmodel.Node;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -31,11 +31,6 @@ import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.graphql.viewmodel.HbarUnit;
-import com.hedera.mirror.graphql.viewmodel.Node;
 
 @UtilityClass
 public class GraphQlUtils {
@@ -81,10 +76,7 @@ public class GraphQlUtils {
     }
 
     public static EntityId toEntityId(com.hedera.mirror.graphql.viewmodel.EntityIdInput entityId) {
-        return EntityId.of(entityId.getShard(),
-                entityId.getRealm(),
-                entityId.getNum(),
-                EntityType.UNKNOWN);
+        return EntityId.of(entityId.getShard(), entityId.getRealm(), entityId.getNum(), EntityType.UNKNOWN);
     }
 
     public static void validateOneOf(Object... values) {
@@ -97,8 +89,8 @@ public class GraphQlUtils {
         }
 
         if (nonNull != 1) {
-            throw new IllegalArgumentException("Must provide exactly one input value but " + nonNull + " have been " +
-                    "provided");
+            throw new IllegalArgumentException(
+                    "Must provide exactly one input value but " + nonNull + " have been " + "provided");
         }
     }
 

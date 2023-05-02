@@ -1004,7 +1004,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} * system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "usage",
@@ -3902,15 +3902,15 @@
         "query": "loki",
         "queryValue": "",
         "refresh": 1,
-        "regex": "",
+        "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {
-          "selected": true,
-          "text": "",
-          "value": ""
+          "selected": false,
+          "text": "default",
+          "value": "default"
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -3923,7 +3923,7 @@
         "query": "prometheus",
         "queryValue": "",
         "refresh": 1,
-        "regex": "",
+        "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
       },

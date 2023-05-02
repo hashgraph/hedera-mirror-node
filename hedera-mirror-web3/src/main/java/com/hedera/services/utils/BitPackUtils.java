@@ -1,13 +1,6 @@
-package com.hedera.services.utils;
-
-import lombok.experimental.UtilityClass;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,8 +12,11 @@ import lombok.experimental.UtilityClass;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.services.utils;
+
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class BitPackUtils {
@@ -33,13 +29,14 @@ public class BitPackUtils {
     public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
 
     /**
-     * Returns a {@code long} whose high-order 32 bits "encode" an unsigned integer value, and whose low-order 32 bits
-     * are a signed integer. For use with the {@link BitPackUtils#unsignedHighOrder32From(long)} and
-     * {@link BitPackUtils#signedLowOrder32From(long)} helpers below. This format can represent timestamps through
-     * January 2106.
+     * Returns a {@code long} whose high-order 32 bits "encode" an unsigned integer value, and whose
+     * low-order 32 bits are a signed integer. For use with the {@link
+     * BitPackUtils#unsignedHighOrder32From(long)} and {@link
+     * BitPackUtils#signedLowOrder32From(long)} helpers below. This format can represent timestamps
+     * through January 2106.
      *
      * @param seconds some number of seconds since the epoch
-     * @param nanos   some number of nanos after the above second
+     * @param nanos some number of nanos after the above second
      * @return a "packed" version of these values
      */
     public static long packedTime(long seconds, int nanos) {
@@ -48,14 +45,15 @@ public class BitPackUtils {
     }
 
     /**
-     * Returns a {@code long} whose high-order and low-order 32 bits both "encode" an unsigned integer value. For use
-     * with the {@link BitPackUtils#unsignedHighOrder32From(long)} and
-     * {@link BitPackUtils#unsignedLowOrder32From(long)}.
+     * Returns a {@code long} whose high-order and low-order 32 bits both "encode" an unsigned
+     * integer value. For use with the {@link BitPackUtils#unsignedHighOrder32From(long)} and {@link
+     * BitPackUtils#unsignedLowOrder32From(long)}.
      *
      * @param a some number in the range [0, MAX_NUM_ALLOWED]
      * @param b some other number in the range [0, MAX_NUM_ALLOWED]
      * @return a "packed" version of these values
-     * @throws IllegalArgumentException if either argument is less than 0 or greater than 4_294_967_295
+     * @throws IllegalArgumentException if either argument is less than 0 or greater than
+     *     4_294_967_295
      */
     public static long packedNums(long a, long b) {
         assertValid(a);
@@ -127,11 +125,12 @@ public class BitPackUtils {
     }
 
     /**
-     * Returns a {@code int} whose higher-order 16 bits "encode" an unsigned int value which represent the already used
-     * AutomaticAssociations of an account and lower-order 16 bits "encode" an unsigned int value which represent the
-     * maximum allowed AutomaticAssociations for that account.
+     * Returns a {@code int} whose higher-order 16 bits "encode" an unsigned int value which
+     * represent the already used AutomaticAssociations of an account and lower-order 16 bits
+     * "encode" an unsigned int value which represent the maximum allowed AutomaticAssociations for
+     * that account.
      *
-     * @param maxAutoAssociations         maximum allowed automatic associations of an account.
+     * @param maxAutoAssociations maximum allowed automatic associations of an account.
      * @param alreadyUsedAutoAssociations already used automatic associations of an account.
      * @return metadata of
      */
@@ -162,8 +161,8 @@ public class BitPackUtils {
     /**
      * Set the lower-order 16 bits of automatic association Metadata
      *
-     * @param autoAssociationMetadata  metadata of already used automatic associations and max allowed automatic
-     *                                 associations
+     * @param autoAssociationMetadata metadata of already used automatic associations and max
+     *     allowed automatic associations
      * @param maxAutomaticAssociations new max allowed automatic associations to set
      * @return metadata after changing the new max.
      */
@@ -174,8 +173,8 @@ public class BitPackUtils {
     /**
      * Set the higher-order 16 bits of automatic association Metadata
      *
-     * @param autoAssociationMetadata     metadata of already used automatic associations and max allowed automatic
-     *                                    associations
+     * @param autoAssociationMetadata metadata of already used automatic associations and max
+     *     allowed automatic associations
      * @param alreadyUsedAutoAssociations new already used automatic associations to set
      * @return metadata after changing the already used associations count.
      */

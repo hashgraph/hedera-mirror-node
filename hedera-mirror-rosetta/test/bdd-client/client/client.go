@@ -96,19 +96,6 @@ func (c Client) DeleteAccount(accountId hedera.AccountID, privateKey *hedera.Pri
 	return nil
 }
 
-func (c Client) DeleteToken(tokenId hedera.TokenID) error {
-	_, err := hedera.NewTokenDeleteTransaction().
-		SetTokenID(tokenId).
-		Execute(c.hederaClient)
-	if err != nil {
-		log.Errorf("Failed to delete token %s: %v", tokenId, err)
-		return err
-	}
-
-	log.Infof("Successfully submitted the TokenDeleteTransaction for %s", tokenId)
-	return nil
-}
-
 func (c Client) GetAccountBalance(ctx context.Context, account *types.AccountIdentifier) (
 	*types.AccountBalanceResponse,
 	error,
@@ -116,22 +103,6 @@ func (c Client) GetAccountBalance(ctx context.Context, account *types.AccountIde
 	request := &types.AccountBalanceRequest{NetworkIdentifier: c.network, AccountIdentifier: account}
 	response, rErr, err := c.onlineClient.AccountAPI.AccountBalance(ctx, request)
 	return response, c.handleError(fmt.Sprintf("Failed to get balance for %s", account.Address), rErr, err)
-}
-
-func (c Client) TokenDissociate(operator Operator, tokenId hedera.TokenID) error {
-	_, err := hedera.NewTokenDissociateTransaction().
-		SetAccountID(operator.Id).
-		SetTokenIDs(tokenId).
-		Sign(operator.PrivateKey).
-		Execute(c.hederaClient)
-	if err != nil {
-		log.Errorf("Failed to dissociate account %s with token %s: %v", operator.Id, tokenId, err)
-		return err
-	}
-
-	log.Infof("Successfully submitted the TokenDissociateTransaction for account %s and token %s",
-		operator.Id, tokenId)
-	return nil
 }
 
 func (c Client) FindTransaction(ctx context.Context, hash string) (*types.Transaction, error) {

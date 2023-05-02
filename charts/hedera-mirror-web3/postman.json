@@ -1,68 +1,74 @@
 {
-    "info": {
-        "_postman_id": "b8489f6a-2cf4-4a46-8bd6-67c001792122",
-        "name": "Web3 API",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
+  "info": {
+    "_postman_id": "b8489f6a-2cf4-4a46-8bd6-67c001792122",
+    "name": "Web3 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Negative tests",
+      "item": [
         {
-            "name": "Negative tests",
-            "item": [
-                {
-                    "name": "Invalid request for contracts/call",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                  "pm.test(\"Invalid request\", () => {",
-                                  "                                       var response = pm.response.json();",
-                                  "                                       pm.expect(pm.response.code).to.equal(400);",
-                                  "                                      pm.expect(response).to.not.have.key('result');",
-                                  "                                      let result = \"\";",
-                                  "                                      response._status.messages.forEach(msg => {",
-                                  "                                      result += msg.message;})",
-                                  "                                     pm.expect(result)",
-                                  "                                        .to.contain(\"to field invalid hexadecimal string\")",
-                                  "                                         .and.contain(\"from field invalid hexadecimal string\")",
-                                  "                                         .and.contain(\"value field must be greater than or equal to 0\")",
-                                  "                                         .and.contain(\"gas field must be greater than or equal to 0\")",
-                                  "                                        .and.contain(\"gasPrice field must be greater than or equal to 0\");",
-                                  "                                    });",
-                                  ""
-                                ],
-                                "type": "text/javascript"
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\"to\": \"0x\", \"from\": \"0x\", \"value\": -1, \"gas\": -1, \"gasPrice\": -1}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/v1/contracts/call",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "v1", "contracts", "call"]
-                        }
-                    },
-                    "response": []
+          "name": "Invalid request for contracts/call",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Invalid request\", () => {",
+                  "                                       var response = pm.response.json();",
+                  "                                       pm.expect(pm.response.code).to.equal(400);",
+                  "                                      pm.expect(response).to.not.have.key('result');",
+                  "                                      let result = \"\";",
+                  "                                      response._status.messages.forEach(msg => {",
+                  "                                      result += msg.message;})",
+                  "                                     pm.expect(result)",
+                  "                                        .to.contain(\"to field invalid hexadecimal string\")",
+                  "                                         .and.contain(\"from field invalid hexadecimal string\")",
+                  "                                         .and.contain(\"value field must be greater than or equal to 0\")",
+                  "                                         .and.contain(\"gas field must be greater than or equal to 21000\")",
+                  "                                        .and.contain(\"gasPrice field must be greater than or equal to 0\");",
+                  "                                    });",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"to\": \"0x\", \"from\": \"0x\", \"value\": -1, \"gas\": -1, \"gasPrice\": -1}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
-            ]
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/call",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "call"
+              ]
+            }
+          },
+          "response": []
         }
-    ],
-
-    "variable": [
-        {
-            "key": "baseUrl",
-            "value": "http://localhost:8545"
-        }
-    ]
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8545"
+    }
+  ]
 }

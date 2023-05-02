@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.expression;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,33 +12,15 @@ package com.hedera.mirror.monitor.expression;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.inject.Named;
-
-import com.hedera.mirror.monitor.exception.ExpressionConversionException;
-
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import reactor.util.retry.Retry;
+package com.hedera.mirror.monitor.expression;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.exception.ExpressionConversionException;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.PublishScenario;
@@ -54,6 +31,22 @@ import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenCreateTransactionSupplier;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.inject.Named;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 @Log4j2
 @Named
@@ -62,8 +55,8 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
-    private static final Pattern EXPRESSION_PATTERN = Pattern
-            .compile("\\$\\{(account|nft|token|topic|schedule)\\.(\\w+)}");
+    private static final Pattern EXPRESSION_PATTERN =
+            Pattern.compile("\\$\\{(account|nft|token|topic|schedule)\\.(\\w+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;
@@ -89,16 +82,20 @@ public class ExpressionConverterImpl implements ExpressionConverter {
         try {
             log.debug("Processing expression {}", expression);
             ExpressionType type = expression.getType();
-            Class<? extends TransactionSupplier<?>> supplierClass = type.getTransactionType().getSupplier();
-            TransactionSupplier<?> transactionSupplier = supplierClass.getConstructor().newInstance();
+            Class<? extends TransactionSupplier<?>> supplierClass =
+                    type.getTransactionType().getSupplier();
+            TransactionSupplier<?> transactionSupplier =
+                    supplierClass.getConstructor().newInstance();
 
             if (transactionSupplier instanceof AdminKeyable adminKeyable) {
-                PrivateKey privateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
+                PrivateKey privateKey =
+                        PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
                 adminKeyable.setAdminKey(privateKey.getPublicKey().toString());
             }
 
             if (transactionSupplier instanceof TokenCreateTransactionSupplier tokenSupplier) {
-                tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
+                tokenSupplier.setTreasuryAccountId(
+                        monitorProperties.getOperator().getAccountId());
                 if (type == ExpressionType.NFT) {
                     tokenSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
                 }
@@ -106,8 +103,10 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
             // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
             if (transactionSupplier instanceof ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier) {
-                scheduleCreateTransactionSupplier.setOperatorAccountId(monitorProperties.getOperator().getAccountId());
-                scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
+                scheduleCreateTransactionSupplier.setOperatorAccountId(
+                        monitorProperties.getOperator().getAccountId());
+                scheduleCreateTransactionSupplier.setPayerAccount(
+                        monitorProperties.getOperator().getAccountId());
             }
 
             PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
@@ -121,18 +120,18 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
                     .maxBackoff(Duration.ofSeconds(8L))
                     .scheduler(Schedulers.newSingle("expression"))
-                    .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
-                            r.totalRetries() + 1, r.failure().getMessage()));
+                    .doBeforeRetry(r -> log.warn(
+                            "Retry attempt #{} after failure: {}",
+                            r.totalRetries() + 1,
+                            r.failure().getMessage()));
 
             return Mono.defer(() -> transactionPublisher.publish(PublishRequest.builder()
                             .receipt(true)
                             .scenario(scenario)
                             .timestamp(Instant.now())
-                            .transaction(transactionSupplier.get()
-                                    .setMaxAttempts(1)
-                                    .setTransactionMemo(scenario.getMemo()))
-                            .build()
-                    ))
+                            .transaction(
+                                    transactionSupplier.get().setMaxAttempts(1).setTransactionMemo(scenario.getMemo()))
+                            .build()))
                     .retryWhen(retrySpec)
                     .map(PublishResponse::getReceipt)
                     .map(type.getIdExtractor()::apply)
@@ -161,7 +160,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     @Getter
     @RequiredArgsConstructor
     private enum ExpressionType {
-
         ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.accountId.toString()),
         NFT(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
         SCHEDULE(TransactionType.SCHEDULE_CREATE, r -> r.scheduleId.toString()),

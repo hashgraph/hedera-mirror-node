@@ -171,19 +171,28 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 ### Transaction and Entity Filtering
 
-The mirror node may be configured to only store a subset of data for entities and/or transaction types of interest -- essentially, which rows of data to retain.
-Note that the `exclude` properties take priority over the `include` properties - if you list the same value in both lists, it will be excluded.
-In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control which additional fields get stored (which additional tables get recorded).
-See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the table above for full details.
+The mirror node may be configured to only store a subset of data for entities and/or transaction types of interest --
+essentially, which rows of data to retain.
+Note that the `exclude` properties take priority over the `include` properties - if you list the same value in both
+lists, it will be excluded.
+In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control
+which additional fields get stored (which additional tables get recorded).
+See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the
+table above for full details.
 
 #### Filtering Example
-The scenario we wish to model is the same for each of the three configuration formats.  Only choose one of the three ways to
+
+The scenario we wish to model is the same for each of the three configuration formats. Only choose one of the three ways
+to
 configure your instance of the mirror node.
 
-* We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the account representing the network (to which fees generally get paid to).
+* We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the
+  account representing the network (to which fees generally get paid to).
 * We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
-* We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of transaction type.
-* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of
+  transaction type.
+* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, *
+  *FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
@@ -196,12 +205,12 @@ hedera:
     importer:
       parser:
         exclude:
-          - entity: [0.0.98]
+          - entity: [ 0.0.98 ]
         include:
-          - transaction: [CRYPTOTRANSFER]
-          - entity: [0.0.1000, 0.0.1001]
-          - entity: [0.0.101, 0.0.102]
-            transaction: [FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE]
+          - transaction: [ CRYPTOTRANSFER ]
+          - entity: [ 0.0.1000, 0.0.1001 ]
+          - entity: [ 0.0.101, 0.0.102 ]
+            transaction: [ FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE ]
         record:
           entity:
             persist:
@@ -545,21 +554,28 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-Name                                                        | Default                                    | Description
-------------------------------------------------------------|--------------------------------------------| ---------------------------------------
-`hedera.mirror.web3.db.host`                                | 127.0.0.1                                  | The IP or hostname used to connect to the database
-`hedera.mirror.web3.db.name`                                | mirror_node                                | The name of the database
-`hedera.mirror.web3.db.password`                            | mirror_web3_pass                           | The database password used to connect to the database
-`hedera.mirror.web3.db.port`                                | 5432                                       | The port used to connect to the database
-`hedera.mirror.web3.db.sslMode`                             | DISABLE                                    | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
-`hedera.mirror.web3.db.username`                            | mirror_web3                                | The username used to connect to the database
-`hedera.mirror.web3.evm.directTokenCall`                    | true                                       | Flag enabling contract like calls to tokens
-`hedera.mirror.web3.evm.dynamicEvmVersion`                  | false                                      | Flag indicating whether a dynamic evm version to be used
-`hedera.mirror.web3.evm.evmVersion`                         | v0.32                                      | The besu EVM version to be used as dynamic one
-`hedera.mirror.web3.evm.fundingAccount`                     | 0x0000000000000000000000000000000000000062 | Default Hedera funding account
-`hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                        | Maximal procent of gas refunding
-`hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                        | Maximum time for contract bytecode's caching
+Name                                                        | Default                                           | Description
+------------------------------------------------------------|---------------------------------------------------| ---------------------------------------
 `hedera.mirror.web3.cache.contractState`                    | expireAfterWrite=5s,maximumSize=10000,recordStats | Cache configuration for contract state
 `hedera.mirror.web3.cache.entity `                          | expireAfterWrite=30s,maximumSize=10000,recordStats | Cache configuration for entity
-`hedera.mirror.web3.cache.token`                            | expireAfterWrite=2s,maximumSize=10000,recordStats  | Cache configuration for token related info
-`hedera.mirror.web3.evm.rateLimit`                          | 100s                                       | Maximum RPS limit
+`hedera.mirror.web3.cache.fee`                              | expireAfterWrite=10m,maximumSize=20,recordStats   | Cache configuration for fee related info
+`hedera.mirror.web3.cache.token`                            | expireAfterWrite=2s,maximumSize=10000,recordStats | Cache configuration for token related info
+`hedera.mirror.web3.db.host`                                | 127.0.0.1                                         | The IP or hostname used to connect to the database
+`hedera.mirror.web3.db.name`                                | mirror_node                                       | The name of the database
+`hedera.mirror.web3.db.password`                            | mirror_web3_pass                                  | The database password used to connect to the database
+`hedera.mirror.web3.db.port`                                | 5432                                              | The port used to connect to the database
+`hedera.mirror.web3.db.sslMode`                             | DISABLE                                           | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
+`hedera.mirror.web3.db.username`                            | mirror_web3                                       | The username used to connect to the database
+`hedera.mirror.web3.evm.allowanceEnabled`                   | false                                             | Flag enabling ERC approve precompile
+`hedera.mirror.web3.evm.approvedForAllEnabled`              | false                                             | Flag enabling ERC isApprovedForAll precompile
+`hedera.mirror.web3.evm.chainId`                            | TESTNET                                           | Which Hedera chainId to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
+`hedera.mirror.web3.evm.estimateGasIterationThreshold`      | 1200                                              | The gas value difference between consecutive iterations in the binary search performed during gas estimation
+`hedera.mirror.web3.evm.directTokenCall`                    | true                                              | Flag enabling contract like calls to tokens
+`hedera.mirror.web3.evm.dynamicEvmVersion`                  | false                                             | Flag indicating whether a dynamic evm version to be used
+`hedera.mirror.web3.evm.evmVersion`                         | v0.32                                             | The besu EVM version to be used as dynamic one
+`hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                               | Maximum time for contract bytecode's caching
+`hedera.mirror.web3.evm.fundingAccount`                     | 0x0000000000000000000000000000000000000062        | Default Hedera funding account
+`hedera.mirror.web3.evm.maxGasEstimateRetriesCount`         | 20                                                | Estimate gas' contract call retry treshold 
+`hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                               | Maximal procent of gas refunding
+`hedera.mirror.web3.evm.network`                            | TESTNET                                           | Which Hedera network to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
+`hedera.mirror.web3.evm.rateLimit`                          | 100s                                              | Maximum RPS limit

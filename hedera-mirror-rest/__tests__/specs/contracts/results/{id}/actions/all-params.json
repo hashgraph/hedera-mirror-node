@@ -180,7 +180,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=lt:3&order=desc&limit=1"],
+  "urls": [
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=lt:3&order=desc&limit=1"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "actions": [

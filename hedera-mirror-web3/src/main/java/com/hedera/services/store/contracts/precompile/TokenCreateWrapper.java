@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -29,10 +33,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;

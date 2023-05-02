@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,18 @@ package com.hedera.mirror.monitor.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.config;
+
+import com.hedera.mirror.monitor.publish.PublishException;
+import com.hedera.mirror.monitor.publish.PublishMetrics;
+import com.hedera.mirror.monitor.publish.PublishProperties;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -32,15 +36,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
-
-import com.hedera.mirror.monitor.publish.PublishException;
-import com.hedera.mirror.monitor.publish.PublishMetrics;
-import com.hedera.mirror.monitor.publish.PublishProperties;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.TransactionPublisher;
-import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
-import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 
 @Log4j2
 @Configuration
@@ -103,10 +98,13 @@ class MonitorConfiguration {
      * @return the subscribing flow's Disposable
      */
     @Bean(destroyMethod = "dispose")
-    @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true", matchIfMissing =
-            true)
+    @ConditionalOnProperty(
+            value = "hedera.mirror.monitor.subscribe.enabled",
+            havingValue = "true",
+            matchIfMissing = true)
     Disposable subscribe() {
-        return mirrorSubscriber.subscribe()
+        return mirrorSubscriber
+                .subscribe()
                 .name("subscribe")
                 .metrics()
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))

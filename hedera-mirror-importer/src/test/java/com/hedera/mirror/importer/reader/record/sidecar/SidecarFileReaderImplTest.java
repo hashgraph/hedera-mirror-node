@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record.sidecar;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,26 +12,26 @@ package com.hedera.mirror.importer.reader.record.sidecar;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.record.sidecar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class SidecarFileReaderImplTest {
 
@@ -58,7 +53,8 @@ class SidecarFileReaderImplTest {
 
     @Test
     void read() {
-        var expected = TestRecordFiles.getAll().get(RECORD_FILENAME).getSidecars().get(0);
+        var expected =
+                TestRecordFiles.getAll().get(RECORD_FILENAME).getSidecars().get(0);
         // clear the fields SidecarFileReader fills
         var sidecar = expected.toBuilder()
                 .actualHash(null)
@@ -88,7 +84,7 @@ class SidecarFileReaderImplTest {
     @Test
     void readCorruptedProtoFile() throws IOException {
         try (var byteArrayOutputStream = new ByteArrayOutputStream();
-             var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
+                var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
             gzipCompressorOutputStream.write(domainBuilder.bytes(256));
             gzipCompressorOutputStream.finish();
             var streamFileData = StreamFileData.from(SIDECAR_FILENAME, byteArrayOutputStream.toByteArray());

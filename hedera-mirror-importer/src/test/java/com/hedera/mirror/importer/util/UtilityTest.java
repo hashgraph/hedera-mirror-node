@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,17 @@ package com.hedera.mirror.importer.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
@@ -37,19 +35,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-
 @SuppressWarnings("java:S5786")
 public class UtilityTest {
 
-    public static final byte[] ALIAS_ECDSA_SECP256K1 = Hex.decode(
-            "3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+    public static final byte[] ALIAS_ECDSA_SECP256K1 =
+            Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     public static final byte[] EVM_ADDRESS = Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
 
     @Test
     void aliasToEvmAddress() {
-        byte[] aliasEd25519 = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ab")).build().toByteArray();
+        byte[] aliasEd25519 = Key.newBuilder()
+                .setEd25519(ByteString.copyFromUtf8("ab"))
+                .build()
+                .toByteArray();
         byte[] aliasEcdsa2 = Hex.decode("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
         byte[] aliasInvalidEcdsa = Key.newBuilder()
                 .setECDSASecp256K1(ByteString.copyFrom(TestUtils.generateRandomByteArray(33)))
@@ -102,44 +100,34 @@ public class UtilityTest {
     @Test
     @DisplayName("get TransactionId")
     void getTransactionID() {
-        AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
+        AccountID payerAccountId = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(2)
+                .build();
         TransactionID transactionId = Utility.getTransactionId(payerAccountId);
-        assertThat(transactionId)
-                .isNotEqualTo(TransactionID.getDefaultInstance());
+        assertThat(transactionId).isNotEqualTo(TransactionID.getDefaultInstance());
 
         AccountID testAccountId = transactionId.getAccountID();
         assertAll(
                 // row counts
-                () -> assertEquals(payerAccountId.getShardNum(), testAccountId.getShardNum())
-                , () -> assertEquals(payerAccountId.getRealmNum(), testAccountId.getRealmNum())
-                , () -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum())
-        );
+                () -> assertEquals(payerAccountId.getShardNum(), testAccountId.getShardNum()),
+                () -> assertEquals(payerAccountId.getRealmNum(), testAccountId.getRealmNum()),
+                () -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum()));
     }
 
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")
-    @CsvSource({
-            "1569936354, 901",
-            "0, 901",
-            "1569936354, 0",
-            "0,0"
-    })
+    @CsvSource({"1569936354, 901", "0, 901", "1569936354, 0", "0,0"})
     void instantToTimestamp(long seconds, int nanos) {
         Instant instant = Instant.ofEpochSecond(seconds).plusNanos(nanos);
         Timestamp test = Utility.instantToTimestamp(instant);
         assertAll(
-                () -> assertEquals(instant.getEpochSecond(), test.getSeconds())
-                , () -> assertEquals(instant.getNano(), test.getNanos())
-        );
+                () -> assertEquals(instant.getEpochSecond(), test.getSeconds()),
+                () -> assertEquals(instant.getNano(), test.getNanos()));
     }
 
     @ParameterizedTest(name = "Convert {0} to snake case")
-    @CsvSource({
-            ",",
-            "\"\",\"\"",
-            "Foo,foo",
-            "FooBar,foo_bar",
-            "foo_bar,foo_bar"
-    })
+    @CsvSource({",", "\"\",\"\"", "Foo,foo", "FooBar,foo_bar", "foo_bar,foo_bar"})
     void toSnakeCase(String input, String output) {
         assertThat(Utility.toSnakeCase(input)).isEqualTo(output);
     }

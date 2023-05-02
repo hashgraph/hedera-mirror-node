@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,13 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.config;
+
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -40,10 +39,6 @@ import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
-
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 
 /**
  * Intercepts requests to the S3 API and records relevant metrics before continuing.
@@ -68,8 +63,8 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private final Timer.Builder requestMetric = Timer.builder("hedera.mirror.download.request")
             .description("The time in seconds it took to receive the response from S3");
 
-    private final DistributionSummary.Builder responseSizeMetric = DistributionSummary
-            .builder("hedera.mirror.download.response")
+    private final DistributionSummary.Builder responseSizeMetric = DistributionSummary.builder(
+                    "hedera.mirror.download.response")
             .description("The size of the response in bytes returned from S3")
             .baseUnit("bytes");
 
@@ -80,8 +75,8 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
     // Wrap the response to count the number of bytes read
     @Override
-    public Optional<Publisher<ByteBuffer>> modifyAsyncHttpResponseContent(Context.ModifyHttpResponse context,
-                                                                          ExecutionAttributes executionAttributes) {
+    public Optional<Publisher<ByteBuffer>> modifyAsyncHttpResponseContent(
+            Context.ModifyHttpResponse context, ExecutionAttributes executionAttributes) {
         return context.responsePublisher().map(publisher -> subscriber -> {
             ResponseSizeSubscriber responseSizeSubscriber = new ResponseSizeSubscriber(subscriber);
             executionAttributes.putAttributeIfAbsent(SIZE, responseSizeSubscriber);
@@ -98,23 +93,22 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
             ResponseSizeSubscriber responseSizeSubscriber = executionAttributes.getAttribute(SIZE);
 
             String[] tags = {
-                    "action", getAction(uri),
-                    "method", context.httpRequest().method().name(),
-                    "nodeAccount", nodeAccountId.getEntityNum().toString(),
-                    "realm", nodeAccountId.getRealmNum().toString(),
-                    "shard", nodeAccountId.getShardNum().toString(),
-                    "status", String.valueOf(context.httpResponse().statusCode()),
-                    "type", getType(uri)
+                "action", getAction(uri),
+                "method", context.httpRequest().method().name(),
+                "nodeAccount", nodeAccountId.getEntityNum().toString(),
+                "realm", nodeAccountId.getRealmNum().toString(),
+                "shard", nodeAccountId.getShardNum().toString(),
+                "status", String.valueOf(context.httpResponse().statusCode()),
+                "type", getType(uri)
             };
 
             if (startTime != null) {
-                requestMetric.tags(tags)
-                        .register(meterRegistry)
-                        .record(Duration.between(startTime, Instant.now()));
+                requestMetric.tags(tags).register(meterRegistry).record(Duration.between(startTime, Instant.now()));
             }
 
             if (responseSizeSubscriber != null) {
-                responseSizeMetric.tags(tags)
+                responseSizeMetric
+                        .tags(tags)
                         .register(meterRegistry)
                         .record(Double.valueOf(responseSizeSubscriber.getSize()));
             }

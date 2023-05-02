@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -41,6 +29,13 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -88,8 +83,10 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         long nodeStake2 = 21_000_000 * TINYBARS_IN_ONE_HBAR;
         var nodeStakeProto2 = getNodeStakeProto(nodeStake2, nodeStake2 - 3_000 * TINYBARS_IN_ONE_HBAR);
 
-        var recordItem = recordItemBuilder.nodeStakeUpdate()
-                .transactionBody(b -> b.clearNodeStake().addNodeStake(nodeStakeProto1).addNodeStake(nodeStakeProto2))
+        var recordItem = recordItemBuilder
+                .nodeStakeUpdate()
+                .transactionBody(
+                        b -> b.clearNodeStake().addNodeStake(nodeStakeProto1).addNodeStake(nodeStakeProto2))
                 .build();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long epochDay = Utility.getEpochDay(consensusTimestamp) - 1L;
@@ -98,8 +95,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         long stakingPeriod = DomainUtils.timestampInNanosMax(body.getEndOfStakingPeriod());
         var expectedNodeStakes = List.of(
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakingPeriod),
-                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod)
-        );
+                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod));
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
@@ -121,7 +117,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(stakingPeriod, NetworkStake::getStakingPeriod)
                 .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriodDuration)
                 .returns(body.getStakingPeriodsStored(), NetworkStake::getStakingPeriodsStored)
-                .returns(body.getStakingRewardFeeFraction().getDenominator(),
+                .returns(
+                        body.getStakingRewardFeeFraction().getDenominator(),
                         NetworkStake::getStakingRewardFeeDenominator)
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
@@ -131,7 +128,10 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Test
     void updateTransactionNoStake() {
         // given
-        var recordItem = recordItemBuilder.nodeStakeUpdate().transactionBody(b -> b.clearNodeStake()).build();
+        var recordItem = recordItemBuilder
+                .nodeStakeUpdate()
+                .transactionBody(b -> b.clearNodeStake())
+                .build();
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
@@ -144,7 +144,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {
         long stakeNotRewarded = stake - stakeRewarded;
-        return recordItemBuilder.nodeStake()
+        return recordItemBuilder
+                .nodeStake()
                 .setMaxStake(stake * 2)
                 .setMinStake(stake / 2)
                 .setStake(stake)
@@ -153,9 +154,11 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
     }
 
-    private NodeStake getExpectedNodeStake(long consensusTimestamp, long epochDay,
-                                           com.hederahashgraph.api.proto.java.NodeStake nodeStakeProto,
-                                           long stakingPeriod) {
+    private NodeStake getExpectedNodeStake(
+            long consensusTimestamp,
+            long epochDay,
+            com.hederahashgraph.api.proto.java.NodeStake nodeStakeProto,
+            long stakingPeriod) {
         return NodeStake.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .epochDay(epochDay)

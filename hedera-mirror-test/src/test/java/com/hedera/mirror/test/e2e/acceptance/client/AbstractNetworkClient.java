@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.time.Instant;
-import java.util.function.Supplier;
-import lombok.Data;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
@@ -44,9 +29,18 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
-import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import java.time.Instant;
+import java.util.function.Supplier;
+import lombok.Data;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.springframework.retry.support.RetryTemplate;
 
 @Data
 public abstract class AbstractNetworkClient {
@@ -71,12 +65,14 @@ public abstract class AbstractNetworkClient {
 
     @SneakyThrows
     public <O, T extends Query<O, T>> O executeQuery(Supplier<Query<O, T>> querySupplier) {
-        var grpcDeadline = sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
-        return retryTemplate.execute(x -> querySupplier.get().setGrpcDeadline(grpcDeadline).execute(client));
+        var grpcDeadline =
+                sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
+        return retryTemplate.execute(
+                x -> querySupplier.get().setGrpcDeadline(grpcDeadline).execute(client));
     }
 
     @SneakyThrows
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
+    public TransactionId executeTransaction(Transaction<?> transaction, KeyList keyList, ExpandedAccountId payer) {
         int numSignatures = 0;
 
         if (payer != null) {
@@ -101,35 +97,37 @@ public abstract class AbstractNetworkClient {
         transaction.setGrpcDeadline(sdkProperties.getGrpcDeadline());
         transaction.setMaxAttempts(sdkProperties.getMaxAttempts());
 
-        var transactionResponse = (TransactionResponse) retryTemplate.execute(x -> transaction.execute(client));
+        var transactionResponse = retryTemplate.execute(x -> transaction.execute(client));
         var transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {} with {} signatures.", transactionId, numSignatures);
 
         return transactionId;
     }
 
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+    public TransactionId executeTransaction(Transaction<?> transaction, KeyList keyList) {
         return executeTransaction(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
-                                                                           ExpandedAccountId payer) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(
+            Transaction<?> transaction, KeyList keyList, ExpandedAccountId payer) {
         var transactionId = executeTransaction(transaction, keyList, payer);
         var transactionReceipt = getTransactionReceipt(transactionId);
         log.debug("Executed {} {}", transaction.getClass().getSimpleName(), transactionId);
+
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(
+            Transaction<?> transaction, KeyList keyList) {
         return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
-                                                                           ExpandedAccountId payer) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(
+            Transaction<?> transaction, ExpandedAccountId payer) {
         return executeTransactionAndRetrieveReceipt(transaction, null, payer);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction) {
         return executeTransactionAndRetrieveReceipt(transaction, null, null);
     }
 
@@ -150,15 +148,16 @@ public abstract class AbstractNetworkClient {
 
     @SneakyThrows
     public TransactionRecord getTransactionRecord(TransactionId transactionId) {
-        var grpcDeadline = sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
+        var grpcDeadline =
+                sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
         return retryTemplate.execute(x -> {
             var receipt = new TransactionReceiptQuery()
                     .setTransactionId(transactionId)
                     .setGrpcDeadline(grpcDeadline)
                     .execute(client);
             if (receipt.status != Status.SUCCESS) {
-                throw new RuntimeException(String.format("Transaction %s is unsuccessful: %s", transactionId,
-                        receipt.status));
+                throw new RuntimeException(
+                        String.format("Transaction %s is unsuccessful: %s", transactionId, receipt.status));
             }
 
             return new TransactionRecordQuery()

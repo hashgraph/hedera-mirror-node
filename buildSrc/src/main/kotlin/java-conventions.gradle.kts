@@ -85,6 +85,14 @@ tasks.compileJava {
     targetCompatibility = "17"
 }
 
+tasks.compileTestJava {
+    dependsOn("generateEffectiveLombokConfig")
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
+    options.encoding = "UTF-8"
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
+}
+
 tasks.javadoc {
     options.encoding = "UTF-8"
 }

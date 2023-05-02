@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
 
 class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -37,7 +32,8 @@ class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         var fileId = FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM);
-        return recordItemBuilder.freeze()
+        return recordItemBuilder
+                .freeze()
                 .transactionBody(b -> b.setUpdateFile(fileId))
                 .build()
                 .getTransactionBody()

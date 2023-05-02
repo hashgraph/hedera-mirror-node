@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.sql;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,13 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 import com.google.common.base.Stopwatch;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
-
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -89,6 +73,17 @@ import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.util.Utility;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.Order;
 
 @Log4j2
 @Named
@@ -153,15 +148,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
 
     @SuppressWarnings("java:S107")
-    public SqlEntityListener(BatchPersister batchPersister,
-                             EntityIdService entityIdService,
-                             EntityProperties entityProperties,
-                             ApplicationEventPublisher eventPublisher,
-                             NftRepository nftRepository,
-                             RecordFileRepository recordFileRepository,
-                             SidecarFileRepository sidecarFileRepository,
-                             SqlProperties sqlProperties,
-                             @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
+    public SqlEntityListener(
+            BatchPersister batchPersister,
+            EntityIdService entityIdService,
+            EntityProperties entityProperties,
+            ApplicationEventPublisher eventPublisher,
+            NftRepository nftRepository,
+            RecordFileRepository recordFileRepository,
+            SidecarFileRepository sidecarFileRepository,
+            SqlProperties sqlProperties,
+            @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
@@ -362,8 +358,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             var newTreasury = nftTransfer.getReceiverAccountId();
             var previousTreasury = nftTransfer.getSenderAccountId();
 
-            nftRepository.updateTreasury(tokenId, previousTreasury.getId(), newTreasury.getId(),
-                    nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
+            nftRepository.updateTreasury(
+                    tokenId,
+                    previousTreasury.getId(),
+                    newTreasury.getId(),
+                    nftTransferId.getConsensusTimestamp(),
+                    payerAccountId,
+                    nftTransfer.getIsApproval());
             return;
         }
 
@@ -453,8 +454,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAllowance(TokenAllowance tokenAllowance) {
-        TokenAllowance merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance,
-                this::mergeTokenAllowance);
+        TokenAllowance merged =
+                tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeTokenAllowance);
         tokenAllowances.add(merged);
     }
 

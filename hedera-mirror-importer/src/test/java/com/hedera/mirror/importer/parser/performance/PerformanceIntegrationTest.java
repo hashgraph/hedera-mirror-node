@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.performance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,22 @@ package com.hedera.mirror.importer.parser.performance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.performance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.db.DBProperties;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordFileParser;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
+import com.hedera.mirror.importer.repository.AccountBalanceRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
@@ -34,17 +40,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
-
-import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
-import com.hedera.mirror.importer.reader.record.RecordFileReader;
-import com.hedera.mirror.importer.repository.AccountBalanceRepository;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.TopicMessageRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
 @SpringBootTest
@@ -80,22 +75,21 @@ public abstract class PerformanceIntegrationTest {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    private static final String restoreClientImagePrefix = "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" +
-            "-client:";
+    private static final String restoreClientImagePrefix =
+            "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" + "-client:";
 
-    protected GenericContainer createRestoreContainer(String dockerImageTag) {
+    protected GenericContainer<?> createRestoreContainer(String dockerImageTag) {
         log.debug("Creating restore container to connect to {}", dbProperties);
         Consumer<OutputFrame> logConsumer = o -> log.info("Restore container: {}", o::getUtf8String);
-        return new GenericContainer(restoreClientImagePrefix + dockerImageTag)
+        GenericContainer<?> container = new GenericContainer<>(restoreClientImagePrefix + dockerImageTag)
                 .withEnv("DB_NAME", dbProperties.getName())
                 .withEnv("DB_USER", dbProperties.getUsername())
                 .withEnv("DB_PASS", dbProperties.getPassword())
                 .withEnv("DB_PORT", Integer.toString(dbProperties.getPort()))
                 .withLogConsumer(logConsumer)
                 .withNetworkMode("host")
-                .withStartupCheckStrategy(
-                        new IndefiniteWaitOneShotStartupCheckStrategy()
-                );
+                .withStartupCheckStrategy(new IndefiniteWaitOneShotStartupCheckStrategy());
+        return container;
     }
 
     void parse() throws Exception {

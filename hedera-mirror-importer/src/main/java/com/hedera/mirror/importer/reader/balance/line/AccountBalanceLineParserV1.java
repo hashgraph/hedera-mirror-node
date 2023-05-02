@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.balance.line;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.importer.reader.balance.line;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.common.base.Splitter;
-import java.util.Collections;
-import java.util.List;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
+package com.hedera.mirror.importer.reader.balance.line;
 
+import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import java.util.Collections;
+import java.util.List;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
@@ -70,13 +65,16 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
             }
 
             if (shardNum != mirrorProperties.getShard()) {
-                throw new InvalidDatasetException(String.format("Invalid account balance line: %s. Expect " +
-                        "shard (%d), got shard (%d)", line, mirrorProperties.getShard(), shardNum));
+                throw new InvalidDatasetException(String.format(
+                        "Invalid account balance line: %s. Expect " + "shard (%d), got shard (%d)",
+                        line, mirrorProperties.getShard(), shardNum));
             }
 
-            return new AccountBalance(balance, Collections
-                    .emptyList(), new AccountBalance.Id(consensusTimestamp, EntityId
-                    .of(shardNum, realmNum, accountNum, EntityType.ACCOUNT)));
+            return new AccountBalance(
+                    balance,
+                    Collections.emptyList(),
+                    new AccountBalance.Id(
+                            consensusTimestamp, EntityId.of(shardNum, realmNum, accountNum, EntityType.ACCOUNT)));
         } catch (NumberFormatException ex) {
             throw new InvalidDatasetException(INVALID_BALANCE + line, ex);
         }

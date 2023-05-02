@@ -4,7 +4,12 @@
     "sql": {
       "pathprefix": "data/db/stateproof",
       "funcs": ["addRecordFileWithBytes"],
-      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file_v5.sql", "transaction_v5.sql"]
+      "scripts": [
+        "address_book.sql",
+        "address_book_entry.sql",
+        "record_file_v5.sql",
+        "transaction_v5.sql"
+      ]
     }
   },
   "urls": [

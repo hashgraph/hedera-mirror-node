@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,13 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.parser.batch;
+
+import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
@@ -30,10 +29,6 @@ import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.util.CollectionUtils;
-
-import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 
 /**
  * Stateless writer to upsert rows into PostgreSQL using COPY into a temp table then insert and update into final table
@@ -49,9 +44,12 @@ public class BatchUpserter extends BatchInserter {
     private final String truncateSql;
     private final Timer upsertMetric;
 
-    public BatchUpserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                         CommonParserProperties properties,
-                         UpsertQueryGenerator upsertQueryGenerator) {
+    public BatchUpserter(
+            Class<?> entityClass,
+            DataSource dataSource,
+            MeterRegistry meterRegistry,
+            CommonParserProperties properties,
+            UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
@@ -81,8 +79,8 @@ public class BatchUpserter extends BatchInserter {
             // Upsert items from the temporary table to the final table
             upsert(connection);
         } catch (Exception e) {
-            throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
-                    finalTableName), e);
+            throw new ParserException(
+                    String.format("Error copying %d items to table %s", items.size(), finalTableName), e);
         }
     }
 
@@ -119,4 +117,3 @@ public class BatchUpserter extends BatchInserter {
         }
     }
 }
-

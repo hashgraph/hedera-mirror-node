@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,14 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.listener;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -31,15 +31,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
-    private static final String JSON = """
+    private static final String JSON =
+            """
             {
               "@type":"TopicMessage",
               "chunk_num":1,
@@ -85,7 +81,8 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
     @Test
     void json() {
-        TopicMessage topicMessage = TopicMessage.builder().chunkNum(1)
+        TopicMessage topicMessage = TopicMessage.builder()
+                .chunkNum(1)
                 .chunkTotal(2)
                 .consensusTimestamp(Instant.ofEpochSecond(1594401417))
                 .message(new byte[] {1, 2, 3})
@@ -94,7 +91,8 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .runningHashVersion(2)
                 .sequenceNumber(1L)
                 .topicId(1001)
-                .validStartTimestamp(Instant.ofEpochSecond(1594401416)).build();
+                .validStartTimestamp(Instant.ofEpochSecond(1594401416))
+                .build();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -111,9 +109,8 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Test
     void jsonError() {
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(Instant.EPOCH).build();
 
         // Parsing errors will be logged and ignored and the message will be lost
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
@@ -127,10 +124,12 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Override
     protected void publish(Flux<TopicMessage> publisher) {
-        publisher.concatMap(t -> {
-            jdbcTemplate.queryForMap("select pg_notify('topic_message', ?)", toJson(t));
-            return Mono.just(t);
-        }).blockLast();
+        publisher
+                .concatMap(t -> {
+                    jdbcTemplate.queryForMap("select pg_notify('topic_message', ?)", toJson(t));
+                    return Mono.just(t);
+                })
+                .blockLast();
     }
 
     private String toJson(TopicMessage topicMessage) {

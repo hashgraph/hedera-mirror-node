@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.util.DomainUtils;
 
 class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -63,8 +58,10 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Test
     void testGetEntityIdReceipt() {
         var recordItem = recordItemBuilder.contractCall().build();
-        ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
-        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
+        ContractID contractIdBody =
+                recordItem.getTransactionBody().getContractCall().getContractID();
+        ContractID contractIdReceipt =
+                recordItem.getTransactionRecord().getReceipt().getContractID();
         EntityId expectedEntityId = EntityId.of(contractIdReceipt);
 
         when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(Optional.of(expectedEntityId));
@@ -82,7 +79,8 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
         assertThat(contractResult)
                 .returns(transaction.getAmount(), ContractResult::getAmount)
                 .returns(transaction.getGas(), ContractResult::getGasLimit)
-                .returns(DomainUtils.toBytes(transaction.getFunctionParameters()),
+                .returns(
+                        DomainUtils.toBytes(transaction.getFunctionParameters()),
                         ContractResult::getFunctionParameters);
     }
 

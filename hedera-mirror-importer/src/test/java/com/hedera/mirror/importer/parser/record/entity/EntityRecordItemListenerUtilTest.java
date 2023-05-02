@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,17 @@ package com.hedera.mirror.importer.parser.record.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.transaction.Prng;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -31,10 +30,6 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
-
-import com.hedera.mirror.common.domain.transaction.Prng;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.repository.PrngRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerTest {
@@ -58,14 +53,14 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
                         .returns(recordItem.getConsensusTimestamp(), Prng::getConsensusTimestamp)
                         .returns(Integer.MAX_VALUE, Prng::getRange)
                         .returns(pseudorandomNumber, Prng::getPrngNumber)
-                        .returns(null, Prng::getPrngBytes)
-        );
+                        .returns(null, Prng::getPrngBytes));
     }
 
     @Test
     void prngBytes() {
         var recordItem = recordItemBuilder.prng(0).build();
-        byte[] pseudorandomBytes = recordItem.getTransactionRecord().getPrngBytes().toByteArray();
+        byte[] pseudorandomBytes =
+                recordItem.getTransactionRecord().getPrngBytes().toByteArray();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -79,8 +74,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
                         .returns(recordItem.getConsensusTimestamp(), Prng::getConsensusTimestamp)
                         .returns(0, Prng::getRange)
                         .returns(pseudorandomBytes, Prng::getPrngBytes)
-                        .returns(null, Prng::getPrngNumber)
-        );
+                        .returns(null, Prng::getPrngNumber));
     }
 
     /**
@@ -91,8 +85,9 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
      */
     @Test
     void invalidPrngTransaction() {
-        byte[] invalidBytes = new byte[] {10, 23, 10, 21, 10, 11, 8, -23, -105, -78, -101, 6, 16, -115, -95, -56, 47,
-                18, 4, 24, -108, -74, 85, 32, 1};
+        byte[] invalidBytes = new byte[] {
+            10, 23, 10, 21, 10, 11, 8, -23, -105, -78, -101, 6, 16, -115, -95, -56, 47, 18, 4, 24, -108, -74, 85, 32, 1
+        };
         var transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(ByteString.copyFrom(invalidBytes))
                 .build();
@@ -109,10 +104,9 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(0, prngRepository.count()),
                 () -> assertThat(transactionRepository.findAll())
-                        .hasSize(1).
-                        first()
+                        .hasSize(1)
+                        .first()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getType)
-                        .isEqualTo(TransactionBody.DataCase.DATA_NOT_SET.getNumber())
-        );
+                        .isEqualTo(TransactionBody.DataCase.DATA_NOT_SET.getNumber()));
     }
 }

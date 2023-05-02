@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.grpc;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,17 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.subscribe.grpc;
 
 import static io.grpc.Status.Code.INVALID_ARGUMENT;
 
+import com.hedera.mirror.monitor.ScenarioProperties;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.ArrayList;
@@ -33,12 +34,6 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
 
-import com.hedera.mirror.monitor.ScenarioProperties;
-import com.hedera.mirror.monitor.expression.ExpressionConverter;
-import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
-import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-
 @Log4j2
 @Named
 @RequiredArgsConstructor
@@ -48,7 +43,8 @@ class GrpcSubscriber implements MirrorSubscriber {
     private final ExpressionConverter expressionConverter;
     private final GrpcClient grpcClient;
     private final SubscribeProperties subscribeProperties;
-    private final Flux<GrpcSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
+    private final Flux<GrpcSubscription> subscriptions =
+            Flux.defer(this::createSubscriptions).cache();
 
     @Override
     public Flux<SubscribeResponse> subscribe() {
@@ -85,8 +81,10 @@ class GrpcSubscriber implements MirrorSubscriber {
                 .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
                         .maxBackoff(retry.getMaxBackoff())
                         .filter(this::shouldRetry)
-                        .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
-                                r.totalRetries() + 1, StringUtils.substringBefore(r.failure().getMessage(), "\n"))))
+                        .doBeforeRetry(r -> log.warn(
+                                "Retry attempt #{} after failure: {}",
+                                r.totalRetries() + 1,
+                                StringUtils.substringBefore(r.failure().getMessage(), "\n"))))
                 .doOnError(t -> log.error("Error subscribing {}: ", subscription, t))
                 .doOnSubscribe(s -> log.info("Starting subscriber {}: {}", subscription, subscriberProperties));
     }

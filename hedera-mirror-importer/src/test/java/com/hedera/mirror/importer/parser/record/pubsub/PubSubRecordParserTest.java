@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.pubsub;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,20 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.PubSubIntegrationTest;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordFileParser;
+import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,12 +44,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.PubSubIntegrationTest;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
-import com.hedera.mirror.importer.reader.record.RecordFileReader;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class PubSubRecordParserTest extends PubSubIntegrationTest {
 
@@ -56,8 +51,10 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
 
     @Value("classpath:data/pubsub-messages.txt")
     private final Path pubSubMessages;
+
     private final RecordFileParser recordFileParser;
     private final RecordFileReader recordFileReader;
+
     @Value("classpath:data/recordstreams/v2/record0.0.3/*.rcd")
     private final Resource[] testFiles;
 
@@ -94,8 +91,8 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
             long consensusTimestamp = messageEntry.getKey();
             String expectedMessage = messageEntry.getValue();
             String actualMessage = actualMessageMap.get(consensusTimestamp);
-            JSONAssert.assertEquals(String.format("%d", consensusTimestamp), expectedMessage, actualMessage,
-                    JSONCompareMode.STRICT);
+            JSONAssert.assertEquals(
+                    String.format("%d", consensusTimestamp), expectedMessage, actualMessage, JSONCompareMode.STRICT);
         }
     }
 
@@ -106,7 +103,9 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
 
         for (String message : inputMessages) {
             Matcher matcher = pattern.matcher(message);
-            assertThat(matcher.find()).as("Message is missing consensusTimestamp: " + message).isTrue();
+            assertThat(matcher.find())
+                    .as("Message is missing consensusTimestamp: " + message)
+                    .isTrue();
             messages.put(Long.valueOf(matcher.group(1)), message);
         }
 

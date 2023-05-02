@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.batch;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
@@ -27,20 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
-import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.transaction.support.TransactionOperations;
-
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -74,6 +56,19 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hederahashgraph.api.proto.java.Key;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
+import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.support.TransactionOperations;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BatchUpserterTest extends IntegrationTest {
@@ -185,8 +180,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         persist(batchPersister, entities, updateEntities); // copy inserts and updates
 
-        assertThat(entityRepository
-                .findAll())
+        assertThat(entityRepository.findAll())
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Entity::getMemo)
@@ -230,8 +224,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         persist(batchPersister, tokens);
 
-        assertThat(tokenRepository
-                .findAll())
+        assertThat(tokenRepository.findAll())
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Token::getTreasuryAccountId)
@@ -278,16 +271,11 @@ class BatchUpserterTest extends IntegrationTest {
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
-        assertThat(tokenAccountRepository
-                .findAll())
+        assertThat(tokenAccountRepository.findAll())
                 .isNotEmpty()
                 .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
                 .containsExactlyInAnyOrder(
-                        Tuple.tuple(1L, 1L),
-                        Tuple.tuple(2L, 2L),
-                        Tuple.tuple(3L, 3L),
-                        Tuple.tuple(4L, 4L)
-                );
+                        Tuple.tuple(1L, 1L), Tuple.tuple(2L, 2L), Tuple.tuple(3L, 3L), Tuple.tuple(4L, 4L));
     }
 
     @Test
@@ -315,32 +303,31 @@ class BatchUpserterTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
-                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN)
-                );
+                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN));
 
         // reverse freeze status
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
-                TokenFreezeStatusEnum.UNFROZEN, null, Range.atLeast(10L)));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null,
-                TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(11L)));
+        tokenAccounts.add(getTokenAccount(
+                "0.0.3000", "0.0.3001", null, null, TokenFreezeStatusEnum.UNFROZEN, null, Range.atLeast(10L)));
+        tokenAccounts.add(getTokenAccount(
+                "0.0.4000", "0.0.4001", null, null, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(11L)));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
-                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getTimestampLower, TokenAccount::getFreezeStatus)
+                .extracting(
+                        TokenAccount::getCreatedTimestamp,
+                        TokenAccount::getTimestampLower,
+                        TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, 5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, 10L, TokenFreezeStatusEnum.UNFROZEN),
-                        Tuple.tuple(7L, 11L, TokenFreezeStatusEnum.FROZEN)
-                );
+                        Tuple.tuple(7L, 11L, TokenFreezeStatusEnum.FROZEN));
 
         assertThat(tokenAccountHistoryRepository.findAll())
                 .extracting(ta -> ta.getCreatedTimestamp(), TokenAccountHistory::getFreezeStatus)
                 .containsExactlyInAnyOrder(
-                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
-                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN)
-                );
+                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN), Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN));
     }
 
     @Test
@@ -364,13 +351,12 @@ class BatchUpserterTest extends IntegrationTest {
                 .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED)
-                );
+                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED));
 
         // grant KYC
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
-                null, TokenKycStatusEnum.GRANTED, Range.atLeast(11L)));
+        tokenAccounts.add(getTokenAccount(
+                "0.0.3000", "0.0.3001", null, null, null, TokenKycStatusEnum.GRANTED, Range.atLeast(11L)));
 
         persist(batchPersister, tokenAccounts);
 
@@ -378,8 +364,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenKycStatusEnum.GRANTED)
-                );
+                        Tuple.tuple(6L, TokenKycStatusEnum.GRANTED));
     }
 
     @Test
@@ -423,7 +408,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         persist(batchPersister, tokenAccounts);
 
-        //assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
+        // assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(tokenAccountRepository.findAll())
                 .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
                 .containsExactlyInAnyOrder(
@@ -432,8 +417,7 @@ class BatchUpserterTest extends IntegrationTest {
                         Tuple.tuple(7L, 10L),
                         Tuple.tuple(8L, 11L),
                         Tuple.tuple(10L, 12L),
-                        Tuple.tuple(11L, 13L)
-                );
+                        Tuple.tuple(11L, 13L));
 
         assertThat(tokenAccountHistoryRepository.findAll())
                 .extracting(TokenAccountHistory::getCreatedTimestamp)
@@ -472,8 +456,7 @@ class BatchUpserterTest extends IntegrationTest {
         schedules.add(getSchedule(8L, "0.0.1006", null));
 
         persist(batchPersister, schedules);
-        assertThat(scheduleRepository
-                .findAll())
+        assertThat(scheduleRepository.findAll())
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Schedule::getExecutedTimestamp)
@@ -508,8 +491,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         persist(batchPersister, nfts);
 
-        assertThat(nftRepository
-                .findAll())
+        assertThat(nftRepository.findAll())
                 .isNotEmpty()
                 .hasSize(4)
                 .extracting(Nft::getAccountId)
@@ -550,8 +532,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         persist(batchPersister, nfts);
 
-        assertThat(nftRepository
-                .findAll())
+        assertThat(nftRepository.findAll())
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Nft::getAccountId)
@@ -589,8 +570,7 @@ class BatchUpserterTest extends IntegrationTest {
         nfts.add(getNft("0.0.5000", 4, "0.0.1008", null, 18L, null, false));
 
         persist(batchPersister, nfts);
-        assertThat(nftRepository
-                .findAll())
+        assertThat(nftRepository.findAll())
                 .isNotEmpty()
                 .hasSize(4)
                 .extracting(Nft::getAccountId)
@@ -603,8 +583,7 @@ class BatchUpserterTest extends IntegrationTest {
         nfts.add(getNft("0.0.5000", 4, "0.0.0", null, 23L, null, true));
         persist(batchPersister, nfts);
 
-        assertThat(nftRepository
-                .findAll())
+        assertThat(nftRepository.findAll())
                 .isNotEmpty()
                 .hasSize(4)
                 .extracting(Nft::getDeleted)
@@ -653,31 +632,35 @@ class BatchUpserterTest extends IntegrationTest {
         long consensusTimestamp = 30L;
         EntityId ftId = EntityId.of("0.0.217", TOKEN);
         EntityId payerId = EntityId.of("0.0.2002", ACCOUNT);
-        TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
-                .amount(-10)
-                .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
-                .isApproval(false)
-                .payerAccountId(payerId)
-                .deletedTokenDissociate(true)).get();
-        TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
-                .amount(-2)
-                .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
-                .isApproval(false)
-                .payerAccountId(payerId)
-                .deletedTokenDissociate(true)).get();
+        TokenTransfer fungibleTokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(-10)
+                        .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                        .isApproval(false)
+                        .payerAccountId(payerId)
+                        .deletedTokenDissociate(true))
+                .get();
+        TokenTransfer nonFungibleTokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(-2)
+                        .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                        .isApproval(false)
+                        .payerAccountId(payerId)
+                        .deletedTokenDissociate(true))
+                .get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when
         persist(tokenDissociateTransferBatchUpserter, tokenTransfers);
 
         // then
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(
-                nft1,
-                getNft(tokenId1, accountId, 2L, 11L, 30L, true),
-                getNft(tokenId1, accountId, 3L, 12L, 30L, true),
-                nft4,
-                nft5
-        );
+        assertThat(nftRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        nft1,
+                        getNft(tokenId1, accountId, 2L, 11L, 30L, true),
+                        getNft(tokenId1, accountId, 3L, 12L, 30L, true),
+                        nft4,
+                        nft5);
 
         NftTransfer serial2Transfer = getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp);
         serial2Transfer.setPayerAccountId(payerId);
@@ -685,14 +668,15 @@ class BatchUpserterTest extends IntegrationTest {
         serial3Transfer.setPayerAccountId(payerId);
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
 
+        fungibleTokenTransfer.setDeletedTokenDissociate(false);
         assertThat(tokenTransferRepository.findAll())
-                .usingElementComparatorIgnoringFields("deletedTokenDissociate")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("deletedTokenDissociate")
                 .containsOnly(fungibleTokenTransfer);
     }
 
     private void persist(BatchPersister batchPersister, Collection<?>... items) {
         transactionOperations.executeWithoutResult(t -> {
-            for (Collection batch : items) {
+            for (Collection<?> batch : items) {
                 batchPersister.persist(batch);
             }
         });
@@ -721,10 +705,19 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     @SneakyThrows
-    private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp,
-                           Boolean freezeDefault, Key freezeKey, Key kycKey, Key pauseKey) {
+    private Token getToken(
+            String tokenId,
+            String treasuryAccountId,
+            Long createdTimestamp,
+            Boolean freezeDefault,
+            Key freezeKey,
+            Key kycKey,
+            Key pauseKey) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
+        var hexKey = Key.newBuilder()
+                .setEd25519(ByteString.copyFrom(Hex.decodeHex(instr)))
+                .build()
+                .toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(1000);
@@ -747,24 +740,30 @@ class BatchUpserterTest extends IntegrationTest {
         return token;
     }
 
-    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
-                                         Range<Long> timestampRange) {
+    private TokenAccount getTokenAccount(
+            String tokenId, String accountId, Long createdTimestamp, Boolean associated, Range<Long> timestampRange) {
         return getTokenAccount(tokenId, accountId, createdTimestamp, associated, null, null, timestampRange);
     }
 
-    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
-                                         TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
-                                         Range<Long> timestampRange) {
-        return domainBuilder.tokenAccount().customize(t -> t
-                .accountId(EntityId.of(accountId, ACCOUNT).getId())
-                .automaticAssociation(false)
-                .associated(associated)
-                .createdTimestamp(createdTimestamp)
-                .freezeStatus(freezeStatus)
-                .kycStatus(kycStatus)
-                .timestampRange(timestampRange)
-                .tokenId(EntityId.of(tokenId, TOKEN).getId())
-        ).get();
+    private TokenAccount getTokenAccount(
+            String tokenId,
+            String accountId,
+            Long createdTimestamp,
+            Boolean associated,
+            TokenFreezeStatusEnum freezeStatus,
+            TokenKycStatusEnum kycStatus,
+            Range<Long> timestampRange) {
+        return domainBuilder
+                .tokenAccount()
+                .customize(t -> t.accountId(EntityId.of(accountId, ACCOUNT).getId())
+                        .automaticAssociation(false)
+                        .associated(associated)
+                        .createdTimestamp(createdTimestamp)
+                        .freezeStatus(freezeStatus)
+                        .kycStatus(kycStatus)
+                        .timestampRange(timestampRange)
+                        .tokenId(EntityId.of(tokenId, TOKEN).getId()))
+                .get();
     }
 
     private Schedule getSchedule(Long createdTimestamp, String scheduleId, Long executedTimestamp) {
@@ -778,14 +777,31 @@ class BatchUpserterTest extends IntegrationTest {
         return schedule;
     }
 
-    private Nft getNft(EntityId tokenId, EntityId accountId, long serialNumber, long createdTimestamp,
-                       long modifiedTimestamp, boolean deleted) {
-        return getNft(tokenId.toString(), serialNumber, accountId.toString(), createdTimestamp,
-                modifiedTimestamp, "meta", deleted);
+    private Nft getNft(
+            EntityId tokenId,
+            EntityId accountId,
+            long serialNumber,
+            long createdTimestamp,
+            long modifiedTimestamp,
+            boolean deleted) {
+        return getNft(
+                tokenId.toString(),
+                serialNumber,
+                accountId.toString(),
+                createdTimestamp,
+                modifiedTimestamp,
+                "meta",
+                deleted);
     }
 
-    private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp,
-                       long modifiedTimeStamp, String metadata, Boolean deleted) {
+    private Nft getNft(
+            String tokenId,
+            long serialNumber,
+            String accountId,
+            Long createdTimestamp,
+            long modifiedTimeStamp,
+            String metadata,
+            Boolean deleted) {
         Nft nft = new Nft();
         nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityType.ACCOUNT));
         nft.setCreatedTimestamp(createdTimestamp);
@@ -796,8 +812,8 @@ class BatchUpserterTest extends IntegrationTest {
         return nft;
     }
 
-    private NftTransfer getNftTransfer(EntityId tokenId, EntityId senderAccountId, long serialNumber,
-                                       long consensusTimestamp) {
+    private NftTransfer getNftTransfer(
+            EntityId tokenId, EntityId senderAccountId, long serialNumber, long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setIsApproval(false);

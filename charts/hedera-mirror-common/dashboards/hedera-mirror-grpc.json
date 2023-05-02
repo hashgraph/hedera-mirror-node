@@ -31,8 +31,7 @@
     {
       "collapsed": false,
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -45,8 +44,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1126,8 +1124,7 @@
     {
       "collapsed": false,
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -1140,8 +1137,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1359,7 +1355,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} * system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "usage",
@@ -1963,8 +1959,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "description": "The amount of time it takes to invoke the Spring Data repository method to execute a query.",
       "fieldConfig": {
@@ -2050,8 +2045,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "sum(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method)",
@@ -2163,8 +2157,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "description": "The rate of commands sent to Redis",
       "fieldConfig": {
@@ -2238,8 +2231,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "sum(rate(lettuce_command_completion_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (command)",
@@ -2255,8 +2247,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "description": "The amount of time it takes to execute a Redis command",
       "fieldConfig": {
@@ -2330,8 +2321,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "sum(rate(lettuce_command_completion_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (command) / sum(rate(lettuce_command_completion_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (command)",
@@ -2347,8 +2337,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "description": "The amount of time the process has been running.",
       "fieldConfig": {
@@ -2425,8 +2414,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "process_uptime_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
@@ -2442,8 +2430,7 @@
     {
       "collapsed": false,
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -2456,8 +2443,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -2688,8 +2674,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -2701,8 +2686,7 @@
       "panels": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "description": "How much time each message took to be processed by the listener.",
           "fieldConfig": {
@@ -2779,8 +2763,7 @@
           "targets": [
             {
               "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${prometheus}"
               },
               "editorMode": "code",
               "expr": "sum(rate(hedera_mirror_grpc_listener_flow_duration_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (mode) / sum(rate(hedera_mirror_grpc_listener_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (mode)",
@@ -2795,8 +2778,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "description": "The rate of messages received by this listener.",
           "fieldConfig": {
@@ -2873,8 +2855,7 @@
           "targets": [
             {
               "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${prometheus}"
               },
               "editorMode": "code",
               "expr": "sum(rate(hedera_mirror_grpc_listener_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (mode)",
@@ -2889,8 +2870,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "description": "How much time each message took to be retrieved.",
           "fieldConfig": {
@@ -2967,8 +2947,7 @@
           "targets": [
             {
               "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${prometheus}"
               },
               "editorMode": "code",
               "expr": "sum(rate(hedera_mirror_grpc_retriever_flow_duration_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / sum(rate(hedera_mirror_grpc_retriever_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -2983,8 +2962,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "description": "The rate of messages retrieved from the database",
           "fieldConfig": {
@@ -3061,8 +3039,7 @@
           "targets": [
             {
               "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${prometheus}"
               },
               "editorMode": "code",
               "expr": "sum(rate(hedera_mirror_grpc_retriever_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -3077,8 +3054,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "description": " Measures delays between onNext signals (or between onSubscribe and first onNext)",
           "fieldConfig": {
@@ -3155,8 +3131,7 @@
           "targets": [
             {
               "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
+                "uid": "${prometheus}"
               },
               "editorMode": "code",
               "expr": "sum(rate(hedera_mirror_grpc_retriever_requested_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / sum(rate(hedera_mirror_grpc_retriever_requested_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -3173,8 +3148,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -3520,15 +3494,15 @@
         "query": "loki",
         "queryValue": "",
         "refresh": 1,
-        "regex": "",
+        "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {
           "selected": false,
-          "text": "",
-          "value": ""
+          "text": "default",
+          "value": "default"
         },
         "description": "Name of the Prometheus datasource to use",
         "hide": 0,
@@ -3540,7 +3514,7 @@
         "query": "prometheus",
         "queryValue": "",
         "refresh": 1,
-        "regex": "",
+        "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
       },

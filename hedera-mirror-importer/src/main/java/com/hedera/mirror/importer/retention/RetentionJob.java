@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.retention;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,15 @@ package com.hedera.mirror.importer.retention;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.retention;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.RetentionRepository;
+import com.hedera.mirror.importer.util.Utility;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
@@ -36,11 +36,6 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionOperations;
-
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.RetentionRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -68,8 +63,8 @@ public class RetentionJob {
 
         var maxTimestamp = latest.get().getConsensusEnd();
         var iterator = new RecordFileIterator(latest.get());
-        log.info("Using retention period {} to prune entries on or before {}", retentionPeriod,
-                toInstant(maxTimestamp));
+        log.info(
+                "Using retention period {} to prune entries on or before {}", retentionPeriod, toInstant(maxTimestamp));
 
         try {
             while (iterator.hasNext()) {
@@ -89,16 +84,14 @@ public class RetentionJob {
         var next = iterator.next();
         long endTimestamp = next.getConsensusEnd();
 
-        transactionOperations.executeWithoutResult(t ->
-                retentionRepositories.forEach(repository -> {
-                    String table = getTableName(repository);
+        transactionOperations.executeWithoutResult(t -> retentionRepositories.forEach(repository -> {
+            String table = getTableName(repository);
 
-                    if (retentionProperties.shouldPrune(table)) {
-                        long count = repository.prune(endTimestamp);
-                        counters.merge(table, count, Long::sum);
-                    }
-                })
-        );
+            if (retentionProperties.shouldPrune(table)) {
+                long count = repository.prune(endTimestamp);
+                counters.merge(table, count, Long::sum);
+            }
+        }));
 
         long countAfter = counters.values().stream().reduce(0L, Long::sum);
         long count = countAfter - countBefore;

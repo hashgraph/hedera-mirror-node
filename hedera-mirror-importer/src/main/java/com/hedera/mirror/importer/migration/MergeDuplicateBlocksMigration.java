@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,23 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-import java.io.IOException;
+package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
+import java.io.IOException;
+import javax.inject.Named;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
 class MergeDuplicateBlocksMigration extends RepeatableMigration {
 
-    private static final String SQL = """
+    private static final String SQL =
+            """
             with block1 as (
               delete from record_file
               where consensus_end = 1675962000231859003 and index = 44029066
@@ -62,8 +58,7 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
     private final MirrorProperties mirrorProperties;
 
     @Lazy
-    protected MergeDuplicateBlocksMigration(@Owner JdbcTemplate jdbcTemplate,
-                                            MirrorProperties mirrorProperties) {
+    protected MergeDuplicateBlocksMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
         this.mirrorProperties = mirrorProperties;

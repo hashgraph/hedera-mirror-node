@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,22 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.test.e2e.acceptance.client;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Query;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TopicCreateTransaction;
+import com.hedera.hashgraph.sdk.TopicMessageQuery;
+import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
+import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
+import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
@@ -38,18 +45,6 @@ import org.springframework.retry.listener.RetryListenerSupport;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
-
-import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.Query;
-import com.hedera.hashgraph.sdk.SubscriptionHandle;
-import com.hedera.hashgraph.sdk.TopicCreateTransaction;
-import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
-import com.hedera.hashgraph.sdk.Transaction;
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
-import com.hedera.hashgraph.sdk.TransactionResponse;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 /**
  * StartupProbe -- a helper class to validate a SDKClient before using it.
@@ -87,8 +82,9 @@ public class StartupProbe {
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
 
         // step 2: Query for the receipt of the HCS topic create (until successful or time runs out)
-        var topicId = executeQuery(client, stopwatch,
-                () -> new TransactionReceiptQuery().setTransactionId(transactionId)).topicId;
+        var topicId = executeQuery(
+                        client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionId))
+                .topicId;
 
         // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
         callRestEndpoint(stopwatch, transactionId);
@@ -106,7 +102,9 @@ public class StartupProbe {
                     .subscribe(client, resp -> messageLatch.countDown()));
 
             var transactionIdMessage = executeTransaction(client, stopwatch, () -> new TopicMessageSubmitTransaction()
-                    .setTopicId(topicId).setMessage("Mirror Node acceptance test")).transactionId;
+                            .setTopicId(topicId)
+                            .setMessage("Mirror Node acceptance test"))
+                    .transactionId;
 
             executeQuery(client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionIdMessage));
 
@@ -123,10 +121,11 @@ public class StartupProbe {
     }
 
     @SneakyThrows
-    private TransactionResponse executeTransaction(Client client, Stopwatch stopwatch,
-                                                   Supplier<Transaction<?>> transaction) {
+    private TransactionResponse executeTransaction(
+            Client client, Stopwatch stopwatch, Supplier<Transaction<?>> transaction) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction.get()
+        return retryTemplate.execute(r -> transaction
+                .get()
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
@@ -135,7 +134,8 @@ public class StartupProbe {
     @SneakyThrows
     private <T> T executeQuery(Client client, Stopwatch stopwatch, Supplier<Query<T, ?>> transaction) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction.get()
+        return retryTemplate.execute(r -> transaction
+                .get()
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
@@ -148,11 +148,12 @@ public class StartupProbe {
                 .maxBackoff(properties.getMaxBackoff())
                 .filter(properties::shouldRetry);
 
-        var restTransactionId =
-                transactionId.accountId + "-" + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
+        var restTransactionId = transactionId.accountId + "-" + transactionId.validStart.getEpochSecond() + "-"
+                + transactionId.validStart.getNano();
 
         String uri = "/transactions/" + restTransactionId;
-        webClient.get()
+        webClient
+                .get()
                 .uri(uri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()

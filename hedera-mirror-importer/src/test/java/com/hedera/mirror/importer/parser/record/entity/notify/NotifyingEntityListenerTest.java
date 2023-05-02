@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.notify;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,13 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.parser.record.entity.notify;
+
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
+import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,21 +28,16 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.support.JdbcUtils;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
 class NotifyingEntityListenerTest extends BatchEntityListenerTest {
 
     private final DataSource dataSource;
 
     @Autowired
-    public NotifyingEntityListenerTest(NotifyingEntityListener entityListener, NotifyProperties properties,
-                                       DataSource dataSource) {
+    public NotifyingEntityListenerTest(
+            NotifyingEntityListener entityListener, NotifyProperties properties, DataSource dataSource) {
         super(entityListener, properties);
         this.dataSource = dataSource;
     }
@@ -72,9 +66,7 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
         try (var conn = dataSource.getConnection()) {
             PgConnection connection = conn.unwrap(PgConnection.class);
             connection.execSQLUpdate("listen topic_message");
-            return Flux.defer(() -> getNotifications(connection))
-                    .repeat()
-                    .timeout(Duration.ofSeconds(2));
+            return Flux.defer(() -> getNotifications(connection)).repeat().timeout(Duration.ofSeconds(2));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -86,8 +78,8 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
             PGNotification[] notifications = pgConnection.getNotifications(100);
             if (notifications != null) {
                 for (PGNotification pgNotification : notifications) {
-                    TopicMessage topicMessage = NotifyingEntityListener.OBJECT_MAPPER
-                            .readValue(pgNotification.getParameter(), TopicMessage.class);
+                    TopicMessage topicMessage = NotifyingEntityListener.OBJECT_MAPPER.readValue(
+                            pgNotification.getParameter(), TopicMessage.class);
                     topicMessages.add(topicMessage);
                 }
             }

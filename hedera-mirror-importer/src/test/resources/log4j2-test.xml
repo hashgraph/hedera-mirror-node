@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
-        <Console name="console" target="SYSTEM_OUT">
+<!--        The follow param here allowed OutputCaptureExtension.java to function correctly-->
+<!--        See https://github.com/spring-projects/spring-boot/issues/32562-->
+        <Console name="console" target="SYSTEM_OUT" follow="true">
             <PatternLayout>
                 <alwaysWriteExceptions>false</alwaysWriteExceptions>
                 <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %p %t %c{1.} %m %ex{short}%n</pattern>

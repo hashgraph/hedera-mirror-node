@@ -87,29 +87,16 @@ loki:
           for: 5m
           labels:
             severity: critical
-        - alert: ImporterRequiresRestart
-          annotations:
-            description: "{{ $labels.namespace }}/{{ $labels.pod }} requires a restart after logging {{ $value }} messages per second in a 1m period with the unrecoverable error '{{ $labels.message }}'"
-            summary: Importer received an error that indicates a restart is required
-          expr: >
-            sum(rate({component="importer"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
-              | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
-            [1m])) by (namespace, pod, message) > 0.01
-          for: 1m
-          labels:
-            severity: critical
         - alert: ImporterRecoverableErrors
           annotations:
             description: "Recoverable Error Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
             summary: Recoverable Error found in logs
           expr: >
-            sum(rate({component="importer"}
+            sum(count_over_time({component="importer"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | level = "ERROR"
               | message =~ ".*Recoverable error.*"
             [1m])) by (namespace, pod) > 0
-          for: 1m
           labels:
             severity: critical
     - name: hedera-mirror-rest
@@ -368,7 +355,8 @@ testkube:
   enabled: false
   namespace: testkube
   test:
-    duration: 600s
+    duration: 300s
+    extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
     target:
@@ -413,7 +401,7 @@ traefik:
   resources:
     limits:
       cpu: 850m
-      memory: 1250Mi
+      memory: 2000Mi
     requests:
       cpu: 250m
       memory: 150Mi

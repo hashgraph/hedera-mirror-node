@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.importer.reader.balance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 
 class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
 
@@ -42,8 +37,8 @@ class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
 
     @Test
     void supportsInvalidWhenWrongVersion() {
-        StreamFileData streamFileData = StreamFileData
-                .from(balanceFile.getName(), BalanceFileReaderImplV2.VERSION_HEADER);
+        StreamFileData streamFileData =
+                StreamFileData.from(balanceFile.getName(), BalanceFileReaderImplV2.VERSION_HEADER);
         assertThat(balanceFileReader.supports(streamFileData)).isFalse();
     }
 

@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.retriever;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,21 @@ package com.hedera.mirror.grpc.retriever;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.retriever;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,11 +35,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-
-import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
@@ -86,8 +79,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttled)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttled).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .expectComplete()
@@ -104,7 +97,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttled).map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttled).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .expectComplete()
@@ -120,7 +114,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L)
                 .expectComplete()
@@ -140,8 +135,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L, 2L)
                 .expectComplete()
@@ -163,8 +158,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L, 2L)
                 .expectComplete()
@@ -187,8 +182,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L)
                 .expectComplete()
@@ -206,8 +201,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
@@ -219,13 +214,11 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void startTimeEquals(boolean throttle) {
         Instant now = Instant.now();
         domainBuilder.topicMessage(t -> t.consensusTimestamp(now)).block();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(1L)
                 .thenCancel()
@@ -237,10 +230,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void startTimeAfter(boolean throttle) {
         Instant now = Instant.now();
         domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))).block();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle))
                 .thenAwait(WAIT)
@@ -261,8 +252,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(EntityId.of(1L, EntityType.TOPIC))
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .expectNext(2L)
                 .thenCancel()
@@ -283,8 +274,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .topicId(TOPIC_ID)
                 .build();
 
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
                 .thenAwait(WAIT)
                 .thenConsumeWhile(i -> true)
                 .expectTimeout(Duration.ofMillis(500))
@@ -308,8 +299,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
         // in unthrottled mode, the retriever should query the db for up to MaxPolls + 1 times when no limit is set,
         // regardless of whether a db query returns less rows than MaxPageSize
-        StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, false)
-                        .map(TopicMessage::getSequenceNumber))
+        StepVerifier.withVirtualTime(() ->
+                        pollingTopicMessageRetriever.retrieve(filter, false).map(TopicMessage::getSequenceNumber))
                 .then(firstBatch::blockLast)
                 .then(secondBatch::blockLast)
                 .thenAwait(WAIT)

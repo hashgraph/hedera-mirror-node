@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,22 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
@@ -37,15 +41,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -70,7 +65,8 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         // migration
         migrate();
 
-        assertThat(jdbcOperations.queryForObject("select count(*) from entity", Integer.class)).isZero();
+        assertThat(jdbcOperations.queryForObject("select count(*) from entity", Integer.class))
+                .isZero();
         assertThat(transactionRepository.count()).isZero();
     }
 
@@ -84,8 +80,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 entity(9003, EntityType.FILE),
                 entity(9004, EntityType.TOPIC),
                 entity(9005, EntityType.TOKEN),
-                entity(9006, EntityType.SCHEDULE)
-        ));
+                entity(9006, EntityType.SCHEDULE)));
 
         persistTransactions(List.of(
                 transaction(102L, 9001, SUCCESS, TransactionType.CRYPTOUPDATEACCOUNT),
@@ -98,8 +93,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 transaction(109L, 9004, SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
                 transaction(110L, 9004, SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
                 transaction(111L, 9005, SUCCESS, TransactionType.TOKENCREATION),
-                transaction(112L, 9006, SUCCESS, TransactionType.SCHEDULECREATE)
-        ));
+                transaction(112L, 9006, SUCCESS, TransactionType.SCHEDULECREATE)));
 
         List<MigrationEntity> expected = List.of(
                 entity(9000, EntityType.ACCOUNT, 99L, 99L), // no change
@@ -108,15 +102,14 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 entity(9003, EntityType.FILE, 105L, 106L), // created at 105L, deleted at 106L
                 entity(9004, EntityType.TOPIC, 107L, 110L), // last update at 110L
                 entity(9005, EntityType.TOKEN, 111L, 111L),
-                entity(9006, EntityType.SCHEDULE, 112L, 112L)
-        );
+                entity(9006, EntityType.SCHEDULE, 112L, 112L));
 
         // when
         migrate();
 
         // then
         assertThat(retrieveEntities())
-                .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
@@ -124,8 +117,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         return entity(id, entityType, null, null);
     }
 
-    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp,
-                                   Long modifiedTimestamp) {
+    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp, Long modifiedTimestamp) {
         MigrationEntity entity = new MigrationEntity();
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setId(id);
@@ -135,8 +127,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         return entity;
     }
 
-    private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
-                                    TransactionType type) {
+    private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result, TransactionType type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
@@ -155,16 +146,15 @@ class EntityTimestampMigrationTest extends IntegrationTest {
     private void persistEntities(List<MigrationEntity> entities) {
         for (MigrationEntity entity : entities) {
             jdbcOperations.update(
-                    "insert into entity (created_timestamp, id, modified_timestamp, num, realm, shard, type) " +
-                            "values (?,?,?,?,?,?,?)",
+                    "insert into entity (created_timestamp, id, modified_timestamp, num, realm, shard, type) "
+                            + "values (?,?,?,?,?,?,?)",
                     entity.getCreatedTimestamp(),
                     entity.getId(),
                     entity.getModifiedTimestamp(),
                     entity.getNum(),
                     entity.getRealm(),
                     entity.getShard(),
-                    entity.getType()
-            );
+                    entity.getType());
         }
     }
 
@@ -174,29 +164,28 @@ class EntityTimestampMigrationTest extends IntegrationTest {
 
     private void persistTransactions(List<Transaction> transactions) {
         for (Transaction transaction : transactions) {
-            jdbcOperations
-                    .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
-                                    "max_fee, " +
-                                    "memo, " +
-                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
-                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            transaction.getChargedTxFee(),
-                            transaction.getConsensusTimestamp(),
-                            transaction.getEntityId().getId(),
-                            transaction.getInitialBalance(),
-                            transaction.getMaxFee(),
-                            transaction.getMemo(),
-                            transaction.getNodeAccountId().getId(),
-                            transaction.getPayerAccountId().getId(),
-                            transaction.getResult(),
-                            transaction.isScheduled(),
-                            transaction.getTransactionBytes(),
-                            transaction.getTransactionHash(),
-                            transaction.getType(),
-                            transaction.getValidDurationSeconds(),
-                            transaction.getValidStartNs());
+            jdbcOperations.update(
+                    "insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " + "max_fee, "
+                            + "memo, "
+                            + "node_account_id, payer_account_id, result, scheduled, transaction_bytes, "
+                            + "transaction_hash, type, valid_duration_seconds, valid_start_ns)"
+                            + " values"
+                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    transaction.getChargedTxFee(),
+                    transaction.getConsensusTimestamp(),
+                    transaction.getEntityId().getId(),
+                    transaction.getInitialBalance(),
+                    transaction.getMaxFee(),
+                    transaction.getMemo(),
+                    transaction.getNodeAccountId().getId(),
+                    transaction.getPayerAccountId().getId(),
+                    transaction.getResult(),
+                    transaction.isScheduled(),
+                    transaction.getTransactionBytes(),
+                    transaction.getTransactionHash(),
+                    transaction.getType(),
+                    transaction.getValidDurationSeconds(),
+                    transaction.getValidStartNs());
         }
     }
 

@@ -72,7 +72,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts?serialnumber=gt:1&account.id=1001&order=desc&limit=2"],
+  "urls": [
+    "/api/v1/tokens/1500/nfts?serialnumber=gt:1&account.id=1001&order=desc&limit=2"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

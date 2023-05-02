@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {NetworkNodeService} from '../../service';
@@ -52,7 +48,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ns.max_stake,
         ns.min_stake,
         ns.reward_rate,
-        coalesce(ns.stake,abe.stake) as stake,
+        ns.stake,
         ns.stake_not_rewarded,
         ns.stake_rewarded,
         ns.staking_period,
@@ -99,7 +95,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ns.max_stake,
       ns.min_stake,
       ns.reward_rate,
-      coalesce(ns.stake,abe.stake) as stake,
+      ns.stake,
       ns.stake_not_rewarded,
       ns.stake_rewarded,
       ns.staking_period,
@@ -424,7 +420,7 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
     ],
     nodeStake: {
       rewardRate: null,
-      stake: 1000,
+      stake: null,
       stakeRewarded: null,
       stakingPeriod: null,
     },

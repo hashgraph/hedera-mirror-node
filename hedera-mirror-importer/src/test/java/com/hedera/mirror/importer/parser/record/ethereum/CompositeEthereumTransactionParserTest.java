@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.ethereum;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.LONDON_RAW_TX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 class CompositeEthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
 
@@ -41,8 +36,8 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
 
     @BeforeAll
     static void beforeAll() {
-        ethereumTransactionParser = new CompositeEthereumTransactionParser(new LegacyEthereumTransactionParser(),
-                new Eip1559EthereumTransactionParser());
+        ethereumTransactionParser = new CompositeEthereumTransactionParser(
+                new LegacyEthereumTransactionParser(), new Eip1559EthereumTransactionParser());
     }
 
     @SneakyThrows
@@ -82,7 +77,6 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
 
     @Override
     protected void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
-        assertThat(ethereumTransaction)
-                .isNotNull();
+        assertThat(ethereumTransaction).isNotNull();
     }
 }
