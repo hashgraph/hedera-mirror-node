@@ -767,7 +767,7 @@ public class Token {
         }
 
         var newAccountRel = accountRel.setAccount(account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size()));
-        newAccountRel = accountRel.setBalance(newAccountBalance);
+        newAccountRel = newAccountRel.setBalance(newAccountBalance);
         return new TokenModificationResult(createNewTokenWithNewTotalSupply(this, newTotalSupply), newAccountRel);
     }
 
@@ -788,8 +788,7 @@ public class Token {
      * @return newly created {@link TokenRelationship}
      */
     public TokenRelationship newEnabledRelationship(final Account account) {
-        var rel = new TokenRelationship(this, account, 0, false, true, false, false, false, 0);
-        return rel;
+        return new TokenRelationship(this, account, 0, false, true, false, false, false, 0);
     }
 
     private TokenModificationResult changeSupply(

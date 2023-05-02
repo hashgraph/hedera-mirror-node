@@ -557,6 +557,7 @@ class TokenTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void uniqueMintFailsAsExpected() {
         subject = new Token(
                 tokenId,

@@ -17,4 +17,3 @@
 package com.hedera.services.store.models;
 
 public record TokenModificationResult(Token token, TokenRelationship tokenRelationship) {}
-;

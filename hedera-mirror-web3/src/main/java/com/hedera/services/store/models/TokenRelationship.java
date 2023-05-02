@@ -55,6 +55,7 @@ public class TokenRelationship {
 
     private final long balanceChange;
 
+    @SuppressWarnings("java:S107")
     public TokenRelationship(
             Token token,
             Account account,
