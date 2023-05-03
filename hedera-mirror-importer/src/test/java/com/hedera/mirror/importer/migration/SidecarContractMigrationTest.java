@@ -17,9 +17,10 @@
 package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
+import static com.hedera.mirror.importer.TestUtils.toContractId;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
@@ -36,13 +37,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-@Tag("migration")
 class SidecarContractMigrationTest extends IntegrationTest {
 
     private final ContractRepository contractRepository;
@@ -68,6 +67,30 @@ class SidecarContractMigrationTest extends IntegrationTest {
     }
 
     @Test
+    void migrateWhenMissingContract() {
+        // given
+        var runtimeBytecode = new byte[] {0, 1, 2, 3};
+        var contract = domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(null).type(CONTRACT))
+                .persist();
+        var contractBytecode = ContractBytecode.newBuilder()
+                .setContractId(toContractId(contract))
+                .setRuntimeBytecode(fromBytes(runtimeBytecode))
+                .build();
+
+        // when
+        sidecarContractMigration.migrate(List.of(contractBytecode));
+
+        // then
+        assertThat(contractRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(runtimeBytecode, Contract::getRuntimeBytecode)
+                .returns(contract.getId(), Contract::getId);
+    }
+
+    @Test
     void migrateEntityTypeToContract() {
         // given
         var entities = new ArrayList<Entity>();
@@ -75,6 +98,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
         var contractBytecodesMap = new HashMap<Long, ContractBytecode>();
         var contractBytecodeBuilder = ContractBytecode.newBuilder();
         var contractIdBuilder = ContractID.newBuilder();
+
         for (int i = 0; i < 66000; i++) {
             var entity = domainBuilder.entity().get();
             var entityId = entity.getId();
@@ -86,7 +110,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
                     entityId,
                     contractBytecodeBuilder
                             .setContractId(contractIdBuilder.setContractNum(entityId))
-                            .setRuntimeBytecode(ByteString.copyFrom(domainBuilder.bytes(256)))
+                            .setRuntimeBytecode(fromBytes(domainBuilder.bytes(4)))
                             .build());
         }
 
@@ -114,49 +138,45 @@ class SidecarContractMigrationTest extends IntegrationTest {
         assertThat(contractBytecodesMap).isEmpty();
     }
 
+    // These persist methods are not functionally necessary but greatly speed up bulk insertion.
     private void persistEntities(List<Entity> entities) {
         jdbcTemplate.batchUpdate(
-                "insert into entity (decline_reward, id, memo, num, realm, shard, timestamp_range, type) "
-                        + "values (?, ?, ?, ?, ?, ?, ?::int8range, ?::entity_type)",
+                "insert into entity (id, num, realm, shard, timestamp_range, type) "
+                        + "values (?, ?, ?, ?, ?::int8range, ?::entity_type)",
                 entities,
                 entities.size(),
                 (ps, entity) -> {
-                    ps.setBoolean(1, entity.getDeclineReward());
-                    ps.setLong(2, entity.getId());
-                    ps.setString(3, entity.getMemo());
-                    ps.setLong(4, entity.getNum());
-                    ps.setLong(5, entity.getRealm());
-                    ps.setLong(6, entity.getShard());
-                    ps.setString(7, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
-                    ps.setString(8, entity.getType().toString());
+                    ps.setLong(1, entity.getId());
+                    ps.setLong(2, entity.getNum());
+                    ps.setLong(3, entity.getRealm());
+                    ps.setLong(4, entity.getShard());
+                    ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
+                    ps.setString(6, entity.getType().toString());
                 });
 
         jdbcTemplate.batchUpdate(
-                "insert into entity_history (decline_reward, id, memo, num, realm, shard, timestamp_range, type) "
-                        + "values (?, ?, ?, ?, ?, ?, ?::int8range, ?::entity_type)",
+                "insert into entity_history (id, num, realm, shard, timestamp_range, type) "
+                        + "values (?, ?, ?, ?, ?::int8range, ?::entity_type)",
                 entities,
                 entities.size(),
                 (ps, entity) -> {
-                    ps.setBoolean(1, entity.getDeclineReward());
-                    ps.setLong(2, entity.getId());
-                    ps.setString(3, entity.getMemo());
-                    ps.setLong(4, entity.getNum());
-                    ps.setLong(5, entity.getRealm());
-                    ps.setLong(6, entity.getShard());
-                    ps.setString(7, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
-                    ps.setString(8, entity.getType().toString());
+                    ps.setLong(1, entity.getId());
+                    ps.setLong(2, entity.getNum());
+                    ps.setLong(3, entity.getRealm());
+                    ps.setLong(4, entity.getShard());
+                    ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
+                    ps.setString(6, entity.getType().toString());
                 });
     }
 
     private void persistContracts(List<Contract> contracts) {
         jdbcTemplate.batchUpdate(
-                "insert into contract (file_id, id, runtime_bytecode) values (?, ?, ?)",
+                "insert into contract (id, runtime_bytecode) values (?, ?)",
                 contracts,
                 contracts.size(),
                 (ps, contract) -> {
-                    ps.setLong(1, contract.getFileId().getId());
-                    ps.setLong(2, contract.getId());
-                    ps.setBytes(3, contract.getRuntimeBytecode());
+                    ps.setLong(1, contract.getId());
+                    ps.setBytes(2, contract.getRuntimeBytecode());
                 });
     }
 }

@@ -137,6 +137,8 @@ monitor:
       repository: busybox
       tag: latest
 
+nameOverride: ""
+
 nodeSelector: {}
 
 podAnnotations: {}
@@ -206,7 +208,7 @@ prometheusRules:
 
   RestRequestLatency:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value | humanizeDuration }} to generate a response"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value }} ms to generate a response"
       summary: "Mirror REST API request latency exceeds 2s"
     enabled: true
     expr: sum(rate(api_request_duration_milliseconds_sum{container="rest"}[5m])) by (namespace, pod) / sum(rate(api_request_duration_milliseconds_count{container="rest"}[5m])) by (namespace, pod) > 2000

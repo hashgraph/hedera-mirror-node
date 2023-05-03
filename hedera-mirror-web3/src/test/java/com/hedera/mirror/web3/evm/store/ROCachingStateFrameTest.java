@@ -51,7 +51,7 @@ class ROCachingStateFrameTest {
         @SuppressWarnings({"rawtypes", "unchecked"})
         @NonNull
         @Override
-        <V> Accessor<Integer, V> getAccessor(@NonNull Class<V> klass) {
+        public <V> Accessor<Integer, V> getAccessor(@NonNull Class<V> klass) {
             return new Accessor<Integer, V>() {
                 @Override
                 public Optional<V> get(@NonNull final Integer key) {

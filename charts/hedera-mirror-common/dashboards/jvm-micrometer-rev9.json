@@ -4583,8 +4583,8 @@
       {
         "current": {
           "selected": false,
-          "text": "",
-          "value": ""
+          "text": "default",
+          "value": "default"
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -4597,7 +4597,7 @@
         "query": "prometheus",
         "queryValue": "",
         "refresh": 1,
-        "regex": "",
+        "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
       },

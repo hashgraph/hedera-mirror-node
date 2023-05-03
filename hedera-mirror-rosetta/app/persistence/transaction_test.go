@@ -24,7 +24,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
@@ -295,52 +294,6 @@ func TestHbarTransferGetAmount(t *testing.T) {
 	assert.Equal(t, &types.HbarAmount{Value: 10}, hbarTransfer.getAmount())
 }
 
-func TestSingleNftTransferGetAccount(t *testing.T) {
-	singleNftTransfer := singleNftTransfer{accountId: firstEntityId}
-	assert.Equal(t, firstEntityId, singleNftTransfer.getAccountId())
-}
-
-func TestSingleNftTransferGetAmount(t *testing.T) {
-	tests := []struct {
-		name     string
-		receiver bool
-		amount   int64
-	}{
-		{"receiver", true, 1},
-		{"sender", false, -1},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			singleNftTransfer := singleNftTransfer{
-				accountId:    firstEntityId,
-				receiver:     tt.receiver,
-				serialNumber: 1,
-				tokenId:      tokenId1,
-			}
-
-			expected := &types.TokenAmount{
-				SerialNumbers: []int64{1},
-				TokenId:       tokenId1,
-				Type:          domain.TokenTypeNonFungibleUnique,
-				Value:         tt.amount,
-			}
-
-			assert.Equal(t, expected, singleNftTransfer.getAmount())
-		})
-	}
-}
-
-func TestTokenTransferGetAccount(t *testing.T) {
-	tokenTransfer := tokenTransfer{AccountId: firstEntityId}
-	assert.Equal(t, firstEntityId, tokenTransfer.getAccountId())
-}
-
-func TestTokenTransferGetAmount(t *testing.T) {
-	tokenTransfer := tokenTransfer{Amount: 10, Decimals: 3, TokenId: tokenId1, Type: domain.TokenTypeFungibleCommon}
-	assert.Equal(t, getFungibleTokenAmount(10, 3, tokenId1), tokenTransfer.getAmount())
-}
-
 func assertOperationIndexes(t *testing.T, operations types.OperationSlice) {
 	makeRange := func(len int) []int64 {
 		result := make([]int64, len)
@@ -407,7 +360,7 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
-	expected := suite.setupDb(true)
+	expected := suite.setupDb()
 	t := NewTransactionRepository(dbClient)
 
 	// when
@@ -420,39 +373,11 @@ func (suite *transactionRepositorySuite) TestFindBetween() {
 
 func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGenesisTimestamp() {
 	// given
-	// token1 created at genesisTimestamp - 1 and token2 created at genesisTimestamp
 	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp-1, treasury).Persist()
-	tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp, treasury).Persist()
 
 	transaction := tdomain.NewTransactionBuilder(dbClient, treasury, genesisTimestamp+10).Persist()
-	// add token transfers, should not be included in Transaction.Operations
 	transferTimestamp := transaction.ConsensusTimestamp
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId1).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(treasury).
-		Amount(-10).
-		TokenId(encodedTokenId1).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId2).
-		Timestamp(transferTimestamp).
-		Persist()
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(treasury).
-		Amount(-10).
-		TokenId(encodedTokenId2).
-		Timestamp(transferTimestamp).
-		Persist()
 	// add crypto transfers
 	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-20).EntityId(treasury).Timestamp(transferTimestamp).Persist()
 	tdomain.NewCryptoTransferBuilder(dbClient).Amount(20).EntityId(3).Timestamp(transferTimestamp).Persist()
@@ -488,218 +413,6 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 	assert.ElementsMatch(suite.T(), expected, actual)
 }
 
-func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransfer() {
-	// given
-	// the disappearing token/nft transfers are in the corresponding db table
-	genesisTimestamp := int64(100)
-	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
-
-	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(10).Persist()
-
-	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(10).Persist()
-
-	// token accounts
-	dissociateTimestamp := genesisTimestamp + 53
-	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
-		Associated(false, dissociateTimestamp).
-		Persist()
-	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+1).
-		Associated(false, dissociateTimestamp).
-		Persist()
-
-	// token1 received
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId1).
-		Timestamp(token1.CreatedTimestamp + 10).
-		Persist()
-	// token1 disappearing transfer at dissociation
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(-10).
-		TokenId(encodedTokenId1).
-		Timestamp(dissociateTimestamp).
-		Persist()
-	// token2 disappearing transfers at dissociation
-	tdomain.NewNftTransferBuilder(dbClient).
-		SenderAccountId(account1).
-		TokenId(encodedTokenId2).
-		SerialNumber(1).
-		Timestamp(dissociateTimestamp).
-		Persist()
-	tdomain.NewNftTransferBuilder(dbClient).
-		SenderAccountId(account1).
-		TokenId(encodedTokenId2).
-		SerialNumber(2).
-		Timestamp(dissociateTimestamp).
-		Persist()
-
-	// nft marked as deleted at dissociate timestamp
-	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 1, token2.CreatedTimestamp+10).
-		AccountId(account1).
-		Deleted(true).
-		ModifiedTimestamp(dissociateTimestamp).
-		Persist()
-	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 2, token2.CreatedTimestamp+10).
-		AccountId(account1).
-		Deleted(true).
-		ModifiedTimestamp(dissociateTimestamp).
-		Persist()
-
-	// the dissociate transaction
-	transaction := tdomain.NewTransactionBuilder(dbClient, account1, dissociateTimestamp-10).
-		ConsensusTimestamp(dissociateTimestamp).
-		EntityId(account1).
-		Type(domain.TransactionTypeTokenDissociate).
-		Persist()
-
-	account1EntityId := domain.MustDecodeEntityId(account1)
-	account1Id := types.NewAccountIdFromEntityId(account1EntityId)
-	expected := []*types.Transaction{
-		{
-			EntityId: &account1EntityId,
-			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
-			Memo:     []byte{},
-			Operations: types.OperationSlice{
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token1, -10),
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{1}),
-					Index:     1,
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{2}),
-					Index:     2,
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-			},
-		},
-	}
-	t := NewTransactionRepository(dbClient)
-
-	// when
-	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.ElementsMatch(suite.T(), expected, actual)
-}
-
-func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingTokenTransfer() {
-	// given
-	// the disappearing token/nft transfers are missing
-	genesisTimestamp := int64(100)
-	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
-
-	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
-
-	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
-	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
-
-	// token accounts
-	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
-	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
-		Associated(false, dissociateTimestamp).
-		Persist()
-	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+1).
-		Associated(false, dissociateTimestamp).
-		Persist()
-
-	// token1 received
-	tdomain.NewTokenTransferBuilder(dbClient).
-		AccountId(account1).
-		Amount(10).
-		TokenId(encodedTokenId1).
-		Timestamp(token1.CreatedTimestamp + 10).
-		Persist()
-
-	// nft owned by account1 are not deleted
-	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 1, token2.CreatedTimestamp+10).
-		AccountId(account1).
-		Persist()
-	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 2, token2.CreatedTimestamp+10).
-		AccountId(account1).
-		Deleted(false).
-		Persist()
-
-	// the dissociate transaction
-	transaction := tdomain.NewTransactionBuilder(dbClient, account1, dissociateTimestamp-10).
-		ConsensusTimestamp(dissociateTimestamp).
-		EntityId(account1).
-		Type(domain.TransactionTypeTokenDissociate).
-		Persist()
-
-	account1EntityId := domain.MustDecodeEntityId(account1)
-	account1Id := types.NewAccountIdFromEntityId(account1EntityId)
-	expected := []*types.Transaction{
-		{
-			EntityId: &account1EntityId,
-			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
-			Memo:     []byte{},
-			Operations: types.OperationSlice{
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token1, -10),
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{1}),
-					Index:     1,
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-				{
-					AccountId: account1Id,
-					Amount:    types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{2}),
-					Index:     2,
-					Type:      types.OperationTypeTokenDissociate,
-					Status:    resultSuccess,
-				},
-			},
-		},
-	}
-	t := NewTransactionRepository(dbClient)
-
-	// when
-	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.ElementsMatch(suite.T(), expected, actual)
-}
-
-func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
-	// given
-	expected := suite.setupDb(false)
-	t := NewTransactionRepository(dbClient)
-
-	// when
-	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assertTransactions(suite.T(), expected, actual)
-}
-
 func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
 	// given
 	t := NewTransactionRepository(dbClient)
@@ -726,7 +439,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 	// given
-	expected := suite.setupDb(true)
+	expected := suite.setupDb()
 	t := NewTransactionRepository(dbClient)
 
 	// when
@@ -739,7 +452,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 	// given
-	expected := suite.setupDb(false)
+	expected := suite.setupDb()
 	t := NewTransactionRepository(dbClient)
 
 	// when
@@ -786,7 +499,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockDbConnectionError(
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*types.Transaction {
+func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 	var consensusTimestamp, validStartNs int64
 
 	tick := func(nanos int64) {
@@ -820,7 +533,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
 		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
-		nil, nil, []byte("simple transfer"))
+		[]byte("simple transfer"))
 
 	// duplicate transaction
 	consensusTimestamp += 1
@@ -833,7 +546,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 11,
-		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil,
+		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil,
 		[]byte("simple transfer"))
 	operationType := types.OperationTypeCryptoTransfer
 	operations1 := types.OperationSlice{
@@ -858,15 +571,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		Operations: operations1,
 	}
 
-	// a successful crypto transfer + token transfer transaction
+	// a successful crypto transfer
 	tick(1)
-	if createTokenEntity {
-		tdomain.NewTokenBuilder(dbClient, tokenId1.EncodedId, genesisTimestamp+2, feeCollectorEntityId.EncodedId).
-			Decimals(tokenDecimals).
-			InitialSupply(tokenInitialSupply).
-			Persist()
-	}
-
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -230, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
 			PayerAccountId: firstEntityId},
@@ -883,15 +589,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	tokenTransfers := []domain.TokenTransfer{
-		{AccountId: firstEntityId, Amount: -160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1,
-			PayerAccountId: firstEntityId},
-		{AccountId: secondEntityId, Amount: 160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1,
-			PayerAccountId: firstEntityId},
-	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
 		[]byte{0xa, 0xb, 0xc}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
-		tokenTransfers, nil, []byte{})
+		[]byte{})
 	operations2 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -215}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 215}, Type: operationType, Status: resultSuccess},
@@ -902,29 +602,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 			Status: resultSuccess},
 	}
-	if createTokenEntity {
-		operations2 = append(
-			operations2,
-			types.Operation{
-				AccountId: firstAccountId,
-				Amount:    getFungibleTokenAmount(-160, tokenDecimals, tokenId1),
-				Type:      operationType,
-				Status:    resultSuccess,
-			},
-			types.Operation{
-				AccountId: secondAccountId,
-				Amount:    getFungibleTokenAmount(160, tokenDecimals, tokenId1),
-				Type:      operationType,
-				Status:    resultSuccess,
-			},
-		)
-	}
 	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Memo: []byte{}, Operations: operations2}
-
-	tdomain.NewTokenBuilder(dbClient, tokenId2.EncodedId, genesisTimestamp+3, firstEntityId.EncodedId).
-		Decimals(tokenDecimals).
-		InitialSupply(tokenInitialSupply).
-		Persist()
 
 	// token create transaction
 	tick(1)
@@ -936,22 +614,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	tokenTransfers = []domain.TokenTransfer{
-		{AccountId: firstEntityId, Amount: tokenInitialSupply, ConsensusTimestamp: consensusTimestamp,
-			TokenId: tokenId2, PayerAccountId: firstEntityId},
-	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId2, &nodeEntityId, firstEntityId, 22,
-		[]byte{0xaa, 0xcc, 0xdd}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil,
-		tokenTransfers, nil, nil)
-	metadata := map[string]interface{}{
-		"currency": &rTypes.Currency{
-			Symbol:   tokenId2.String(),
-			Decimals: int32(tokenDecimals),
-			Metadata: map[string]interface{}{types.MetadataKeyType: domain.TokenTypeFungibleCommon},
-		},
-		"freeze_default": false,
-		"initial_supply": tokenInitialSupply,
-	}
+		[]byte{0xaa, 0xcc, 0xdd}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, nil)
 	operationType = types.OperationTypeTokenCreate
 	expectedTransaction3 := &types.Transaction{
 		EntityId: &tokenId2,
@@ -964,20 +628,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: firstAccountId, Type: operationType, Status: resultSuccess, Metadata: metadata},
-			{
-				AccountId: firstAccountId,
-				Amount:    getFungibleTokenAmount(tokenInitialSupply, tokenDecimals, tokenId2),
-				Type:      operationType,
-				Status:    resultSuccess,
-			},
 		},
 	}
 
-	// nft create
-	tdomain.NewTokenBuilder(dbClient, tokenId3.EncodedId, genesisTimestamp+4, firstEntityId.EncodedId).
-		Type(domain.TokenTypeNonFungibleUnique).
-		Persist()
+	// originally, this was an nft create.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -988,16 +642,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeEntityId, firstEntityId, 22,
-		[]byte{0xaa, 0x11, 0x22}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, nil, nil,
-		nil)
-	metadata = map[string]interface{}{
-		"currency": &rTypes.Currency{
-			Symbol:   tokenId3.String(),
-			Metadata: map[string]interface{}{types.MetadataKeyType: domain.TokenTypeNonFungibleUnique},
-		},
-		"freeze_default": false,
-		"initial_supply": int64(0),
-	}
+		[]byte{0xaa, 0x11, 0x22}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, nil)
 	expectedTransaction4 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1122",
@@ -1009,11 +654,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: firstAccountId, Type: operationType, Status: resultSuccess, Metadata: metadata},
 		},
 	}
 
-	// nft mint
+	// originally, this was an nft mint.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -1023,16 +667,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	nftTransfers := []domain.NftTransfer{
-		{consensusTimestamp, firstEntityId, &firstEntityId, nil, 1, tokenId3},
-		{consensusTimestamp, firstEntityId, &firstEntityId, nil, 2, tokenId3},
-		{consensusTimestamp, firstEntityId, &firstEntityId, nil, 3, tokenId3},
-		{consensusTimestamp, firstEntityId, &firstEntityId, nil, 4, tokenId3},
-	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeEntityId, firstEntityId, 22,
-		[]byte{0xaa, 0x11, 0x33}, domain.TransactionTypeTokenMint, validStartNs, cryptoTransfers, nil, nil,
-		nftTransfers, nil)
-	operationType = types.OperationTypeTokenMint
+		[]byte{0xaa, 0x11, 0x33}, domain.TransactionTypeTokenMint, validStartNs, cryptoTransfers, nil, nil)
 	expectedTransaction5 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1133",
@@ -1044,18 +680,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: firstAccountId, Amount: getNftTokenAmount(1, 1, tokenId3), Type: operationType,
-				Status: resultSuccess},
-			{AccountId: firstAccountId, Amount: getNftTokenAmount(1, 2, tokenId3), Type: operationType,
-				Status: resultSuccess},
-			{AccountId: firstAccountId, Amount: getNftTokenAmount(1, 3, tokenId3), Type: operationType,
-				Status: resultSuccess},
-			{AccountId: firstAccountId, Amount: getNftTokenAmount(1, 4, tokenId3), Type: operationType,
-				Status: resultSuccess},
 		},
 	}
 
-	// nft transfer
+	// originally, this was an nft transfer.  Now it just is fees.
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
@@ -1065,12 +693,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	nftTransfers = []domain.NftTransfer{
-		{consensusTimestamp, firstEntityId, &secondEntityId, &firstEntityId, 1, tokenId3},
-	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId,
 		22, []byte{0xaa, 0x11, 0x66}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil,
-		nil, nftTransfers, nil)
+		nil)
 	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction6 := &types.Transaction{
 		Hash: "0xaa1166",
@@ -1081,10 +706,6 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
-				Status: resultSuccess},
-			{AccountId: firstAccountId, Amount: getNftTokenAmount(-1, 1, tokenId3), Type: operationType,
-				Status: resultSuccess},
-			{AccountId: secondAccountId, Amount: getNftTokenAmount(1, 1, tokenId3), Type: operationType,
 				Status: resultSuccess},
 		},
 	}
@@ -1105,7 +726,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	transactionHash := randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 28,
-		transactionHash, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil, nil)
+		transactionHash, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil)
 	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction7 := &types.Transaction{
 		Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
@@ -1138,7 +759,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,
-		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil, nil)
+		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
 
 	operationType = types.OperationTypeCryptoCreateAccount
 	expectedTransaction8 := &types.Transaction{
@@ -1176,7 +797,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22, transactionHash,
-		domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil, nil)
+		domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
 	tdomain.NewStakingRewardTransferBuilder(dbClient).
 		AccountId(firstEntityId.EncodedId).
 		Amount(100).
@@ -1210,23 +831,5 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		expectedTransaction1, expectedTransaction2, expectedTransaction3, expectedTransaction4,
 		expectedTransaction5, expectedTransaction6, expectedTransaction7, expectedTransaction8,
 		expectedTransaction9,
-	}
-}
-
-func getFungibleTokenAmount(amount, decimals int64, tokenId domain.EntityId) *types.TokenAmount {
-	return &types.TokenAmount{
-		Decimals: decimals,
-		TokenId:  tokenId,
-		Type:     domain.TokenTypeFungibleCommon,
-		Value:    amount,
-	}
-}
-
-func getNftTokenAmount(amount, serialNumber int64, tokenId domain.EntityId) *types.TokenAmount {
-	return &types.TokenAmount{
-		SerialNumbers: []int64{serialNumber},
-		TokenId:       tokenId,
-		Type:          domain.TokenTypeNonFungibleUnique,
-		Value:         amount,
 	}
 }
