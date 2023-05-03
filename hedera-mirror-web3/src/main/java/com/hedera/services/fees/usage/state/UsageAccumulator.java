@@ -273,32 +273,4 @@ public class UsageAccumulator {
     public int hashCode() {
         return HashCodeBuilder.reflectionHashCode(this);
     }
-
-    private void setUniversalBpt(final long bpt) {
-        this.bpt = bpt;
-    }
-
-    private void setBpr(final long bpr) {
-        this.bpr = bpr;
-    }
-
-    private void setSbpr(final long sbpr) {
-        this.sbpr = sbpr;
-    }
-
-    private void setVpt(final long vpt) {
-        this.vpt = vpt;
-    }
-
-    private void setRbs(final long rbs) {
-        this.rbs = rbs;
-    }
-
-    private void setSbs(final long sbs) {
-        this.sbs = sbs;
-    }
-
-    private void setNetworkRbs(final long networkRbs) {
-        this.networkRbs = networkRbs;
-    }
 }

@@ -42,5 +42,6 @@ public interface TxnResourceUsageEstimator {
      * @throws Exception            if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
+    @SuppressWarnings("java:S112")
     FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StackedStateFrames<?> state) throws Exception;
 }
