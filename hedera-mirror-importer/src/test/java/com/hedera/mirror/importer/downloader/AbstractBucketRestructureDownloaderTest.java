@@ -205,7 +205,7 @@ public abstract class AbstractBucketRestructureDownloaderTest {
         downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 
-        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path);
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path, streamType);
         startS3Proxy();
     }
 

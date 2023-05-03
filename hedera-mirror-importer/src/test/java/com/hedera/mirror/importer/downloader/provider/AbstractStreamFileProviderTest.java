@@ -16,16 +16,14 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
@@ -62,11 +60,6 @@ abstract class AbstractStreamFileProviderTest {
 
     protected void customizeProperties(CommonDownloaderProperties properties) {
         // Do nothing by default
-    }
-
-    protected Path getNodePath(ConsensusNode node) {
-        return Path.of(
-                StreamType.RECORD.getNodePrefix() + node.getNodeAccountId().toString());
     }
 
     @Test
@@ -170,8 +163,8 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         fileCopier.copy();
         fileCopier
-                .getTo()
-                .resolve(getNodePath(node))
+                .getTo(node)
+                .resolve(fileCopier.getNodePath(node))
                 .resolve("Invalid.file")
                 .toFile()
                 .createNewFile();
@@ -186,11 +179,7 @@ abstract class AbstractStreamFileProviderTest {
     }
 
     protected ConsensusNode node(String nodeAccountId) {
-        var entityId = EntityId.of(nodeAccountId, ACCOUNT);
-        return ConsensusNodeStub.builder()
-                .nodeAccountId(entityId)
-                .nodeId(entityId.getEntityNum() - 3)
-                .build();
+        return TestUtils.nodeFromAccountId(nodeAccountId);
     }
 
     protected StreamFileData streamFileData(ConsensusNode node, String filename) {

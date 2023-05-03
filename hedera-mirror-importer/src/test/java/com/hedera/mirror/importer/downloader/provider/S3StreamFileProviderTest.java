@@ -60,7 +60,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected FileCopier getFileCopier(Path fromPath, Path dataPath) {
-        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath, StreamType.RECORD)
                 .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 

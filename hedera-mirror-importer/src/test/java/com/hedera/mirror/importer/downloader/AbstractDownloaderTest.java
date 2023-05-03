@@ -246,7 +246,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 
-        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path, streamType)
                 .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
 

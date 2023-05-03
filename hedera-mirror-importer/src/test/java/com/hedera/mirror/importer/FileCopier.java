@@ -17,206 +17,52 @@
 package com.hedera.mirror.importer;
 
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.io.FileFilter;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-@Log4j2
-@Value
-public class FileCopier {
+public interface FileCopier {
 
-    private static final FileFilter ALL_FILTER = f -> true;
-    private static final Map<String, String> STREAM_TYPE_MAP = Map.of(
-            StreamType.BALANCE.getNodePrefix(), StreamType.BALANCE.getNodeIdBasedSuffix(),
-            StreamType.EVENT.getNodePrefix(), StreamType.EVENT.getNodeIdBasedSuffix(),
-            StreamType.RECORD.getNodePrefix(), StreamType.RECORD.getNodeIdBasedSuffix());
+    FileFilter ALL_FILTER = f -> true;
 
-    Path from;
-    Path to;
-    FileFilter dirFilter;
-    FileFilter fileFilter;
-    PathType pathType;
-    Set<String> copyOnlyDirs;
-    FileCopier nextFileCopier;
-
-    private FileCopier(
-            @NonNull Path from,
-            @NonNull Path to,
-            @NonNull FileFilter dirFilter,
-            @NonNull FileFilter fileFilter,
-            @NonNull PathType pathTYpe,
-            @NonNull Set<String> copyOnlyDirs,
-            FileCopier nextFileCopier) {
-        this.from = from;
-        this.to = to;
-        this.dirFilter = dirFilter;
-        this.fileFilter = fileFilter;
-        this.pathType = pathTYpe;
-        this.copyOnlyDirs = copyOnlyDirs;
-        this.nextFileCopier = nextFileCopier;
+    static FileCopier create(Path from, Path to) {
+        return create(from, to, PathType.ACCOUNT_ID, StreamType.RECORD, Collections.emptySet());
     }
 
-    public static FileCopier create(Path from, Path to) {
-        return create(from, to, PathType.ACCOUNT_ID, Collections.emptySet());
+    static FileCopier create(Path from, Path to, StreamType streamType) {
+        return create(from, to, PathType.ACCOUNT_ID, streamType, Collections.emptySet());
     }
 
-    public static FileCopier create(Path from, Path to, PathType pathTYpe, Set<String> copyOnlyDirs) {
-        return create(from, to, pathTYpe, copyOnlyDirs, null);
+    static FileCopier create(Path from, Path to, PathType pathType, StreamType streamType, Set<String> copyOnlyDirs) {
+        return SingleDestinationFileCopier.create(from, to, ALL_FILTER, ALL_FILTER, pathType, streamType, copyOnlyDirs);
     }
 
-    public static FileCopier create(
-            Path from, Path to, PathType pathTYpe, Set<String> copyOnlyDirs, FileCopier nextFileCopier) {
-        return new FileCopier(from, to, ALL_FILTER, ALL_FILTER, pathTYpe, copyOnlyDirs, nextFileCopier);
-    }
+    FileCopier from(Path source);
 
-    public FileCopier from(Path source) {
-        return new FileCopier(from.resolve(source), to, dirFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
-    }
+    FileCopier from(String... source);
 
-    public FileCopier from(String... source) {
-        return from(Paths.get("", source));
-    }
+    FileCopier filterDirectories(FileFilter newDirFilter);
 
-    public FileCopier filterDirectories(FileFilter newDirFilter) {
-        FileFilter andFilter =
-                dirFilter == ALL_FILTER ? newDirFilter : f -> dirFilter.accept(f) || newDirFilter.accept(f);
-        return new FileCopier(from, to, andFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
-    }
+    FileCopier filterDirectories(String wildcardPattern);
 
-    public FileCopier filterDirectories(String wildcardPattern) {
-        return filterDirectories(new WildcardFileFilter(wildcardPattern));
-    }
+    FileCopier filterFiles(FileFilter newFileFilter);
 
-    public FileCopier filterFiles(FileFilter newFileFilter) {
-        FileFilter andFilter =
-                fileFilter == ALL_FILTER ? newFileFilter : f -> fileFilter.accept(f) || newFileFilter.accept(f);
-        return new FileCopier(from, to, dirFilter, andFilter, pathType, copyOnlyDirs, nextFileCopier);
-    }
+    FileCopier filterFiles(String wildcardPattern);
 
-    public FileCopier filterFiles(String wildcardPattern) {
-        return filterFiles(new WildcardFileFilter(wildcardPattern));
-    }
+    FileCopier to(Path target);
 
-    public FileCopier to(Path target) {
-        return new FileCopier(from, to.resolve(target), dirFilter, fileFilter, pathType, copyOnlyDirs, nextFileCopier);
-    }
+    FileCopier to(String... target);
 
-    public FileCopier to(String... target) {
-        return to(Paths.get("", target));
-    }
+    Path getTo();
 
-    public void copy() {
-        try {
-            log.debug("Copying {} to {}", from, to);
-            FileFilter combinedFilter = f -> f.isDirectory() ? dirFilter.accept(f) : fileFilter.accept(f);
-            switch (pathType) {
-                case ACCOUNT_ID -> copyAccountIdFormat(from, to, combinedFilter);
-                case NODE_ID -> copyNodeIdFormat(from, to, combinedFilter);
-                case AUTO -> copyAutoFormat(from, to, combinedFilter);
-            }
+    Path getTo(ConsensusNode node);
 
-            if (log.isTraceEnabled()) {
-                try (Stream<Path> paths = Files.walk(to)) {
-                    paths.forEach(p -> log.trace("Moved: {}", p));
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    Path getFrom();
 
-        if (nextFileCopier != null) {
-            log.debug("Invoking configured next file copier");
-            nextFileCopier.copy();
-        }
-    }
+    Path getNodePath(ConsensusNode node);
 
-    private List<String> getCandidateDirectoryNames() throws IOException {
-        try (Stream<Path> paths = Files.list(from)) {
-            return paths.filter(Files::isDirectory)
-                    .map(Path::getFileName)
-                    .map(Path::toString)
-                    .filter(dir -> copyOnlyDirs.isEmpty() || copyOnlyDirs.contains(dir))
-                    .toList();
-        }
-    }
-
-    private void copyAccountIdFormat(Path from, Path to, FileFilter filter) throws IOException {
-        if (copyOnlyDirs.isEmpty()) {
-            FileUtils.copyDirectory(from.toFile(), to.toFile(), filter);
-        } else {
-            var accountIdDirectoryNames = getCandidateDirectoryNames();
-            for (var directoryName : accountIdDirectoryNames) {
-                var sourcePath = from.resolve(directoryName);
-                var destinationPath = to.resolve(directoryName);
-                FileUtils.copyDirectory(sourcePath.toFile(), destinationPath.toFile(), filter);
-            }
-        }
-    }
-
-    private void copyNodeIdFormat(Path from, Path to, FileFilter filter) throws IOException {
-
-        /*
-         * Directories present at the base of the repo test data from path are of the format xxxxn.n.n which
-         * represents the stream type (balance, events_, record) followed by the shard, realm and the account
-         * number. This is the legacy consensus node account ID format. E.g. balance0.0.3, events_0.0.4 etc.
-         *
-         * When the test cases define stub Consensus node instances the node ID is derived as the account number -3.
-         * Therefore, balance0.0.3 has a node ID of 0. The stream files present in the from directories are copied
-         * according to HIP-679:
-         *                         {network}/{shard}/{nodeID}/balance/
-         *                         {network}/{shard}/{nodeID}/event/
-         *                         {network}/{shard}/{nodeID}/record/
-         *
-         * The network is a property value and has already been incorporated into the FileCopier to path. The remaining
-         * items can be derived from the directory names.
-         */
-        var accountIdDirectoryNames = getCandidateDirectoryNames();
-        for (var directoryName : accountIdDirectoryNames) {
-            String[] accountIdParts = directoryName.split("\\.");
-            if (accountIdParts.length != 3) {
-                throw new RuntimeException(String.format(
-                        "Source directory name '%s' is not of the form {stream}{shard}.{realm}.{account}",
-                        directoryName));
-            }
-
-            try {
-                var streamAndShard = accountIdParts[0];
-                var stream = streamAndShard.substring(0, streamAndShard.length() - 1);
-                var nodeIdSuffix = STREAM_TYPE_MAP.get(stream);
-                if (nodeIdSuffix == null) {
-                    throw new RuntimeException(String.format(
-                            "Source directory name '%s' stream type '%s' is not valid", directoryName, stream));
-                }
-
-                var shard = Long.valueOf(streamAndShard.substring(streamAndShard.length() - 1));
-                var nodeId = Long.valueOf(accountIdParts[2]).longValue() - 3L;
-                var sourcePath = from.resolve(directoryName);
-                var destinationPath = to.resolve(Path.of(shard.toString(), String.valueOf(nodeId), nodeIdSuffix));
-                FileUtils.copyDirectory(sourcePath.toFile(), destinationPath.toFile(), filter);
-            } catch (NumberFormatException ex) {
-                throw new RuntimeException(
-                        String.format(
-                                "Source directory name '%s' shard or account is not a valid number", directoryName),
-                        ex);
-            } catch (IndexOutOfBoundsException ex) {
-                throw new RuntimeException(
-                        String.format("Source directory name '%s' is not in a valid format", directoryName), ex);
-            }
-        }
-    }
-
-    private void copyAutoFormat(Path from, Path to, FileFilter filter) throws IOException {}
+    void copy();
 }

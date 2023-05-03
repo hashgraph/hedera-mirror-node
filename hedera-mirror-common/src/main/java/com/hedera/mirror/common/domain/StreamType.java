@@ -37,11 +37,10 @@ public enum StreamType {
             "accountBalances",
             "balance",
             "_Balances",
-            "balance",
             List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
-    EVENT(EventFile::new, "eventsStreams", "events_", "", "event", List.of("evts"), Duration.ofSeconds(5L)),
-    RECORD(RecordFile::new, "recordstreams", "record", "", "record", List.of("rcd"), Duration.ofSeconds(2L));
+    EVENT(EventFile::new, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
+    RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 
@@ -62,14 +61,13 @@ public enum StreamType {
             String path,
             String nodePrefix,
             String suffix,
-            String nodeIdBasedSuffix,
             List<String> extensions,
             Duration fileCloseInterval) {
         this.supplier = supplier;
         this.path = path;
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
-        this.nodeIdBasedSuffix = nodeIdBasedSuffix;
+        this.nodeIdBasedSuffix = name().toLowerCase();
         this.fileCloseInterval = fileCloseInterval;
 
         dataExtensions = IntStream.range(0, extensions.size())

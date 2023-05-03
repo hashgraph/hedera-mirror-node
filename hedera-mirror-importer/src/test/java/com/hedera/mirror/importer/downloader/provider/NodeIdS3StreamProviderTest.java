@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.downloader.provider;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
@@ -43,6 +42,7 @@ public class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
                         TestUtils.getResource(fromPath.toString()).toPath(),
                         dataPath,
                         PathType.NODE_ID,
+                        StreamType.RECORD,
                         Collections.emptySet())
                 .to(properties.getBucketName(), network);
     }
@@ -52,10 +52,5 @@ public class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
         super.customizeProperties(properties);
         properties.setPathType(PathType.NODE_ID);
         properties.setPathRefreshInterval(Duration.ofSeconds(2L));
-    }
-
-    @Override
-    protected Path getNodePath(ConsensusNode node) {
-        return Path.of("0", String.valueOf(node.getNodeId()), StreamType.RECORD.getNodeIdBasedSuffix());
     }
 }

@@ -40,7 +40,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected FileCopier getFileCopier(Path fromPath, Path dataPath) {
-        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath, StreamType.RECORD)
                 .to(LocalStreamFileProvider.STREAMS, StreamType.RECORD.getPath());
     }
 

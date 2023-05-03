@@ -17,9 +17,9 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.MultiDestinationFileCopier;
+import com.hedera.mirror.importer.MultiDestinationFileCopier.Destination;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
@@ -51,25 +51,27 @@ public class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
     }
 
     @Override
-    protected FileCopier getFileCopier(Path fromPath, Path toPath) {
-        // Legacy account ID based stream files
-        var accountIdFileCopier = FileCopier.create(
-                        TestUtils.getResource(fromPath.toString()).toPath(),
-                        toPath,
-                        PathType.ACCOUNT_ID,
-                        Set.of("record0.0.3", "record0.0.4"))
-                .to(properties.getBucketName(), StreamType.RECORD.getPath());
+    protected MultiDestinationFileCopier getFileCopier(Path fromPath, Path toPath) {
 
+        // Legacy node account ID based stream files
+        Destination accountIdDestination = new Destination(
+                Set.of("record0.0.5", "record0.0.4"),
+                PathType.ACCOUNT_ID,
+                StreamType.RECORD,
+                properties.getBucketName(),
+                StreamType.RECORD.getPath());
         // HIP-679 node ID based stream files
         String network =
                 properties.getMirrorProperties().getNetwork().toString().toLowerCase();
-        return FileCopier.create(
-                        TestUtils.getResource(fromPath.toString()).toPath(),
-                        toPath,
-                        PathType.NODE_ID,
-                        Set.of("record0.0.5", "record0.0.6"),
-                        accountIdFileCopier)
-                .to(properties.getBucketName(), network);
+        Destination nodeIdDestination = new Destination(
+                Set.of("record0.0.3"), PathType.NODE_ID, StreamType.RECORD, properties.getBucketName(), network);
+
+        return MultiDestinationFileCopier.builder()
+                .from(TestUtils.getResource(fromPath.toString()).toPath())
+                .to(toPath)
+                .destination(accountIdDestination)
+                .destination(nodeIdDestination)
+                .build();
     }
 
     @Override
@@ -77,10 +79,5 @@ public class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
         super.customizeProperties(properties);
         properties.setPathType(PathType.AUTO);
         properties.setPathRefreshInterval(Duration.ofSeconds(2L));
-    }
-
-    @Override
-    protected Path getNodePath(ConsensusNode node) {
-        return Path.of("0", String.valueOf(node.getNodeId()), StreamType.RECORD.getNodeIdBasedSuffix());
     }
 }

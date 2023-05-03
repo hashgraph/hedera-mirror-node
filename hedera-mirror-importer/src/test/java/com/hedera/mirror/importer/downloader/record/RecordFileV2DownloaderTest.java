@@ -59,7 +59,8 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
                 "2019-07-01T14_29_00.302068Z.rcd", allRecordFiles.get("2019-07-01T14_29_00.302068Z.rcd"));
         setupRecordFiles(testRecordFiles);
 
-        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
+        fileCopier = FileCopier.create(
+                        TestUtils.getResource("data").toPath(), s3Path, downloaderProperties.getStreamType())
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(
                         commonDownloaderProperties.getBucketName(),

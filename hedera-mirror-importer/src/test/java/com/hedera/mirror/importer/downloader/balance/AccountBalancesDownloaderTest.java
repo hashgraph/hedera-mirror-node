@@ -97,7 +97,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
                 streamFileNotifier,
                 streamFileProvider,
                 protoBalanceFileReader);
-        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path, streamType)
                 .from(Path.of("accountBalances", "mixed"))
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
         setTestFilesAndInstants(
