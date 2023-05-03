@@ -16,12 +16,12 @@
 
 package com.hedera.services.fees.calculation;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.hapi.utils.fees.SigValueObj;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-public interface TxnResourceUsageEstimator { // TODO move copy the implementation from services
+public interface TxnResourceUsageEstimator {
 
     /**
      * Flags whether the estimator applies to the given transaction.
@@ -35,12 +35,12 @@ public interface TxnResourceUsageEstimator { // TODO move copy the implementatio
      * Returns the estimated resource usage for the given txn relative to the given state of the
      * world.
      *
-     * @param txn the txn in question
+     * @param txn      the txn in question
      * @param sigUsage the signature usage
-     * @param view the state of the world
+     * @param state
      * @return the estimated resource usage
-     * @throws Exception if the txn is malformed
+     * @throws Exception            if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws Exception;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StackedStateFrames<?> state) throws Exception;
 }

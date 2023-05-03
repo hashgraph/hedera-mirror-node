@@ -16,7 +16,7 @@
 
 package com.hedera.services.fees.calculation;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -37,13 +37,13 @@ public interface QueryResourceUsageEstimator {
      * world and response type.
      *
      * @param query the query in question
-     * @param view the state of the world
-     * @param type the response type of the given query
+     * @param state
+     * @param type  the response type of the given query
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-        return usageGiven(query, view);
+    default FeeData usageGivenType(final Query query, final StackedStateFrames<?> state, final ResponseType type) {
+        return usageGiven(query, state);
     }
 
     /**
@@ -51,12 +51,12 @@ public interface QueryResourceUsageEstimator {
      * world.
      *
      * @param query the query in question
-     * @param view the state of the world
+     * @param state
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGiven(final Query query, final StateView view) {
-        return usageGiven(query, view, null);
+    default FeeData usageGiven(final Query query, final StackedStateFrames<?> state) {
+        return usageGiven(query, state, null);
     }
 
     /**
@@ -64,11 +64,12 @@ public interface QueryResourceUsageEstimator {
      * world, with a context for storing any information that may be useful for by later stages of
      * the query answer flow.
      *
-     * @param query the query in question
-     * @param view the state of the world
+     * @param query    the query in question
+     * @param state
      * @param queryCtx the context of the query being answered
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx);
+    FeeData usageGiven(
+            final Query query, final StackedStateFrames<?> state, @Nullable final Map<String, Object> queryCtx);
 }
