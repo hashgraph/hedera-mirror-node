@@ -154,8 +154,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                         .consensusTimestamp(newTokenAllowance.getTimestampLower()))
                 .persist();
 
-        // A token allowance that has no contract result, but has primary key values that will end up matching those of
-        // a migrated token allowance.
+        // The collision token allowances
         var ownerAccountId = 3491438L;
         var spender = 3491439L;
         var tokenId = 3491444L;
@@ -168,20 +167,17 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                         .tokenId(tokenId))
                 .persist();
 
-        // A token allowance that has a contract result, once migrated it will have the same primary key fields as the
-        // above token allowance.
         var ownerPreMigration = 1322L;
         var contractResultConsensus = 1676546391434923004L;
         domainBuilder
                 .tokenAllowance()
                 .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(1322L, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
                         .spender(spender)
                         .timestampRange(Range.atLeast(contractResultConsensus))
                         .tokenId(tokenId))
                 .persist();
 
-        // The contract result for the above token allowance
         domainBuilder
                 .contractResult()
                 .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
