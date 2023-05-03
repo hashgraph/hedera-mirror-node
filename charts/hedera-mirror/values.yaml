@@ -60,86 +60,6 @@ applicationResource:
   partnerName: ""
   solutionId: ""
 
-citus:
-  architecture: replication
-  enabled: false
-  image:
-    repository: mirrornodeswirldslabs/citus
-    tag: 11.2.0
-  nameOverride: citus
-  primary:
-    args:
-    - "-c"
-    - "config_file=/bitnami/postgresql/conf/postgresql.conf"
-    - "-c"
-    - "hba_file=/bitnami/postgresql/conf/pg_hba.conf"
-    configuration: |
-      checkpoint_timeout = 1800
-      citus.executor_slow_start_interval = 100ms
-      citus.max_cached_conns_per_worker = 4
-      citus.max_shared_pool_size = 380
-      citus.node_conninfo = 'sslmode=prefer'
-      cron.database_name = 'mirror_node'
-      listen_addresses = '*'
-      log_checkpoints = true
-      log_timezone = 'Etc/UTC'
-      max_connections = 300
-      max_replication_slots = 5
-      max_wal_senders = 5
-      max_wal_size = 24GB
-      random_page_cost = 1.1
-      shared_buffers = 12GB
-      shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
-      wal_level = logical
-      work_mem = 32MB
-    extraEnvVarsSecret: mirror-passwords
-    initdb:
-      scriptsConfigMap: "{{ .Release.Name }}-init"
-    name: coordinator
-    pgHbaConfiguration: |
-      local   all             all                                     trust
-      host    all             all             127.0.0.1/32            trust
-      host    all             all             ::1/128                 trust
-      local   replication     all                                     trust
-      host    replication     all             127.0.0.1/32            trust
-      host    replication     all             ::1/128                 trust
-      host    replication     all             all                     scram-sha-256
-      host    all             all             all                     scram-sha-256
-    startupProbe:
-      enabled: true
-      failureThreshold: 60
-  readReplicas:
-    args: ["-c", "config_file=/usr/local/etc/postgresql/override.conf"]
-    extendedConfiguration: |
-      checkpoint_timeout = 1800
-      citus.node_conninfo = 'sslmode=prefer'
-      listen_addresses = '*'
-      log_checkpoints = true
-      log_timezone = 'Etc/UTC'
-      max_connections = 400
-      max_replication_slots = 5
-      max_wal_senders = 5
-      max_wal_size = 24GB
-      random_page_cost = 1.1
-      shared_buffers = 12GB
-      shared_preload_libraries = 'citus'
-      wal_level = logical
-      work_mem = 32MB
-    extraEnvVarsSecret: mirror-passwords
-    extraVolumeMounts:
-      - name: config
-        mountPath: /usr/local/etc/postgresql
-      - name: custom-init-scripts
-        mountPath: /docker-entrypoint-initdb.d/
-    extraVolumes:
-      - name: config
-        configMap:
-          name: '{{ printf "%s-extended-configuration" (include "postgresql.readReplica.fullname" .) }}'
-      - name: custom-init-scripts
-        configMap:
-          name: "{{ .Release.Name }}-init"
-    name: worker
-
 db:
   host: ""  # Auto-generated from the database sub-charts
   name: mirror_node
@@ -162,64 +82,20 @@ graphql:
     password: ""  # Randomly generated if left blank
     username: mirror_graphql
   enabled: true
-  env:
-    HEDERA_MIRROR_GRAPHQL_DB_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    HEDERA_MIRROR_GRAPHQL_DB_NAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    HEDERA_MIRROR_GRAPHQL_DB_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_GRAPHQL_DB_PASSWORD
-    HEDERA_MIRROR_GRAPHQL_DB_USERNAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_GRAPHQL_DB_USERNAME
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
 
 grpc:
   db:
     password: ""  # Randomly generated if left blank
     username: mirror_grpc
   enabled: true
-  env:
-    HEDERA_MIRROR_GRPC_DB_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    HEDERA_MIRROR_GRPC_DB_NAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    HEDERA_MIRROR_GRPC_DB_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_GRPC_DB_PASSWORD
-    HEDERA_MIRROR_GRPC_DB_USERNAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_GRPC_DB_USERNAME
-    SPRING_DATA_REDIS_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: "{{ .Release.Name }}-redis"
-          key: SPRING_DATA_REDIS_HOST
-    SPRING_DATA_REDIS_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: "{{ .Release.Name }}-redis"
-          key: SPRING_DATA_REDIS_PASSWORD
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
+    - secretRef:
+        name: "{{ .Release.Name }}-redis"
 
 importer:
   db:
@@ -372,54 +248,77 @@ rest:
     password: ""  # Randomly generated if left blank
     username: mirror_rest
   enabled: true
-  env:
-    HEDERA_MIRROR_REST_DB_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    HEDERA_MIRROR_REST_DB_NAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    HEDERA_MIRROR_REST_DB_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD
-    HEDERA_MIRROR_REST_DB_USERNAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
 
 rosetta:
   db:
     password: ""  # Randomly generated if left blank
     username: mirror_rosetta
   enabled: true
-  env:
-    HEDERA_MIRROR_ROSETTA_DB_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    HEDERA_MIRROR_ROSETTA_DB_NAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    HEDERA_MIRROR_ROSETTA_DB_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_ROSETTA_DB_PASSWORD
-    HEDERA_MIRROR_ROSETTA_DB_USERNAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_ROSETTA_DB_USERNAME
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
+
+stackgres:
+  coordinator:
+    config:
+      checkpoint_timeout: "1800"
+      citus.executor_slow_start_interval: "100ms"
+      citus.max_cached_conns_per_worker: "4"
+      citus.max_shared_pool_size: "380"
+      cron.database_name: "{{ .Values.db.name }}"
+      log_checkpoints: "true"
+      log_timezone: "Etc/UTC"
+      max_connections: "300"
+      max_replication_slots: "5"
+      max_wal_senders: "5"
+      max_wal_size: "24GB"
+      password_encryption: "scram-sha-256"
+      random_page_cost: "1.1"
+      shared_buffers: "12GB"
+      shared_preload_libraries: pg_cron,pg_partman_bgw
+      work_mem: "32MB"
+    instances: 1
+    resources:
+      cpu: 100m
+      memory: 1Gi
+    persistentVolume:
+      size: 5Gi
+  enabled: false
+  extensions:
+    - name: btree_gist
+      version: stable
+    - name: pg_cron
+      version: stable
+    - name: pg_partman
+      version: "4.7.3"
+  nameOverride: citus
+  postgresVersion: 14
+  prometheus: false
+  worker:
+    config:
+      checkpoint_timeout: "1800"
+      cron.database_name: "{{ .Values.db.name }}"
+      log_checkpoints: "true"
+      log_timezone: "Etc/UTC"
+      max_connections: "400"
+      max_replication_slots: "5"
+      max_wal_senders: "5"
+      max_wal_size: "24GB"
+      password_encryption: "scram-sha-256"
+      random_page_cost: "1.1"
+      shared_buffers: "12GB"
+      shared_preload_libraries: pg_cron,pg_partman_bgw
+      work_mem: "32MB"
+    instances: 1
+    replicasPerInstance: 1
+    resources:
+      cpu: 100m
+      memory: 1Gi
+    persistentVolume:
+      size: 5Gi
 
 test:
   annotations:
@@ -460,24 +359,6 @@ web3:
     password: ""  # Randomly generated if left blank
     username: mirror_web3
   enabled: true
-  env:
-    HEDERA_MIRROR_WEB3_DB_HOST:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_HOST
-    HEDERA_MIRROR_WEB3_DB_NAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_IMPORTER_DB_NAME
-    HEDERA_MIRROR_WEB3_DB_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_WEB3_DB_PASSWORD
-    HEDERA_MIRROR_WEB3_DB_USERNAME:
-      valueFrom:
-        secretKeyRef:
-          name: mirror-passwords
-          key: HEDERA_MIRROR_WEB3_DB_USERNAME
+  envFrom:
+    - secretRef:
+        name: mirror-passwords

@@ -1,0 +1,42 @@
+{{- if .Values.stackgres.enabled -}}
+apiVersion: stackgres.io/v1alpha1
+kind: SGShardedCluster
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  coordinator:
+    configurations:
+      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}
+      sgPostgresConfig: {{ include "hedera-mirror.stackgres" . }}-coordinator
+    instances: {{ .Values.stackgres.coordinator.instances }}
+    managedSql:
+      scripts:
+        - sgScript: {{ include "hedera-mirror.stackgres" . }}-coordinator
+    pods:
+      persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
+    sgInstanceProfile: {{ include "hedera-mirror.stackgres" . }}-coordinator
+  database: {{ .Values.db.name }}
+  nonProductionOptions:
+    disableClusterPodAntiAffinity: true
+  postgres:
+    extensions: {{ .Values.stackgres.extensions | toYaml | nindent 6 }}
+    version: {{ .Values.stackgres.postgresVersion }}
+  prometheusAutobind: {{ .Values.stackgres.prometheus }}
+  replication:
+    mode: async  # We might consider setting coordinator to sync or the proposed sync-all in the future
+  shards:
+    clusters: {{ .Values.stackgres.worker.instances }}
+    configurations:
+      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}
+      sgPostgresConfig: {{ include "hedera-mirror.stackgres" . }}-worker
+    instancesPerCluster: {{ .Values.stackgres.worker.replicasPerInstance }}
+    managedSql:
+      scripts:
+        - sgScript: {{ include "hedera-mirror.stackgres" . }}-worker
+    pods:
+      persistentVolume: {{ .Values.stackgres.worker.persistentVolume | toYaml | nindent 8 }}
+    sgInstanceProfile: {{ include "hedera-mirror.stackgres" . }}-worker
+  type: citus
+{{- end -}}
