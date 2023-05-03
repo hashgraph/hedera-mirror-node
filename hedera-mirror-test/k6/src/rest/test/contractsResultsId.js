@@ -28,7 +28,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
   .name('contractsResultsId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/results/${testParameters['DEFAULT_CONTRACT_RESULT_HASH']}?limit=${testParameters['DEFAULT_LIMIT']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/results/${testParameters['DEFAULT_CONTRACT_RESULT_HASH']}`;
     return http.get(url);
   })
   .requiredParameters('DEFAULT_CONTRACT_RESULT_HASH')

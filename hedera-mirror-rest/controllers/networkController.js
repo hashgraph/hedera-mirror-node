@@ -31,7 +31,6 @@ import {
   responseContentType,
   responseDataLabel,
 } from '../constants';
-import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
 import {FileDataService, NetworkNodeService} from '../service';
@@ -95,10 +94,7 @@ class NetworkController extends BaseController {
           break;
         case filterKeys.LIMIT:
           // response per address book node can be large so a reduced limit is enforced
-          if (filter.value > networkNodesMaxSize) {
-            throw new InvalidArgumentError(`Max value of ${networkNodesMaxSize} is supported for ${filterKeys.LIMIT}`);
-          }
-          limit = filter.value;
+          limit = filter.value <= networkNodesMaxSize ? filter.value : networkNodesMaxSize;
           break;
         case filterKeys.ORDER:
           order = filter.value;
