@@ -18,14 +18,11 @@ package com.hedera.services.utils.accessors;
 
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Map;
 
 /**
  * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC {@link Transaction}.
@@ -35,17 +32,11 @@ public interface TxnAccessor {
 
     SubType getSubType();
 
-    AccountID getPayer();
-
     TransactionID getTxnId();
 
     BaseTransactionMeta baseUsageMeta();
 
     SigUsage usageGiven(int numPayerKeys);
-
-    void markThrottleExempt();
-
-    void markCongestionExempt();
 
     TransactionBody getTxn();
 
@@ -54,12 +45,4 @@ public interface TxnAccessor {
     String getMemo();
 
     byte[] getHash();
-
-    void setScheduleRef(ScheduleID parent);
-
-    void setPayer(AccountID payer);
-
-    Transaction getSignedTxnWrapper();
-
-    Map<String, Object> getSpanMap();
 }
