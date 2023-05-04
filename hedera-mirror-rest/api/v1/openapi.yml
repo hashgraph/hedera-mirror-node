@@ -311,7 +311,7 @@ paths:
         | eth_call         | static contract state reads for non precompile functions     | 0.36             | 0.78                | Y       |
         |                  | static contract state reads for precompile functions except allowance  | 0.37   | 0.78                | Y       |
         |                  | static contract state reads for precompile functions except isApprovedForAll | 0.37 | 0.78            | Y       |
-        |                  | static contract state reads for precompile functions with allowance  | 0.37  | 0.80                   | Y       |
+        |                  | static contract state reads for precompile functions with allowance  | 0.37  | 0.79                   | Y       |
         |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38 | 0.81              | Y       |
         |                  | non-static contract state reads for non precompile functions | 0.37 | 0.80                            | Y       |
         |                  | non-static contract state reads for precompile functions | TBD | TBD                                  | N       |
