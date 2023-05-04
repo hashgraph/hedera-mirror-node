@@ -300,7 +300,26 @@ paths:
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
-      description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+      description: |
+
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+
+        **The table below defines the restrictions and support for the endpoint**
+
+        | Call type        | Operation Type                                               | Services Version | Mirror-Node Version | Support |
+        | -------------    | ------------------------------------------------------------ | ---------------- | ------------------- | ------- |
+        | eth_call         | static contract state reads for non precompile functions     | 0.36             | 0.78                | Y       |
+        |                  | static contract state reads for precompile functions except allowance  | 0.37   | 0.78                | Y       |
+        |                  | static contract state reads for precompile functions except isApprovedForAll | 0.37 | 0.78            | Y       |
+        |                  | static contract state reads for precompile functions with allowance  | 0.37  | 0.80                   | Y       |
+        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38 | 0.81              | Y       |
+        |                  | non-static contract state reads for non precompile functions | 0.37 | 0.80                            | Y       |
+        |                  | non-static contract state reads for precompile functions | TBD | TBD                                  | N       |
+        | eth_estimateGas  | non-static contract state reads or modifications for non precompile functions     | 0.37 | 0.80       | Y       |
+        |                  | non-static contract state reads or modifications for precompile functions     | TBD | TBD             | N       |
+
+        The operations types, which are not currently supported should return 501 error status.
+
       operationId: contractsCall
       requestBody:
         required: true
