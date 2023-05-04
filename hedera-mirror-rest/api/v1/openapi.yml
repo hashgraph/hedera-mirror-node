@@ -306,19 +306,18 @@ paths:
 
         **The table below defines the restrictions and support for the endpoint**
 
-        | Call type        | Operation Type                                               | Services Version | Mirror-Node Version | Support |
-        | -------------    | ------------------------------------------------------------ | ---------------- | ------------------- | ------- |
-        | eth_call         | static contract state reads for non precompile functions     | 0.36             | 0.78                | Y       |
-        |                  | static contract state reads for precompile functions except allowance  | 0.37   | 0.78                | Y       |
-        |                  | static contract state reads for precompile functions except isApprovedForAll | 0.37 | 0.78            | Y       |
-        |                  | static contract state reads for precompile functions with allowance  | 0.37  | 0.79                   | Y       |
-        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38 | 0.81              | Y       |
-        |                  | non-static contract state reads for non precompile functions | 0.37 | 0.80                            | Y       |
-        |                  | non-static contract state reads for precompile functions | TBD | TBD                                  | N       |
-        | eth_estimateGas  | non-static contract state reads or modifications for non precompile functions     | 0.37 | 0.80       | Y       |
-        |                  | non-static contract state reads or modifications for precompile functions     | TBD | TBD             | N       |
+        | Estimate         | Operation Type                                               | Services Version | Mirror Node Version                 |
+        | -------------    | ------------------------------------------------------------ | ---------------- | ---------------------------------   |
+        | false            | static contract state reads for non precompile functions     | 0.36+             | 0.78+                              |
+        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll  | 0.37+   | 0.78+             |
+        |                  | static contract state reads for precompile functions with allowance  | 0.37+  | 0.79+                                 |
+        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38+ | 0.81+                            |
+        |                  | non-static contract state reads for non precompile functions | 0.37+ | 0.80+                                          |
+        |                  | non-static contract state reads for precompile functions | Not supported  | Not supported                             |
+        | true             | non-static contract state reads or modifications for non precompile functions     | Not supported  | Not supported    |
+        |                  | non-static contract state reads or modifications for precompile functions     | Not supported  | Not supported        |
 
-        The operations types, which are not currently supported should return 501 error status.
+        The operations types which are not currently supported should return 501 error status.
 
       operationId: contractsCall
       requestBody:
