@@ -42,7 +42,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(migration.getChecksum()).isEqualTo(1);
+        assertThat(migration.getChecksum()).isEqualTo(2);
     }
 
     @Test

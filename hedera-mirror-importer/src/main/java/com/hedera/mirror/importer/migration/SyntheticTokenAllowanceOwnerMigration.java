@@ -27,9 +27,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Named
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
-    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL = """
+    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
+            """
             begin;
-            
+
             create temp table token_allowance_temp (
               amount            bigint not null,
               created_timestamp bigint not null,
@@ -39,7 +40,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
               token_id          bigint not null,
               primary key (owner, spender, token_id, created_timestamp)
             ) on commit drop;
-            
+
             with affected as (
               select ta.*, cr.consensus_timestamp, cr.sender_id
               from (
@@ -76,7 +77,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
             select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
             union all
             select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
-            
+
             with correct_timestamp_range as (
               select
                 amount,
@@ -98,7 +99,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
             )
             insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
             select * from correct_timestamp_range where upper(timestamp_range) is null;
-            
+
             commit;
             """;
 
