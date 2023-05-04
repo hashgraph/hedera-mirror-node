@@ -105,7 +105,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.type = ethTransaction.type;
       this.v = ethTransaction.recoveryId;
 
-      if (!_.isNil(ethTransaction.callData)) {
+      if (!_.isEmpty(ethTransaction.callData)) {
         this.function_parameters = utils.toHexStringNonQuantity(ethTransaction.callData);
       } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
         this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);
