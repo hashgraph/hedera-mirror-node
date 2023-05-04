@@ -27,10 +27,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Named
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
-    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
-            """
+    private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL = """
             begin;
-
+            
             create temp table token_allowance_temp (
               amount            bigint not null,
               created_timestamp bigint not null,
@@ -40,7 +39,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
               token_id          bigint not null,
               primary key (owner, spender, token_id, created_timestamp)
             ) on commit drop;
-
+            
             with affected as (
               select ta.*, cr.consensus_timestamp, cr.sender_id
               from (
@@ -52,30 +51,32 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
             ), delete_token_allowance as (
               delete from token_allowance ta
               using affected a
-              where ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id
+              where ta.owner in (a.owner, a.sender_id) and ta.spender = a.spender and ta.token_id = a.token_id
+              returning
+                ta.amount,
+                lower(ta.timestamp_range) as created_timestamp,
+                a.sender_id as owner,
+                ta.payer_account_id,
+                ta.spender,
+                ta.token_id
             ), delete_token_allowance_history as (
               delete from token_allowance_history ta
               using affected a
-              where ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range
-            ), delete_correct_token_allowance as (
-              delete from token_allowance ta
-              using affected a
-              where ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id
-              returning ta.*
-            ), delete_correct_token_allowance_history as (
-              delete from token_allowance_history ta
-              using affected a
-              where ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id
-              returning ta.*
+              where (ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range) or
+                (ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id)
+              returning
+                ta.amount,
+                lower(ta.timestamp_range) as created_timestamp,
+                a.sender_id as owner,
+                ta.payer_account_id,
+                ta.spender,
+                ta.token_id
             )
             insert into token_allowance_temp (amount, created_timestamp, owner, payer_account_id, spender, token_id)
-            select amount, consensus_timestamp, sender_id, payer_account_id, spender, token_id from affected
+            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
             union all
-            select amount, lower(timestamp_range), owner, payer_account_id, spender, token_id from delete_correct_token_allowance
-            union all
-            select amount, lower(timestamp_range), owner, payer_account_id, spender, token_id from delete_correct_token_allowance_history
-            on conflict do nothing;
-
+            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
+            
             with correct_timestamp_range as (
               select
                 amount,
@@ -97,7 +98,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
             )
             insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
             select * from correct_timestamp_range where upper(timestamp_range) is null;
-
+            
             commit;
             """;
 
