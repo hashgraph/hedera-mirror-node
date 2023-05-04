@@ -20,14 +20,14 @@ import com.graphql_java_generator.plugin.conf.PluginMode
 description = "Hedera Mirror Node GraphQL"
 
 plugins {
-    id("com.graphql_java_generator.graphql-gradle-plugin")
+    id("com.graphql-java-generator.graphql-gradle-plugin")
     id("spring-conventions")
 }
 
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies")
+    compileOnly("com.graphql-java-generator:graphql-java-client-runtime")
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.github.ben-manes.caffeine:caffeine")
@@ -53,30 +53,31 @@ dependencies {
     testImplementation("org.springframework.graphql:spring-graphql-test")
 }
 
+fun scalar(name: String, type: String, field: String): CustomScalarDefinition {
+    return CustomScalarDefinition(name, type, "", field, "")
+}
+
+val scalars =
+    arrayOf(
+        scalar(
+            "Duration",
+            "java.time.Duration",
+            "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE"),
+        scalar("Long", "java.lang.Long", "graphql.scalars.GraphQLLong"),
+        scalar("Object", "java.lang.Object", "graphql.scalars.Object"),
+        scalar(
+            "Timestamp",
+            "java.time.Instant",
+            "com.hedera.mirror.graphql.config.GraphQlTimestamp.INSTANCE"))
+
 generatePojoConf {
     isAddRelayConnections = true
+    isCopyRuntimeSources = true
     javaTypeForIDType = "java.lang.String"
     mode = PluginMode.server
     packageName = "com.hedera.mirror.graphql.viewmodel"
     schemaFilePattern = "**/*.graphqls"
-    isSeparateUtilityClasses = true
-    setCustomScalars(
-        arrayOf(
-            CustomScalarDefinition(
-                "Duration",
-                "java.time.Duration",
-                "",
-                "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE",
-                ""),
-            CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", ""),
-            CustomScalarDefinition("Object", "java.lang.Object", "", "graphql.scalars.Object", ""),
-            CustomScalarDefinition(
-                "Timestamp",
-                "java.time.Instant",
-                "",
-                "com.hedera.mirror.graphql.config.GraphQlTimestamp.INSTANCE",
-                ""),
-        ))
+    setCustomScalars(scalars)
 }
 
 tasks.withType<JavaCompile> {
