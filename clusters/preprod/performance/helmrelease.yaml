@@ -36,10 +36,10 @@ spec:
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
       resources:
         limits:
-          cpu: 1500m
+          cpu: 2000m
           memory: 4Gi
         requests:
-          cpu: 1500m
+          cpu: 2000m
           memory: 4Gi
     monitor:
       env:
