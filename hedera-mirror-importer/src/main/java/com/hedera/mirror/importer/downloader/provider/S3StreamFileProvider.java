@@ -64,18 +64,16 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var prefix = getBucketPath(node, streamFilename);
-        return getAuto(streamFilename, prefix);
+    public Mono<StreamFileData> get(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        var prefix = getBucketPath(consensusNode, streamFilename);
+        return getAtPrefix(streamFilename, prefix);
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
+    public Flux<StreamFileData> list(ConsensusNode consensusNode, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
-        int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-
-        var prefix = getBucketPath(node, lastFilename);
-
+        var batchSize = commonDownloaderProperties.getBatchSize() * 2;
+        var prefix = getBucketPath(consensusNode, lastFilename);
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -93,7 +91,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .flatMapIterable(ListObjectsV2Response::contents)
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
-                .flatMapSequential(streamFilename -> getAuto(streamFilename, prefix))
+                .flatMapSequential(streamFilename -> getAtPrefix(streamFilename, prefix))
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
                         batchSize,
@@ -134,7 +132,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
      * @param prefix         path to download files from
      */
     @NotNull
-    private Mono<StreamFileData> getAuto(StreamFilename streamFilename, String prefix) {
+    private Mono<StreamFileData> getAtPrefix(StreamFilename streamFilename, String prefix) {
         var s3Key = prefix + streamFilename.getFilename();
 
         var request = GetObjectRequest.builder()
@@ -190,7 +188,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             }
         } catch (Exception e) {
             // check the types of exceptions.
-            log.warn("Unable to list from account based bucket path {}", e);
+            log.warn("Unable to list from account based bucket path {}", e.getMessage(), e);
         }
 
         var nodeIdPrefix = getNodeIdBasedPrefix(consensusNode, streamFilename);
@@ -202,16 +200,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             return nodeIdPrefix;
         }
         return accountIdPrefix;
-    }
-
-    @NotNull
-    private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        return TEMPLATE_NODE_ID_PREFIX.formatted(
-                getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
-                commonDownloaderProperties.getMirrorProperties().getShard(),
-                consensusNode.getNodeId(),
-                streamFilename.getStreamType().getNodeIdBasedSuffix(),
-                getSidecarFolder(streamFilename));
     }
 
     @NotNull
@@ -229,12 +217,22 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     @NotNull
-    private String getAccountIdBasedPrefix(ConsensusNode node, StreamFilename streamFilename) {
+    private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        return TEMPLATE_NODE_ID_PREFIX.formatted(
+                getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
+                commonDownloaderProperties.getMirrorProperties().getShard(),
+                consensusNode.getNodeId(),
+                streamFilename.getStreamType().getNodeIdBasedSuffix(),
+                getSidecarFolder(streamFilename));
+    }
+
+    @NotNull
+    private String getAccountIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var streamType = streamFilename.getStreamType();
         return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(
                 streamType.getPath(),
                 streamType.getNodePrefix(),
-                node.getNodeAccountId(),
+                consensusNode.getNodeAccountId(),
                 getSidecarFolder(streamFilename));
     }
 

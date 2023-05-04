@@ -16,53 +16,88 @@
 
 package com.hedera.mirror.importer;
 
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.io.FileFilter;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Set;
+import java.nio.file.Paths;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-public interface FileCopier {
+@Log4j2
+@Value
+public class FileCopier {
 
-    FileFilter ALL_FILTER = f -> true;
+    private static final FileFilter ALL_FILTER = f -> true;
 
-    static FileCopier create(Path from, Path to) {
-        return create(from, to, PathType.ACCOUNT_ID, StreamType.RECORD, Collections.emptySet());
+    private final Path from;
+    private final Path to;
+    private final FileFilter dirFilter;
+    private final FileFilter fileFilter;
+
+    private FileCopier(Path from, Path to, FileFilter dirFilter, FileFilter fileFilter) {
+        assert from != null;
+        assert to != null;
+        assert dirFilter != null;
+        assert fileFilter != null;
+        this.from = from;
+        this.to = to;
+        this.dirFilter = dirFilter;
+        this.fileFilter = fileFilter;
     }
 
-    static FileCopier create(Path from, Path to, StreamType streamType) {
-        return create(from, to, PathType.ACCOUNT_ID, streamType, Collections.emptySet());
+    public static FileCopier create(Path from, Path to) {
+        return new FileCopier(from, to, ALL_FILTER, ALL_FILTER);
     }
 
-    static FileCopier create(Path from, Path to, PathType pathType, StreamType streamType, Set<String> copyOnlyDirs) {
-        return SingleDestinationFileCopier.create(from, to, ALL_FILTER, ALL_FILTER, pathType, streamType, copyOnlyDirs);
+    public FileCopier from(Path source) {
+        return new FileCopier(from.resolve(source), to, dirFilter, fileFilter);
     }
 
-    FileCopier from(Path source);
+    public FileCopier from(String... source) {
+        return from(Paths.get("", source));
+    }
 
-    FileCopier from(String... source);
+    public FileCopier filterDirectories(FileFilter newDirFilter) {
+        FileFilter andFilter =
+                dirFilter == ALL_FILTER ? newDirFilter : f -> dirFilter.accept(f) || newDirFilter.accept(f);
+        return new FileCopier(from, to, andFilter, fileFilter);
+    }
 
-    FileCopier filterDirectories(FileFilter newDirFilter);
+    public FileCopier filterDirectories(String wildcardPattern) {
+        return filterDirectories(new WildcardFileFilter(wildcardPattern));
+    }
 
-    FileCopier filterDirectories(String wildcardPattern);
+    public FileCopier filterFiles(FileFilter newFileFilter) {
+        FileFilter andFilter =
+                fileFilter == ALL_FILTER ? newFileFilter : f -> fileFilter.accept(f) || newFileFilter.accept(f);
+        return new FileCopier(from, to, dirFilter, andFilter);
+    }
 
-    FileCopier filterFiles(FileFilter newFileFilter);
+    public FileCopier filterFiles(String wildcardPattern) {
+        return filterFiles(new WildcardFileFilter(wildcardPattern));
+    }
 
-    FileCopier filterFiles(String wildcardPattern);
+    public FileCopier to(Path target) {
+        return new FileCopier(from, to.resolve(target), dirFilter, fileFilter);
+    }
 
-    FileCopier to(Path target);
+    public FileCopier to(String... target) {
+        return to(Paths.get("", target));
+    }
 
-    FileCopier to(String... target);
+    public void copy() {
+        try {
+            log.debug("Copying {} to {}", from, to);
+            FileFilter combinedFilter = f -> f.isDirectory() ? dirFilter.accept(f) : fileFilter.accept(f);
+            FileUtils.copyDirectory(from.toFile(), to.toFile(), combinedFilter);
 
-    Path getTo();
-
-    Path getTo(ConsensusNode node);
-
-    Path getFrom();
-
-    Path getNodePath(ConsensusNode node);
-
-    void copy();
+            if (log.isTraceEnabled()) {
+                Files.walk(to).forEach(p -> log.trace("Moved: {}", p));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

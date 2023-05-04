@@ -39,16 +39,17 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected FileCopier getFileCopier(Path fromPath, Path dataPath) {
-        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath, StreamType.RECORD)
+    protected FileCopier createFileCopier(Path dataPath) {
+        var fromPath = Path.of("data", "recordstreams", "v6");
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
                 .to(LocalStreamFileProvider.STREAMS, StreamType.RECORD.getPath());
     }
 
     @Test
     void listDeletesFiles() throws Exception {
-        fileCopier.copy();
         var accountId = "0.0.3";
         var node = node(accountId);
+        getFileCopier(node).copy();
         var lastFilename = new StreamFilename(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))
