@@ -52,15 +52,31 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
             ), delete_token_allowance as (
               delete from token_allowance ta
               using affected a
-              where ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id
+              where ta.owner in (a.owner, a.sender_id) and ta.spender = a.spender and ta.token_id = a.token_id
+              returning
+                ta.amount,
+                lower(ta.timestamp_range) as created_timestamp,
+                a.sender_id as owner,
+                ta.payer_account_id,
+                ta.spender,
+                ta.token_id
             ), delete_token_allowance_history as (
               delete from token_allowance_history ta
               using affected a
-              where ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range
+              where (ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range) or
+                (ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id)
+              returning
+                ta.amount,
+                lower(ta.timestamp_range) as created_timestamp,
+                a.sender_id as owner,
+                ta.payer_account_id,
+                ta.spender,
+                ta.token_id
             )
             insert into token_allowance_temp (amount, created_timestamp, owner, payer_account_id, spender, token_id)
-            select amount, consensus_timestamp, sender_id, payer_account_id, spender, token_id
-            from affected;
+            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
+            union all
+            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
 
             with correct_timestamp_range as (
               select
