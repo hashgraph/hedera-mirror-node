@@ -58,11 +58,11 @@ import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServicePrecompileTest extends Web3IntegrationTest {
-    // The contract source `PrecompileTestContract.sol` is in test resources
-    @Value("classpath:contracts/PrecompileTestContract.bin")
+    // The contract source `PrecompileTestContract.sol` is in test/resources
+    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     private Path CONTRACT_BYTES_PATH;
 
-    @Value("classpath:contracts/PrecompileTestContract.json")
+    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     private Path ABI_PATH;
 
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));

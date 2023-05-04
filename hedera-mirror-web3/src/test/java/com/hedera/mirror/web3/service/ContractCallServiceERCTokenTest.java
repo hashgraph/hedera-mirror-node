@@ -49,10 +49,10 @@ import org.springframework.beans.factory.annotation.Value;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     // The contract source `ERCTestContract.sol` is in test resources
-    @Value("classpath:contracts/ERCTestContract.bin")
+    @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
     private Path CONTRACT_BYTES_PATH;
 
-    @Value("classpath:contracts/ERCTestContract.json")
+    @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     private Path ABI_PATH;
 
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
