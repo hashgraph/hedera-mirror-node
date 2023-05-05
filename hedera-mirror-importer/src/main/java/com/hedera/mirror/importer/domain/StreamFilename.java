@@ -68,22 +68,28 @@ public class StreamFilename implements Comparable<StreamFilename> {
         EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
     }
 
-    private final String compressor;
-    private final StreamType.Extension extension;
-    private final String filename;
+    String compressor;
+    StreamType.Extension extension;
+    String filename;
 
     @EqualsAndHashCode.Include
-    private final String filenameWithoutCompressor;
+    String filenameWithoutCompressor;
 
-    private final FileType fileType;
-    private final String fullExtension;
-    private final Instant instant;
-    private final String sidecarId;
-    private final StreamType streamType;
+    FileType fileType;
+    String fullExtension;
+    Instant instant;
+    String sidecarId;
+    StreamType streamType;
+    String nativeKey;
 
     public StreamFilename(String filename) {
+        this(filename, null);
+    }
+
+    public StreamFilename(String filename, String nativeKey) {
         Assert.hasText(filename, "'filename' must not be empty");
         this.filename = filename;
+        this.nativeKey = nativeKey;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
         this.compressor = typeInfo.compressor;

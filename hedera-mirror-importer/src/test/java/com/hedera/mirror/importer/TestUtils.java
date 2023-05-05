@@ -19,8 +19,8 @@ package com.hedera.mirror.importer;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.util.DomainUtils;

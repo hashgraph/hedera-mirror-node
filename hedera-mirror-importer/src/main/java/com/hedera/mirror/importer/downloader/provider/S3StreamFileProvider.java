@@ -28,10 +28,14 @@ import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -64,21 +68,17 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Mono<StreamFileData> get(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        var prefix = getBucketPath(consensusNode, streamFilename);
-        return getAtPrefix(streamFilename, prefix);
-    }
-
-    @Override
-    public Flux<StreamFileData> list(ConsensusNode consensusNode, StreamFilename lastFilename) {
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         var batchSize = commonDownloaderProperties.getBatchSize() * 2;
-        var prefix = getBucketPath(consensusNode, lastFilename);
-        var startAfter = prefix + lastFilename.getFilenameAfter();
+        var streamFilePathInfo = getStartingPathInfo(node, lastFilename);
+        var startAfter = streamFilePathInfo.prefix + lastFilename.getFilenameAfter();
+        var countOfStartingPathObjects = new AtomicInteger();
+        var countOfNodeIdPathObjects = new AtomicInteger();
 
         var listRequest = ListObjectsV2Request.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
-                .prefix(prefix)
+                .prefix(streamFilePathInfo.prefix)
                 .delimiter(SEPARATOR)
                 .startAfter(startAfter)
                 .maxKeys(batchSize)
@@ -87,62 +87,111 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         return Mono.fromFuture(s3Client.listObjectsV2(listRequest))
                 .timeout(commonDownloaderProperties.getTimeout())
-                .doOnNext(l -> log.debug("Returned {} s3 objects", l.contents().size()))
+                .doOnNext(l -> {
+                    countOfStartingPathObjects.set(l.contents().size());
+                    log.debug("Returned {} s3 objects", l.contents().size());
+                })
                 .flatMapIterable(ListObjectsV2Response::contents)
+                .switchIfEmpty(Flux.defer(() -> {
+                    log.debug("No objects found in node account ID bucket structure after: {}", startAfter);
+                    if ((streamFilePathInfo.pathParams.pathType == PathType.AUTO)
+                            && (streamFilePathInfo.pathParams.pathExpirationTimestampMap()
+                                    <= System.currentTimeMillis())) {
+
+                        var nodeIdPrefix = getNodeIdBasedPrefix(node, lastFilename);
+                        var nodeIdStartAfter = nodeIdPrefix + lastFilename.getFilename();
+                        log.debug("Trying node ID bucket structure: {}", nodeIdStartAfter);
+
+                        var nodeIdListRequest = ListObjectsV2Request.builder()
+                                .bucket(commonDownloaderProperties.getBucketName())
+                                .prefix(nodeIdPrefix)
+                                .delimiter(SEPARATOR)
+                                .startAfter(nodeIdStartAfter)
+                                .maxKeys(batchSize)
+                                .requestPayer(RequestPayer.REQUESTER)
+                                .build();
+
+                        return Mono.fromFuture(s3Client.listObjectsV2(nodeIdListRequest))
+                                .timeout(commonDownloaderProperties.getTimeout())
+                                .doOnNext(l -> {
+                                    countOfNodeIdPathObjects.set(l.contents().size());
+                                    log.debug(
+                                            "Node ID path returned {} s3 objects",
+                                            l.contents().size());
+                                })
+                                .flatMapIterable(ListObjectsV2Response::contents);
+                    }
+                    return Flux.empty(); // Not AUTO mode/interval, so empty means empty
+                }))
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
-                .flatMapSequential(streamFilename -> getAtPrefix(streamFilename, prefix))
+                .flatMapSequential(this::getNative)
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
                         batchSize,
                         commonDownloaderProperties.getBucketName(),
-                        startAfter));
+                        startAfter))
+                .doOnComplete(() -> {
+                    if (streamFilePathInfo.pathParams.pathType == PathType.AUTO) {
+                        updateNodePathStatus(node, countOfStartingPathObjects.get(), countOfNodeIdPathObjects.get());
+                    }
+                    log.debug("Finished searching after {}/{}", commonDownloaderProperties.getBucketName(), startAfter);
+                });
     }
 
-    /**
-     * List from the given prefix and just check if they exist. This method does not actually download the files.
-     *
-     * @param lastFilename last downloaded file name
-     * @param prefix       path to download files from
-     */
-    @NotNull
-    private Mono<ListObjectsV2Response> listOnly(StreamFilename lastFilename, String prefix) {
-        int batchSize = commonDownloaderProperties.getBatchSize() * 2;
+    @Override
+    public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
+        var streamFilePathInfo = getStartingPathInfo(node, streamFilename);
 
-        var startAfter = prefix + lastFilename.getFilenameAfter();
-
-        var listRequest = ListObjectsV2Request.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
-                .prefix(prefix)
-                .delimiter(SEPARATOR)
-                .startAfter(startAfter)
-                .maxKeys(batchSize)
-                .requestPayer(RequestPayer.REQUESTER)
-                .build();
-
-        return Mono.fromFuture(s3Client.listObjectsV2(listRequest))
-                .timeout(commonDownloaderProperties.getTimeout())
-                .doOnNext(ListObjectsV2Response::contents);
-    }
-
-    /**
-     * Get a file from the given prefix. This method actually downloads the files.
-     *
-     * @param streamFilename last downloaded file name
-     * @param prefix         path to download files from
-     */
-    @NotNull
-    private Mono<StreamFileData> getAtPrefix(StreamFilename streamFilename, String prefix) {
-        var s3Key = prefix + streamFilename.getFilename();
-
+        var s3Key = streamFilePathInfo.prefix + streamFilename.getFilename();
         var request = GetObjectRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
                 .key(s3Key)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
+        var autoCutoverToNodeId = new AtomicBoolean();
         var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
         return Mono.fromFuture(responseFuture)
+                .timeout(commonDownloaderProperties.getTimeout())
+                .onErrorResume(NoSuchKeyException.class, throwable -> {
+                    log.debug("Object not found in node account ID bucket structure: {}", s3Key, throwable);
+                    if ((streamFilePathInfo.pathParams.pathType == PathType.AUTO)
+                            && (streamFilePathInfo.pathParams.pathExpirationTimestampMap()
+                                    <= System.currentTimeMillis())) {
+
+                        var nodeIdS3Key = getNodeIdBasedPrefix(node, streamFilename) + streamFilename.getFilename();
+                        log.debug("Trying node ID bucket structure: {}", nodeIdS3Key);
+                        autoCutoverToNodeId.set(true);
+                        var nodeIdRequest = GetObjectRequest.builder()
+                                .bucket(commonDownloaderProperties.getBucketName())
+                                .key(nodeIdS3Key)
+                                .requestPayer(RequestPayer.REQUESTER)
+                                .build();
+                        return Mono.fromFuture(s3Client.getObject(nodeIdRequest, AsyncResponseTransformer.toBytes()));
+                    }
+                    return Mono.error(throwable);
+                })
+                .map(r -> new StreamFileData(
+                        streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
+                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
+                .doOnSuccess(s -> {
+                    if (streamFilePathInfo.pathParams.pathType == PathType.AUTO) {
+                        updateNodePathStatus(node, autoCutoverToNodeId.get());
+                    }
+                    log.debug("Finished downloading {}", s3Key);
+                });
+    }
+
+    private Mono<StreamFileData> getNative(@NonNull StreamFilename streamFilename) {
+        var s3Key = streamFilename.getNativeKey();
+        var request = GetObjectRequest.builder()
+                .bucket(commonDownloaderProperties.getBucketName())
+                .key(streamFilename.getNativeKey())
+                .requestPayer(RequestPayer.REQUESTER)
+                .build();
+
+        return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
                 .map(r -> new StreamFileData(
                         streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
                 .timeout(commonDownloaderProperties.getTimeout())
@@ -150,56 +199,43 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
-    @NotNull
-    private String getBucketPath(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        var pathParam = nodePathParamsMap.computeIfAbsent(
+    private StreamFilePathInfo getStartingPathInfo(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        var pathParams = nodePathParamsMap.computeIfAbsent(
                 consensusNode, nodeId -> new PathParameterProperties(commonDownloaderProperties.getPathType(), 0L));
 
-        return switch (pathParam.pathType()) {
-            case ACCOUNT_ID -> getAccountIdBasedPrefix(consensusNode, streamFilename);
-            case NODE_ID -> getNodeIdBasedPrefix(consensusNode, streamFilename);
-            case AUTO -> getAutoAlgorithmPrefix(consensusNode, streamFilename, pathParam);
-        };
+        var prefix =
+                switch (pathParams.pathType()) {
+                    case ACCOUNT_ID, AUTO -> getAccountIdBasedPrefix(consensusNode, streamFilename);
+                    case NODE_ID -> getNodeIdBasedPrefix(consensusNode, streamFilename);
+                };
+
+        return new StreamFilePathInfo(pathParams, prefix);
     }
 
-    @NotNull
-    private String getAutoAlgorithmPrefix(
-            ConsensusNode consensusNode, StreamFilename streamFilename, PathParameterProperties pathParam) {
-        var currentTime = System.currentTimeMillis();
-        var accountIdPrefix = getAccountIdBasedPrefix(consensusNode, streamFilename);
-        if (pathParam.pathExpirationTimestampMap() > currentTime) {
-            return accountIdPrefix;
+    private void updateNodePathStatus(
+            ConsensusNode node, int countOfStartingPathObjects, int countOfNodeIdPathObjects) {
+        if (countOfNodeIdPathObjects > 0) {
+            updateNodePathStatus(node, true);
+        } else if (countOfStartingPathObjects > 0) {
+            updateNodePathStatus(node, false);
         }
+    }
 
-        try {
-            // Listing files from accountNodeId path
-            var listResponse = listOnly(streamFilename, accountIdPrefix).block();
-            // If files are available at the old bucket path continue using AUTO
-            if (listResponse != null && !listResponse.contents().isEmpty()) {
-                nodePathParamsMap.put(
-                        consensusNode,
-                        new PathParameterProperties(
-                                AUTO,
-                                (System.currentTimeMillis()
-                                        + commonDownloaderProperties
-                                                .getPathRefreshInterval()
-                                                .toMillis())));
-                return accountIdPrefix;
-            }
-        } catch (Exception e) {
-            // check the types of exceptions.
-            log.warn("Unable to list from account based bucket path {}", e.getMessage(), e);
-        }
-
-        var nodeIdPrefix = getNodeIdBasedPrefix(consensusNode, streamFilename);
-        // List from the node id as well. If no files present, stay as auto and retry
-        var countNodeId = listOnly(streamFilename, nodeIdPrefix).block();
-        if (countNodeId != null && !countNodeId.contents().isEmpty()) {
+    private void updateNodePathStatus(ConsensusNode node, boolean isAutoCutover) {
+        if (isAutoCutover) {
             // At this point we are setting Node_Id as the path type so refresh interval becomes irrelevant
-            nodePathParamsMap.put(consensusNode, new PathParameterProperties(NODE_ID, 0L));
-            return nodeIdPrefix;
+            nodePathParamsMap.put(node, new PathParameterProperties(NODE_ID, 0L));
+        } else {
+            // If files are available at the old bucket path continue using AUTO
+            nodePathParamsMap.put(
+                    node,
+                    new PathParameterProperties(
+                            AUTO,
+                            (System.currentTimeMillis()
+                                    + commonDownloaderProperties
+                                            .getPathRefreshInterval()
+                                            .toMillis())));
         }
-        return accountIdPrefix;
     }
 
     @NotNull
@@ -242,7 +278,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         try {
             var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
-            return new StreamFilename(filename);
+            return new StreamFilename(filename, key);
         } catch (Exception e) {
             log.warn("Unable to parse stream filename for {}", key, e);
             return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
@@ -251,4 +287,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private record PathParameterProperties(
             CommonDownloaderProperties.PathType pathType, long pathExpirationTimestampMap) {}
+
+    private record StreamFilePathInfo(PathParameterProperties pathParams, String prefix) {}
 }

@@ -42,12 +42,11 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     private static final int S3_PROXY_PORT = 8001;
 
     private S3Proxy s3Proxy;
-    private S3AsyncClient s3AsyncClient;
 
     @BeforeEach
     void setup() throws Exception {
         super.setup();
-        s3AsyncClient = S3AsyncClient.builder()
+        var s3AsyncClient = S3AsyncClient.builder()
                 .asyncConfiguration(b -> b.advancedOption(FUTURE_COMPLETION_EXECUTOR, ForkJoinPool.commonPool()))
                 .credentialsProvider(AnonymousCredentialsProvider.create())
                 .endpointOverride(URI.create("http://localhost:" + S3_PROXY_PORT))

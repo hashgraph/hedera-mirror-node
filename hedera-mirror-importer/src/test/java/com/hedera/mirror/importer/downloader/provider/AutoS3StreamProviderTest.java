@@ -33,7 +33,7 @@ import reactor.test.StepVerifier;
  * Copy HIP-679 bucket structured files and configure the stream file provider to access S3 using
  * the new consensus node ID based hierarchy rather than the legacy node account ID mechanism.
  */
-public class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
+class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
 
     private FileCopier nodeIdFileCopier;
     private Map<ConsensusNode, NodeInfo> nodePathTypeMap;
@@ -66,7 +66,7 @@ public class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
     protected void customizeProperties(CommonDownloaderProperties properties) {
         super.customizeProperties(properties);
         properties.setPathType(PathType.AUTO);
-        properties.setPathRefreshInterval(Duration.ofSeconds(2L));
+        properties.setPathRefreshInterval(Duration.ofSeconds(0L));
     }
 
     @Override
