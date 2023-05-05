@@ -16,13 +16,8 @@
 
 package com.hedera.services.utils;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.services.jproto.JKey;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 
@@ -30,45 +25,6 @@ public final class MiscUtils {
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static HederaFunctionality functionOf(final TransactionBody txn) throws Exception {
-        requireNonNull(txn);
-        TransactionBody.DataCase dataCase = txn.getDataCase();
-
-        return switch (dataCase) {
-            case CONTRACTCALL -> ContractCall;
-            case CONTRACTCREATEINSTANCE -> ContractCreate;
-            case CONTRACTUPDATEINSTANCE -> ContractUpdate;
-            case CONTRACTDELETEINSTANCE -> ContractDelete;
-            case ETHEREUMTRANSACTION -> EthereumTransaction;
-            case CRYPTOADDLIVEHASH -> CryptoAddLiveHash;
-            case CRYPTOAPPROVEALLOWANCE -> CryptoApproveAllowance;
-            case CRYPTODELETEALLOWANCE -> CryptoDeleteAllowance;
-            case CRYPTOCREATEACCOUNT -> CryptoCreate;
-            case CRYPTODELETE -> CryptoDelete;
-            case CRYPTODELETELIVEHASH -> CryptoDeleteLiveHash;
-            case CRYPTOTRANSFER -> CryptoTransfer;
-            case CRYPTOUPDATEACCOUNT -> CryptoUpdate;
-            case FREEZE -> Freeze;
-            case CONSENSUSSUBMITMESSAGE -> ConsensusSubmitMessage;
-            case UNCHECKEDSUBMIT -> UncheckedSubmit;
-            case TOKENCREATION -> TokenCreate;
-            case TOKENFREEZE -> TokenFreezeAccount;
-            case TOKENUNFREEZE -> TokenUnfreezeAccount;
-            case TOKENGRANTKYC -> TokenGrantKycToAccount;
-            case TOKENREVOKEKYC -> TokenRevokeKycFromAccount;
-            case TOKENDELETION -> TokenDelete;
-            case TOKENUPDATE -> TokenUpdate;
-            case TOKENMINT -> TokenMint;
-            case TOKENBURN -> TokenBurn;
-            case TOKENWIPE -> TokenAccountWipe;
-            case TOKENASSOCIATE -> TokenAssociateToAccount;
-            case TOKENDISSOCIATE -> TokenDissociateFromAccount;
-            case TOKEN_PAUSE -> TokenPause;
-            case TOKEN_UNPAUSE -> TokenUnpause;
-            default -> throw new Exception("Unknown HederaFunctionality for " + txn);
-        };
     }
 
     public static long perm64(long x) {
