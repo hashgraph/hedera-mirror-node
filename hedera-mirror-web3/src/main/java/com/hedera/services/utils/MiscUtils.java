@@ -19,12 +19,11 @@ package com.hedera.services.utils;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.jproto.JKey;
-import com.hederahashgraph.api.proto.java.*;
-import java.util.List;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
-import java.util.function.Function;
 import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
@@ -72,14 +71,6 @@ public final class MiscUtils {
         };
     }
 
-    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
-        try {
-            return functionOf(trans);
-        } catch (Exception ignore) {
-            return NONE;
-        }
-    };
-
     public static long perm64(long x) {
         // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
         x += x << 30;
@@ -92,30 +83,6 @@ public final class MiscUtils {
         x ^= x >>> 24;
         x += x << 30;
         return x;
-    }
-
-    public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
-        return !msg.getUnknownFields().asMap().isEmpty();
-    }
-
-    public static boolean hasUnknownFields(final GeneratedMessageV3 msg) {
-        if (hasUnknownFieldsHere(msg)) {
-            return true;
-        }
-        var ans = false;
-        for (final var field : msg.getAllFields().values()) {
-            if (field instanceof GeneratedMessageV3 generatedMessageV3) {
-                ans |= hasUnknownFields(generatedMessageV3);
-            } else if (field instanceof List<? extends Object> list) {
-                for (final var item : list) {
-                    if (item instanceof GeneratedMessageV3 generatedMessageV3) {
-                        ans |= hasUnknownFields(generatedMessageV3);
-                    }
-                }
-            }
-            /* Otherwise the field is a primitive and cannot include unknown fields */
-        }
-        return ans;
     }
 
     public static JKey asFcKeyUnchecked(final Key key) {
