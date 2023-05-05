@@ -22,7 +22,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.charset.StandardCharsets;
@@ -42,13 +41,6 @@ public interface Precompile {
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime);
-
-    default void addImplicitCostsIn(final TxnAccessor accessor) {
-        // Most transaction types can compute their full Hedera fee from just an initial transaction
-        // body; but
-        // for a token transfer, we may need to recompute to charge for the extra work implied by
-        // custom fees
-    }
 
     // Change the world state through the given frame
     void run(MessageFrame frame);

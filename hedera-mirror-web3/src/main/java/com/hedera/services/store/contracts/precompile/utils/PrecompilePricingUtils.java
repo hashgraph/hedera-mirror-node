@@ -29,7 +29,6 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -69,7 +68,6 @@ public class PrecompilePricingUtils {
     private final Provider<FeeCalculator> feeCalculator;
     private final BasicFcfsUsagePrices resourceCosts;
     private final StackedStateFrames<?> state;
-    private final AccessorFactory accessorFactory;
     Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     @Inject
@@ -78,13 +76,11 @@ public class PrecompilePricingUtils {
             final BasicHbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
             final BasicFcfsUsagePrices resourceCosts,
-            final StackedStateFrames<?> state,
-            final AccessorFactory accessorFactory) {
+            final StackedStateFrames<?> state) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
         this.state = state;
-        this.accessorFactory = accessorFactory;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -116,19 +112,8 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(
-            final TransactionBody.Builder txBody, final Timestamp timestamp, final Precompile precompile) {
-        final var signedTxn = SignedTransaction.newBuilder()
-                .setBodyBytes(txBody.build().toByteString())
-                .setSigMap(SignatureMap.getDefaultInstance())
-                .build();
-        final var txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(signedTxn.toByteString())
-                .build();
-
-        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
-        precompile.addImplicitCostsIn(accessor);
-        final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, state, timestamp);
+    public long gasFeeInTinybars(final Timestamp timestamp) {
+        final var fees = feeCalculator.get().computeFee(EMPTY_KEY, state, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -148,18 +133,12 @@ public class PrecompilePricingUtils {
         return baseGasCost + (baseGasCost / 5L);
     }
 
-    public long computeGasRequirement(
-            final long blockTimestamp, final Precompile precompile, final TransactionBody.Builder transactionBody) {
+    public long computeGasRequirement(final long blockTimestamp, final Precompile precompile) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-        final long calculatedFeeInTinybars = gasFeeInTinybars(
-                transactionBody.setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(timestamp)
-                        .build()),
-                timestamp,
-                precompile);
+        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
