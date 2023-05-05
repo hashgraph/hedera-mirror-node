@@ -48,12 +48,4 @@ public enum TokenEntitySizes {
                 + fungibleNumTransfers * USAGE_PROPERTIES.accountAmountBytes()
                 + uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
     }
-
-    public long bytesUsedForUniqueTokenTransfers(final int numOwnershipChanges) {
-        return numOwnershipChanges * (2L * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
-    }
-
-    public int bytesUsedPerAccountRelationship() {
-        return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 3 * BOOL_SIZE + INT_SIZE;
-    }
 }
