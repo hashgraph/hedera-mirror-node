@@ -37,6 +37,38 @@ public class BitPackUtils {
     }
 
     /**
+     * Returns the int representing the given positive long.
+     *
+     * @param num a positive long
+     * @return the corresponding integer code
+     */
+    public static int codeFromNum(long num) {
+        assertValid(num);
+        return (int) num;
+    }
+
+    /**
+     * Throws an exception if the given long is not a number in the allowed range.
+     *
+     * @param num the long to check
+     * @throws IllegalArgumentException if the argument is less than 0 or greater than 4_294_967_295
+     */
+    public static void assertValid(long num) {
+        if (num < 0 || num > MAX_NUM_ALLOWED) {
+            throw new IllegalArgumentException("Serial number " + num + " out of range!");
+        }
+    }
+
+    /**
+     * Checks if the given long is not a number in the allowed range
+     *
+     * @param num given long number to check
+     * @return true if valid, else returns false
+     */
+    public static boolean isValidNum(long num) {
+        return num >= 0 && num <= MAX_NUM_ALLOWED;
+    }
+    /**
      * Returns the lower-order 16 bits of a given {@code int}
      *
      * @param autoAssociationMetadata any int
