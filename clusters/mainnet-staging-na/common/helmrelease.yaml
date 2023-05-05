@@ -36,6 +36,87 @@ spec:
     testkube:
       enabled: true
       test:
+        extraExecutionRequestVariables:
+          DEFAULT_ACCOUNT_BALANCE:
+            name: DEFAULT_ACCOUNT_BALANCE
+            type: basic
+            value: "123456"
+          DEFAULT_ACCOUNT_ID:
+            name: DEFAULT_ACCOUNT_ID
+            type: basic
+            value: "1833905"
+          DEFAULT_ACCOUNT_ID_NFTS:
+            name: DEFAULT_ACCOUNT_ID_NFTS
+            type: basic
+            value: "1484550"
+          DEFAULT_ACCOUNT_ID_TOKEN:
+            name: DEFAULT_ACCOUNT_ID_TOKEN
+            type: basic
+            value: "1007535"
+          DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE:
+            name: DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
+            type: basic
+            value: "1323559"
+          DEFAULT_CONTRACT_ID:
+            name: DEFAULT_CONTRACT_ID
+            type: basic
+            value: "1077627"
+          DEFAULT_CONTRACT_RESULT_HASH:
+            name: DEFAULT_CONTRACT_RESULT_HASH
+            type: basic
+            value: 0x8cc7f0036115d677ed3168b2812d8d78519788d0919e3975e067b8b172ca8a28
+          DEFAULT_CONTRACT_TIMESTAMP:
+            name: DEFAULT_CONTRACT_TIMESTAMP
+            type: basic
+            value: "1682635826.366674003"
+          DEFAULT_DURATION:
+            name: DEFAULT_DURATION
+            type: basic
+            value: 300s
+          DEFAULT_NFT_ID:
+            name: DEFAULT_NFT_ID
+            type: basic
+            value: "956460"
+          DEFAULT_NFT_SERIAL:
+            name: DEFAULT_NFT_SERIAL
+            type: basic
+            value: "893"
+          DEFAULT_PUBLIC_KEY:
+            name: DEFAULT_PUBLIC_KEY
+            type: basic
+            value: 97c6b472d72b34598dc4f5ca20b68d40916cf9f68f32bbc3dcacebd0680fe920
+          DEFAULT_SCHEDULE_ACCOUNT_ID:
+            name: DEFAULT_SCHEDULE_ACCOUNT_ID
+            type: basic
+            value: "1163482"
+          DEFAULT_SCHEDULE_ID:
+            name: DEFAULT_SCHEDULE_ID
+            type: basic
+            value: "2184852"
+          DEFAULT_TOKEN_ID:
+            name: DEFAULT_TOKEN_ID
+            type: basic
+            value: "2186153"
+          DEFAULT_TOPIC_ID:
+            name: DEFAULT_TOPIC_ID
+            type: basic
+            value: "1693742"
+          DEFAULT_TOPIC_SEQUENCE:
+            name: DEFAULT_TOPIC_SEQUENCE
+            type: basic
+            value: "5098305126"
+          DEFAULT_TOPIC_TIMESTAMP:
+            name: DEFAULT_TOPIC_TIMESTAMP
+            type: basic
+            value: "1682642567.991586003"
+          DEFAULT_TRANSACTION_HASH:
+            name: DEFAULT_TRANSACTION_HASH
+            type: basic
+            value: 0x8b7d19d392c477e29ef713f35451b82bd5ed65f1713951bf996ed8a41ed3100589ae2da457d5e0e8663fe364873fb7db
+          DEFAULT_TRANSACTION_ID:
+            name: DEFAULT_TRANSACTION_ID
+            type: basic
+            value: 0.0.2186182-1682642681-835182914
         target:
           namespace: mainnet
         vus: 1500
