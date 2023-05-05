@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.79.0-rc1'
+      version: '0.79.1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -38,6 +38,9 @@ spec:
       test:
         target:
           namespace: mainnet
+        vus: 1500
+      trigger:
+        enabled: true
     traefik:
       service:
         annotations:
