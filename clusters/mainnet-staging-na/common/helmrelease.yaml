@@ -69,10 +69,6 @@ spec:
             name: DEFAULT_CONTRACT_TIMESTAMP
             type: basic
             value: "1682635826.366674003"
-          DEFAULT_DURATION:
-            name: DEFAULT_DURATION
-            type: basic
-            value: 300s
           DEFAULT_NFT_ID:
             name: DEFAULT_NFT_ID
             type: basic
