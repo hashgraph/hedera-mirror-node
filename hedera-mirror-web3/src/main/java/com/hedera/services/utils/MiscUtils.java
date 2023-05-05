@@ -16,9 +16,15 @@
 
 package com.hedera.services.utils;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static java.util.Objects.requireNonNull;
+
+import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.jproto.JKey;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
@@ -27,15 +33,53 @@ public final class MiscUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    /**
-     * A permutation (invertible function) on 64 bits. The constants were found by automated search, to optimize
-     * avalanche. Avalanche means that for a random number x, flipping bit i of x has about a 50 percent chance of
-     * flipping bit j of perm64(x). For each possible pair (i,j), this function achieves a probability between 49.8 and
-     * 50.2 percent.
-     *
-     * @param x the value to permute
-     * @return the avalanche-optimized permutation
-     */
+    public static HederaFunctionality functionOf(final TransactionBody txn) throws Exception {
+        requireNonNull(txn);
+        TransactionBody.DataCase dataCase = txn.getDataCase();
+
+        return switch (dataCase) {
+            case CONTRACTCALL -> ContractCall;
+            case CONTRACTCREATEINSTANCE -> ContractCreate;
+            case CONTRACTUPDATEINSTANCE -> ContractUpdate;
+            case CONTRACTDELETEINSTANCE -> ContractDelete;
+            case ETHEREUMTRANSACTION -> EthereumTransaction;
+            case CRYPTOADDLIVEHASH -> CryptoAddLiveHash;
+            case CRYPTOAPPROVEALLOWANCE -> CryptoApproveAllowance;
+            case CRYPTODELETEALLOWANCE -> CryptoDeleteAllowance;
+            case CRYPTOCREATEACCOUNT -> CryptoCreate;
+            case CRYPTODELETE -> CryptoDelete;
+            case CRYPTODELETELIVEHASH -> CryptoDeleteLiveHash;
+            case CRYPTOTRANSFER -> CryptoTransfer;
+            case CRYPTOUPDATEACCOUNT -> CryptoUpdate;
+            case FREEZE -> Freeze;
+            case CONSENSUSSUBMITMESSAGE -> ConsensusSubmitMessage;
+            case UNCHECKEDSUBMIT -> UncheckedSubmit;
+            case TOKENCREATION -> TokenCreate;
+            case TOKENFREEZE -> TokenFreezeAccount;
+            case TOKENUNFREEZE -> TokenUnfreezeAccount;
+            case TOKENGRANTKYC -> TokenGrantKycToAccount;
+            case TOKENREVOKEKYC -> TokenRevokeKycFromAccount;
+            case TOKENDELETION -> TokenDelete;
+            case TOKENUPDATE -> TokenUpdate;
+            case TOKENMINT -> TokenMint;
+            case TOKENBURN -> TokenBurn;
+            case TOKENWIPE -> TokenAccountWipe;
+            case TOKENASSOCIATE -> TokenAssociateToAccount;
+            case TOKENDISSOCIATE -> TokenDissociateFromAccount;
+            case TOKEN_PAUSE -> TokenPause;
+            case TOKEN_UNPAUSE -> TokenUnpause;
+            default -> throw new Exception("Unknown HederaFunctionality for " + txn);
+        };
+    }
+
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
+        try {
+            return functionOf(trans);
+        } catch (Exception ignore) {
+            return NONE;
+        }
+    };
+
     public static long perm64(long x) {
         // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
         x += x << 30;
@@ -48,6 +92,30 @@ public final class MiscUtils {
         x ^= x >>> 24;
         x += x << 30;
         return x;
+    }
+
+    public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
+        return !msg.getUnknownFields().asMap().isEmpty();
+    }
+
+    public static boolean hasUnknownFields(final GeneratedMessageV3 msg) {
+        if (hasUnknownFieldsHere(msg)) {
+            return true;
+        }
+        var ans = false;
+        for (final var field : msg.getAllFields().values()) {
+            if (field instanceof GeneratedMessageV3 generatedMessageV3) {
+                ans |= hasUnknownFields(generatedMessageV3);
+            } else if (field instanceof List<? extends Object> list) {
+                for (final var item : list) {
+                    if (item instanceof GeneratedMessageV3 generatedMessageV3) {
+                        ans |= hasUnknownFields(generatedMessageV3);
+                    }
+                }
+            }
+            /* Otherwise the field is a primitive and cannot include unknown fields */
+        }
+        return ans;
     }
 
     public static JKey asFcKeyUnchecked(final Key key) {

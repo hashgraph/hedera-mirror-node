@@ -192,18 +192,4 @@ public class BitPackUtils {
     public static boolean isValidNum(long num) {
         return num >= 0 && num <= MAX_NUM_ALLOWED;
     }
-
-    public static long perm64(long x) {
-        // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-        x += x << 30;
-        x ^= x >>> 27;
-        x += x << 16;
-        x ^= x >>> 20;
-        x += x << 5;
-        x ^= x >>> 18;
-        x += x << 10;
-        x ^= x >>> 24;
-        x += x << 30;
-        return x;
-    }
 }
