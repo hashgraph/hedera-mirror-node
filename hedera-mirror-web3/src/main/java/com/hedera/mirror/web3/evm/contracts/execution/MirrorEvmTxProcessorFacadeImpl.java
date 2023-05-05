@@ -21,8 +21,10 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.properties.TracingProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
@@ -43,6 +45,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;
+    private final TracingProperties tracingProperties;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
     private final PricesAndFeesImpl pricesAndFees;
@@ -53,6 +56,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
+            final TracingProperties tracingProperties,
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
@@ -61,6 +65,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer) {
         this.evmProperties = evmProperties;
+        this.tracingProperties = tracingProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
@@ -94,7 +99,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 aliasManager,
                 codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        processor.setOperationTracer(new MirrorOperationTracer(tracingProperties));
 
         return processor.execute(sender, receiver, providedGasLimit, value, callData, Instant.now(), isStatic);
     }
