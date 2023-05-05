@@ -20,23 +20,25 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import reactor.test.StepVerifier;
 
 /*
- * Copy HIP-679 bucket structured files and configure the stream file provider to access S3 using
- * the new consensus node ID based hierarchy rather than the legacy node account ID mechanism.
+ * These tests exercise the same scenarios using both the legacy node account ID based files for node 0.0.3
+ * (via the super classes) and the HIP-679 node ID based bucket structure for node 0.0.4, via test cases defined
+ * herein.
+ *
+ * In a manner analogous to S3StreamFileProvider itself, per node information is maintained in nodeInfoMap which
+ * is helpful for test scenario setup appropriate for each node path type.
  */
-class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
+class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
     private FileCopier nodeIdFileCopier;
-    private Map<ConsensusNode, NodeInfo> nodePathTypeMap;
+    private Map<ConsensusNode, NodeInfo> nodeInfoMap;
 
     @Override
     protected FileCopier createFileCopier(Path dataPath) {
@@ -55,7 +57,7 @@ class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
         var nodeIdNodeInfo = new NodeInfo(nodeIdFileCopier, PathType.NODE_ID);
         // Specify how individual node stream files are to be handled within the file system (source directories
         // files are copied form as well as copied to, created the S3 bucket structure.
-        nodePathTypeMap = Map.of(
+        nodeInfoMap = Map.of(
                 TestUtils.nodeFromAccountId("0.0.3"), accountIdNodeInfo,
                 TestUtils.nodeFromAccountId("0.0.4"), nodeIdNodeInfo);
 
@@ -82,20 +84,70 @@ class AutoS3StreamProviderTest extends S3StreamFileProviderTest {
     }
 
     @Test
+    void getNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        get(fileCopier, node);
+    }
+
+    @Test
+    void getSidecarNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        getSidecar(fileCopier, node);
+    }
+
+    @Test
+    void getNotFoundNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        getNotFound(fileCopier, node);
+    }
+
+    @Test
+    void getErrorNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        getError(fileCopier, node);
+    }
+
+    @Test
+    void listNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        list(fileCopier, node);
+    }
+
+    @Test
     void listAfterNodeId() {
-        nodeIdFileCopier.copy();
-        var node = node("0.0.4"); // Node ID 1
-        var lastFilename = new StreamFilename("2022-07-13T08_46_08.041986003Z.rcd_sig");
-        var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
-                .thenAwait(Duration.ofSeconds(10L))
-                .expectNext(data)
-                .expectComplete()
-                .verify(Duration.ofSeconds(10L));
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        listAfter(fileCopier, node);
+    }
+
+    @Test
+    void listNotFoundNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        listNotFound(fileCopier, node);
+    }
+
+    @Test
+    void listErrorNodeId() {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        listError(fileCopier, node);
+    }
+
+    @Test
+    void listInvalidFilenameNodeId() throws Exception {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        listInvalidFilename(fileCopier, node);
     }
 
     private NodeInfo getNodeInfo(ConsensusNode node) {
-        var nodeInfo = nodePathTypeMap.get(node);
+        var nodeInfo = nodeInfoMap.get(node);
         if (nodeInfo == null) {
             throw new IllegalStateException("Node '%s' is not pre-defined in node to info map".formatted(node));
         }

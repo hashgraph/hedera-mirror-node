@@ -94,7 +94,9 @@ public class FileCopier {
             FileUtils.copyDirectory(from.toFile(), to.toFile(), combinedFilter);
 
             if (log.isTraceEnabled()) {
-                Files.walk(to).forEach(p -> log.trace("Moved: {}", p));
+                try (var paths = Files.walk(to)) {
+                    paths.forEach(p -> log.trace("Moved: {}", p));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

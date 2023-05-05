@@ -68,7 +68,68 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void get() {
         var node = node("0.0.3");
-        getFileCopier(node).copy();
+        var fileCopier = getFileCopier(node);
+        get(fileCopier, node);
+    }
+
+    @Test
+    void getSidecar() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getSidecar(fileCopier, node);
+    }
+
+    @Test
+    void getNotFound() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getNotFound(fileCopier, node);
+    }
+
+    @Test
+    void getError() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getError(fileCopier, node);
+    }
+
+    @Test
+    void list() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        list(fileCopier, node);
+    }
+
+    @Test
+    void listAfter() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listAfter(fileCopier, node);
+    }
+
+    @Test
+    void listNotFound() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listNotFound(fileCopier, node);
+    }
+
+    @Test
+    void listError() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listError(fileCopier, node);
+    }
+
+    @Test
+    void listInvalidFilename() throws Exception {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listInvalidFilename(fileCopier, node);
+    }
+
+    protected final void get(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -77,10 +138,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getSidecar() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void getSidecar(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -89,20 +148,16 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getNotFound() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void getNotFound(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectError(TransientProviderException.class)
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getError() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void getError(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         dataPath.toFile().setExecutable(false);
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
@@ -111,10 +166,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void list() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void list(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
@@ -125,10 +178,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listAfter() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void listAfter(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var lastFilename = new StreamFilename("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
@@ -138,10 +189,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listNotFound() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void listNotFound(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var lastFilename = new StreamFilename("2100-01-01T01_01_01.000000001Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -150,10 +199,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listError() {
-        var node = node("0.0.3");
-        getFileCopier(node).copy();
+    protected final void listError(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         dataPath.toFile().setExecutable(false);
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -161,10 +208,7 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listInvalidFilename() throws Exception {
-        var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
+    protected final void listInvalidFilename(FileCopier fileCopier, ConsensusNode node) throws Exception {
         fileCopier.copy();
         fileCopier
                 .getTo()
