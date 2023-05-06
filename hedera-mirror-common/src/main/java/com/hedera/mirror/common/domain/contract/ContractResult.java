@@ -82,7 +82,7 @@ public class ContractResult implements Persistable<Long> {
 
     private Integer transactionIndex;
 
-    private Integer transactionNonce;
+    private int transactionNonce;
 
     private Integer transactionResult;
 
