@@ -27,7 +27,8 @@
         "consensus_timestamp": "187654000123456",
         "contract_id": 5001,
         "payer_account_id": 8001,
-        "gas_used": 101
+        "gas_used": 101,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -37,7 +38,8 @@
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "payer_account_id": 9001,
-        "gas_used": 102
+        "gas_used": 102,
+        "transaction_nonce": 0
       }
     ],
     "transactions": [

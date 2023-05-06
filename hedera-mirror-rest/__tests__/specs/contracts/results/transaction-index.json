@@ -33,7 +33,9 @@
         "gas_limit": 1234556,
         "gas_used": 987,
         "payer_account_id": 6001,
-        "transaction_hash": "0x181202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x181202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_index": 1,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -48,7 +50,9 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "transaction_hash": "0x981202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x981202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_index": 1,
+        "transaction_nonce": 0
       },
       {
         "amount": 35,
@@ -63,7 +67,9 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "transaction_hash": "0x985702030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x985702030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_index": 2,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -78,7 +84,9 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "transasction_hash": "0x995602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x995602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_index": 2,
+        "transaction_nonce": 0
       }
     ],
     "transactions": [

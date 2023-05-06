@@ -36,7 +36,8 @@
         "sender_id": 8001,
         "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "transaction_result": 22,
-        "transaction_index": 1
+        "transaction_index": 1,
+        "transaction_nonce": 1
       }
     ],
     "contractlogs": [

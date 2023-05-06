@@ -17,7 +17,8 @@
         "payer_account_id": 8001,
         "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
         "transaction_result": 22,
-        "transaction_index": 1
+        "transaction_index": 1,
+        "transaction_nonce": 0
       }
     ],
     "contracts": [

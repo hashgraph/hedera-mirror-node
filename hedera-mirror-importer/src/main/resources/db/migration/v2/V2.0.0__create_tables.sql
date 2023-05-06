@@ -151,6 +151,7 @@ create table if not exists contract_result
     sender_id            bigint       null,
     transaction_hash     bytea        null,
     transaction_index    integer      null,
+    transaction_nonce    integer      not null,
     transaction_result   smallint     not null
 ) partition by range (consensus_timestamp);
 comment on table contract_result is 'Crypto contract execution results';
