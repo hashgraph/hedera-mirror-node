@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 /*
  * These tests exercise the same scenarios using both the legacy node account ID based files for node 0.0.3
  * (via the super classes) and the HIP-679 node ID based bucket structure for node 0.0.4, via test cases defined
- * herein.
+ * herein. This tests that S3StreamFileProvider can manage different node types simultaneously.
  *
  * In a manner analogous to S3StreamFileProvider itself, per node information is maintained in nodeInfoMap which
  * is helpful for test scenario setup appropriate for each node path type.
@@ -81,6 +81,13 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
     protected Path nodePath(ConsensusNode node) {
         var nodeInfo = getNodeInfo(node);
         return TestUtils.nodePath(node, nodeInfo.pathType, StreamType.RECORD);
+    }
+
+    @Test
+    void listInvalidFilenameNodeId() throws Exception {
+        var node = node("0.0.4");
+        var fileCopier = getFileCopier(node);
+        listInvalidFilename(fileCopier, node);
     }
 
     @Test
@@ -137,13 +144,6 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         var node = node("0.0.4");
         var fileCopier = getFileCopier(node);
         listError(fileCopier, node);
-    }
-
-    @Test
-    void listInvalidFilenameNodeId() throws Exception {
-        var node = node("0.0.4");
-        var fileCopier = getFileCopier(node);
-        listInvalidFilename(fileCopier, node);
     }
 
     private NodeInfo getNodeInfo(ConsensusNode node) {

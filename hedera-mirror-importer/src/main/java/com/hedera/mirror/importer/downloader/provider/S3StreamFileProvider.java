@@ -38,7 +38,6 @@ import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -62,9 +61,47 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private final ConcurrentMap<ConsensusNode, PathParameterProperties> nodePathParamsMap = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
 
-    @NotNull
     private static String getSidecarFolder(StreamFilename streamFilename) {
         return streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "";
+    }
+
+    private static boolean isAutoModeTransitionIntervalExpired(StreamFilePathInfo streamFilePathInfo) {
+        return ((streamFilePathInfo.pathParams.pathType == PathType.AUTO)
+                && (streamFilePathInfo.pathParams.pathExpirationTimestampMap() < System.currentTimeMillis()));
+    }
+
+    private static String getAccountIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        var streamType = streamFilename.getStreamType();
+        return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(
+                streamType.getPath(),
+                streamType.getNodePrefix(),
+                consensusNode.getNodeAccountId(),
+                getSidecarFolder(streamFilename));
+    }
+
+    private static StreamFilename toStreamFilename(S3Object s3Object) {
+        var key = s3Object.key();
+
+        try {
+            var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
+            return new StreamFilename(filename, key);
+        } catch (Exception e) {
+            log.warn("Unable to parse stream filename for {}", key, e);
+            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
+        }
+    }
+
+    private static String getNetworkPrefix(MirrorProperties mirrorProperties) {
+        if (!StringUtils.isBlank(mirrorProperties.getNetworkPrefix())) {
+            return mirrorProperties.getNetworkPrefix().toLowerCase();
+        } else {
+            if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
+                throw new InvalidConfigurationException(
+                        "Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork());
+            }
+            // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
+            return mirrorProperties.getNetwork().toString().toLowerCase();
+        }
     }
 
     @Override
@@ -94,10 +131,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .flatMapIterable(ListObjectsV2Response::contents)
                 .switchIfEmpty(Flux.defer(() -> {
                     log.debug("No objects found in node account ID bucket structure after: {}", startAfter);
-                    if ((streamFilePathInfo.pathParams.pathType == PathType.AUTO)
-                            && (streamFilePathInfo.pathParams.pathExpirationTimestampMap()
-                                    <= System.currentTimeMillis())) {
-
+                    if (isAutoModeTransitionIntervalExpired(streamFilePathInfo)) {
                         var nodeIdPrefix = getNodeIdBasedPrefix(node, lastFilename);
                         var nodeIdStartAfter = nodeIdPrefix + lastFilename.getFilename();
                         log.debug("Trying node ID bucket structure: {}", nodeIdStartAfter);
@@ -123,7 +157,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     }
                     return Flux.empty(); // Not AUTO mode/interval, so empty means empty
                 }))
-                .map(this::toStreamFilename)
+                .map(S3StreamFileProvider::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
                 .flatMapSequential(this::getNative)
                 .doOnSubscribe(s -> log.debug(
@@ -150,19 +184,15 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
-        var autoCutoverToNodeId = new AtomicBoolean();
-        var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
-        return Mono.fromFuture(responseFuture)
+        var autoTransitionToNodeId = new AtomicBoolean();
+        return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorResume(NoSuchKeyException.class, throwable -> {
                     log.debug("Object not found in node account ID bucket structure: {}", s3Key, throwable);
-                    if ((streamFilePathInfo.pathParams.pathType == PathType.AUTO)
-                            && (streamFilePathInfo.pathParams.pathExpirationTimestampMap()
-                                    <= System.currentTimeMillis())) {
-
+                    if (isAutoModeTransitionIntervalExpired(streamFilePathInfo)) {
                         var nodeIdS3Key = getNodeIdBasedPrefix(node, streamFilename) + streamFilename.getFilename();
                         log.debug("Trying node ID bucket structure: {}", nodeIdS3Key);
-                        autoCutoverToNodeId.set(true);
+                        autoTransitionToNodeId.set(true);
                         var nodeIdRequest = GetObjectRequest.builder()
                                 .bucket(commonDownloaderProperties.getBucketName())
                                 .key(nodeIdS3Key)
@@ -177,7 +207,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> {
                     if (streamFilePathInfo.pathParams.pathType == PathType.AUTO) {
-                        updateNodePathStatus(node, autoCutoverToNodeId.get());
+                        updateNodePathStatus(node, autoTransitionToNodeId.get());
                     }
                     log.debug("Finished downloading {}", s3Key);
                 });
@@ -201,7 +231,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private StreamFilePathInfo getStartingPathInfo(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var pathParams = nodePathParamsMap.computeIfAbsent(
-                consensusNode, nodeId -> new PathParameterProperties(commonDownloaderProperties.getPathType(), 0L));
+                consensusNode,
+                nodeId -> new PathParameterProperties(
+                        commonDownloaderProperties.getPathType(), computeAutoTransitionExpiration()));
 
         var prefix =
                 switch (pathParams.pathType()) {
@@ -212,47 +244,29 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         return new StreamFilePathInfo(pathParams, prefix);
     }
 
-    private void updateNodePathStatus(
-            ConsensusNode node, int countOfStartingPathObjects, int countOfNodeIdPathObjects) {
-        if (countOfNodeIdPathObjects > 0) {
+    private void updateNodePathStatus(ConsensusNode node, int numStartingPathObjects, int numNodeIdPathObjects) {
+        if (numNodeIdPathObjects > 0) {
             updateNodePathStatus(node, true);
-        } else if (countOfStartingPathObjects > 0) {
+        } else if (numStartingPathObjects > 0) {
             updateNodePathStatus(node, false);
-        }
+        } // No new account ID based files found, but transition interval not yet expired
     }
 
-    private void updateNodePathStatus(ConsensusNode node, boolean isAutoCutover) {
-        if (isAutoCutover) {
-            // At this point we are setting Node_Id as the path type so refresh interval becomes irrelevant
+    private void updateNodePathStatus(ConsensusNode node, boolean isAutoTransition) {
+        if (isAutoTransition) {
+            // At this point we are setting node ID as the path type so refresh interval becomes irrelevant
             nodePathParamsMap.put(node, new PathParameterProperties(NODE_ID, 0L));
         } else {
-            // If files are available at the old bucket path continue using AUTO
-            nodePathParamsMap.put(
-                    node,
-                    new PathParameterProperties(
-                            AUTO,
-                            (System.currentTimeMillis()
-                                    + commonDownloaderProperties
-                                            .getPathRefreshInterval()
-                                            .toMillis())));
+            // If files are available at the old bucket path continue using AUTO for another interval
+            nodePathParamsMap.put(node, new PathParameterProperties(AUTO, computeAutoTransitionExpiration()));
         }
     }
 
-    @NotNull
-    private String getNetworkPrefix(MirrorProperties mirrorProperties) {
-        if (!StringUtils.isBlank(mirrorProperties.getNetworkPrefix())) {
-            return mirrorProperties.getNetworkPrefix().toLowerCase();
-        } else {
-            if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
-                throw new InvalidConfigurationException(
-                        "Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork());
-            }
-            // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
-            return mirrorProperties.getNetwork().toString().toLowerCase();
-        }
+    private long computeAutoTransitionExpiration() {
+        return System.currentTimeMillis()
+                + commonDownloaderProperties.getPathRefreshInterval().toMillis();
     }
 
-    @NotNull
     private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
         return TEMPLATE_NODE_ID_PREFIX.formatted(
                 getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
@@ -260,29 +274,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 consensusNode.getNodeId(),
                 streamFilename.getStreamType().getNodeIdBasedSuffix(),
                 getSidecarFolder(streamFilename));
-    }
-
-    @NotNull
-    private String getAccountIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        var streamType = streamFilename.getStreamType();
-        return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(
-                streamType.getPath(),
-                streamType.getNodePrefix(),
-                consensusNode.getNodeAccountId(),
-                getSidecarFolder(streamFilename));
-    }
-
-    @NotNull
-    private StreamFilename toStreamFilename(S3Object s3Object) {
-        var key = s3Object.key();
-
-        try {
-            var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
-            return new StreamFilename(filename, key);
-        } catch (Exception e) {
-            log.warn("Unable to parse stream filename for {}", key, e);
-            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
-        }
     }
 
     private record PathParameterProperties(
