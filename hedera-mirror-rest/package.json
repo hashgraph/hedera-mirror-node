@@ -47,7 +47,7 @@
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.5",
-    "swagger-ui-express": "^4.6.2"
+    "swagger-ui-express": "^4.6.3"
   },
   "bundledDependencies": [
     "@awaitjs/express",
