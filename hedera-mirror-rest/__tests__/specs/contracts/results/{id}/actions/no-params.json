@@ -53,30 +53,6 @@
         "transaction_nonce": 0
       }
     ],
-    "transactions": [
-      {
-        "consensus_timestamp": "1676540001234390005",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "1676540001234390005",
-        "valid_start_timestamp": "1676540001234390005",
-        "transaction_hash": "hash1",
-        "payerAccountId": 5001,
-        "index": 1,
-        "nonce": 0
-      },
-      {
-        "consensus_timestamp": "1676540001234500005",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "1676540001234500005",
-        "valid_start_timestamp": "1676540001234500005",
-        "transaction_hash": "hash2",
-        "payerAccountId": 8001,
-        "index": 2,
-        "nonce": 0
-      }
-    ],
     "ethereumtransactions": [
       {
         "consensus_timestamp": "1676540001234390005",

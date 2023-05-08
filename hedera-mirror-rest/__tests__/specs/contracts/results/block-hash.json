@@ -53,30 +53,6 @@
         "transaction_nonce": 0
       }
     ],
-    "transactions": [
-      {
-        "consensus_timestamp": "187654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "187654000123456",
-        "valid_start_timestamp": "187654000123456",
-        "transaction_hash": "hash1",
-        "payerAccountId": 6001,
-        "index": 1,
-        "nonce": 0
-      },
-      {
-        "consensus_timestamp": "167654000123440",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "167654000123440",
-        "valid_start_timestamp": "167654000123440",
-        "transaction_hash": "hash2",
-        "payerAccountId": 8001,
-        "index": 2,
-        "nonce": 0
-      }
-    ],
     "recordFiles": [
       {
         "index": 16,

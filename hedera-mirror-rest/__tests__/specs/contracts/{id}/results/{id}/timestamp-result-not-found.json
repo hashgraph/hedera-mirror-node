@@ -30,14 +30,6 @@
         "num": "5001",
         "timestamp_range": "[987654999123300,)"
       }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": 167654000123457,
-        "payerAccountId": "5",
-        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c10554fd34ae23bf39931e9b90542b781",
-        "valid_start_timestamp": 167654000123400
-      }
     ]
   },
   "urls": [
