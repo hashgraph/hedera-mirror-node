@@ -60,7 +60,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
         api("com.hedera.evm:hedera-evm:0.37.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.37.0")
-        api("com.hedera.hashgraph:sdk:2.24.0")
+        api("com.hedera.hashgraph:sdk:2.24.1")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
