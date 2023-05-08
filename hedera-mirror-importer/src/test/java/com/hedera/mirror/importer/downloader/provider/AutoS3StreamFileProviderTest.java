@@ -20,12 +20,14 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
 
 /*
  * These tests exercise the same scenarios using both the legacy node account ID based files for node 0.0.3
@@ -56,7 +58,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         var accountIdNodeInfo = new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID);
         var nodeIdNodeInfo = new NodeInfo(nodeIdFileCopier, PathType.NODE_ID);
         // Specify how individual node stream files are to be handled within the file system (source directories
-        // files are copied form as well as copied to, created the S3 bucket structure.
+        // files are copied from as well as copied to).
         nodeInfoMap = Map.of(
                 TestUtils.nodeFromAccountId("0.0.3"), accountIdNodeInfo,
                 TestUtils.nodeFromAccountId("0.0.4"), nodeIdNodeInfo);
@@ -81,6 +83,90 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
     protected Path nodePath(ConsensusNode node) {
         var nodeInfo = getNodeInfo(node);
         return TestUtils.nodePath(node, nodeInfo.pathType, StreamType.RECORD);
+    }
+
+    @Test
+    void nodeAccountIdToNodeIdListTransition() throws Exception {
+        var node = node("0.0.3");
+
+        var accountIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "recordstreams");
+        var accountIdFileCopier = FileCopier.create(
+                        TestUtils.getResource(accountIdFromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), StreamType.RECORD.getPath());
+
+        var nodeIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "demo");
+        var network = properties.getMirrorProperties().getNetwork().toString().toLowerCase();
+        var nodeIdFileCopier = FileCopier.create(
+                        TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), network);
+
+        accountIdFileCopier.copy();
+        nodeInfoMap = Map.of(node, new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID));
+
+        // Find files in legacy node account ID bucket structure the first time
+        var accountIdData1 = streamFileData(node, accountIdFileCopier, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var accountIdData2 = streamFileData(node, accountIdFileCopier, "2022-07-13T08_46_11.304284003Z.rcd_sig");
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(accountIdData1)
+                .expectNext(accountIdData2)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
+
+        // Consensus node now writes to node ID bucket structure
+        nodeIdFileCopier.copy();
+        nodeInfoMap = Map.of(node, new NodeInfo(nodeIdFileCopier, PathType.NODE_ID));
+
+        // Now find new files in node ID bucket structure for the first time
+        var nodeIdData1 = streamFileData(node, nodeIdFileCopier, "2022-12-25T09_14_26.072307770Z.rcd_sig");
+        var nodeIdData2 = streamFileData(node, nodeIdFileCopier, "2022-12-25T09_14_28.278703292Z.rcd_sig");
+        var lastAccountIdFilename = accountIdData2.getStreamFilename();
+
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastAccountIdFilename))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(nodeIdData1)
+                .expectNext(nodeIdData2)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
+    }
+
+    @Test
+    void nodeAccountIdToNodeIdGetTransition() throws Exception {
+        var node = node("0.0.3");
+
+        var accountIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "recordstreams");
+        var accountIdFileCopier = FileCopier.create(
+                        TestUtils.getResource(accountIdFromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), StreamType.RECORD.getPath());
+
+        var nodeIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "demo");
+        var network = properties.getMirrorProperties().getNetwork().toString().toLowerCase();
+        var nodeIdFileCopier = FileCopier.create(
+                        TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), network);
+
+        accountIdFileCopier.copy();
+        nodeInfoMap = Map.of(node, new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID));
+
+        // Get file in legacy node account ID bucket structure the first time
+        var accountIdData = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, accountIdData.getStreamFilename()))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(accountIdData)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
+
+        // Consensus node now writes to node ID bucket structure
+        nodeIdFileCopier.copy();
+        nodeInfoMap = Map.of(node, new NodeInfo(nodeIdFileCopier, PathType.NODE_ID));
+
+        // Now get new file from node ID bucket structure for the first time
+        var nodeIdData = streamFileData(node, "2022-12-25T09_14_26.072307770Z.rcd_sig");
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, nodeIdData.getStreamFilename()))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(nodeIdData)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test

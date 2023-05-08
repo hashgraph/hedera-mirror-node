@@ -234,10 +234,10 @@ abstract class AbstractStreamFileProviderTest {
         return TestUtils.nodeFromAccountId(nodeAccountId);
     }
 
-    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
+    protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
         try {
             var streamFilename = new StreamFilename(filename);
-            var filePath = getFileCopier(node)
+            var filePath = fileCopier
                     .getFrom()
                     .resolve(nodePath(node))
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
@@ -247,5 +247,9 @@ abstract class AbstractStreamFileProviderTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
+        return streamFileData(node, getFileCopier(node), filename);
     }
 }
