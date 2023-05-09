@@ -3,6 +3,7 @@
   "setup": {
     "accounts": [
       {
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "num": 7
       },
@@ -51,14 +52,15 @@
       "urls": [
         "/api/v1/balances?account.id=gte:ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "/api/v1/balances?account.id=lt:ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
-        "/api/v1/balances?account.id=lte:0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
+        "/api/v1/balances?account.id=lte:0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
+        "/api/v1/balances?account.id=lte:KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
       ],
       "responseStatus": 400,
       "responseJson": {
         "_status": {
           "messages": [
             {
-              "message": "Invalid operator. Evm address only supports equals operator."
+              "message": "Invalid operator. Evm address or alias only supports equals operator."
             }
           ]
         }
@@ -68,14 +70,15 @@
       "urls": [
         "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
-        "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
+        "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
+        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
       ],
       "responseStatus": 400,
       "responseJson": {
         "_status": {
           "messages": [
             {
-              "message": "Only one evm address is allowed."
+              "message": "Only one evm address or alias is allowed."
             }
           ]
         }

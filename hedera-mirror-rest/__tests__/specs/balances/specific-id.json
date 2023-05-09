@@ -7,9 +7,10 @@
         "num": 7
       },
       {
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "balance": 8,
-        "num": 8,
-        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec"
+        "num": 8
       },
       {
         "balance": 9,
@@ -80,7 +81,10 @@
         "/api/v1/balances?account.id=8&timestamp=10",
         "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10",
-        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10"
+        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10",
+        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=10",
+        "/api/v1/balances?account.id=0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=10",
+        "/api/v1/balances?account.id=0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=10"
       ],
       "responseStatus": 200,
       "responseJson": {
@@ -113,7 +117,10 @@
         "/api/v1/balances?account.id=8",
         "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
-        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec"
+        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/balances?account.id=0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/balances?account.id=0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
       ],
       "responseStatus": 200,
       "responseJson": {

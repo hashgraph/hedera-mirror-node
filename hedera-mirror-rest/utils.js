@@ -24,6 +24,7 @@ import pg from 'pg';
 import pgRange from 'pg-range';
 import util from 'util';
 
+import AccountAlias from './accountAlias.js';
 import * as constants from './constants';
 import EntityId from './entityId';
 import config from './config';
@@ -244,7 +245,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.ACCOUNT_ID:
-      ret = EntityId.isValidEntityId(val);
+      ret = EntityId.isValidEntityId(val) || AccountAlias.isValid(val);
       break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
