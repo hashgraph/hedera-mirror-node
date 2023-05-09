@@ -18,7 +18,10 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,15 +50,14 @@ import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -85,15 +87,16 @@ public class ContractFeature extends AbstractFeature {
     private ContractId create2ChildContractContractId;
 
     @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
-    private Path parentContract;
+    private Resource parentContract;
 
     private byte[] childContractBytecodeFromParent;
 
     @Given("I successfully create a contract from the parent contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
-        var parentCompiledSolidityArtifact =
-                MAPPER.readValue(ResourceUtils.getFile(parentContract.toUri()), CompiledSolidityArtifact.class);
-        deployedParentContract = createContract(parentCompiledSolidityArtifact, initialBalance);
+        try (var in = parentContract.getInputStream()) {
+            var parentCompiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedParentContract = createContract(parentCompiledSolidityArtifact, initialBalance);
+        }
     }
 
     @Given("I successfully call the contract")

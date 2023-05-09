@@ -232,6 +232,9 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   enabled: true
   image:
     pullPolicy: IfNotPresent
