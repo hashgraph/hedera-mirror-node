@@ -79,7 +79,7 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
         // Changing bucket Path
         commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.AUTO);
         // Reducing the pathRefresh interval to realistically test the node_id based path
-        commonDownloaderProperties.setPathRefreshInterval(Duration.ofMillis(100));
+        commonDownloaderProperties.setPathRefreshInterval(Duration.ofMillis(0L));
         fileCopier
                 .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
@@ -88,12 +88,14 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
                 .from(testnet)
                 .to(commonDownloaderProperties.getBucketName(), testnet.toString())
                 .copy();
+
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
         verifyStreamFiles(List.of(file1, file2));
         expectLastStreamFile(file2Instant);
         downloader.download();
-        verifyStreamFiles(List.of(file3, file4));
+        verifyStreamFiles(List.of(file1, file2, file3, file4));
+        expectLastStreamFile(file4Instant);
     }
 
     @Override

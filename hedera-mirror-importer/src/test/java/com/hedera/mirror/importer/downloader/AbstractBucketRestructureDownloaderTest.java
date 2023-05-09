@@ -20,7 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -114,8 +114,7 @@ public abstract class AbstractBucketRestructureDownloaderTest {
     protected Downloader<? extends StreamFile<? extends StreamItem>, ? extends StreamItem> downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1, file2, file3, file4;
-    protected Instant file1Instant;
-    protected Instant file2Instant;
+    protected Instant file1Instant, file2Instant, file3Instant, file4Instant;
     protected List<Pair<Instant, String>> instantFilenamePairs;
     protected EntityId corruptedNodeAccountId;
     protected NodeSignatureVerifier nodeSignatureVerifier;
@@ -141,7 +140,13 @@ public abstract class AbstractBucketRestructureDownloaderTest {
 
         file1Instant = new StreamFilename(file1).getInstant();
         file2Instant = new StreamFilename(file2).getInstant();
-        instantFilenamePairs = List.of(Pair.of(file1Instant, file1), Pair.of(file2Instant, file2));
+        file3Instant = new StreamFilename(file3).getInstant();
+        file4Instant = new StreamFilename(file4).getInstant();
+        instantFilenamePairs = List.of(
+                Pair.of(file1Instant, file1),
+                Pair.of(file2Instant, file2),
+                Pair.of(file3Instant, file3),
+                Pair.of(file4Instant, file4));
     }
 
     protected void loadAddressBook(String filename) {
@@ -232,14 +237,15 @@ public abstract class AbstractBucketRestructureDownloaderTest {
         properties.setProperty(
                 "jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
 
-        BlobStoreContext context =
-                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class);
+        try (BlobStoreContext context =
+                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class)) {
 
-        s3Proxy = S3Proxy.builder()
-                .blobStore(context.getBlobStore())
-                .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
-                .ignoreUnknownHeaders(true)
-                .build();
+            s3Proxy = S3Proxy.builder()
+                    .blobStore(context.getBlobStore())
+                    .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
+                    .ignoreUnknownHeaders(true)
+                    .build();
+        }
         s3Proxy.start();
 
         await("S3Proxy")
@@ -332,7 +338,7 @@ public abstract class AbstractBucketRestructureDownloaderTest {
             downloaderProperties.getMirrorProperties().setVerifyHashAfter(instant);
         }
         firstIndex = index == null ? 0L : index + 1;
-        doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
+        lenient().doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
     }
 
     /**

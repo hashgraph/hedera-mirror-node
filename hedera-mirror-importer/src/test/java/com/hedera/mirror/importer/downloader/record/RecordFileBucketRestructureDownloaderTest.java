@@ -14,66 +14,94 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.downloader.balance;
+package com.hedera.mirror.importer.downloader.record;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
-import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
+import com.hedera.mirror.importer.parser.record.sidecar.SidecarProperties;
+import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
+import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
+import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
+import com.hedera.mirror.importer.reader.record.sidecar.SidecarFileReaderImpl;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
+class RecordFileBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
 
-    @Override
-    protected DownloaderProperties getDownloaderProperties() {
-        return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-    }
+    private static final List<String> RECORD_FILE_NAME_ORDER = List.of(
+            "2022-12-25T09_14_22.940899003Z.rcd.gz",
+            "2022-12-25T09_14_24.197926003Z.rcd.gz",
+            "2022-12-25T09_14_26.072307770Z.rcd.gz",
+            "2022-12-25T09_14_28.278703292Z.rcd.gz");
 
-    @Override
-    protected Downloader<AccountBalanceFile, AccountBalance> getDownloader() {
-        ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
-        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
-        return new AccountBalancesDownloader(
-                consensusNodeService,
-                (BalanceDownloaderProperties) downloaderProperties,
-                meterRegistry,
-                dateRangeProcessor,
-                nodeSignatureVerifier,
-                signatureFileReader,
-                streamFileNotifier,
-                streamFileProvider,
-                protoBalanceFileReader);
-    }
-
-    @Override
-    protected Path getTestDataDir() {
-        return Path.of("accountBalances", "proto.accountId");
-    }
-
-    @Override
-    protected Duration getCloseInterval() {
-        return Duration.ofMinutes(15L);
-    }
+    private static final Map<String, Long> RECORD_FILE_INDEX_MAP = Map.of(
+            RECORD_FILE_NAME_ORDER.get(0), Long.valueOf(205325L),
+            RECORD_FILE_NAME_ORDER.get(1), Long.valueOf(205326L),
+            RECORD_FILE_NAME_ORDER.get(2), Long.valueOf(205327L),
+            RECORD_FILE_NAME_ORDER.get(3), Long.valueOf(205328L));
 
     @Override
     @BeforeEach
     protected void beforeEach() {
         super.beforeEach();
-        setTestFilesAndInstants(List.of(
-                "2023-04-06T21_45_00.000494Z_Balances.pb.gz",
-                "2023-04-06T22_00_00.067585Z_Balances.pb.gz",
-                "2023-04-06T22_15_00.134616Z_Balances.pb.gz",
-                "2023-04-06T22_30_00.104554Z_Balances.pb.gz"));
+        setTestFilesAndInstants(RECORD_FILE_NAME_ORDER);
+    }
+
+    @Override
+    protected DownloaderProperties getDownloaderProperties() {
+        var recordDownloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        recordDownloaderProperties.setEnabled(true);
+        return recordDownloaderProperties;
+    }
+
+    @Override
+    protected Downloader<RecordFile, RecordItem> getDownloader() {
+
+        var recordFileReader = new CompositeRecordFileReader(
+                new RecordFileReaderImplV1(),
+                new RecordFileReaderImplV2(),
+                new RecordFileReaderImplV5(),
+                new ProtoRecordFileReader());
+        sidecarProperties = new SidecarProperties();
+        sidecarProperties.setEnabled(true);
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        return new RecordFileDownloader(
+                consensusNodeService,
+                (RecordDownloaderProperties) downloaderProperties,
+                meterRegistry,
+                dateRangeProcessor,
+                nodeSignatureVerifier,
+                new SidecarFileReaderImpl(),
+                sidecarProperties,
+                signatureFileReader,
+                streamFileNotifier,
+                streamFileProvider,
+                recordFileReader);
+    }
+
+    @Override
+    protected Path getTestDataDir() {
+        return Paths.get("recordstreams", "v6.accountId");
+    }
+
+    @Override
+    protected Map<String, Long> getExpectedFileIndexMap() {
+
+        return RECORD_FILE_INDEX_MAP;
     }
 
     @Test
@@ -99,5 +127,10 @@ class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestr
         downloader.download();
         verifyStreamFiles(List.of(file1, file2, file3, file4));
         expectLastStreamFile(file4Instant);
+    }
+
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofSeconds(5L);
     }
 }
