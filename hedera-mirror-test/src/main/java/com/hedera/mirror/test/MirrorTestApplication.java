@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class MirrorTestApplication {
 
+    @SuppressWarnings("java:S106")
     public static void main(String[] args) {
         log.info("Executing acceptance tests with args: {}", List.of(args));
 
