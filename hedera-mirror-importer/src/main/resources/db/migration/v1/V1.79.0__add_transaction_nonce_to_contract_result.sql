@@ -5,5 +5,4 @@ alter table if exists contract_result
 update contract_result cr
 set transaction_nonce = t.nonce
 from transaction t
-where cr.consensus_timestamp = t.consensus_timestamp
-and cr.transaction_index = t.index;
+where cr.consensus_timestamp = t.consensus_timestamp;
