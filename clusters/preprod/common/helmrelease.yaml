@@ -53,9 +53,6 @@ spec:
                 - action: drop
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
-                - action: drop
-                  regex: (dev|integration|integration-docker|staging-lg|staging-sm)
-                  sourceLabels: [namespace]
           replicaExternalLabelName: __replica__
     testkube:
       enabled: true
