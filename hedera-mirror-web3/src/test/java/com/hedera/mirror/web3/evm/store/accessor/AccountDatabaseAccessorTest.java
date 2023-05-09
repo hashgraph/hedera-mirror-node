@@ -56,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AccountAccessorTest {
+class AccountDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
     private static final Address ADDRESS = Address.fromHexString(HEX);
@@ -65,7 +65,7 @@ class AccountAccessorTest {
     private static final Entity entity = new Entity();
 
     @InjectMocks
-    private AccountAccessor accountAccessor;
+    private AccountDatabaseAccessor accountAccessor;
 
     @Mock
     private EntityRepository entityRepository;

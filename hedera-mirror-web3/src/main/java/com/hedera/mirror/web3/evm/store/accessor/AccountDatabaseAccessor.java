@@ -46,9 +46,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AccountAccessor extends DatabaseAccessor<Address, Account> {
+public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
     public static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
-        throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2));
+        throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
     private final EntityRepository entityRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
