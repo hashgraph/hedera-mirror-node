@@ -76,6 +76,15 @@
         "hash": "6ceecd8bb224da491"
       }
     ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde4d",
+        "type": 50,
+        "valid_start_timestamp": 167654000123400
+      }
+    ],
     "ethereumtransactions": [
       {
         "call_data": "0x0707",

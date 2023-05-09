@@ -105,6 +105,16 @@
         "hash": "e19f4a235bee1e6bb19258b"
       }
     ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "nonce": 1,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde4d",
+        "type": 50,
+        "valid_start_timestamp": 167654000123400
+      }
+    ],
     "ethereumtransactions": [
       {
         "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",

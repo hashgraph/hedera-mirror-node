@@ -32,6 +32,16 @@
         "hash": "6ceecd8bb224da491"
       }
     ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "8001",
+        "result": 33,
+        "transaction_hash": "519a008fabde4d",
+        "type": 50,
+        "valid_start_timestamp": 167654000123400
+      }
+    ],
     "ethereumtransactions": [
       {
         "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",
