@@ -16,5 +16,25 @@
 
 package com.hedera.mirror.test.e2e.acceptance.props;
 
-public record ContractCallRequest(
-        String block, String data, boolean estimate, String from, long gas, long gasPrice, String to, long value) {}
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+
+@Getter
+@Builder
+@AllArgsConstructor
+public class ContractCallRequest {
+    boolean estimate;
+    private String data;
+    private String from;
+    @Builder.Default
+    private long gas = 15000000;
+    @Builder.Default
+    private long gasPrice = 100000000;
+    private String to;
+    @Builder.Default
+    private long value = 0;
+    @Builder.Default
+    private String block = "latest";
+}
