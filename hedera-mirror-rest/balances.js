@@ -204,11 +204,8 @@ const parseAccountIdQueryParam = (query, columnName) => {
       return EntityId.parse(value).getEncodedId();
     },
     (op, value) => {
-      if (evmAddressCount === 1) {
-        if (op !== utils.opsMap.eq) {
-          throw new InvalidArgumentError(`Invalid operator. Evm address only supports equals operator.`);
-        }
-        return [`${columnName}${op}?`, value];
+      if (evmAddressCount > 0 && op !== utils.opsMap.eq) {
+        throw new InvalidArgumentError(`Invalid operator. Evm address only supports equals operator.`);
       }
 
       return Array.isArray(value)
