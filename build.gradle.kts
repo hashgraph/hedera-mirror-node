@@ -32,7 +32,7 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.22.3")
+    set("protobufVersion", "3.22.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.3.2")
@@ -52,7 +52,7 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.9")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.5.0")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.11")
@@ -60,7 +60,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
         api("com.hedera.evm:hedera-evm:0.37.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.37.0")
-        api("com.hedera.hashgraph:sdk:2.24.0")
+        api("com.hedera.hashgraph:sdk:2.24.1")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.18.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.56")
+        api("software.amazon.awssdk:bom:2.20.61")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

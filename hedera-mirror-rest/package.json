@@ -19,7 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.321.1",
+    "@aws-sdk/client-s3": "^3.328.0",
     "@godaddy/terminus": "^4.12.0",
     "@hashgraph/proto": "^2.12.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -47,7 +47,7 @@
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.5",
-    "swagger-ui-express": "^4.6.2"
+    "swagger-ui-express": "^4.6.3"
   },
   "bundledDependencies": [
     "@awaitjs/express",
