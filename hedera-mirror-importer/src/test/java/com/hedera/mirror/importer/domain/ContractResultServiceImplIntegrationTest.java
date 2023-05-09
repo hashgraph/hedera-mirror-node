@@ -485,6 +485,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed)
                 .returns(toBytes(failedInitcode), ContractResult::getFailedInitcode)
                 .returns(transaction.getIndex(), ContractResult::getTransactionIndex)
+                .returns(transaction.getNonce(), ContractResult::getTransactionNonce)
                 .returns(transaction.getResult(), ContractResult::getTransactionResult)
                 .extracting(ContractResult::getTransactionHash, InstanceOfAssertFactories.BYTE_ARRAY)
                 .hasSize(32)
