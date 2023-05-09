@@ -52,6 +52,11 @@ spec:
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
+      resources:
+        limits:
+          cpu: 1500m
+        requests:
+          cpu: 1000m
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
