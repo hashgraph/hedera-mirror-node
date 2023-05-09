@@ -245,7 +245,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.ACCOUNT_ID:
-      ret = EntityId.isValidEntityId(val) || AccountAlias.isValid(val);
+      ret = EntityId.isValidEntityId(val);
       break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
@@ -281,6 +281,12 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.FROM:
       ret = EntityId.isValidEntityId(val, true, constants.EvmAddressType.NO_SHARD_REALM);
+      break;
+    case constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS:
+      ret = EntityId.isValidEntityId(val, false);
+      if (!ret) {
+        ret = (EntityId.isValidEvmAddress(val) || AccountAlias.isValid(val)) && op === constants.queryParamOperators.eq;
+      }
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
