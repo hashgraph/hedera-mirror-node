@@ -60,16 +60,17 @@ public class AccountAccessor extends DatabaseAccessor<Address, Account> {
 
     @Override
     public @NonNull Optional<Account> get(@NonNull Address address) {
-        Optional<Entity> entity;
+        return getEntity(address).map(this::accountFromEntity);
+    }
+
+    private Optional<Entity> getEntity(Address address) {
         var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdNumFromEvmAddress(address);
-            entity = entityRepository.findByIdAndDeletedIsFalse(entityId);
+            return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
-            entity = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
-
-        return entity.map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {
@@ -81,7 +82,7 @@ public class AccountAccessor extends DatabaseAccessor<Address, Account> {
                 entity.getDeleted(),
                 getOwnedNfts(entityId),
                 entity.getAutoRenewPeriod(),
-                this.idFromEntityId(entity.getProxyAccountId()),
+                idFromEntityId(entity.getProxyAccountId()),
                 entity.getMaxAutomaticTokenAssociations(),
                 getCryptoAllowances(entity.getId()),
                 getFungibleTokenAllowances(entity.getId()),
@@ -102,7 +103,7 @@ public class AccountAccessor extends DatabaseAccessor<Address, Account> {
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long spenderId) {
         return cryptoAllowanceRepository.findBySpender(spenderId).stream()
                 .collect(Collectors.toMap(
-                        e -> EntityNum.fromLong(e.getOwner()),
+                        cryptoAllowance -> EntityNum.fromLong(cryptoAllowance.getOwner()),
                         CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
