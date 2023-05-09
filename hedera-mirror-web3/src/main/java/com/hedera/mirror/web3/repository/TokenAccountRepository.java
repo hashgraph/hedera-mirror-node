@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,20 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_T
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id> {
 
     @Override
     @Cacheable(cacheNames = "token_account", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<TokenAccount> findById(Id id);
+    @NotNull
+    Optional<TokenAccount> findById(@NotNull Id id);
+
+    int countByAccountIdAndAssociatedIsTrue(long accountId);
+
+    @Query("SELECT COUNT(ta) FROM TokenAccount ta WHERE ta.accountId=?1 AND balance > 0")
+    int countByAccountIdAndPositiveBalance(long accountId);
 }

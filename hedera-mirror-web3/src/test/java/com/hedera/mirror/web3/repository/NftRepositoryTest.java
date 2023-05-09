@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,5 +39,17 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .returns(nft.getSpender(), Nft::getSpender)
                 .returns(nft.getAccountId(), Nft::getAccountId)
                 .returns(nft.getMetadata(), Nft::getMetadata);
+    }
+
+    @Test
+    void count() {
+        final var accountId = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
+        domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
+        domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
+        final var otherAccountId = new EntityId(0L, 0L, 57L, EntityType.ACCOUNT);
+        domainBuilder.nft().customize(n -> n.accountId(otherAccountId)).persist();
+
+        assertThat(nftRepository.countByAccountId(accountId)).isEqualTo(2);
+        assertThat(nftRepository.countByAccountId(otherAccountId)).isEqualTo(1);
     }
 }

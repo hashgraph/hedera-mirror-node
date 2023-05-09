@@ -42,4 +42,42 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
                 .returns(tokenAccount.getBalance(), TokenAccount::getBalance);
     }
+
+    @Test
+    void countByAccountIdAndAssocaition() {
+        long accountId = 22L;
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(true).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(true).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(false).accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndAssociatedIsTrue(accountId)).isEqualTo(2);
+    }
+
+    @Test
+    void countByAccountIdAndBalance() {
+        long accountId = 22L;
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.balance(33).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.balance(44).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.balance(0).accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndPositiveBalance(accountId)).isEqualTo(2);
+    }
 }
