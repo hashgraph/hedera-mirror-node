@@ -1,0 +1,265 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.mirror.web3.evm.store.accessor;
+
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+import static org.assertj.core.api.Assertions.from;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftAllowanceRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class AccountAccessorTest {
+    private static final String HEX = "0x00000000000000000000000000000000000004e4";
+    private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
+    private static final Address ADDRESS = Address.fromHexString(HEX);
+    private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
+
+    private static final Entity entity = new Entity();
+
+    @InjectMocks
+    private AccountAccessor accountAccessor;
+
+    @Mock
+    private EntityRepository entityRepository;
+
+    @Mock
+    private NftAllowanceRepository nftAllowanceRepository;
+
+    @Mock
+    private NftRepository nftRepository;
+
+    @Mock
+    private TokenAllowanceRepository tokenAllowanceRepository;
+
+    @Mock
+    private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Mock
+    private TokenAccountRepository tokenAccountRepository;
+
+    private static final long SHARD = 0L;
+
+    private static final long REALM = 1L;
+    private static final long EXPIRATION_TIMESTAMP = 2L;
+    private static final long BALANCE = 3L;
+    private static final long AUTO_RENEW_PERIOD = 4L;
+    private static final EntityId PROXY_ACCOUNT_ID = new EntityId(SHARD, REALM, 5L, EntityType.ACCOUNT);
+
+    private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
+
+    @BeforeAll
+    static void initialSetup() {
+        final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
+        entity.setId(entityNum);
+        entity.setShard(SHARD);
+        entity.setRealm(REALM);
+        entity.setNum(entityNum);
+        entity.setExpirationTimestamp(EXPIRATION_TIMESTAMP);
+        entity.setBalance(BALANCE);
+        entity.setDeleted(false);
+        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
+        entity.setProxyAccountId(PROXY_ACCOUNT_ID);
+        entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
+    }
+
+    @BeforeEach
+    void setup() {}
+
+    @Test
+    void getEntityByAddress() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+
+        accountAccessor.get(ADDRESS);
+
+        verify(entityRepository).findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS));
+    }
+
+    @Test
+    void getEntityByAlias() {
+        accountAccessor.get(ALIAS_ADDRESS);
+
+        verify(entityRepository).findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe());
+    }
+
+    @Test
+    void accountFieldsMatchEntityFields() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), from(Account::getId))
+                .returns(entity.getExpirationTimestamp(), from(Account::getExpiry))
+                .returns(entity.getBalance(), from(Account::getBalance))
+                .returns(entity.getAutoRenewPeriod(), from(Account::getAutoRenewSecs))
+                .returns(
+                        new Id(
+                                entity.getProxyAccountId().getShardNum(),
+                                entity.getProxyAccountId().getRealmNum(),
+                                entity.getProxyAccountId().getEntityNum()),
+                        from(Account::getProxy))
+                .returns(entity.getMaxAutomaticTokenAssociations(), from(Account::getMaxAutomaticAssociations)));
+    }
+
+    @Test
+    void accountOwnedNftsMatchesValueFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        long ownedNfts = 20;
+        when(nftRepository.countByAccountId(any())).thenReturn(ownedNfts);
+
+        assertThat(accountAccessor.get(ADDRESS))
+                .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, from(Account::getOwnedNfts)));
+    }
+
+    @Test
+    void cryptoAllowancesMatchValuesFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        CryptoAllowance firstAllowance = new CryptoAllowance();
+        firstAllowance.setOwner(123L);
+        firstAllowance.setSpender(entity.getId());
+        firstAllowance.setAmount(50L);
+
+        CryptoAllowance secondAllowance = new CryptoAllowance();
+        secondAllowance.setOwner(234L);
+        secondAllowance.setSpender(entity.getId());
+        secondAllowance.setAmount(60L);
+
+        when(cryptoAllowanceRepository.findBySpender(anyLong()))
+                .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
+
+        SortedMap<EntityNum, Long> allowancesMap = new TreeMap<>();
+        allowancesMap.put(EntityNum.fromLong(firstAllowance.getOwner()), firstAllowance.getAmount());
+        allowancesMap.put(EntityNum.fromLong(secondAllowance.getOwner()), secondAllowance.getAmount());
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(allowancesMap, from(Account::getCryptoAllowances)));
+    }
+
+    @Test
+    void fungibleTokenAllowancesMatchValuesFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        TokenAllowance firstAllowance = new TokenAllowance();
+        firstAllowance.setOwner(123L);
+        firstAllowance.setTokenId(15L);
+        firstAllowance.setSpender(entity.getId());
+        firstAllowance.setAmount(50L);
+
+        TokenAllowance secondAllowance = new TokenAllowance();
+        secondAllowance.setOwner(234L);
+        secondAllowance.setTokenId(16L);
+        secondAllowance.setSpender(entity.getId());
+        secondAllowance.setAmount(60L);
+
+        when(tokenAllowanceRepository.findBySpender(anyLong()))
+                .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
+
+        SortedMap<FcTokenAllowanceId, Long> allowancesMap = new TreeMap<>();
+        allowancesMap.put(
+                new FcTokenAllowanceId(
+                        EntityNum.fromLong(firstAllowance.getTokenId()),
+                        EntityNum.fromLong(firstAllowance.getSpender())),
+                firstAllowance.getAmount());
+        allowancesMap.put(
+                new FcTokenAllowanceId(
+                        EntityNum.fromLong(secondAllowance.getTokenId()),
+                        EntityNum.fromLong(secondAllowance.getSpender())),
+                secondAllowance.getAmount());
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(allowancesMap, from(Account::getFungibleTokenAllowances)));
+    }
+
+    @Test
+    void approveForAllNftsMatchValuesFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        NftAllowance firstAllowance = new NftAllowance();
+        firstAllowance.setOwner(123L);
+        firstAllowance.setTokenId(15L);
+        firstAllowance.setSpender(entity.getId());
+
+        NftAllowance secondAllowance = new NftAllowance();
+        secondAllowance.setOwner(234L);
+        secondAllowance.setTokenId(16L);
+        secondAllowance.setSpender(entity.getId());
+
+        when(nftAllowanceRepository.findBySpenderAndApprovedForAllIsTrue(anyLong()))
+                .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
+
+        SortedSet<FcTokenAllowanceId> allowancesSet = new TreeSet<>();
+        allowancesSet.add(new FcTokenAllowanceId(
+                EntityNum.fromLong(firstAllowance.getTokenId()), EntityNum.fromLong(firstAllowance.getSpender())));
+        allowancesSet.add(new FcTokenAllowanceId(
+                EntityNum.fromLong(secondAllowance.getTokenId()), EntityNum.fromLong(secondAllowance.getSpender())));
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(allowancesSet, from(Account::getApproveForAllNfts)));
+    }
+
+    @Test
+    void numTokenAssociationsMatchValuesFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        int numAssociations = 55;
+        when(tokenAccountRepository.countByAccountIdAndAssociatedIsTrue(anyLong()))
+                .thenReturn(numAssociations);
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(numAssociations, from(Account::getNumAssociations)));
+    }
+
+    @Test
+    void numPositiveBalancesMatchValuesFromRepository() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        int numPositive = 55;
+        when(tokenAccountRepository.countByAccountIdAndPositiveBalance(anyLong()))
+                .thenReturn(numPositive);
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(numPositive, from(Account::getNumPositiveBalances)));
+    }
+}
