@@ -17,6 +17,8 @@
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
+import {EntityService} from './service/index.js';
+import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
@@ -75,7 +77,8 @@ const getBalances = async (req, res) => {
   utils.validateReq(req, acceptedBalancesParameters);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
-  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const [accountQuery, accountParamsPromise] = parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const accountParams = await Promise.all(accountParamsPromise);
   // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
   let [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'consensus_timestamp', {
     [utils.opsMap.eq]: utils.opsMap.lte,
@@ -184,6 +187,36 @@ const getTokenAccountBalanceSubQuery = (order) => {
       order by token_id ${order}
       limit ${tokenBalanceLimit.multipleAccounts}
     ) as account_token_balance`;
+};
+
+const parseAccountIdQueryParam = (query, columnName) => {
+  let ethereumAddressCount = 0;
+  return utils.parseParams(
+    query[constants.filterKeys.ACCOUNT_ID],
+    (value) => {
+      if (EntityId.isValidEvmAddress(value)) {
+        if (++ethereumAddressCount === 1) {
+          return EntityService.getEncodedId(value);
+        }
+        throw new InvalidArgumentError(`Only one ethereum address is allowed.`);
+      }
+
+      return EntityId.parse(value).getEncodedId();
+    },
+    (op, value) => {
+      if (ethereumAddressCount === 1) {
+        if (op !== utils.opsMap.eq) {
+          throw new InvalidArgumentError(`Invalid operator. Ethereum accounts only support equals operator.`);
+        }
+        return [`${columnName}${op}?`, value];
+      }
+
+      return Array.isArray(value)
+        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
+        : [`${columnName}${op}?`, [value]];
+    },
+    true
+  );
 };
 
 const acceptedBalancesParameters = new Set([

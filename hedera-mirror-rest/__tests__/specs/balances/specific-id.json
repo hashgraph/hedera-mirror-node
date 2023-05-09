@@ -8,7 +8,8 @@
       },
       {
         "balance": 8,
-        "num": 8
+        "num": 8,
+        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec"
       },
       {
         "balance": 9,
@@ -76,7 +77,10 @@
       "urls": [
         "/api/v1/balances?account.id=0.0.8&timestamp=10",
         "/api/v1/balances?account.id=0.8&timestamp=10",
-        "/api/v1/balances?account.id=8&timestamp=10"
+        "/api/v1/balances?account.id=8&timestamp=10",
+        "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10",
+        "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10",
+        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec&timestamp=10"
       ],
       "responseStatus": 200,
       "responseJson": {
@@ -106,7 +110,10 @@
       "urls": [
         "/api/v1/balances?account.id=0.0.8",
         "/api/v1/balances?account.id=0.8",
-        "/api/v1/balances?account.id=8"
+        "/api/v1/balances?account.id=8",
+        "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec"
       ],
       "responseStatus": 200,
       "responseJson": {
