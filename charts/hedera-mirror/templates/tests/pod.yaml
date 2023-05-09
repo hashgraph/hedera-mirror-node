@@ -2,37 +2,50 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: {{ include "hedera-mirror.fullname" . }}-acceptance-test
+  name: {{ include "hedera-mirror.fullname" . }}-acceptance
   namespace: {{ include "hedera-mirror.namespace" . }}
-  annotations:
-    helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   containers:
-    - name: acceptance-tests
-      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag}}"
+    - name: acceptance
+      args: {{- tpl (toYaml .Values.test.args) $ | nindent 8 }}
+      {{ $image := mergeOverwrite .Values.test.image .Values.global.image -}}
+      image: "{{ $image.registry }}/{{ $image.repository }}:{{ $image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
-      command:
-        - 'sh'
-        - '-c'
-          # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
-        - |
-          {{ $branch := .Values.test.git.branch | default .Chart.AppVersion -}}
-          apk add -qu git openjdk17-jre
-          git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" $branch }}v{{end}}{{ $branch }} --depth 1 https://github.com/{{ .Values.test.git.repository }}
-          cd hedera-mirror-node
-          ./gradlew :test:acceptance --info -Dcucumber.filter.tags="{{ .Values.test.cucumberTags }}" -Dspring.config.additional-location=/etc/secrets/ {{ .Values.test.extraArgs }}
+      env:
+        - name: SPRING_CONFIG_ADDITIONALLOCATION
+          value: /etc/secrets/
+        {{- range $name, $value := .Values.test.env }}
+        - name: {{ $name }}
+        {{- if kindIs "string" $value }}
+          value: {{ tpl $value $ | quote }}
+        {{- else }}
+        {{- tpl (toYaml $value) $ | nindent 14 }}
+        {{- end }}
+        {{- end }}
       resources: {{ toYaml .Values.test.resources | nindent 8 }}
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
       volumeMounts:
-        - name: acceptance-tests
+        - name: config
           mountPath: /etc/secrets
           readOnly: true
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
   restartPolicy: Never
   terminationGracePeriodSeconds: 1
   volumes:
-    - name: acceptance-tests
+    - name: config
       secret:
         defaultMode: 420
-        secretName: {{ include "hedera-mirror.fullname" . }}-acceptance-test
+        secretName: {{ include "hedera-mirror.fullname" . }}-acceptance
 {{- end -}}
