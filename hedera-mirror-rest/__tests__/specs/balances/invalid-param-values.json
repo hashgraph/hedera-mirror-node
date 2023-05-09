@@ -58,7 +58,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid operator. Ethereum accounts only support equals operator."
+              "message": "Invalid operator. Evm address only supports equals operator."
             }
           ]
         }
@@ -75,7 +75,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one ethereum address is allowed."
+              "message": "Only one evm address is allowed."
             }
           ]
         }

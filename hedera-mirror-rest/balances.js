@@ -190,23 +190,23 @@ const getTokenAccountBalanceSubQuery = (order) => {
 };
 
 const parseAccountIdQueryParam = (query, columnName) => {
-  let ethereumAddressCount = 0;
+  let evmAddressCount = 0;
   return utils.parseParams(
     query[constants.filterKeys.ACCOUNT_ID],
     (value) => {
       if (EntityId.isValidEvmAddress(value)) {
-        if (++ethereumAddressCount === 1) {
+        if (++evmAddressCount === 1) {
           return EntityService.getEncodedId(value);
         }
-        throw new InvalidArgumentError(`Only one ethereum address is allowed.`);
+        throw new InvalidArgumentError(`Only one evm address is allowed.`);
       }
 
       return EntityId.parse(value).getEncodedId();
     },
     (op, value) => {
-      if (ethereumAddressCount === 1) {
+      if (evmAddressCount === 1) {
         if (op !== utils.opsMap.eq) {
-          throw new InvalidArgumentError(`Invalid operator. Ethereum accounts only support equals operator.`);
+          throw new InvalidArgumentError(`Invalid operator. Evm address only supports equals operator.`);
         }
         return [`${columnName}${op}?`, value];
       }
