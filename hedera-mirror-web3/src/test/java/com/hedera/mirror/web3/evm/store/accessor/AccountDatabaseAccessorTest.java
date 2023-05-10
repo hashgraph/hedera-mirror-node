@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.from;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -31,7 +30,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
@@ -47,7 +45,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,17 +55,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AccountDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
-    private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
     private static final Address ADDRESS = Address.fromHexString(HEX);
-    private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
 
-    private static final Entity entity = new Entity();
+    private Entity entity;
 
     @InjectMocks
     private AccountDatabaseAccessor accountAccessor;
 
     @Mock
-    private EntityRepository entityRepository;
+    private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Mock
     private NftAllowanceRepository nftAllowanceRepository;
@@ -95,9 +90,10 @@ class AccountDatabaseAccessorTest {
 
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
 
-    @BeforeAll
-    static void initialSetup() {
+    @BeforeEach
+    void setup() {
         final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
+        entity = new Entity();
         entity.setId(entityNum);
         entity.setShard(SHARD);
         entity.setRealm(REALM);
@@ -108,31 +104,11 @@ class AccountDatabaseAccessorTest {
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
         entity.setProxyAccountId(PROXY_ACCOUNT_ID);
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
-    }
-
-    @BeforeEach
-    void setup() {}
-
-    @Test
-    void getEntityByAddress() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
-
-        accountAccessor.get(ADDRESS);
-
-        verify(entityRepository).findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS));
-    }
-
-    @Test
-    void getEntityByAlias() {
-        accountAccessor.get(ALIAS_ADDRESS);
-
-        verify(entityRepository).findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe());
+        when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
     }
 
     @Test
     void accountFieldsMatchEntityFields() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
-
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), from(Account::getId))
                 .returns(entity.getExpirationTimestamp(), from(Account::getExpiry))
@@ -149,7 +125,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void accountOwnedNftsMatchesValueFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         long ownedNfts = 20;
         when(nftRepository.countByAccountId(any())).thenReturn(ownedNfts);
 
@@ -159,7 +134,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void cryptoAllowancesMatchValuesFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setOwner(123L);
         firstAllowance.setSpender(entity.getId());
@@ -183,7 +157,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(123L);
         firstAllowance.setTokenId(15L);
@@ -217,7 +190,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void approveForAllNftsMatchValuesFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         NftAllowance firstAllowance = new NftAllowance();
         firstAllowance.setOwner(123L);
         firstAllowance.setTokenId(15L);
@@ -243,7 +215,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void numTokenAssociationsMatchValuesFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         int numAssociations = 55;
         when(tokenAccountRepository.countByAccountIdAndAssociatedIsTrue(anyLong()))
                 .thenReturn(numAssociations);
@@ -254,7 +225,6 @@ class AccountDatabaseAccessorTest {
 
     @Test
     void numPositiveBalancesMatchValuesFromRepository() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
         int numPositive = 55;
         when(tokenAccountRepository.countByAccountIdAndPositiveBalance(anyLong()))
                 .thenReturn(numPositive);

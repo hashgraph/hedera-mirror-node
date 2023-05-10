@@ -16,15 +16,11 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
@@ -53,7 +49,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     public static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
-    private final EntityRepository entityRepository;
+    private final EntityDatabaseAccessor entityDatabaseAccessor;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
@@ -63,17 +59,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
 
     @Override
     public @NonNull Optional<Account> get(@NonNull Address address) {
-        return getEntity(address).map(this::accountFromEntity);
-    }
-
-    private Optional<Entity> getEntity(Address address) {
-        var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress(address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
-        } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-        }
+        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {
