@@ -30,8 +30,7 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id>
 
     @Override
     @Cacheable(cacheNames = "token_account", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    @NonNull
-    Optional<TokenAccount> findById(@NonNull Id id);
+    Optional<TokenAccount> findById(Id id);
 
     int countByAccountIdAndAssociatedIsTrue(long accountId);
 
