@@ -33,6 +33,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import java.sql.Date;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -47,6 +48,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
+    private static final long DEFAULT_EXPIRY_TIMESTAMP =
+            Date.valueOf("2100-1-1").getTime() * 1000;
     public static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
@@ -74,13 +77,12 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     }
 
     private Account accountFromEntity(Entity entity) {
-        EntityId entityId = entity.toEntityId();
         return new Account(
-                idFromEntityId(entityId),
-                entity.getExpirationTimestamp(),
-                entity.getBalance(),
-                entity.getDeleted(),
-                getOwnedNfts(entityId),
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                getExpiration(entity),
+                Optional.ofNullable(entity.getBalance()).orElse(0L),
+                Optional.ofNullable(entity.getDeleted()).orElse(false),
+                getOwnedNfts(entity.toEntityId()),
                 entity.getAutoRenewPeriod(),
                 idFromEntityId(entity.getProxyAccountId()),
                 entity.getMaxAutomaticTokenAssociations(),
@@ -92,12 +94,27 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                 0);
     }
 
-    private Id idFromEntityId(EntityId entityId) {
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+    private Long getExpiration(Entity entity) {
+        if (entity.getExpirationTimestamp() != null) {
+            return entity.getExpirationTimestamp();
+        }
+
+        if (entity.getCreatedTimestamp() != null && entity.getAutoRenewPeriod() != null) {
+            return entity.getCreatedTimestamp() + entity.getAutoRenewPeriod();
+        }
+
+        return DEFAULT_EXPIRY_TIMESTAMP;
     }
 
     private long getOwnedNfts(EntityId accountId) {
         return nftRepository.countByAccountId(accountId);
+    }
+
+    private Id idFromEntityId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long spenderId) {
