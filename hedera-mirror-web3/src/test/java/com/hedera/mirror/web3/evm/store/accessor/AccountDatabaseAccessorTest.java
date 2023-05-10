@@ -124,6 +124,31 @@ class AccountDatabaseAccessorTest {
     }
 
     @Test
+    void whenExpirationTimestampIsNullThenExpiryIsBasedOnCreatedAndRenewTimestamps() {
+        entity.setExpirationTimestamp(null);
+        entity.setCreatedTimestamp(987L);
+        long expectedExpiry = entity.getCreatedTimestamp() + entity.getAutoRenewPeriod();
+
+        assertThat(accountAccessor.get(ADDRESS))
+                .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, from(Account::getExpiry)));
+    }
+
+    @Test
+    void useDefaultValuesWhenFieldsAreNull() {
+        entity.setExpirationTimestamp(null);
+        entity.setCreatedTimestamp(null);
+        entity.setAutoRenewPeriod(null);
+        entity.setBalance(null);
+        entity.setDeleted(null);
+
+        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+                .returns(AccountDatabaseAccessor.DEFAULT_EXPIRY_TIMESTAMP, from(Account::getExpiry))
+                .returns(0L, from(Account::getBalance))
+                .returns(false, from(Account::isDeleted))
+                .returns(Long.MAX_VALUE, from(Account::getAutoRenewSecs)));
+    }
+
+    @Test
     void accountOwnedNftsMatchesValueFromRepository() {
         long ownedNfts = 20;
         when(nftRepository.countByAccountId(any())).thenReturn(ownedNfts);
