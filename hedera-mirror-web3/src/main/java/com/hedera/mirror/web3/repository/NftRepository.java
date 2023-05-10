@@ -31,5 +31,5 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
     @Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<Nft> findById(NftId nftId);
 
-    long countByAccountId(EntityId accountId);
+    long countByAccountIdAndDeletedIsFalse(EntityId accountId);
 }

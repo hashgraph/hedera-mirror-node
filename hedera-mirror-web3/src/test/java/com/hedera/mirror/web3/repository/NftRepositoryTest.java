@@ -42,14 +42,19 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void count() {
+    void countByAccountId() {
         final var accountId = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
         domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         final var otherAccountId = new EntityId(0L, 0L, 57L, EntityType.ACCOUNT);
         domainBuilder.nft().customize(n -> n.accountId(otherAccountId)).persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(otherAccountId).deleted(true))
+                .persist();
 
-        assertThat(nftRepository.countByAccountId(accountId)).isEqualTo(2);
-        assertThat(nftRepository.countByAccountId(otherAccountId)).isEqualTo(1);
+        assertThat(nftRepository.countByAccountIdAndDeletedIsFalse(accountId)).isEqualTo(2);
+        assertThat(nftRepository.countByAccountIdAndDeletedIsFalse(otherAccountId))
+                .isEqualTo(1);
     }
 }

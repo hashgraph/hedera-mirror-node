@@ -44,7 +44,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void countByAccountIdAndAssocaition() {
+    void countByAccountIdAndAssociationIsTrue() {
         long accountId = 22L;
         domainBuilder
                 .tokenAccount()
@@ -63,7 +63,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void countByAccountIdAndBalance() {
+    void countByAccountIdAndPositiveBalance() {
         long accountId = 22L;
         domainBuilder
                 .tokenAccount()

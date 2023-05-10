@@ -33,6 +33,6 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id>
 
     int countByAccountIdAndAssociatedIsTrue(long accountId);
 
-    @Query("SELECT COUNT(ta) FROM TokenAccount ta WHERE ta.accountId=?1 AND balance > 0")
+    @Query("select count(*) from TokenAccount where accountId = ?1 and associated is true and balance > 0")
     int countByAccountIdAndPositiveBalance(long accountId);
 }

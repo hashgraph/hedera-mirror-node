@@ -97,7 +97,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     }
 
     private long getOwnedNfts(EntityId accountId) {
-        return nftRepository.countByAccountId(accountId);
+        return nftRepository.countByAccountIdAndDeletedIsFalse(accountId);
     }
 
     private Id idFromEntityId(EntityId entityId) {
