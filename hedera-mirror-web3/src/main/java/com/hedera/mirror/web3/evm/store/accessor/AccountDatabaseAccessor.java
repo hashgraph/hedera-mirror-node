@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -107,7 +110,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
         return cryptoAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
-                        cryptoAllowance -> EntityNum.fromLong(cryptoAllowance.getSpender()),
+                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender(), ACCOUNT)),
                         CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -117,8 +120,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         return tokenAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
                         tokenAllowance -> new FcTokenAllowanceId(
-                                EntityNum.fromLong(tokenAllowance.getTokenId()),
-                                EntityNum.fromLong(tokenAllowance.getSpender())),
+                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId(), TOKEN)),
+                                entityNumFromId(EntityId.of(tokenAllowance.getSpender(), ACCOUNT))),
                         AbstractTokenAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -127,8 +130,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId) {
         return nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId).stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
-                        EntityNum.fromLong(nftAllowance.getTokenId()), EntityNum.fromLong(nftAllowance.getSpender())))
+                        entityNumFromId(EntityId.of(nftAllowance.getTokenId(), TOKEN)),
+                        entityNumFromId(EntityId.of(nftAllowance.getSpender(), ACCOUNT))))
                 .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private EntityNum entityNumFromId(EntityId entityId) {
+        return EntityNum.fromLong(entityId.getEntityNum());
     }
 
     private int getNumTokenAssociations(long accountId) {
