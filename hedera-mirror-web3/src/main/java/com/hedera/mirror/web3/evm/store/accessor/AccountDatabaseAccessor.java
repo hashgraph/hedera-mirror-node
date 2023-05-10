@@ -37,11 +37,13 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Named
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
     public static final long DEFAULT_EXPIRY_TIMESTAMP = Date.valueOf("2100-1-1").getTime() * 1000;
@@ -102,17 +104,17 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
-    private SortedMap<EntityNum, Long> getCryptoAllowances(Long spenderId) {
-        return cryptoAllowanceRepository.findBySpender(spenderId).stream()
+    private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
+        return cryptoAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
-                        cryptoAllowance -> EntityNum.fromLong(cryptoAllowance.getOwner()),
+                        cryptoAllowance -> EntityNum.fromLong(cryptoAllowance.getSpender()),
                         CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
     }
 
-    private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(Long spenderId) {
-        return tokenAllowanceRepository.findBySpender(spenderId).stream()
+    private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(Long ownerId) {
+        return tokenAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
                         tokenAllowance -> new FcTokenAllowanceId(
                                 EntityNum.fromLong(tokenAllowance.getTokenId()),
@@ -122,8 +124,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                         TreeMap::new));
     }
 
-    private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long spenderId) {
-        return nftAllowanceRepository.findBySpenderAndApprovedForAllIsTrue(spenderId).stream()
+    private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId) {
+        return nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId).stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
                         EntityNum.fromLong(nftAllowance.getTokenId()), EntityNum.fromLong(nftAllowance.getSpender())))
                 .collect(Collectors.toCollection(TreeSet::new));

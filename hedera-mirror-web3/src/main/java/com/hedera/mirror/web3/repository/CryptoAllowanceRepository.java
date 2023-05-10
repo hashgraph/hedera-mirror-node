@@ -22,5 +22,5 @@ import java.util.List;
 import org.springframework.data.repository.CrudRepository;
 
 public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowance, AbstractCryptoAllowance.Id> {
-    List<CryptoAllowance> findBySpender(long spender);
+    List<CryptoAllowance> findByOwner(long owner);
 }

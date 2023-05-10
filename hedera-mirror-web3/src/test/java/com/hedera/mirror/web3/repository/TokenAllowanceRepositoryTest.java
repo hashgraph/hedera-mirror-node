@@ -41,12 +41,10 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findBySpender() {
-        long spender = 22L;
-        final var tokenAllowance = domainBuilder
-                .tokenAllowance()
-                .customize(a -> a.spender(spender))
-                .persist();
+        long owner = 22L;
+        final var tokenAllowance =
+                domainBuilder.tokenAllowance().customize(a -> a.owner(owner)).persist();
 
-        assertThat(repository.findBySpender(spender)).hasSize(1).contains(tokenAllowance);
+        assertThat(repository.findByOwner(owner)).hasSize(1).contains(tokenAllowance);
     }
 }

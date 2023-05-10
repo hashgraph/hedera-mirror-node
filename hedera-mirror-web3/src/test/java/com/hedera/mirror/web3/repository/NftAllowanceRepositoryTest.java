@@ -52,7 +52,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                 .nftAllowance()
                 .customize(a -> a.approvedForAll(true))
                 .persist();
-        assertThat(allowanceRepository.findBySpenderAndApprovedForAllIsTrue(allowance.getSpender()))
+        assertThat(allowanceRepository.findByOwnerAndApprovedForAllIsTrue(allowance.getOwner()))
                 .hasSize(1)
                 .contains(allowance);
     }

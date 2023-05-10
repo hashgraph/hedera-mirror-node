@@ -31,7 +31,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     void findBySpenderAndApprovedForAllIsTrue() {
         final var allowance = domainBuilder.cryptoAllowance().persist();
 
-        assertThat(cryptoAllowanceRepository.findBySpender(allowance.getSpender()))
+        assertThat(cryptoAllowanceRepository.findByOwner(allowance.getOwner()))
                 .hasSize(1)
                 .contains(allowance);
     }

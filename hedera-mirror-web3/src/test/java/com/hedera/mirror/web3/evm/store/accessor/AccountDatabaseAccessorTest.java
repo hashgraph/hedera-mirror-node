@@ -162,21 +162,21 @@ class AccountDatabaseAccessorTest {
     @Test
     void cryptoAllowancesMatchValuesFromRepository() {
         CryptoAllowance firstAllowance = new CryptoAllowance();
-        firstAllowance.setOwner(123L);
-        firstAllowance.setSpender(entity.getId());
+        firstAllowance.setSpender(123L);
+        firstAllowance.setOwner(entity.getId());
         firstAllowance.setAmount(50L);
 
         CryptoAllowance secondAllowance = new CryptoAllowance();
-        secondAllowance.setOwner(234L);
-        secondAllowance.setSpender(entity.getId());
+        secondAllowance.setSpender(234L);
+        secondAllowance.setOwner(entity.getId());
         secondAllowance.setAmount(60L);
 
-        when(cryptoAllowanceRepository.findBySpender(anyLong()))
+        when(cryptoAllowanceRepository.findByOwner(anyLong()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedMap<EntityNum, Long> allowancesMap = new TreeMap<>();
-        allowancesMap.put(EntityNum.fromLong(firstAllowance.getOwner()), firstAllowance.getAmount());
-        allowancesMap.put(EntityNum.fromLong(secondAllowance.getOwner()), secondAllowance.getAmount());
+        allowancesMap.put(EntityNum.fromLong(firstAllowance.getSpender()), firstAllowance.getAmount());
+        allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, from(Account::getCryptoAllowances)));
@@ -185,18 +185,18 @@ class AccountDatabaseAccessorTest {
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepository() {
         TokenAllowance firstAllowance = new TokenAllowance();
-        firstAllowance.setOwner(123L);
+        firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
-        firstAllowance.setSpender(entity.getId());
+        firstAllowance.setSpender(123L);
         firstAllowance.setAmount(50L);
 
         TokenAllowance secondAllowance = new TokenAllowance();
-        secondAllowance.setOwner(234L);
+        secondAllowance.setOwner(entity.getId());
         secondAllowance.setTokenId(16L);
-        secondAllowance.setSpender(entity.getId());
+        secondAllowance.setSpender(234L);
         secondAllowance.setAmount(60L);
 
-        when(tokenAllowanceRepository.findBySpender(anyLong()))
+        when(tokenAllowanceRepository.findByOwner(entity.getId()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedMap<FcTokenAllowanceId, Long> allowancesMap = new TreeMap<>();
@@ -218,16 +218,16 @@ class AccountDatabaseAccessorTest {
     @Test
     void approveForAllNftsMatchValuesFromRepository() {
         NftAllowance firstAllowance = new NftAllowance();
-        firstAllowance.setOwner(123L);
+        firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
-        firstAllowance.setSpender(entity.getId());
+        firstAllowance.setSpender(123L);
 
         NftAllowance secondAllowance = new NftAllowance();
-        secondAllowance.setOwner(234L);
+        secondAllowance.setOwner(entity.getId());
         secondAllowance.setTokenId(16L);
-        secondAllowance.setSpender(entity.getId());
+        secondAllowance.setSpender(234L);
 
-        when(nftAllowanceRepository.findBySpenderAndApprovedForAllIsTrue(anyLong()))
+        when(nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(entity.getId()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedSet<FcTokenAllowanceId> allowancesSet = new TreeSet<>();

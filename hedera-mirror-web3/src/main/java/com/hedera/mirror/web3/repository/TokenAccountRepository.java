@@ -21,7 +21,6 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_T
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import java.util.Optional;
-import lombok.NonNull;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
