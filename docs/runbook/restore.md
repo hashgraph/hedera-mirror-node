@@ -29,13 +29,11 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
    [pod/mirror-importer-54c477748d-mmxhm/importer] 2023-05-10T10:38:31.896-0600 INFO Thread-6 c.h.m.i.u.ShutdownHelper Shutting down.......waiting 10s for internal processes to stop.
    ```
 
-3. Verify that the Importer has stopped persisting data by querying the REST API multiple times. The block `number` and record file `name` should stop on the last processed record file:
+3. Verify that the Importer has stopped persisting data by querying the REST API multiple times. The record file name should stop changing and show the name of the last processed record file:
 
    ```shell
-    curl "https://<mirror-rest-ingress>/api/v1/blocks?limit=1" | json_pp | grep -E "name|number"
-   
-    "name" : "2023-05-10T16_38_28.618260003Z.rcd.gz",
-    "number" : 820492,
+    curl -sL "https://<hostname>/api/v1/blocks?limit=1&order=desc" | jq -r '.blocks[0].name'
+    2023-05-10T16_38_28.618260003Z.rcd.gz
    ``` 
 
 4. In the Google Console, restore the database from the backup. Restore to a backup that was created before the invalid data was persisted. 
@@ -43,12 +41,7 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="backup1.png" width="250"/>](backup1.png "Google Cloud Backups")
 [<img src="backup2.png" width="250"/>](backup2.png "Restore from Backup")
 
-5. After the Restore process has completed verify that the database has been restored to a prior point in time.
-
-   ```shell
-   mirror_node=> select max(consensus_end) from record_file;
-    1683300509619621003      --> Friday, May 5, 2023 15:28:29.619
-   ```
+5. After the Restore process has completed verify that the database has been restored by running the command from step 3, it should show that the record file is now at a point in time prior to the invalid data.
 
 6. Restart all pods to clear their cache. The command below will delete all pods in the current namespace.
  
@@ -68,7 +61,7 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
    pod "mirror-web3-7b5444dcb7-ps45v" deleted
     ```
 
-7. Restart the Importer Pod.
+7. Restart the Importer pod.
 
    ```shell
    kubectl scale --replicas=1 deployment/mirror-importer
@@ -82,19 +75,29 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
    [pod/mirror-importer-54c477748d-9kdxr/importer] 2023-05-10T11:04:40.945-0600 INFO scheduling-3 c.h.m.i.c.MirrorDateRangePropertiesProcessor BALANCE: downloader will download files in time range (2023-05-05T15:15:00.168045Z, 2262-04-11T23:47:16.854775807Z]
    ```
    
-8. Start the Monitor. 
+9. Start the Monitor. 
 
     ```shell
     kubectl scale --replicas=1 deployment/mirror-monitor
     ```
-     
-9. Verify that traffic is being routed to the cluster. Query the REST API and verify that the Importer is processing record files again and that the `name` of the record file and the block `number` are at a point in time prior to the date of the invalid data.
-    
-      ```shell
-      curl "https://dev.mirrornode.hedera-ops.com/api/v1/blocks?limit=1" | json_pp | grep -E "name|number"
-   
-      "name" : "2023-05-07T06_25_08.284136003Z.rcd.gz",
-      "number" : 672492,
-      ```
+10. Get the names of the REST pods for use in step 11.
 
-  10. Perform these steps on the other cluster.
+    ```shell
+    kubectl get pod -o name | grep rest
+    pod/mirror-rest-bb68f656-j6bwd
+    pod/mirror-rest-bb68f656-vqb8g
+    ```
+
+11. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
+
+- Verify that traffic is being routed to the cluster by looking for the pod name in the logs.
+- Verify that the record file is at a point in time prior to the date of the invalid data.
+
+
+   The REST pods logs should show that the query is being routed to the cluster: 
+   ```shell
+   [pod/mirror-rest-bb68f656-j6bwd/rest] 2023-05-10T11:10:10.134Z INFO 06534719 GET /api/v1/blocks?limit=1 in 5 ms: 200
+   [pod/mirror-rest-bb68f656-vqb8g/rest] 2023-05-10T11:10:17.183Z INFO 194ee756 GET /api/v1/blocks?limit=1 in 4 ms: 200
+   ```
+
+11. Perform these steps on the other cluster.
