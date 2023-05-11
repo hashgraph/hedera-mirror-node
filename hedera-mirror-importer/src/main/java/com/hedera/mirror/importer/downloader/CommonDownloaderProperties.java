@@ -64,12 +64,12 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
-    @NotNull
-    private PathType pathType = PathType.ACCOUNT_ID;
-
     @DurationMin(minutes = 1)
     @NotNull
     private Duration pathRefreshInterval = Duration.ofMinutes(1L);
+
+    @NotNull
+    private PathType pathType = PathType.ACCOUNT_ID;
 
     private String region = "us-east-1";
 

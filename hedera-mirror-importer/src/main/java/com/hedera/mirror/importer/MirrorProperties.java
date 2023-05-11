@@ -56,7 +56,6 @@ public class MirrorProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
 
-    // This value can be set depending on the prepod or adhoc env name.
     private String networkPrefix;
 
     @Min(0)
@@ -74,7 +73,7 @@ public class MirrorProperties {
     public enum ConsensusMode {
         EQUAL, // all nodes equally weighted
         STAKE, // all nodes specify their node stake
-        STAKE_IN_ADDRESS_BOOK; // like STAKE, but only the nodes found in the address book are used in the calculation.
+        STAKE_IN_ADDRESS_BOOK // like STAKE, but only the nodes found in the address book are used in the calculation.
     }
 
     @Getter
