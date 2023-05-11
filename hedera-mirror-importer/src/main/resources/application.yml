@@ -79,6 +79,8 @@ spring:
       pubsub:
         enabled: false
     kubernetes:
+      leader:
+        enabled: false
       reload:
         enabled: true
       secrets:
