@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 
 import com.hedera.mirror.web3.evm.properties.TracingProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
@@ -39,18 +39,14 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
         if (tracingProperties.isEnabled()) {
-            if (!tracingProperties.getStatus().isEmpty()
-                    && !tracingProperties
-                            .getStatus()
-                            .contains(currentFrame.getState().name())) {
+            if (!tracingProperties.isStateFilterMatches(currentFrame.getState().name())) {
                 return;
             }
 
             final var recipientAddress = currentFrame.getRecipientAddress();
-            final var recipientNum = entityIdFromEvmAddress(recipientAddress);
+            final var recipientNum = entityIdNumFromEvmAddress(recipientAddress);
 
-            if (!tracingProperties.getContract().isEmpty()
-                    && !tracingProperties.getContract().contains(recipientNum)) {
+            if (!tracingProperties.isContractFilterMatches(recipientNum)) {
                 return;
             }
 
