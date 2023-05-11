@@ -43,7 +43,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void countByAccountId() {
+    void countByAccountIdNotDeleted() {
         final var firstNft =
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder
@@ -58,11 +58,11 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(secondNft.getId().getTokenId().getId()))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdAndNotDeleted(accountId)).isEqualTo(2);
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isEqualTo(2);
     }
 
     @Test
-    void countByIdShouldNotCountDeletedNft() {
+    void countByAccountIdNotDeletedShouldNotCountDeletedNft() {
         final var deletedNft = domainBuilder
                 .nft()
                 .customize(n -> n.accountId(accountId).deleted(true))
@@ -72,11 +72,11 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(deletedNft.getId().getTokenId().getId()))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdAndNotDeleted(accountId)).isEqualTo(0);
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isEqualTo(0);
     }
 
     @Test
-    void countByIdShouldNotCountDeletedEntity() {
+    void countByAccountIdNotDeletedShouldNotCountDeletedEntity() {
         final var deletedEntityNft =
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder
@@ -85,6 +85,6 @@ class NftRepositoryTest extends Web3IntegrationTest {
                         e -> e.id(deletedEntityNft.getId().getTokenId().getId()).deleted(true))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdAndNotDeleted(accountId)).isEqualTo(0);
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isEqualTo(0);
     }
 }

@@ -37,5 +37,5 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
                     + "join Entity e on e.id = n.token_id "
                     + "where n.account_id=:#{#accountId.getId()} and n.deleted is false and e.deleted is not true",
             nativeQuery = true)
-    long countByAccountIdAndNotDeleted(EntityId accountId);
+    long countByAccountIdNotDeleted(EntityId accountId);
 }
