@@ -6,7 +6,8 @@
         "amount": 30,
         "consensus_timestamp": "167654000123457",
         "contract_id": 5001,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "transaction_nonce": 0
       }
     ],
     "recordFiles": [
@@ -15,16 +16,6 @@
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": 167654000123456,
-        "entity_id": 5001,
-        "payerAccountId": "8001",
-        "result": 33,
-        "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123455
       }
     ]
   },

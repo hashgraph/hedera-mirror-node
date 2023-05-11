@@ -32,7 +32,8 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001
+        "payer_account_id": 6001,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -46,31 +47,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": "187654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "187654000123456",
-        "valid_start_timestamp": "187654000123456",
-        "transaction_hash": "hash1",
-        "payerAccountId": 6001,
-        "index": 1,
-        "nonce": 0
-      },
-      {
-        "consensus_timestamp": "987654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000123456",
-        "valid_start_timestamp": "987654000123456",
-        "transaction_hash": "hash2",
-        "payerAccountId": 5001,
-        "index": 2,
-        "nonce": 0
+        "payer_account_id": 8001,
+        "transaction_nonce": 0
       }
     ]
   },

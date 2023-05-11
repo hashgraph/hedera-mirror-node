@@ -5,7 +5,7 @@ dependencies:
     condition: citus.enabled
     name: postgresql
     repository: https://charts.bitnami.com/bitnami
-    version: 12.1.4
+    version: 12.4.2
   - alias: grpc
     condition: grpc.enabled
     name: hedera-mirror-grpc
@@ -34,11 +34,11 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 11.1.1
+    version: 11.5.2
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 17.7.3
+    version: 17.10.2
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest

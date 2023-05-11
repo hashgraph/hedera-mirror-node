@@ -462,7 +462,7 @@ class ContractController extends BaseController {
     const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
     const contractResultTimestampInValues = [];
 
-    const transactionIndexFullName = Transaction.getFullName(Transaction.INDEX);
+    const transactionIndexFullName = ContractResult.getFullName(ContractResult.TRANSACTION_INDEX);
     const transactionIndexInValues = [];
 
     let blockFilter;
@@ -536,7 +536,7 @@ class ContractController extends BaseController {
 
     if (!internal) {
       params.push(0);
-      conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
+      conditions.push(`${ContractResult.getFullName(ContractResult.TRANSACTION_NONCE)} = $${params.length}`);
     }
 
     if (blockFilter) {

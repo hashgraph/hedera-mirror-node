@@ -183,6 +183,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
+        contractResult.setTransactionNonce(transaction.getNonce());
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 

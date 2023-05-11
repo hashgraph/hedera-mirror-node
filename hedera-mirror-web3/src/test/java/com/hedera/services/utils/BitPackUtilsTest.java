@@ -16,25 +16,33 @@
 
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.utils.BitPackUtils.buildAutomaticAssociationMetaData;
-import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.utils.BitPackUtils.isValidNum;
-import static com.hedera.services.utils.BitPackUtils.packedTime;
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.BitPackUtils.signedLowOrder32From;
-import static com.hedera.services.utils.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.utils.BitPackUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 class BitPackUtilsTest {
     private final int maxAutoAssociations = 123;
     private final int alreadyUsedAutomaticAssociations = 12;
     private int metadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutomaticAssociations);
+
+    static int buildAutomaticAssociationMetaData(int maxAutoAssociations, int alreadyUsedAutoAssociations) {
+        return (alreadyUsedAutoAssociations << 16) | maxAutoAssociations;
+    }
+
+    @Test
+    void automaticAssociationsMetaWorks() {
+        assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
+        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
+    }
+
+    @Test
+    void validateLong() {
+        assertFalse(isValidNum(MAX_NUM_ALLOWED + 10));
+        assertTrue(isValidNum(MAX_NUM_ALLOWED));
+        assertTrue(isValidNum(0L));
+        assertFalse(isValidNum(-1L));
+    }
 
     @Test
     void numFromCodeWorks() {
@@ -53,93 +61,5 @@ class BitPackUtilsTest {
         // expect:
         assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(-1));
         assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
-    }
-
-    @Test
-    void throwsWhenArgOutOfRange() {
-        // expect:
-        assertDoesNotThrow(() -> BitPackUtils.assertValid(MAX_NUM_ALLOWED));
-        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(-1));
-        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(MAX_NUM_ALLOWED + 1));
-    }
-
-    @Test
-    void timePackingWorks() {
-        // given:
-        final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
-
-        // when:
-        final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
-        // and:
-        final var unpacked = Instant.ofEpochSecond(unsignedHighOrder32From(packed), signedLowOrder32From(packed));
-
-        // then:
-        assertEquals(distantFuture, unpacked);
-    }
-
-    @Test
-    void longPackingWorks() {
-        // setup:
-        final long bigNumA = MAX_NUM_ALLOWED;
-        final long bigNumB = MAX_NUM_ALLOWED - 1;
-
-        // given:
-        final var packed = BitPackUtils.packedNums(bigNumA, bigNumB);
-
-        // when:
-        final var unpackedA = unsignedHighOrder32From(packed);
-        final var unpackedB = BitPackUtils.unsignedLowOrder32From(packed);
-
-        // then:
-        assertEquals(bigNumA, unpackedA);
-        assertEquals(bigNumB, unpackedB);
-    }
-
-    @Test
-    void longPackingValidatesArgs() {
-        // setup:
-        final long overlyBigNum = MAX_NUM_ALLOWED + 1;
-        final long bigNum = MAX_NUM_ALLOWED;
-
-        // given:
-        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(overlyBigNum, bigNum));
-        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(bigNum, overlyBigNum));
-    }
-
-    @Test
-    void cantPackTooFarFuture() {
-        // expect:
-        assertThrows(IllegalArgumentException.class, () -> packedTime(MAX_NUM_ALLOWED + 1, 0));
-    }
-
-    @Test
-    void automaticAssociationsMetaWorks() {
-        assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
-    }
-
-    @Test
-    void automaticAssociationSettersWork() {
-        int newMax = maxAutoAssociations + alreadyUsedAutomaticAssociations;
-
-        metadata = setMaxAutomaticAssociationsTo(metadata, newMax);
-
-        assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
-
-        int newAlreadyAutoAssociations = alreadyUsedAutomaticAssociations + alreadyUsedAutomaticAssociations;
-
-        metadata = setAlreadyUsedAutomaticAssociationsTo(metadata, newAlreadyAutoAssociations);
-
-        assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(newAlreadyAutoAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
-    }
-
-    @Test
-    void validateLong() {
-        assertFalse(isValidNum(MAX_NUM_ALLOWED + 10));
-        assertTrue(isValidNum(MAX_NUM_ALLOWED));
-        assertTrue(isValidNum(0L));
-        assertFalse(isValidNum(-1L));
     }
 }

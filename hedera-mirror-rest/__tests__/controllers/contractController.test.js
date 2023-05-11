@@ -429,7 +429,7 @@ describe('getLastNonceParamValue', () => {
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [primaryContractFilter, 't.nonce = $2'],
+    conditions: [primaryContractFilter, 'cr.transaction_nonce = $2'],
     params: [defaultContractId, 0],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
@@ -502,7 +502,7 @@ describe('extractContractResultsByIdQuery', () => {
         conditions: [
           primaryContractFilter,
           'cr.payer_account_id > $2',
-          't.nonce = $3',
+          'cr.transaction_nonce = $3',
           'cr.payer_account_id in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],
@@ -535,7 +535,7 @@ describe('extractContractResultsByIdQuery', () => {
         conditions: [
           primaryContractFilter,
           'cr.consensus_timestamp > $2',
-          't.nonce = $3',
+          'cr.transaction_nonce = $3',
           'cr.consensus_timestamp in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],

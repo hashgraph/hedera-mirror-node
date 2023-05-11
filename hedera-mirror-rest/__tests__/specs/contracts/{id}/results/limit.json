@@ -16,7 +16,8 @@
         "call_result": [2, 2],
         "consensus_timestamp": "187654000123456",
         "contract_id": 5001,
-        "gas_used": 101
+        "gas_used": 101,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -26,7 +27,8 @@
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "gas_used": 102,
-        "transaction_hash": "0x120102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x120102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
       },
       {
         "amount": 40,
@@ -35,7 +37,8 @@
         "consensus_timestamp": "987654000223456",
         "contract_id": 5001,
         "gas_used": 103,
-        "transaction_hash": "0x220102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x220102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
       },
       {
         "amount": 50,
@@ -44,7 +47,8 @@
         "consensus_timestamp": "987654000323456",
         "contract_id": 5001,
         "gas_used": 104,
-        "transaction_hash": "0x320102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "transaction_hash": "0x320102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
       },
       {
         "amount": 60,
@@ -54,79 +58,8 @@
         "contract_id": 5001,
         "created_contract_ids": [7005],
         "gas_used": 105,
-        "transaction_hash": "0x420102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": "187654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "187654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "187654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash1",
-        "nonce": 0,
-        "payerAccountId": 8001,
-        "index": 1
-      },
-      {
-        "consensus_timestamp": "987654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "987654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash2",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 1
-      },
-      {
-        "consensus_timestamp": "987654000223456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000223456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "987654000223456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash3",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 1
-      },
-      {
-        "consensus_timestamp": "987654000323456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000323456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "987654000323456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash4",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 1
-      },
-      {
-        "consensus_timestamp": "987654000423456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000423456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "987654000423456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash5",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 1
+        "transaction_hash": "0x420102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
       }
     ]
   },

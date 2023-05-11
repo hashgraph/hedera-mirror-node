@@ -33,7 +33,9 @@
         "gas_limit": 1234556,
         "gas_used": 987,
         "payer_account_id": 5001,
-        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98"
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "transaction_index": 1,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -48,7 +50,9 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99"
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+        "transaction_index": 2,
+        "transaction_nonce": 0
       }
     ],
     "transactions": [
