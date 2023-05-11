@@ -28,16 +28,18 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
 
     private long maxLength;
     private long minLength;
+    private boolean allowEmpty;
 
     @Override
     public void initialize(Hex hex) {
         maxLength = hex.maxLength();
         minLength = hex.minLength();
+        allowEmpty = hex.allowEmpty();
     }
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null || (minLength == 0 && value.length() == 0)) {
+        if (value == null || ((minLength == 0 || allowEmpty) && value.length() == 0)) {
             return true;
         }
 
