@@ -1,0 +1,41 @@
+apiVersion: v1
+data:
+    password: ENC[AES256_GCM,data:BJUQNZKpU54y1oDf,iv:MNe0Sl2K22vyv0JHHEb/iIwsrFHWh+E/LKN+OrMxSW8=,tag:bGw0hGqJ/YfL0T/YmiE/zQ==,type:str]
+    user: ENC[AES256_GCM,data:H9BNPmiha+k=,iv:DAeRQgylOmiKG4EkrYg10pMnYd67We8Bb3L1pcWIMW8=,tag:v1ehAG9yUo2VoUgpnt9n7Q==,type:str]
+kind: Secret
+metadata:
+    creationTimestamp: null
+    name: basic-auth
+    namespace: default
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2023-05-11T05:01:16Z"
+    mac: ENC[AES256_GCM,data:BJkNPVAyev2zdNjhAGEVJjiL8gpHep4/KIX8WAPyMeOsahex3jI4kcSW5uXUuvm1kuQz/zqrt9v9DZoGSGuRge8M2kKOP+EesayVCwZObyAWgTZS2fp9EBXu1jBDBpguA4N2E4RVt9KnQZ4BBHeF3FAgelc9DiaFMAjLb1C9mdo=,iv:7OT1eukRShrnHlXg2NftyusYZoPAEbJwUtGqYcjGktc=,tag:ua6A7wnwXubcSzYlErXdqg==,type:str]
+    pgp:
+        - created_at: "2023-05-11T05:01:15Z"
+          enc: |
+            -----BEGIN PGP MESSAGE-----
+
+            hQIMA6rlIpfsJ4AnARAAmgqT9sApIASZ9DtDeB2vPcvefvjVNh/lfL2bBHslKm7q
+            1T6ouqkJDUTULZ5mezQ/YrCJu8ppeJ9OUr9Icwp48kQjk2XbbiTxNvFq5mqjPpZd
+            wrVYkujhHtoNjcQeZa7hML37Wx5nCMdBYzCBnAlVIXyeGO0Ca4Ak6D5+o5DVraKU
+            9i9Zzw0HG7OcCurA+dlOChkde2e5LNEvmQUCnlZyhZBwXCBn8JSIDZVMFJR+KzNx
+            IXwnr4rbrZwKgzHMNxtLtz8kyC9/lOAx/gECSKy83G1vLYOf/yy4S/BufjU8/HJG
+            Vikku33pm9GsSjM94Bihw+JKbwnnUTTCLs4scOO+wtu/ewk17B012fkZ5+GPpId7
+            QIDupwluEuM0cq8vZMhvLq1jlq8SKS5YBoMbR06EwxbyoB01l+1fp52Q0E3ljtdH
+            o4UCbbpA6t/rDCI0WgqPu/HIej3739EZ55jJ+PJ8Vp5BHHiEEmdBv0MU+lHMNK5H
+            fI7yZ3wwem9LNSy/WbiA8XKqB4sEpWyWrAWC2D2usKTviz9Yf+VsbeN/gyCJoLd2
+            l/D6dU9kJr/nZAIu8ZyFzpLM3ry7KUc5YAr6PaVIRGfNy3xDZ0yqYgKl1GntrGD8
+            QP1YdvvdkUcIL5mwb9Ai4K2AKbXrW7Ld8bKHnIJOlyYYVsEBNC4fPaxhWKIXHrnU
+            ZgEJAhDkE2M2GGY302bOUVwSWkdaRUid0nNn+JvfjJN61LAIeLxWPbj0zXU8i/5T
+            cmPlcb4Lm+6kp5Mo3Gai7gtrqJRqhkTfDHXxS8Ht+mkpCo/vSGXGWDrTwuv+qdGS
+            uadLiVK+KA==
+            =5KM+
+            -----END PGP MESSAGE-----
+          fp: 837C95AB8C1DEA7D5A43F046CB3220938EA318C4
+    encrypted_regex: ^(data|stringData)$
+    version: 3.7.3
