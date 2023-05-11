@@ -1751,6 +1751,11 @@ components:
               $ref: "#/components/schemas/Transactions"
             links:
               $ref: "#/components/schemas/Links"
+    AccountIdOrAliasOrEvmAddress:
+      oneOf:
+        - $ref: "#/components/schemas/Alias"
+        - $ref: "#/components/schemas/EntityId"
+        - $ref: "#/components/schemas/EvmAddress"
     Alias:
       description: RFC4648 no-padding base32 encoded account alias
       type: string
@@ -3623,7 +3628,7 @@ components:
         evmAddressWithShardAndRealm:
           value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
-        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
+        $ref: "#/components/schemas/AccountIdOrAliasOrEvmAddress"
         type: string
     accountIdOrAliasOrEvmAddressQueryParam:
       name: account.id
@@ -3650,7 +3655,7 @@ components:
         evmAddressWithShardAndRealm:
           value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
-        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
+        $ref: "#/components/schemas/AccountIdOrAliasOrEvmAddress"
         type: string
     accountBalanceQueryParam:
       name: account.balance

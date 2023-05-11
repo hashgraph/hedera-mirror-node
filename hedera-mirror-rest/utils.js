@@ -24,7 +24,6 @@ import pg from 'pg';
 import pgRange from 'pg-range';
 import util from 'util';
 
-import AccountAlias from './accountAlias.js';
 import * as constants from './constants';
 import EntityId from './entityId';
 import config from './config';
@@ -199,7 +198,7 @@ const isValidAddressBookFileIdPattern = (fileId) => {
  * @param {String} opAndVal operator:value to be validated
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
-const paramValidityChecks = (param, opAndVal) => {
+const paramValidityChecks = (param, opAndVal, filterValidator = filterValidityChecks) => {
   const ret = false;
   let val = null;
   let op = null;
@@ -220,7 +219,7 @@ const paramValidityChecks = (param, opAndVal) => {
     return ret;
   }
 
-  return filterValidityChecks(param, op, val);
+  return filterValidator(param, op, val);
 };
 
 const basicOperators = Object.values(constants.queryParamOperators).filter(
@@ -281,12 +280,6 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.FROM:
       ret = EntityId.isValidEntityId(val, true, constants.EvmAddressType.NO_SHARD_REALM);
-      break;
-    case constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS:
-      ret = EntityId.isValidEntityId(val, false);
-      if (!ret) {
-        ret = (EntityId.isValidEvmAddress(val) || AccountAlias.isValid(val)) && op === constants.queryParamOperators.eq;
-      }
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
@@ -415,7 +408,7 @@ const isValidContractIdQueryParam = (op, val) => {
  * @param {Set} acceptedParameters List of valid parameters
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = (req, acceptedParameters = emptySet) => {
+const validateReq = (req, acceptedParameters = emptySet, filterValidator) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
@@ -434,11 +427,11 @@ const validateReq = (req, acceptedParameters = emptySet) => {
         continue;
       }
       for (const val of req.query[key]) {
-        if (!paramValidityChecks(key, val)) {
+        if (!paramValidityChecks(key, val, filterValidator)) {
           badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
         }
       }
-    } else if (!paramValidityChecks(key, req.query[key])) {
+    } else if (!paramValidityChecks(key, req.query[key], filterValidator)) {
       badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
     }
   }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import AccountAlias from './accountAlias.js';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
@@ -74,12 +75,7 @@ const entityJoin = `join (select id, public_key from entity where type in ('ACCO
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  if (req.query[constants.filterKeys.ACCOUNT_ID] !== undefined) {
-    // Rename account-id to id-or-alias-or-evm-address
-    req.query[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS] = req.query[constants.filterKeys.ACCOUNT_ID];
-    delete req.query[constants.filterKeys.ACCOUNT_ID];
-  }
-  utils.validateReq(req, acceptedBalancesParameters);
+  utils.validateReq(req, acceptedBalancesParameters, balanceFilterValidator);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParamsPromise] = parseAccountIdQueryParam(req.query, 'ab.account_id');
@@ -197,7 +193,7 @@ const getTokenAccountBalanceSubQuery = (order) => {
 const parseAccountIdQueryParam = (query, columnName) => {
   let evmAliasAddressCount = 0;
   return utils.parseParams(
-    query[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS],
+    query[constants.filterKeys.ACCOUNT_ID],
     (value) => {
       if (!EntityId.isValidEntityId(value, false) && ++evmAliasAddressCount > 1) {
         throw new InvalidArgumentError(`Only one evm address or alias is allowed.`);
@@ -205,6 +201,10 @@ const parseAccountIdQueryParam = (query, columnName) => {
       return EntityService.getEncodedId(value);
     },
     (op, value) => {
+      if (evmAliasAddressCount > 0 && op !== utils.opsMap.eq) {
+        throw new InvalidArgumentError(`Invalid operator. Evm address or alias only supports equals operator.`);
+      }
+
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
         : [`${columnName}${op}?`, [value]];
@@ -213,10 +213,50 @@ const parseAccountIdQueryParam = (query, columnName) => {
   );
 };
 
+const balanceFilterValidator = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
+  // Validate operator
+  if (!utils.isValidOperatorQuery(op)) {
+    return ret;
+  }
+
+  // Validate the value
+  switch (param) {
+    case constants.filterKeys.ACCOUNT_BALANCE:
+      ret = utils.isPositiveLong(val, true);
+      break;
+    case constants.filterKeys.ACCOUNT_ID:
+      ret = EntityId.isValidEntityId(val) || AccountAlias.isValid(val);
+      break;
+    case constants.filterKeys.ACCOUNT_PUBLICKEY:
+      ret = utils.isValidPublicKeyQuery(val);
+      break;
+    case constants.filterKeys.LIMIT:
+      ret = utils.isPositiveLong(val);
+      break;
+    case constants.filterKeys.ORDER:
+      // Acceptable words: asc or desc
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      break;
+    case constants.filterKeys.TIMESTAMP:
+      ret = utils.isValidTimestampParam(val);
+      break;
+    default:
+      ret = false;
+  }
+
+  return ret;
+};
+
 const acceptedBalancesParameters = new Set([
   constants.filterKeys.ACCOUNT_BALANCE,
+  constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_PUBLICKEY,
-  constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP,
