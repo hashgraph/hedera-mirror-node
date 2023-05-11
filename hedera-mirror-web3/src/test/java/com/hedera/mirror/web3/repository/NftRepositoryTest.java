@@ -55,7 +55,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder
                 .entity()
-                .customize(e -> e.id(secondNft.getId().getTokenId().getId()))
+                .customize(e -> e.id(secondNft.getId().getTokenId().getId()).deleted(null))
                 .persist();
 
         assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isEqualTo(2);
