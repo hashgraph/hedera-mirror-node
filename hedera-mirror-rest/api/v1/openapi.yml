@@ -3634,7 +3634,6 @@ components:
       name: account.id
       in: query
       description: Account alias or account id or evm address
-      required: true
       examples:
         aliasOnly:
           value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA

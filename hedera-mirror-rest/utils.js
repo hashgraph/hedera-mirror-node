@@ -226,18 +226,22 @@ const basicOperators = Object.values(constants.queryParamOperators).filter(
   (o) => o !== constants.queryParamOperators.ne
 );
 
+/**
+ * Returns false if the op or val is undefined or if the op is an invalid operator
+ * @param op
+ * @param val
+ * @returns {boolean}
+ */
+const validateOpAndValue = (op, val) => {
+  return !(op === undefined || val === undefined || !isValidOperatorQuery(op));
+};
+
 const filterValidityChecks = (param, op, val) => {
-  let ret = false;
-
-  if (op === undefined || val === undefined) {
-    return ret;
+  if (!validateOpAndValue(op, val)) {
+    return false;
   }
 
-  // Validate operator
-  if (!isValidOperatorQuery(op)) {
-    return ret;
-  }
-
+  let ret;
   // Validate the value
   switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
@@ -1565,6 +1569,7 @@ export {
   toHexStringQuantity,
   validateAndParseFilters,
   validateFilters,
+  validateOpAndValue,
   validateReq,
   stripHexPrefix,
   toUint256,

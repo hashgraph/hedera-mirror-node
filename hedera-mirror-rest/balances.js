@@ -214,43 +214,9 @@ const parseAccountIdQueryParam = (query, columnName) => {
 };
 
 const balanceFilterValidator = (param, op, val) => {
-  let ret = false;
-
-  if (op === undefined || val === undefined) {
-    return ret;
-  }
-
-  // Validate operator
-  if (!utils.isValidOperatorQuery(op)) {
-    return ret;
-  }
-
-  // Validate the value
-  switch (param) {
-    case constants.filterKeys.ACCOUNT_BALANCE:
-      ret = utils.isPositiveLong(val, true);
-      break;
-    case constants.filterKeys.ACCOUNT_ID:
-      ret = EntityId.isValidEntityId(val) || AccountAlias.isValid(val);
-      break;
-    case constants.filterKeys.ACCOUNT_PUBLICKEY:
-      ret = utils.isValidPublicKeyQuery(val);
-      break;
-    case constants.filterKeys.LIMIT:
-      ret = utils.isPositiveLong(val);
-      break;
-    case constants.filterKeys.ORDER:
-      // Acceptable words: asc or desc
-      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
-      break;
-    case constants.filterKeys.TIMESTAMP:
-      ret = utils.isValidTimestampParam(val);
-      break;
-    default:
-      ret = false;
-  }
-
-  return ret;
+  return param === constants.filterKeys.ACCOUNT_ID
+    ? utils.validateOpAndValue(op, val) && (EntityId.isValidEntityId(val) || AccountAlias.isValid(val))
+    : utils.filterValidityChecks(param, op, val);
 };
 
 const acceptedBalancesParameters = new Set([
