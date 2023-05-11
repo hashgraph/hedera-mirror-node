@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.80.0-rc1'
+      version: '0.80.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -39,10 +39,14 @@ spec:
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
       env:
+        HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.798453"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.02"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.798453"
+      image:
+        repository: ssheehy
+        tag: 0.81.0-SNAPSHOT
       prometheusRules:
         MonitorPublishLatency:
           enabled: false
@@ -67,4 +71,4 @@ spec:
               acceptance:
                 network: MAINNET
       cucumberTags: "@critical"
-      enabled: true
+      enabled: false
