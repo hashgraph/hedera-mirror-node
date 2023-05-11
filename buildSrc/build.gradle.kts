@@ -30,8 +30,9 @@ repositories {
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.3.1")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.18.0")
+    implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:4.0.0")
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.2")
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.com.graphql-java-generator:graphql-gradle-plugin:1.18.11")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")

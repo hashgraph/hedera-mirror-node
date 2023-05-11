@@ -66,9 +66,7 @@ class NetworkNodeService extends BaseService {
       ${NodeStake.getFullName(NodeStake.MAX_STAKE)},
       ${NodeStake.getFullName(NodeStake.MIN_STAKE)},
       ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
-      coalesce(${NodeStake.getFullName(NodeStake.STAKE)}, ${AddressBookEntry.getFullName(
-    AddressBookEntry.STAKE
-  )}) as stake,
+      ${NodeStake.getFullName(NodeStake.STAKE)},
       ${NodeStake.getFullName(NodeStake.STAKE_NOT_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKING_PERIOD)},

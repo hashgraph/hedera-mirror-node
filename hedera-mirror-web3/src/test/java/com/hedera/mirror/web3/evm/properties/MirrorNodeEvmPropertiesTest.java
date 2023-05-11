@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
-    private static final int MAX_REFUND_PERCENT = 20;
+    private static final int MAX_REFUND_PERCENT = 100;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
     private static final Bytes32 CHAIN_ID = Bytes32.fromHexString("0x0128");
 

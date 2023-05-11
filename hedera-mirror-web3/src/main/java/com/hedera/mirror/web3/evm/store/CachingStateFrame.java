@@ -86,7 +86,7 @@ public abstract class CachingStateFrame<K> {
     /** Get the accessor for a kind of value that is managed by this cache. */
     @SuppressWarnings("unchecked")
     @NonNull
-    <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
+    public <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
         final var accessor = (AccessorImpl<V>) accessors.get(klass);
         if (accessor != null) {
             return accessor;

@@ -16,14 +16,12 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
@@ -57,7 +55,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
 
     @Resource
     private WebTestClient webClient;
@@ -84,9 +81,28 @@ class ContractControllerTest {
                 .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(NOT_IMPLEMENTED)
+                .isEqualTo(OK);
+    }
+
+    @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
+    @ParameterizedTest
+    void estimateGasWithInvalidGasParameter(long gas) {
+        final var errorString = gas < 21000L
+                ? numberErrorString("gas", "greater", 21000L)
+                : numberErrorString("gas", "less", 15_000_000L);
+        final var request = request();
+        request.setEstimate(true);
+        request.setGas(gas);
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
@@ -219,7 +235,8 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(
                         "Failed to read HTTP message",
                         "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                                + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
+                                + " at [Source: (org.springframework.core.io.buffer"
+                                + ".DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
                         StringUtils.EMPTY));
     }
 
@@ -238,7 +255,8 @@ class ContractControllerTest {
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(
                         "Unsupported Media Type",
-                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest",
+                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel"
+                                + ".ContractCallRequest",
                         StringUtils.EMPTY));
     }
 
@@ -287,26 +305,8 @@ class ContractControllerTest {
     }
 
     @Test
-    void callInvalidGas() {
-        final var errorString = negativeNumberErrorFrom("gas");
-        final var request = request();
-        request.setGas(-1L);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
-    }
-
-    @Test
     void callInvalidGasPrice() {
-        final var errorString = negativeNumberErrorFrom("gasPrice");
+        final var errorString = numberErrorString("gasPrice", "greater", 0);
         final var request = request();
         request.setGasPrice(-1L);
 
@@ -395,7 +395,7 @@ class ContractControllerTest {
         return request;
     }
 
-    private String negativeNumberErrorFrom(String field) {
-        return NEGATIVE_NUMBER_ERROR.replace("{}", field);
+    private String numberErrorString(String field, String direction, long num) {
+        return String.format("%s field must be %s than or equal to %d", field, direction, num);
     }
 }

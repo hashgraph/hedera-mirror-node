@@ -16,11 +16,11 @@
 
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.BitPackUtils.codeFromNum;
-import static com.hedera.services.utils.BitPackUtils.isValidNum;
-import static com.hedera.services.utils.BitPackUtils.numFromCode;
-import static com.hedera.services.utils.BitPackUtils.perm64;
+import static com.hedera.services.utils.BitPackUtils.*;
+import static com.hedera.services.utils.MiscUtils.perm64;
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -48,6 +48,20 @@ public class EntityNum implements Comparable<EntityNum> {
         return new EntityNum(value);
     }
 
+    public static EntityNum fromAccountId(final AccountID grpc) {
+        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+            return MISSING_NUM;
+        }
+        return fromLong(grpc.getAccountNum());
+    }
+
+    public static EntityNum fromTokenId(final TokenID grpc) {
+        if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
+            return MISSING_NUM;
+        }
+        return fromLong(grpc.getTokenNum());
+    }
+
     public int intValue() {
         return value;
     }
@@ -73,6 +87,10 @@ public class EntityNum implements Comparable<EntityNum> {
         final var that = (EntityNum) o;
 
         return this.value == that.value;
+    }
+
+    static boolean areValidNums(final long shard, final long realm) {
+        return shard == 0 && realm == 0;
     }
 
     @Override

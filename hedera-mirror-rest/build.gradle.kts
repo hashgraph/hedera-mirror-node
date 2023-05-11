@@ -22,3 +22,7 @@ plugins {
 }
 
 tasks.assemble { dependsOn("package") }
+
+// Works around an implicit task dependency due to an output file of monitor dockerBuild present in
+// the input file list of rest dockerBuild due to it being in a sub-folder.
+tasks.dockerBuild { dependsOn(":rest:monitoring:dockerBuild") }

@@ -25,7 +25,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
   .name('contractsIdResultsLogs') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results/logs`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results/logs?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .requiredParameters('DEFAULT_CONTRACT_ID')

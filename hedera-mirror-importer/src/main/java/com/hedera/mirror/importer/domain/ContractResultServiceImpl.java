@@ -94,7 +94,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 .orElse(EntityId.EMPTY);
         var isRecoverableError = EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
-                && functionResult.getContractID() != ContractID.getDefaultInstance();
+                && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
 
         if (isRecoverableError) {
             log.error(
@@ -183,6 +183,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
+        contractResult.setTransactionNonce(transaction.getNonce());
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 

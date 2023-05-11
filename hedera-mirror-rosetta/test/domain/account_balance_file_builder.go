@@ -32,7 +32,6 @@ type AccountBalanceFileBuilder struct {
 	consensusTimestamp int64
 	dbClient           interfaces.DbClient
 	timeOffset         int32
-	tokenBalances      []domain.TokenBalance
 }
 
 func (b *AccountBalanceFileBuilder) AddAccountBalance(accountId, balance int64) *AccountBalanceFileBuilder {
@@ -40,16 +39,6 @@ func (b *AccountBalanceFileBuilder) AddAccountBalance(accountId, balance int64) 
 		AccountId:          domain.MustDecodeEntityId(accountId),
 		Balance:            balance,
 		ConsensusTimestamp: b.consensusTimestamp,
-	})
-	return b
-}
-
-func (b *AccountBalanceFileBuilder) AddTokenBalance(accountId, tokenId, balance int64) *AccountBalanceFileBuilder {
-	b.tokenBalances = append(b.tokenBalances, domain.TokenBalance{
-		AccountId:          domain.MustDecodeEntityId(accountId),
-		Balance:            balance,
-		ConsensusTimestamp: b.consensusTimestamp,
-		TokenId:            domain.MustDecodeEntityId(tokenId),
 	})
 	return b
 }
@@ -72,9 +61,6 @@ func (b *AccountBalanceFileBuilder) Persist() {
 	if len(b.accountBalances) != 0 {
 		db.Create(b.accountBalances)
 	}
-	if len(b.tokenBalances) != 0 {
-		db.Create(b.tokenBalances)
-	}
 }
 
 func NewAccountBalanceFileBuilder(dbClient interfaces.DbClient, consensusTimestamp int64) *AccountBalanceFileBuilder {
@@ -82,6 +68,5 @@ func NewAccountBalanceFileBuilder(dbClient interfaces.DbClient, consensusTimesta
 		accountBalances:    make([]domain.AccountBalance, 0),
 		consensusTimestamp: consensusTimestamp,
 		dbClient:           dbClient,
-		tokenBalances:      make([]domain.TokenBalance, 0),
 	}
 }

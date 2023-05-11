@@ -300,7 +300,25 @@ paths:
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
-      description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+      description: |
+
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+
+        **The table below defines the restrictions and support for the endpoint**
+
+        | Estimate         | Operation Type                                               | Services Version | Mirror Node Version                 |
+        | -------------    | ------------------------------------------------------------ | ---------------- | ---------------------------------   |
+        | false            | static contract state reads for non precompile functions     | 0.36+             | 0.78+                              |
+        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll  | 0.37+   | 0.78+             |
+        |                  | static contract state reads for precompile functions with allowance  | 0.37+  | 0.79+                                 |
+        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38+ | 0.81+                            |
+        |                  | non-static contract state reads for non precompile functions | 0.37+ | 0.80+                                          |
+        |                  | non-static contract state reads for precompile functions | Not supported  | Not supported                             |
+        | true             | non-static contract state reads or modifications for non precompile functions     | Not supported  | Not supported    |
+        |                  | non-static contract state reads or modifications for precompile functions     | Not supported  | Not supported        |
+
+        The operations types which are not currently supported should return 501 error status.
+
       operationId: contractsCall
       requestBody:
         required: true
@@ -1237,7 +1255,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.80.0-SNAPSHOT
+  version: 0.81.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"

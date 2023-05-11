@@ -42,7 +42,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(migration.getChecksum()).isEqualTo(1);
+        assertThat(migration.getChecksum()).isEqualTo(2);
     }
 
     @Test
@@ -78,6 +78,41 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                         .consensusTimestamp(newTokenAllowance.getTimestampLower()))
                 .persist();
 
+        // A token allowance that has no contract result, but has primary key values that will end up matching those of
+        // a migrated token allowance.
+        var ownerAccountId = 38L;
+        var spender = 39L;
+        var tokenId = 44L;
+        var tokenAllowancePreMigration = domainBuilder
+                .tokenAllowance()
+                .customize(t -> t.owner(ownerAccountId)
+                        .payerAccountId(EntityId.of(ownerAccountId, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(1676546171829734003L))
+                        .tokenId(tokenId))
+                .persist();
+
+        // A token allowance that has a contract result, once migrated it will have the same primary key fields as the
+        // above token allowance.
+        var ownerPreMigration = 1322L;
+        var contractResultConsensus = 1676546391434923004L;
+        var collidedTokenAllowance = domainBuilder
+                .tokenAllowance()
+                .customize(t -> t.owner(ownerPreMigration)
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(contractResultConsensus))
+                        .tokenId(tokenId))
+                .persist();
+
+        // The contract result for the collided token allowance
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .consensusTimestamp(contractResultConsensus))
+                .persist();
+
         // when
         migration.doMigrate();
 
@@ -88,6 +123,8 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         expected.add(unaffectedTokenAllowancePair.getLeft());
         expected.add(correctTokenAllowancePair.getLeft());
         expected.add(newTokenAllowance);
+        collidedTokenAllowance.setOwner(ownerAccountId);
+        expected.add(collidedTokenAllowance);
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         // The history of the token allowance should also be updated with the corrected owner
@@ -96,6 +133,8 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
         expectedHistory.addAll(unaffectedTokenAllowancePair.getRight());
         expectedHistory.addAll(correctTokenAllowancePair.getRight());
+        tokenAllowancePreMigration.setTimestampUpper(contractResultConsensus);
+        expectedHistory.add(tokenAllowancePreMigration);
         assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
@@ -113,6 +152,37 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                 .contractResult()
                 .customize(c -> c.senderId(new EntityId(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
                         .consensusTimestamp(newTokenAllowance.getTimestampLower()))
+                .persist();
+
+        // The collision token allowances
+        var ownerAccountId = 3491438L;
+        var spender = 3491439L;
+        var tokenId = 3491444L;
+        domainBuilder
+                .tokenAllowance()
+                .customize(t -> t.owner(ownerAccountId)
+                        .payerAccountId(EntityId.of(ownerAccountId, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(1676546171829734003L))
+                        .tokenId(tokenId))
+                .persist();
+
+        var ownerPreMigration = 1322L;
+        var contractResultConsensus = 1676546391434923004L;
+        domainBuilder
+                .tokenAllowance()
+                .customize(t -> t.owner(ownerPreMigration)
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(contractResultConsensus))
+                        .tokenId(tokenId))
+                .persist();
+
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .consensusTimestamp(contractResultConsensus))
                 .persist();
 
         migration.doMigrate();

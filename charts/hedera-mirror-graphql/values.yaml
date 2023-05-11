@@ -106,6 +106,8 @@ middleware:
       attempts: 3
       initialInterval: 100ms
 
+nameOverride: ""
+
 nodeSelector: {}
 
 podAnnotations: {}
@@ -299,6 +301,9 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   enabled: true
   defaultAccount: 98
   image:
