@@ -153,7 +153,7 @@ class AccountDatabaseAccessorTest {
     @Test
     void accountOwnedNftsMatchesValueFromRepository() {
         long ownedNfts = 20;
-        when(nftRepository.countByAccountIdAndDeletedIsFalse(any())).thenReturn(ownedNfts);
+        when(nftRepository.countByAccountIdAndNotDeleted(any())).thenReturn(ownedNfts);
 
         assertThat(accountAccessor.get(ADDRESS))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, from(Account::getOwnedNfts)));

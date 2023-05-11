@@ -23,6 +23,7 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NftRepository extends CrudRepository<Nft, NftId> {
@@ -31,5 +32,10 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
     @Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<Nft> findById(NftId nftId);
 
-    long countByAccountIdAndDeletedIsFalse(EntityId accountId);
+    @Query(
+            value = "select count(*) from Nft n "
+                    + "join Entity e on e.id = n.token_id "
+                    + "where n.account_id=:#{#accountId.getId()} and n.deleted is false and e.deleted is not true",
+            nativeQuery = true)
+    long countByAccountIdAndNotDeleted(EntityId accountId);
 }
