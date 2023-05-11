@@ -2,10 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./HederaTokenService.sol";
+import "./IHederaTokenService.sol";
 
-contract EthCall {
+contract EthCall is HederaTokenService {
 
-    string constant storageData = "test";
+    string constant storageData  = "test";
     string public emptyStorageData = "";
 
     // Public pure function without arguments that multiplies two numbers (e.g. return 2*2)
@@ -42,6 +44,12 @@ contract EthCall {
     // External view function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s symbol
     function getTokenSymbol(address _tokenAddress) external view returns (string memory) {
         return IERC20Metadata(_tokenAddress).symbol();
+    }
+
+    // External function that freezes a given token for the message sender
+    function freezeToken(address _tokenAddress) external {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.freezeToken.selector, _tokenAddress, msg.sender));
     }
 
     function testRevert() external pure {

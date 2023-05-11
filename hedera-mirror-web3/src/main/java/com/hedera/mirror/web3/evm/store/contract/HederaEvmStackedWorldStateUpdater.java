@@ -48,6 +48,7 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
         final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
         account.setNonce(nonce);
