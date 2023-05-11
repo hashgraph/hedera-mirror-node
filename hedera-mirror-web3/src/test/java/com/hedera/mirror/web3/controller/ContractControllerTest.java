@@ -327,7 +327,7 @@ class ContractControllerTest {
 
     @Test
     void transferWithoutSender() {
-        final var errorString = "from field must not be null";
+        final var errorString = "from field must not be empty";
         final var request = request();
         request.setFrom(null);
 

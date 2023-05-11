@@ -44,4 +44,9 @@ public @interface Hex {
      * @return minLength the element must be greater than or equal to
      */
     long minLength() default 0L;
+
+    /**
+     * @return allowEmpty flag for empty string values
+     */
+    boolean allowEmpty() default false;
 }
