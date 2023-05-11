@@ -119,6 +119,9 @@ spec:
       trigger:
         enabled: true
     traefik:
+      resources:
+        requests:
+          memory: 2001Mi
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-staging-na"} } }'

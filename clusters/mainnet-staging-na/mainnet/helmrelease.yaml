@@ -45,7 +45,8 @@ spec:
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.02"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.798453"
       image:
-        repository: ssheehy
+        registry: ssheehy
+        repository: hedera-mirror-monitor
         tag: 0.81.0-SNAPSHOT
       prometheusRules:
         MonitorPublishLatency:
