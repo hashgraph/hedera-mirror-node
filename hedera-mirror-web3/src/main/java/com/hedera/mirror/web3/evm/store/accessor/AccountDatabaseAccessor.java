@@ -28,10 +28,12 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.mysema.commons.lang.Pair;
 import java.sql.Date;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -70,6 +72,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     }
 
     private Account accountFromEntity(Entity entity) {
+        final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 getExpiration(entity),
@@ -82,8 +85,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                 getCryptoAllowances(entity.getId()),
                 getFungibleTokenAllowances(entity.getId()),
                 getApproveForAllNfts(entity.getId()),
-                getNumTokenAssociations(entity.getId()),
-                getPositiveBalances(entity.getId()),
+                tokenAssociationsCounts.getFirst(),
+                tokenAssociationsCounts.getSecond(),
                 0);
     }
 
@@ -142,11 +145,17 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         return EntityNum.fromLong(entityId.getEntityNum());
     }
 
-    private int getNumTokenAssociations(long accountId) {
-        return tokenAccountRepository.countByAccountIdAndAssociatedIsTrue(accountId);
-    }
+    private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {
+        final var counts = tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId);
+        int all = 0, positive = 0;
 
-    private int getPositiveBalances(long accountId) {
-        return tokenAccountRepository.countByAccountIdAndPositiveBalance(accountId);
+        for (TokenAccountAssociationsCount count : counts) {
+            if (count.getIsPositiveBalance()) {
+                positive = count.getTokenCount();
+            }
+            all += count.getTokenCount();
+        }
+
+        return new Pair<>(all, positive);
     }
 }

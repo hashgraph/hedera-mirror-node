@@ -34,11 +34,13 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -89,6 +91,33 @@ class AccountDatabaseAccessorTest {
     private static final EntityId PROXY_ACCOUNT_ID = new EntityId(SHARD, REALM, 5L, EntityType.ACCOUNT);
 
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
+
+    private static final int POSITIVE_BALANCES = 7;
+    private static final int NEGATIVE_BALANCES = 8;
+
+    private static final List<TokenAccountAssociationsCount> associationsCount = Arrays.asList(
+            new TokenAccountAssociationsCount() {
+                @Override
+                public Integer getTokenCount() {
+                    return POSITIVE_BALANCES;
+                }
+
+                @Override
+                public Boolean getIsPositiveBalance() {
+                    return true;
+                }
+            },
+            new TokenAccountAssociationsCount() {
+                @Override
+                public Integer getTokenCount() {
+                    return NEGATIVE_BALANCES;
+                }
+
+                @Override
+                public Boolean getIsPositiveBalance() {
+                    return false;
+                }
+            });
 
     @BeforeEach
     void setup() {
@@ -243,22 +272,12 @@ class AccountDatabaseAccessorTest {
     }
 
     @Test
-    void numTokenAssociationsMatchValuesFromRepository() {
-        int numAssociations = 55;
-        when(tokenAccountRepository.countByAccountIdAndAssociatedIsTrue(anyLong()))
-                .thenReturn(numAssociations);
+    void numTokenAssociationsAndNumPositiveBalancesMatchValuesFromRepository() {
+        when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(anyLong()))
+                .thenReturn(associationsCount);
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(numAssociations, from(Account::getNumAssociations)));
-    }
-
-    @Test
-    void numPositiveBalancesMatchValuesFromRepository() {
-        int numPositive = 55;
-        when(tokenAccountRepository.countByAccountIdAndPositiveBalance(anyLong()))
-                .thenReturn(numPositive);
-
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(numPositive, from(Account::getNumPositiveBalances)));
+                .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, from(Account::getNumAssociations))
+                .returns(POSITIVE_BALANCES, from(Account::getNumPositiveBalances)));
     }
 }
