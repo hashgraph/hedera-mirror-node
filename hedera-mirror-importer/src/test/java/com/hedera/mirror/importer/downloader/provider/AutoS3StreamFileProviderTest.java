@@ -130,6 +130,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void listInvalidFilenameNodeId() throws Exception {
         var node = node("0.0.4");
@@ -137,6 +138,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         listInvalidFilename(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void getNotFoundNodeId() {
         var node = node("0.0.4");
@@ -144,6 +146,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         getNotFound(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void getErrorNodeId() {
         var node = node("0.0.4");
@@ -151,6 +154,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         getError(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void listNodeId() {
         var node = node("0.0.4");
@@ -158,6 +162,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         list(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void listAfterNodeId() {
         var node = node("0.0.4");
@@ -165,6 +170,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         listAfter(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void listNotFoundNodeId() {
         var node = node("0.0.4");
@@ -172,6 +178,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         listNotFound(fileCopier, node);
     }
 
+    @SuppressWarnings("java:S2699")
     @Test
     void listErrorNodeId() {
         var node = node("0.0.4");
