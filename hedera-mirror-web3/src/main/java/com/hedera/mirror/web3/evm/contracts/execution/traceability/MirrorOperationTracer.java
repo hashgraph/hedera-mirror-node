@@ -58,15 +58,15 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
                         : new byte[0]);
 
         log.info(
-                "messageFrame={}, inputData={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}",
+                "messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
                 currentFrame.toString(),
-                inputData,
                 currentFrame.getMessageStackDepth(),
                 currentFrame.getRemainingGas(),
                 currentFrame.getSenderAddress(),
                 currentFrame.getRecipientAddress(),
                 currentFrame.getContractAddress(),
                 StringUtils.toEncodedString(
-                        currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16));
+                        currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16),
+                inputData);
     }
 }

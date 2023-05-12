@@ -18,24 +18,23 @@ package com.hedera.mirror.web3.evm.properties;
 
 import java.util.HashSet;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NonNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-@Setter
+@Data
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm.tracing")
 public class TracingProperties {
 
-    @Getter
-    boolean enabled = false;
+    private boolean enabled = false;
 
-    @Getter
-    Set<Long> contract = new HashSet<>();
+    @NonNull
+    private Set<Long> contract = new HashSet<>();
 
-    @Getter
-    Set<String> status = new HashSet<>();
+    @NonNull
+    private Set<String> status = new HashSet<>();
 
     public boolean stateFilterCheck(String state) {
         return !getStatus().isEmpty() && !getStatus().contains(state);
