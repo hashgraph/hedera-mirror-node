@@ -49,7 +49,7 @@ jobs:
       - name: Build images
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: dockerPush -x rosetta:dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test
+          arguments: dockerPush -x :rosetta:dockerPush -x :test:dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test
 
       - name: Build rosetta image
         uses: docker/build-push-action@v4

@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+
 description = "Hedera Mirror Node Test"
 
-plugins { id("java-conventions") }
+plugins {
+    id("com.github.johnrengelman.shadow")
+    id("docker-conventions")
+    id("java-conventions")
+}
 
 dependencies {
     implementation(platform("io.cucumber:cucumber-bom"))
     implementation("io.cucumber:cucumber-java")
+    implementation("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
@@ -52,7 +60,7 @@ tasks.register<Test>("acceptance") {
     val maxParallelism = project.property("maxParallelism") as String
     jvmArgs = listOf("-Xmx1024m", "-Xms1024m")
     maxParallelForks =
-        if (maxParallelism.isNotBlank()) maxParallelism.toInt()!!
+        if (maxParallelism.isNotBlank()) maxParallelism.toInt()
         else Runtime.getRuntime().availableProcessors()
     useJUnitPlatform {}
 
@@ -61,3 +69,27 @@ tasks.register<Test>("acceptance") {
         .filter { it.key.toString().matches(Regex("^(cucumber|hedera|spring)\\..*")) }
         .forEach { systemProperty(it.key.toString(), it.value) }
 }
+
+tasks.build { dependsOn("shadowJar") }
+
+tasks.shadowJar {
+    dependsOn(tasks.compileTestJava)
+    from(sourceSets.main.get().output)
+    from(sourceSets.test.get().output)
+    configurations =
+        listOf(
+            project.configurations.runtimeClasspath.get(),
+            project.configurations.testRuntimeClasspath.get())
+    manifest { attributes["Main-Class"] = "com.hedera.mirror.test.MirrorTestApplication" }
+    mergeServiceFiles()
+    append("META-INF/spring.handlers")
+    append("META-INF/spring.schemas")
+    append("META-INF/spring.tooling")
+    val transformer = PropertiesFileTransformer()
+    transformer.mergeStrategy = "append"
+    transformer.paths = listOf("META-INF/spring.factories")
+    transform(transformer)
+    transform(Log4j2PluginsCacheFileTransformer::class.java)
+}
+
+tasks.dockerBuild { dependsOn(tasks.shadowJar) }

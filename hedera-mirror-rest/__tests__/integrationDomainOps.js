@@ -1016,6 +1016,7 @@ const contractResultDefaults = {
   payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   transaction_hash: Buffer.from([...Array(32).keys()]),
   transaction_index: 1,
+  transaction_nonce: 0,
   transaction_result: 22,
 };
 

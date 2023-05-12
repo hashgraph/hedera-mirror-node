@@ -18,7 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +57,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.ResourceUtils;
+import org.springframework.core.io.Resource;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -95,7 +94,7 @@ public class ERCContractFeature extends AbstractFeature {
     private FileId fileId;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
-    private Path ercContract;
+    private Resource ercContract;
 
     @After
     public void clean() {
@@ -303,9 +302,10 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
-        compiledSolidityArtifact =
-                MAPPER.readValue(ResourceUtils.getFile(ercContract.toUri()), CompiledSolidityArtifact.class);
-        createContract(compiledSolidityArtifact.getBytecode(), 0);
+        try (var in = ercContract.getInputStream()) {
+            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            createContract(compiledSolidityArtifact.getBytecode(), 0);
+        }
     }
 
     @Then("I create a new token with freeze status 2 and kyc status 1")

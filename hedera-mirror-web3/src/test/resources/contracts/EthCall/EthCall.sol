@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./HederaTokenService.sol";
+import "./IHederaTokenService.sol";
 
 contract EthCall is HederaTokenService {
 
     string constant storageData  = "test";
-    string emptyStorageData = "";
+    string public emptyStorageData = "";
 
     // Public pure function without arguments that multiplies two numbers (e.g. return 2*2)
     function multiplySimpleNumbers() public pure returns (uint) {
@@ -47,10 +48,35 @@ contract EthCall is HederaTokenService {
 
     // External function that freezes a given token for the message sender
     function freezeToken(address _tokenAddress) external {
-        HederaTokenService.freezeToken(_tokenAddress, msg.sender);
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.freezeToken.selector, _tokenAddress, msg.sender));
     }
 
     function testRevert() external pure {
         revert('Custom revert message');
+    }
+
+    function nestedCall(string memory s, address _state) external returns (string memory) {
+        return State(_state).changeState(s);
+    }
+
+    function deployContract(string memory s) external returns (string memory) {
+        State deployedContract = new State();
+        string memory newState = deployedContract.changeState(s);
+        deployedContract.changeCallerState(newState);
+        return emptyStorageData;
+    }
+}
+
+contract State {
+    string public state = "";
+
+    function changeState(string memory s) external returns (string memory) {
+        state = s;
+        return state;
+    }
+
+    function changeCallerState(string memory s) external returns (string memory) {
+        EthCall(msg.sender).writeToStorageSlot(string(abi.encodePacked(s, state)));
     }
 }

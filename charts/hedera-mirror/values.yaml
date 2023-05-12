@@ -242,7 +242,7 @@ monitor:
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_HOST: "{{ .Release.Name }}-rest"
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_PORT: "80"
 
-nameOverride: ""
+nameOverride: mirror
 
 networkPolicy:
   enabled: false
@@ -263,6 +263,8 @@ postgresql:
     size: 500Gi
   pgpool:
     adminPassword: ""  # Randomly generated if left blank
+    childLifeTime: 60
+    childMaxConnections: 2
     existingSecret: mirror-passwords
     extraEnvVars:
       - name: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
@@ -277,11 +279,13 @@ postgresql:
             key: PGPOOL_POSTGRES_CUSTOM_USERS
     image:
       debug: true
+    numInitChildren: 100
     podAntiAffinityPreset: soft
     podLabels:
       role: db
     pdb:
       create: true
+    reservedConnections: 0
     resources:
       limits:
         cpu: 600m
@@ -294,8 +298,9 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.7.0-debian-11-r12
+      tag: 14.7.0-debian-11-r27
     initdbScriptsCM: "{{ .Release.Name }}-init"
+    maxConnections: 200
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
     replicaCount: 1
@@ -417,6 +422,10 @@ rosetta:
           key: HEDERA_MIRROR_ROSETTA_DB_USERNAME
 
 test:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "10"
   config:
     hedera:
       mirror:
@@ -429,14 +438,15 @@ test:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
-  extraArgs: "-Dcucumber.ansi-colors.disabled=true"
-  git:
-    branch: ""  # Default to Chart app version
-    repository: hashgraph/hedera-mirror-node
+  env: {}
+  args:
+    - -Dcucumber.ansi-colors.disabled=true
+    - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
   image:
     pullPolicy: IfNotPresent
-    repository: alpine
-    tag: latest
+    registry: gcr.io
+    repository: mirrornode/hedera-mirror-test
+    tag: ""  # Defaults to the chart's app version
   resources:
     limits:
       cpu: 3

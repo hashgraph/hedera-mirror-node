@@ -70,10 +70,13 @@ class ContractControllerTest {
         given(bucket.tryConsume(1)).willReturn(true);
     }
 
-    @Test
-    void estimateGas() {
+    @NullAndEmptySource
+    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7"})
+    @ParameterizedTest
+    void estimateGas(String to) {
         final var request = request();
         request.setEstimate(true);
+        request.setTo(to);
         webClient
                 .post()
                 .uri(CALL_URI)
@@ -324,7 +327,7 @@ class ContractControllerTest {
 
     @Test
     void transferWithoutSender() {
-        final var errorString = "from field must not be null";
+        final var errorString = "from field must not be empty";
         final var request = request();
         request.setFrom(null);
 
