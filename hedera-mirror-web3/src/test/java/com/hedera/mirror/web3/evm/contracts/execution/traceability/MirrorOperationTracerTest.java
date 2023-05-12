@@ -24,6 +24,7 @@ import com.hedera.mirror.web3.evm.properties.TracingProperties;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,16 +61,17 @@ class MirrorOperationTracerTest {
         given(topLevelMessageFrame.getInputData()).willReturn(input);
         given(topLevelMessageFrame.getRecipientAddress()).willReturn(recipient);
         given(topLevelMessageFrame.getSenderAddress()).willReturn(sender);
+        given(topLevelMessageFrame.getState()).willReturn(State.CODE_EXECUTING);
 
         mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
         assertThat(output)
                 .contains(
-                        "recipientAddress=0x0000000000000000000000000000000000000003",
+                        "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=Mock for MessageFrame",
                         "inputData=inputData",
                         "callDepth=0",
                         "remainingGas=1000",
-                        "senderAddress=0x0000000000000000000000000000000000000004,",
+                        "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=");
     }
 }

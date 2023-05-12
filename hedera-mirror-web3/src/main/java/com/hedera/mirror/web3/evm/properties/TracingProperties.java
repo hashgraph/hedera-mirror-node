@@ -37,11 +37,11 @@ public class TracingProperties {
     @Getter
     Set<String> status = new HashSet<>();
 
-    public boolean isStateFilterMatches(String state) {
-        return getStatus().isEmpty() || getStatus().contains(state);
+    public boolean stateFilterCheck(String state) {
+        return !getStatus().isEmpty() && !getStatus().contains(state);
     }
 
-    public boolean isContractFilterMatches(Long contract) {
-        return getContract().isEmpty() || getContract().contains(contract);
+    public boolean contractFilterCheck(Long contract) {
+        return !getContract().isEmpty() && !getContract().contains(contract);
     }
 }

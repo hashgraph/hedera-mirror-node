@@ -38,34 +38,35 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
-        if (tracingProperties.isEnabled()) {
-            if (!tracingProperties.isStateFilterMatches(currentFrame.getState().name())) {
-                return;
-            }
-
-            final var recipientAddress = currentFrame.getRecipientAddress();
-            final var recipientNum = entityIdNumFromEvmAddress(recipientAddress);
-
-            if (!tracingProperties.isContractFilterMatches(recipientNum)) {
-                return;
-            }
-
-            final var inputData = new String(
-                    currentFrame.getInputData() != null
-                            ? currentFrame.getInputData().toArray()
-                            : new byte[0]);
-
-            log.info(
-                    "contractCall: messageFrame={} inputData={}, callDepth={}, remainingGas={}, senderAddress {}, recipientAddress={}, contractAddress={}, revertReason={}",
-                    currentFrame.toString(),
-                    inputData,
-                    currentFrame.getMessageStackDepth(),
-                    currentFrame.getRemainingGas(),
-                    currentFrame.getSenderAddress(),
-                    currentFrame.getRecipientAddress(),
-                    currentFrame.getContractAddress(),
-                    StringUtils.toEncodedString(
-                            currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16));
+        if (!tracingProperties.isEnabled()) {
+            return;
         }
+        if (tracingProperties.stateFilterCheck(currentFrame.getState().name())) {
+            return;
+        }
+
+        final var recipientAddress = currentFrame.getRecipientAddress();
+        final var recipientNum = entityIdNumFromEvmAddress(recipientAddress);
+
+        if (tracingProperties.contractFilterCheck(recipientNum)) {
+            return;
+        }
+
+        final var inputData = new String(
+                currentFrame.getInputData() != null
+                        ? currentFrame.getInputData().toArray()
+                        : new byte[0]);
+
+        log.info(
+                "messageFrame={}, inputData={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}",
+                currentFrame.toString(),
+                inputData,
+                currentFrame.getMessageStackDepth(),
+                currentFrame.getRemainingGas(),
+                currentFrame.getSenderAddress(),
+                currentFrame.getRecipientAddress(),
+                currentFrame.getContractAddress(),
+                StringUtils.toEncodedString(
+                        currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16));
     }
 }
