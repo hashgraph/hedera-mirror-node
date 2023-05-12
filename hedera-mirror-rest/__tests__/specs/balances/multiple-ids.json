@@ -9,6 +9,8 @@
         "num": 8
       },
       {
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "num": 9
       }
     ],
@@ -42,7 +44,11 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/balances?account.id=0.0.7&account.id=0.0.9&timestamp=0.0010023",
+  "urls": [
+    "/api/v1/balances?account.id=0.0.7&account.id=0.0.9&timestamp=0.0010023",
+    "/api/v1/balances?account.id=0.0.7&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff&timestamp=0.0010023",
+    "/api/v1/balances?account.id=0.0.7&account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=0.0010023"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "timestamp": "0.000002345",
