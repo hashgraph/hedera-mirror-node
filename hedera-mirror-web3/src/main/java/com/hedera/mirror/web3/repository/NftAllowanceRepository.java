@@ -31,5 +31,5 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     @Cacheable(cacheNames = "nft_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<NftAllowance> findById(Id id);
 
-    List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long spender);
+    List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 }
