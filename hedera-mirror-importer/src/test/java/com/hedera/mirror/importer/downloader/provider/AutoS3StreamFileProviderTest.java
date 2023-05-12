@@ -131,63 +131,10 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
     }
 
     @Test
-    void nodeAccountIdToNodeIdGetTransition() throws Exception {
-        var node = node("0.0.3");
-
-        var accountIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "recordstreams");
-        var accountIdFileCopier = FileCopier.create(
-                        TestUtils.getResource(accountIdFromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), StreamType.RECORD.getPath());
-
-        var nodeIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "demo");
-        var network = properties.getMirrorProperties().getNetwork().toString().toLowerCase();
-        var nodeIdFileCopier = FileCopier.create(
-                        TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), network);
-
-        accountIdFileCopier.copy();
-        nodeInfoMap = Map.of(node, new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID));
-
-        // Get file in legacy node account ID bucket structure the first time
-        var accountIdData = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, accountIdData.getStreamFilename()))
-                .thenAwait(Duration.ofSeconds(10L))
-                .expectNext(accountIdData)
-                .expectComplete()
-                .verify(Duration.ofSeconds(10L));
-
-        // Consensus node now writes to node ID bucket structure
-        nodeIdFileCopier.copy();
-        nodeInfoMap = Map.of(node, new NodeInfo(nodeIdFileCopier, PathType.NODE_ID));
-
-        // Now get new file from node ID bucket structure for the first time
-        var nodeIdData = streamFileData(node, "2022-12-25T09_14_26.072307770Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, nodeIdData.getStreamFilename()))
-                .thenAwait(Duration.ofSeconds(10L))
-                .expectNext(nodeIdData)
-                .expectComplete()
-                .verify(Duration.ofSeconds(10L));
-    }
-
-    @Test
     void listInvalidFilenameNodeId() throws Exception {
         var node = node("0.0.4");
         var fileCopier = getFileCopier(node);
         listInvalidFilename(fileCopier, node);
-    }
-
-    @Test
-    void getNodeId() {
-        var node = node("0.0.4");
-        var fileCopier = getFileCopier(node);
-        get(fileCopier, node);
-    }
-
-    @Test
-    void getSidecarNodeId() {
-        var node = node("0.0.4");
-        var fileCopier = getFileCopier(node);
-        getSidecar(fileCopier, node);
     }
 
     @Test

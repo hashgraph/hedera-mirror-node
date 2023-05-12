@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.AUTO;
@@ -29,10 +28,8 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -43,7 +40,6 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.RequestPayer;
-import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -73,18 +69,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 streamType.getNodePrefix(),
                 consensusNode.getNodeAccountId(),
                 getSidecarFolder(streamFilename));
-    }
-
-    private static StreamFilename toStreamFilename(S3Object s3Object) {
-        var key = s3Object.key();
-
-        try {
-            var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
-            return new StreamFilename(filename, key);
-        } catch (Exception e) {
-            log.warn("Unable to parse stream filename for {}", key, e);
-            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
-        }
     }
 
     @Override
@@ -124,9 +108,22 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     }
                     return Flux.empty(); // Not AUTO mode/interval, so empty means empty
                 }))
-                .map(S3StreamFileProvider::toStreamFilename)
-                .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
-                .flatMapSequential(this::getNative)
+                .flatMapSequential(s3Object -> {
+                    var key = s3Object.key();
+
+                    try {
+                        var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
+                        var streamFilename = new StreamFilename(filename);
+                        if (streamFilename.getFileType() != SIGNATURE) {
+                            return Mono.empty();
+                        }
+
+                        return get(key, streamFilename);
+                    } catch (Exception e) {
+                        log.warn("Unable to parse stream filename for {}", key, e);
+                        return Mono.empty();
+                    }
+                })
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
                         batchSize,
@@ -143,57 +140,25 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
         var streamFilePathInfo = getStartingPathInfo(node, streamFilename);
-
         var s3Key = streamFilePathInfo.prefix + streamFilename.getFilename();
+        return get(s3Key, streamFilename);
+    }
+
+    private Mono<StreamFileData> get(String s3Key, StreamFilename streamFilename) {
         var request = GetObjectRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
                 .key(s3Key)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
-        var autoTransitionToNodeId = new AtomicBoolean();
         return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
                 .timeout(commonDownloaderProperties.getTimeout())
-                .onErrorResume(NoSuchKeyException.class, throwable -> {
-                    log.debug("Object not found in node account ID bucket structure: {}", s3Key, throwable);
-                    if (isAutoModeTransitionIntervalExpired(streamFilePathInfo)) {
-                        var nodeIdS3Key = getNodeIdBasedPrefix(node, streamFilename) + streamFilename.getFilename();
-                        log.debug("Trying node ID bucket structure: {}", nodeIdS3Key);
-                        autoTransitionToNodeId.set(true);
-                        var nodeIdRequest = GetObjectRequest.builder()
-                                .bucket(commonDownloaderProperties.getBucketName())
-                                .key(nodeIdS3Key)
-                                .requestPayer(RequestPayer.REQUESTER)
-                                .build();
-                        return Mono.fromFuture(s3Client.getObject(nodeIdRequest, AsyncResponseTransformer.toBytes()));
-                    }
-                    return Mono.error(throwable);
-                })
                 .map(r -> new StreamFileData(
                         streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> {
-                    if (streamFilePathInfo.pathParams.pathType == PathType.AUTO) {
-                        updateNodePathStatus(node, autoTransitionToNodeId.get());
-                    }
                     log.debug("Finished downloading {}", s3Key);
                 });
-    }
-
-    private Mono<StreamFileData> getNative(@NonNull StreamFilename streamFilename) {
-        var s3Key = streamFilename.getNativeKey();
-        var request = GetObjectRequest.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
-                .key(streamFilename.getNativeKey())
-                .requestPayer(RequestPayer.REQUESTER)
-                .build();
-
-        return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
-                .map(r -> new StreamFileData(
-                        streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
-                .timeout(commonDownloaderProperties.getTimeout())
-                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
     private ListObjectsV2Request getListObjectsRequest(String prefix, String startAfter, int batchSize) {
@@ -224,20 +189,12 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private void updateNodePathStatus(ConsensusNode node, int numStartingPathObjects, int numNodeIdPathObjects) {
         if (numNodeIdPathObjects > 0) {
-            updateNodePathStatus(node, true);
-        } else if (numStartingPathObjects > 0) {
-            updateNodePathStatus(node, false);
-        } // No new account ID based files found, but transition interval not yet expired
-    }
-
-    private void updateNodePathStatus(ConsensusNode node, boolean isAutoTransition) {
-        if (isAutoTransition) {
             // At this point we are setting node ID as the path type so refresh interval becomes irrelevant
             nodePathParamsMap.put(node, new PathParameterProperties(NODE_ID, 0L));
-        } else {
+        } else if (numStartingPathObjects > 0) {
             // If files are available at the old bucket path continue using AUTO for another interval
             nodePathParamsMap.put(node, new PathParameterProperties(AUTO, computeAutoTransitionExpiration()));
-        }
+        } // No new account ID based files found, but transition interval not yet expired
     }
 
     private long computeAutoTransitionExpiration() {
