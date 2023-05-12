@@ -57,7 +57,7 @@ public class MirrorImporterConfiguration {
 
     @Bean
     @ConditionalOnCloudPlatform(CloudPlatform.KUBERNETES)
-    @ConditionalOnProperty(prefix = "hedera.mirror.importer", name = "leaderElection", havingValue = "true")
+    @ConditionalOnProperty(value = "spring.cloud.kubernetes.leader.enabled")
     LeaderAspect leaderAspect() {
         return new LeaderAspect();
     }

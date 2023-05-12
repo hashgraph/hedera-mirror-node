@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.monitor.health;
 
+import static com.hedera.mirror.monitor.health.ReleaseHealthIndicator.DEPENDENCY_NOT_READY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.fabric8.kubernetes.api.model.Condition;
 import io.fabric8.kubernetes.api.model.ConditionBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder;
@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +49,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 class ReleaseHealthIndicatorTest {
 
     private static final String HELM_RELEASE_PATH =
-            "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases" + "/mirror";
+            "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases/mirror";
     private static final String HOSTNAME = "test-pod";
     private static final String POD_REQUEST_PATH = "/api/v1/namespaces/test/pods/" + HOSTNAME;
     private static final Map<String, String> POD_LABELS = Map.of("app.kubernetes.io/instance", "mirror");
@@ -98,6 +99,27 @@ class ReleaseHealthIndicatorTest {
 
         // then
         assertThat(health).returns(Status.DOWN, Health::getStatus);
+    }
+
+    @Test
+    void dependencyNotReady() {
+        // given
+        var condition = readyCondition("False");
+        condition.withReason(DEPENDENCY_NOT_READY);
+        server.expect()
+                .withPath(POD_REQUEST_PATH)
+                .andReturn(200, pod(POD_LABELS))
+                .always();
+        server.expect()
+                .withPath(HELM_RELEASE_PATH)
+                .andReturn(200, helmRelease(List.of(condition)))
+                .always();
+
+        // when
+        var health = healthIndicator.health().block();
+
+        // then
+        assertThat(health).returns(Status.UNKNOWN, Health::getStatus);
     }
 
     @Test
@@ -242,8 +264,9 @@ class ReleaseHealthIndicatorTest {
         assertEquals(first, second);
     }
 
-    private GenericKubernetesResource helmRelease(List<Condition> conditions) {
-        Map<String, Object> properties = Map.of("status", Map.of("conditions", conditions));
+    private GenericKubernetesResource helmRelease(List<ConditionBuilder> conditions) {
+        var builtConditions = conditions.stream().map(ConditionBuilder::build).collect(Collectors.toList());
+        Map<String, Object> properties = Map.of("status", Map.of("conditions", builtConditions));
         return new GenericKubernetesResourceBuilder()
                 .withKind("HelmRelease")
                 .withAdditionalProperties(properties)
@@ -259,7 +282,10 @@ class ReleaseHealthIndicatorTest {
                 .build();
     }
 
-    private Condition readyCondition(String status) {
-        return new ConditionBuilder().withType("Ready").withStatus(status).build();
+    private ConditionBuilder readyCondition(String status) {
+        return new ConditionBuilder()
+                .withType("Ready")
+                .withReason("retries exhausted")
+                .withStatus(status);
     }
 }

@@ -407,18 +407,6 @@ Delete the Kubernetes resources using Helm:
 helm delete "${APP_NAME}" --namespace "${NAMESPACE}"
 ```
 
-### Delete the Leaders Config Map
-
-The Mirror Node chart used by the Marketplace solution utilizes the Spring Cloud Kubernetes leader election mechanism.
-This enables importer high availability and stores the importer leader in the `leaders` Config Map. This resource lacks
-the resource labels to associate it with the Mirror Node chart and is left over after application deletion.
-
-To delete the Kubernetes `leaders` Config Map, run the following kubectl command:
-
-```shell
-kubectl delete configmap leaders --namespace "${NAMESPACE}"
-```
-
 ### Delete the data
 
 By design, removing StatefulSets in Kubernetes does not remove any PersistentVolumeClaims that were attached to their
