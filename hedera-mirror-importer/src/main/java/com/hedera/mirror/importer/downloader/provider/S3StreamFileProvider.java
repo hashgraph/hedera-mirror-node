@@ -16,20 +16,17 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.AUTO;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
-import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -88,19 +84,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         } catch (Exception e) {
             log.warn("Unable to parse stream filename for {}", key, e);
             return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
-        }
-    }
-
-    private static String getNetworkPrefix(MirrorProperties mirrorProperties) {
-        if (!StringUtils.isBlank(mirrorProperties.getNetworkPrefix())) {
-            return mirrorProperties.getNetworkPrefix().toLowerCase();
-        } else {
-            if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
-                throw new InvalidConfigurationException(
-                        "Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork());
-            }
-            // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
-            return mirrorProperties.getNetwork().toString().toLowerCase();
         }
     }
 
