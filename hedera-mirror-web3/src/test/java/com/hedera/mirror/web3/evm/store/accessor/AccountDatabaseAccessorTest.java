@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-import static org.assertj.core.api.Assertions.from;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -139,17 +138,17 @@ class AccountDatabaseAccessorTest {
     @Test
     void accountFieldsMatchEntityFields() {
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), from(Account::getId))
-                .returns(entity.getExpirationTimestamp(), from(Account::getExpiry))
-                .returns(entity.getBalance(), from(Account::getBalance))
-                .returns(entity.getAutoRenewPeriod(), from(Account::getAutoRenewSecs))
+                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Account::getId)
+                .returns(entity.getExpirationTimestamp(), Account::getExpiry)
+                .returns(entity.getBalance(), Account::getBalance)
+                .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
                 .returns(
                         new Id(
                                 entity.getProxyAccountId().getShardNum(),
                                 entity.getProxyAccountId().getRealmNum(),
                                 entity.getProxyAccountId().getEntityNum()),
-                        from(Account::getProxy))
-                .returns(entity.getMaxAutomaticTokenAssociations(), from(Account::getMaxAutomaticAssociations)));
+                        Account::getProxy)
+                .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
     }
 
     @Test
@@ -159,7 +158,7 @@ class AccountDatabaseAccessorTest {
         long expectedExpiry = entity.getCreatedTimestamp() + entity.getAutoRenewPeriod();
 
         assertThat(accountAccessor.get(ADDRESS))
-                .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, from(Account::getExpiry)));
+                .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, Account::getExpiry));
     }
 
     @Test
@@ -173,12 +172,12 @@ class AccountDatabaseAccessorTest {
         entity.setProxyAccountId(null);
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(AccountDatabaseAccessor.DEFAULT_EXPIRY_TIMESTAMP, from(Account::getExpiry))
-                .returns(0L, from(Account::getBalance))
-                .returns(false, from(Account::isDeleted))
-                .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, from(Account::getAutoRenewSecs))
-                .returns(0, from(Account::getMaxAutomaticAssociations))
-                .returns(null, from(Account::getProxy)));
+                .returns(AccountDatabaseAccessor.DEFAULT_EXPIRY_TIMESTAMP, Account::getExpiry)
+                .returns(0L, Account::getBalance)
+                .returns(false, Account::isDeleted)
+                .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)
+                .returns(0, Account::getMaxAutomaticAssociations)
+                .returns(null, Account::getProxy));
     }
 
     @Test
@@ -187,7 +186,7 @@ class AccountDatabaseAccessorTest {
         when(nftRepository.countByAccountIdNotDeleted(any())).thenReturn(ownedNfts);
 
         assertThat(accountAccessor.get(ADDRESS))
-                .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, from(Account::getOwnedNfts)));
+                .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
     }
 
     @Test
@@ -210,7 +209,7 @@ class AccountDatabaseAccessorTest {
         allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesMap, from(Account::getCryptoAllowances)));
+                .returns(allowancesMap, Account::getCryptoAllowances));
     }
 
     @Test
@@ -243,7 +242,7 @@ class AccountDatabaseAccessorTest {
                 secondAllowance.getAmount());
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesMap, from(Account::getFungibleTokenAllowances)));
+                .returns(allowancesMap, Account::getFungibleTokenAllowances));
     }
 
     @Test
@@ -268,7 +267,7 @@ class AccountDatabaseAccessorTest {
                 EntityNum.fromLong(secondAllowance.getTokenId()), EntityNum.fromLong(secondAllowance.getSpender())));
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesSet, from(Account::getApproveForAllNfts)));
+                .returns(allowancesSet, Account::getApproveForAllNfts));
     }
 
     @Test
@@ -277,7 +276,7 @@ class AccountDatabaseAccessorTest {
                 .thenReturn(associationsCount);
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, from(Account::getNumAssociations))
-                .returns(POSITIVE_BALANCES, from(Account::getNumPositiveBalances)));
+                .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
+                .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
     }
 }
