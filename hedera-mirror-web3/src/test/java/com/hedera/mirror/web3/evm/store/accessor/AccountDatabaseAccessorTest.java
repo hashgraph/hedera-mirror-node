@@ -45,6 +45,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -155,7 +156,7 @@ class AccountDatabaseAccessorTest {
     void whenExpirationTimestampIsNullThenExpiryIsBasedOnCreatedAndRenewTimestamps() {
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(987L);
-        long expectedExpiry = entity.getCreatedTimestamp() + entity.getAutoRenewPeriod();
+        long expectedExpiry = entity.getCreatedTimestamp() + TimeUnit.SECONDS.toNanos(entity.getAutoRenewPeriod());
 
         assertThat(accountAccessor.get(ADDRESS))
                 .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, Account::getExpiry));

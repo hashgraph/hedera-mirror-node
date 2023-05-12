@@ -40,6 +40,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -51,7 +52,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Named
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
-    public static final long DEFAULT_EXPIRY_TIMESTAMP = Date.valueOf("2100-1-1").getTime() * 1000;
+    public static final long DEFAULT_EXPIRY_TIMESTAMP =
+            TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
 
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
@@ -96,7 +98,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         }
 
         if (entity.getCreatedTimestamp() != null && entity.getAutoRenewPeriod() != null) {
-            return entity.getCreatedTimestamp() + entity.getAutoRenewPeriod();
+            return entity.getCreatedTimestamp() + TimeUnit.SECONDS.toNanos(entity.getAutoRenewPeriod());
         }
 
         return DEFAULT_EXPIRY_TIMESTAMP;
