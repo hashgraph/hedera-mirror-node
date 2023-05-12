@@ -78,7 +78,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                 getExpiration(entity),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
-                getOwnedNfts(entity.toEntityId()),
+                getOwnedNfts(entity.getId()),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(DEFAULT_AUTO_RENEW_PERIOD),
                 idFromEntityId(entity.getProxyAccountId()),
                 Optional.ofNullable(entity.getMaxAutomaticTokenAssociations()).orElse(0),
@@ -102,7 +102,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         return DEFAULT_EXPIRY_TIMESTAMP;
     }
 
-    private long getOwnedNfts(EntityId accountId) {
+    private long getOwnedNfts(Long accountId) {
         return nftRepository.countByAccountIdNotDeleted(accountId);
     }
 

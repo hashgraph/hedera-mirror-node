@@ -58,7 +58,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(secondNft.getId().getTokenId().getId()).deleted(null))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isEqualTo(2);
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isEqualTo(2);
     }
 
     @Test
@@ -72,7 +72,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(deletedNft.getId().getTokenId().getId()))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isZero();
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();
     }
 
     @Test
@@ -85,6 +85,6 @@ class NftRepositoryTest extends Web3IntegrationTest {
                         e -> e.id(deletedEntityNft.getId().getTokenId().getId()).deleted(true))
                 .persist();
 
-        assertThat(nftRepository.countByAccountIdNotDeleted(accountId)).isZero();
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();
     }
 }

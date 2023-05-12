@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import java.util.Optional;
@@ -35,7 +34,7 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
     @Query(
             value = "select count(*) from Nft n "
                     + "join Entity e on e.id = n.token_id "
-                    + "where n.account_id=:#{#accountId.getId()} and n.deleted is false and e.deleted is not true",
+                    + "where n.account_id=:accountId and n.deleted is false and e.deleted is not true",
             nativeQuery = true)
-    long countByAccountIdNotDeleted(EntityId accountId);
+    long countByAccountIdNotDeleted(Long accountId);
 }
