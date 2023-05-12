@@ -263,8 +263,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        var networkPrefix = commonDownloaderProperties.getMirrorProperties().getNetworkPrefix();
         return TEMPLATE_NODE_ID_PREFIX.formatted(
-                getNetworkPrefix(commonDownloaderProperties.getMirrorProperties()),
+                networkPrefix,
                 commonDownloaderProperties.getMirrorProperties().getShard(),
                 consensusNode.getNodeId(),
                 streamFilename.getStreamType().getNodeIdBasedSuffix(),
