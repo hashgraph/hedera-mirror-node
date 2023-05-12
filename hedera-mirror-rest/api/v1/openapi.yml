@@ -1751,11 +1751,6 @@ components:
               $ref: "#/components/schemas/Transactions"
             links:
               $ref: "#/components/schemas/Links"
-    AccountIdOrAliasOrEvmAddress:
-      oneOf:
-        - $ref: "#/components/schemas/Alias"
-        - $ref: "#/components/schemas/EntityId"
-        - $ref: "#/components/schemas/EvmAddress"
     Alias:
       description: RFC4648 no-padding base32 encoded account alias
       type: string
@@ -3628,19 +3623,15 @@ components:
         evmAddressWithShardAndRealm:
           value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
-        $ref: "#/components/schemas/AccountIdOrAliasOrEvmAddress"
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
         type: string
     accountIdOrAliasOrEvmAddressQueryParam:
       name: account.id
       in: query
-      description: Account alias or account id or evm address
+      description: Account id or account alias with no shard realm or evm address with no shard realm
       examples:
         aliasOnly:
           value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
-        realmAlias:
-          value: 0.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
-        shardRealmAlias:
-          value: 0.1.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
         accountNumOnly:
           value: 8
         realmAccountNum:
@@ -3651,10 +3642,8 @@ components:
           value: ac384c53f03855fa1b3616052f8ba32c6c2a2fec
         evmAddressWithPrefix:
           value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
-        evmAddressWithShardAndRealm:
-          value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
-        $ref: "#/components/schemas/AccountIdOrAliasOrEvmAddress"
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
         type: string
     accountBalanceQueryParam:
       name: account.balance

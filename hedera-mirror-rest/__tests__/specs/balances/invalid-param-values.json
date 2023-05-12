@@ -19,16 +19,13 @@
   "tests": [
     {
       "urls": [
-        "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any&token.id=0.0.45678",
-        "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any,&token.id=0.0.45678"
+        "/api/v1/balances?account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any&token.id=0.0.45678",
+        "/api/v1/balances?account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any,&token.id=0.0.45678"
       ],
       "responseStatus": 400,
       "responseJson": {
         "_status": {
           "messages": [
-            {
-              "message": "Invalid parameter: account.id"
-            },
             {
               "message": "Invalid parameter: account.balance"
             },
@@ -52,8 +49,7 @@
       "urls": [
         "/api/v1/balances?account.id=gte:ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "/api/v1/balances?account.id=lt:0xac384c53f03855fa1b3616052f8ba32c6c2a2fff",
-        "/api/v1/balances?account.id=lte:0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
-        "/api/v1/balances?account.id=gte:0x0000000000000000000000000000000000000320",
+        "/api/v1/balances?account.id=gte:0x0000000000000000000000000000000000000008",
         "/api/v1/balances?account.id=lte:KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
       ],
       "responseStatus": 400,
@@ -61,7 +57,8 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid operator. Evm address or alias only supports equals operator."
+              "message": "Invalid parameter: account.id",
+              "detail": "EVM address or alias only supports equals operator"
             }
           ]
         }
@@ -71,16 +68,33 @@
       "urls": [
         "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
-        "/api/v1/balances?account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=0x0000000000000000000000000000000000000009",
-        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
+        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
       ],
       "responseStatus": 400,
       "responseJson": {
         "_status": {
           "messages": [
             {
-              "message": "Only one evm address or alias is allowed."
+              "message": "Invalid parameter: account.id",
+              "detail": "Only one EVM address or alias is allowed."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?account.id=account.id=lte:0.1.2.3",
+        "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "/api/v1/balances?account.id=0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: account.id"
             }
           ]
         }

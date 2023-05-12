@@ -16,10 +16,12 @@
 
 import base32 from './base32';
 import {InvalidArgumentError} from './errors';
+import _ from 'lodash';
 
 // limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
 // the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
 const accountAliasRegex = /^(\d{1,5}\.){0,2}[A-Z2-7]+$/;
+const noShardRealmAccountAliasRegex = /^[A-Z2-7]+$/;
 
 class AccountAlias {
   /**
@@ -50,10 +52,15 @@ class AccountAlias {
   /**
    * Checks if the accountAlias string is valid
    * @param {string} accountAlias
+   * @param {boolean} noShardRealm If shard realm is allowed as a part of the alias.
    * @return {boolean}
    */
-  static isValid(accountAlias) {
-    return typeof accountAlias === 'string' && accountAliasRegex.test(accountAlias);
+  static isValid(accountAlias, noShardRealm = false) {
+    if (_.isEmpty(accountAlias)) {
+      return false;
+    }
+    const regex = noShardRealm ? noShardRealmAccountAliasRegex : accountAliasRegex;
+    return typeof accountAlias === 'string' && regex.test(accountAlias);
   }
 
   /**
