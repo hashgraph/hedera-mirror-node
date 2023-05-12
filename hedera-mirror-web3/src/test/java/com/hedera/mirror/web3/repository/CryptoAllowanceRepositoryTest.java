@@ -18,33 +18,21 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
-    private final TokenAllowanceRepository repository;
+class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Test
-    void findAllowance() {
-        final var tokenAllowance = domainBuilder.tokenAllowance().persist();
+    void findBySpenderAndApprovedForAllIsTrue() {
+        final var allowance = domainBuilder.cryptoAllowance().persist();
 
-        assertThat(repository
-                        .findById(tokenAllowance.getId())
-                        .map(TokenAllowance::getAmount)
-                        .orElse(0L))
-                .isEqualTo(tokenAllowance.getAmount());
-    }
-
-    @Test
-    void findByOwner() {
-        long owner = 22L;
-        final var tokenAllowance =
-                domainBuilder.tokenAllowance().customize(a -> a.owner(owner)).persist();
-
-        assertThat(repository.findByOwner(owner)).hasSize(1).contains(tokenAllowance);
+        assertThat(cryptoAllowanceRepository.findByOwner(allowance.getOwner()))
+                .hasSize(1)
+                .contains(allowance);
     }
 }

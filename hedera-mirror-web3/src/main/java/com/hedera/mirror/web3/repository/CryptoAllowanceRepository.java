@@ -16,21 +16,11 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
-
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance.Id;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import java.util.List;
-import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance, AbstractTokenAllowance.Id> {
-
-    @Override
-    @Cacheable(cacheNames = "token_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<TokenAllowance> findById(Id id);
-
-    List<TokenAllowance> findByOwner(long owner);
+public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowance, AbstractCryptoAllowance.Id> {
+    List<CryptoAllowance> findByOwner(long owner);
 }

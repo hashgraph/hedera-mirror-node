@@ -18,10 +18,12 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +39,37 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
                 .persist();
 
-        assertThat(repository.findById(tokenAccount.getId()).get())
+        assertThat(repository.findById(tokenAccount.getId())).hasValueSatisfying(account -> assertThat(account)
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
                 .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
-                .returns(tokenAccount.getBalance(), TokenAccount::getBalance);
+                .returns(tokenAccount.getBalance(), TokenAccount::getBalance));
+    }
+
+    @Test
+    void countByAccountIdAndAssociatedGroupedByBalanceIsPositive() {
+        long accountId = 22L;
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(true).balance(23).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(true).balance(24).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(true).balance(0).accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(a -> a.associated(false).accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
+                .hasSize(2)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(true, 2), tuple(false, 1));
     }
 }
