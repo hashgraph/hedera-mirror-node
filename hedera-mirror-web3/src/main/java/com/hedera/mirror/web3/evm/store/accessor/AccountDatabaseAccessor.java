@@ -50,6 +50,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
     public static final long DEFAULT_EXPIRY_TIMESTAMP = Date.valueOf("2100-1-1").getTime() * 1000;
+
+    public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
+
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
@@ -73,9 +76,9 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.toEntityId()),
-                Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(Long.MAX_VALUE),
+                Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(DEFAULT_AUTO_RENEW_PERIOD),
                 idFromEntityId(entity.getProxyAccountId()),
-                entity.getMaxAutomaticTokenAssociations(),
+                Optional.ofNullable(entity.getMaxAutomaticTokenAssociations()).orElse(0),
                 getCryptoAllowances(entity.getId()),
                 getFungibleTokenAllowances(entity.getId()),
                 getApproveForAllNfts(entity.getId()),

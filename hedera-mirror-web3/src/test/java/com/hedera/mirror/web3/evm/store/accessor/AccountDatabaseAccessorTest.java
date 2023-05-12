@@ -138,6 +138,7 @@ class AccountDatabaseAccessorTest {
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(null);
         entity.setAutoRenewPeriod(null);
+        entity.setMaxAutomaticTokenAssociations(null);
         entity.setBalance(null);
         entity.setDeleted(null);
         entity.setProxyAccountId(null);
@@ -146,7 +147,8 @@ class AccountDatabaseAccessorTest {
                 .returns(AccountDatabaseAccessor.DEFAULT_EXPIRY_TIMESTAMP, from(Account::getExpiry))
                 .returns(0L, from(Account::getBalance))
                 .returns(false, from(Account::isDeleted))
-                .returns(Long.MAX_VALUE, from(Account::getAutoRenewSecs))
+                .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, from(Account::getAutoRenewSecs))
+                .returns(0, from(Account::getMaxAutomaticAssociations))
                 .returns(null, from(Account::getProxy)));
     }
 
