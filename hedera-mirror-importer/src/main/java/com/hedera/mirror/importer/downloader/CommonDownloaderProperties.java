@@ -64,9 +64,9 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
-    @DurationMin(minutes = 1)
+    @DurationMin(seconds = 1)
     @NotNull
-    private Duration pathRefreshInterval = Duration.ofMinutes(1L);
+    private Duration pathRefreshInterval = Duration.ofSeconds(10L);
 
     @NotNull
     private PathType pathType = PathType.ACCOUNT_ID;

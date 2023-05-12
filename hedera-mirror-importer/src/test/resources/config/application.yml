@@ -12,14 +12,11 @@ hedera:
         username: mirror_importer
       downloader:
         bucketName: test
-        pathRefreshInterval: 1m
-        pathType: NODE_ID
       importHistoricalAccountInfo: false
       migration:
         DUMMYMIGRATION:
           checksum: 5
-      network: OTHER
-      networkPrefix: integration
+      network: TESTNET
       parser:
         exclude:
           - entity: 0.0.999
