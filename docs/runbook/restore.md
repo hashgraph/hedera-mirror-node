@@ -35,15 +35,33 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
     curl -sL "https://<hostname>/api/v1/blocks?limit=1&order=desc" | jq -r '.blocks[0].name'
     2023-05-10T16_38_28.618260003Z.rcd.gz
    ``` 
+4. In the Google Console, click on the database replica and note all the values in the Configuration section. It may be helpful to take a screenshot of the values and to click Edit and view every section in detail as the values will be used to recreate the Replica in step 8. 
 
-4. In the Google Console, restore the database from the backup. Restore to a backup that was created before the invalid data was persisted. 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="replicaConfig.png" width="100" height="150"/>](replicaConfig.png "Google Cloud Replica Config")   
+
+&nbsp;&nbsp;&nbsp;&nbsp;Here is a list of the values in particular that will be needed to recreate the Replica:
+- Region
+- Machine Type: vCPUs and Memory
+- Connections (Public IP checked or unchecked)
+- Data Protection: (Enable deletion protection checked or unchecked)
+- Flags: Each flags and its value
+- Query Insights (Values for each of the checkboxes)
+- Labels
+
+5. In the Google Console Delete the Replica.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="deleteReplica1.png" width="250" height="150"/>](deleteReplica1.png "Google Cloud Replica Delete part 1")
+[<img src="deleteReplica2.png" width="250" height="150"/>](deleteReplica2.png "Google Cloud Replica Delete part 2")
+6. In the Google Console, restore the database from the backup. Restore to a backup that was created before the invalid data was persisted. 
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="backup1.png" width="250"/>](backup1.png "Google Cloud Backups")
 [<img src="backup2.png" width="250"/>](backup2.png "Restore from Backup")
 
-5. After the Restore process has completed verify that the database has been restored by running the command from step 3, it should show that the record file is now at a point in time prior to the invalid data.
+7. After the Restore process has completed verify that the database has been restored by running the command from step 3, it should show that the record file is now at a point in time prior to the invalid data.
 
-6. Restart all pods to clear their cache. The command below will delete all pods in the current namespace.
+8. Create the Replica with the values from step 4. 
+
+9. Restart all pods to clear their cache. The command below will delete all pods in the current namespace.
  
    ```shell
    kubectl delete --all pods
@@ -61,13 +79,13 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
    pod "mirror-web3-7b5444dcb7-ps45v" deleted
     ```
 
-7. Restart the Importer pod.
+10. Restart the Importer pod.
 
    ```shell
    kubectl scale --replicas=1 deployment/mirror-importer
    ```
 
-8. Verify that the Importer is running and processing record files. The log should show the Importer beginning from the last process record file from the restored database.
+11. Verify that the Importer is running and processing record files. The log should show the Importer beginning from the last process record file from the restored database.
 
    ```shell
    [pod/mirror-importer-54c477748d-9kdxr/importer] 2023-05-10T11:04:40.766-0600 INFO main c.h.m.i.MirrorImporterApplication Started MirrorImporterApplication in 16.723 seconds (JVM running for 18.504)
@@ -75,12 +93,12 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
    [pod/mirror-importer-54c477748d-9kdxr/importer] 2023-05-10T11:04:40.945-0600 INFO scheduling-3 c.h.m.i.c.MirrorDateRangePropertiesProcessor BALANCE: downloader will download files in time range (2023-05-05T15:15:00.168045Z, 2262-04-11T23:47:16.854775807Z]
    ```
    
-9. Start the Monitor. 
+12. Start the Monitor. 
 
     ```shell
     kubectl scale --replicas=1 deployment/mirror-monitor
     ```
-10. Get the names of the REST pods for use in step 11.
+13. Get the names of the REST pods for use in step 14.
 
     ```shell
     kubectl get pod -o name | grep rest
@@ -88,16 +106,16 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
     pod/mirror-rest-bb68f656-vqb8g
     ```
 
-11. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
+14. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
 
 - Verify that traffic is being routed to the cluster by looking for the pod name in the logs.
 - Verify that the record file is at a point in time prior to the date of the invalid data.
 
 
-   The REST pods logs should show that the query is being routed to the cluster: 
+&nbsp;The REST pods logs should show that the query is being routed to the cluster: 
    ```shell
    [pod/mirror-rest-bb68f656-j6bwd/rest] 2023-05-10T11:10:10.134Z INFO 06534719 GET /api/v1/blocks?limit=1 in 5 ms: 200
    [pod/mirror-rest-bb68f656-vqb8g/rest] 2023-05-10T11:10:17.183Z INFO 194ee756 GET /api/v1/blocks?limit=1 in 4 ms: 200
    ```
 
-11. Perform these steps on the other cluster.
+15. Perform these steps on the other cluster.
