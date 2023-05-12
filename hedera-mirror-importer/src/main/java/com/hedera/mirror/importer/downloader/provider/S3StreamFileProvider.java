@@ -156,9 +156,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .map(r -> new StreamFileData(
                         streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(s -> {
-                    log.debug("Finished downloading {}", s3Key);
-                });
+                .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
     private ListObjectsV2Request getListObjectsRequest(String prefix, String startAfter, int batchSize) {
