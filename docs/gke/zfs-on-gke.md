@@ -25,6 +25,11 @@ All listed commands with relative paths are assumed to be run from the repositor
 4. Auto upgrade is disabled for the cluster. Special steps need to be taken to ensure the volumes are created
    appropriately
 
+## Security
+
+This guide instructs you to create a service account to initialize nodes running zfs pools. Ensure that this service
+account is limited to only components it needs (query instance metadata, create/list disks)
+
 ## Setup
 
 ### Recommended Resource Requirements
@@ -70,7 +75,9 @@ All listed commands with relative paths are assumed to be run from the repositor
 ## Install
 
 ### Install the ZFS Driver
+
 Before performing these steps, ensure that your kubectl is pointing to the correct cluster `kubectl config get-contexts`
+
 1. `cd charts`
 2. `helm dependency build hedera-mirror-common/`
 3. `helm upgrade --install  mirror ./hedera-mirror-common -f <valuesFile> --create-namespace --namespace common`
@@ -218,13 +225,14 @@ available in the zpool again
 6. Install just citus chart again
 7. Wait for citus to be ready
 8. Kill citus again (we just wanted it to create the new PV and PVCs)
-9. For each new node that comes up, attach the old disk  to the new vm
+9. For each new node that comes up, attach the old disk to the new vm
     1. `gcloud compute instances attach-disk <instanceName> --disk <oldInstanceName>-zfs --zone us-central1-f --project <project>`
-   2. ssh to the node and run `zfs list` take node of the poolnames and pools
-   3. destroy existing pool `sudo zpool destroy <poolName>`
-   4. Now list pools available for import `sudo zpool import`
-   5. perform the import `sudo zpool import <poolname> -f`
-   6. rename the imported pool to match the name of the one previously destroyed `sudo zfs rename <poolName>/<pvcId> to <poolName>/<idShownInStep2>`
+    2. ssh to the node and run `zfs list` take node of the poolnames and pools
+    3. destroy existing pool `sudo zpool destroy <poolName>`
+    4. Now list pools available for import `sudo zpool import`
+    5. perform the import `sudo zpool import <poolname> -f`
+    6. rename the imported pool to match the name of the one previously
+       destroyed `sudo zfs rename <poolName>/<pvcId> to <poolName>/<idShownInStep2>`
 10. Ready to deploy all charts
 
 ## Used dependencies
