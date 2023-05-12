@@ -296,6 +296,7 @@ public class DomainBuilder {
                 .senderId(entityId(ACCOUNT))
                 .transactionHash(bytes(32))
                 .transactionIndex(1)
+                .transactionNonce(0)
                 .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }

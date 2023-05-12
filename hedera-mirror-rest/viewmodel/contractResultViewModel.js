@@ -15,6 +15,8 @@
  */
 
 import _ from 'lodash';
+
+import * as constants from '../constants';
 import EntityId from '../entityId';
 import {nsToSecNs, toHexString} from '../utils';
 
@@ -33,7 +35,7 @@ class ContractResultViewModel {
       ? toHexString(contractResult.evmAddress, true)
       : contractId.toEvmAddress();
     this.amount = contractResult.amount;
-    this.bloom = toHexString(contractResult.bloom, true);
+    this.bloom = !_.isEmpty(contractResult.bloom) ? toHexString(contractResult.bloom, true) : constants.EMPTY_BLOOM;
     this.call_result = toHexString(contractResult.callResult, true);
     this.contract_id = contractId.toString();
     this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());

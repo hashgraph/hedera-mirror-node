@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -42,6 +43,7 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,8 @@ import lombok.extern.log4j.Log4j2;
 @Named
 @RequiredArgsConstructor
 public class ContractResultServiceImpl implements ContractResultService {
+
+    private static final byte[] EMPTY = new byte[0];
 
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
@@ -80,7 +84,17 @@ public class ContractResultServiceImpl implements ContractResultService {
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
-            // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
+            var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+            if (!recordItem.isSuccessful()
+                    && status != ResponseCodeEnum.DUPLICATE_TRANSACTION
+                    && status != ResponseCodeEnum.WRONG_NONCE
+                    && transactionBody.hasEthereumTransaction()) {
+                // if it's a failed ethereum transaction with no contract result and the failure is not duplicate
+                // transaction or wrong nonce, create a default one
+                addDefaultContractResult(recordItem.getEthereumTransaction(), transaction);
+            }
+
+            // skip any other transaction which is neither a create/call and has no valid ContractFunctionResult
             return;
         }
 
@@ -104,6 +118,24 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         processContractResult(
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
+    }
+
+    private void addDefaultContractResult(EthereumTransaction ethereumTransaction, Transaction transaction) {
+        var functionParameters = ethereumTransaction.getCallData() != null ? ethereumTransaction.getCallData() : EMPTY;
+        var contractResult = ContractResult.builder()
+                .callResult(EMPTY)
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .contractId(0)
+                .functionParameters(functionParameters)
+                .gasLimit(ethereumTransaction.getGasLimit())
+                .gasUsed(0L)
+                .payerAccountId(transaction.getPayerAccountId())
+                .transactionHash(ethereumTransaction.getHash())
+                .transactionIndex(transaction.getIndex())
+                .transactionNonce(transaction.getNonce())
+                .transactionResult(transaction.getResult())
+                .build();
+        entityListener.onContractResult(contractResult);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
