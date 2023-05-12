@@ -20,5 +20,5 @@ public interface TokenAccountAssociationsCount {
 
     Integer getTokenCount();
 
-    Boolean getIsPositiveBalance();
+    boolean getIsPositiveBalance();
 }

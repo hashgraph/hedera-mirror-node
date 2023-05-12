@@ -102,7 +102,7 @@ class AccountDatabaseAccessorTest {
                 }
 
                 @Override
-                public Boolean getIsPositiveBalance() {
+                public boolean getIsPositiveBalance() {
                     return true;
                 }
             },
@@ -113,7 +113,7 @@ class AccountDatabaseAccessorTest {
                 }
 
                 @Override
-                public Boolean getIsPositiveBalance() {
+                public boolean getIsPositiveBalance() {
                     return false;
                 }
             });

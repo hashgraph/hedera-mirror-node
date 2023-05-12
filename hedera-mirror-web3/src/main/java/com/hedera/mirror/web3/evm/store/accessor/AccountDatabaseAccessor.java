@@ -147,7 +147,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
 
     private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {
         final var counts = tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId);
-        int all = 0, positive = 0;
+        int all = 0;
+        int positive = 0;
 
         for (TokenAccountAssociationsCount count : counts) {
             if (count.getIsPositiveBalance()) {
