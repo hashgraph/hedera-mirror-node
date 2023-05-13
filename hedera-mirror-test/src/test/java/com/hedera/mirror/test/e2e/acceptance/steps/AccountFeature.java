@@ -150,14 +150,14 @@ public class AccountFeature extends AbstractFeature {
         setCryptoAllowance(accountName, amount);
     }
 
-    @When("{string} transfers {long} tℏ from their approved balance to {string}")
-    public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
+    @When("I transfer {long} tℏ from {string}'s approved balance to {string}")
+    public void transferFromAllowance(long amount, String senderAccountName, String receiverAccountName) {
+        ExpandedAccountId ownerExpandedId = accountClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName))
                 .getAccountId();
         networkTransactionResponse =
-                accountClient.sendApprovedCryptoTransfer(senderAccountId, receiverAccountId, Hbar.fromTinybars(amount));
+                accountClient.sendApprovedCryptoTransfer(ownerExpandedId, receiverAccountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
