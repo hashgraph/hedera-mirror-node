@@ -52,8 +52,7 @@ class TransactionService extends BaseService {
     ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
     ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
     ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
-    ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)},
-    ${Transaction.getFullName(Transaction.RESULT)}
+    ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}
   from ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
   join ${Transaction.tableName} ${Transaction.tableAlias}
   on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} =
