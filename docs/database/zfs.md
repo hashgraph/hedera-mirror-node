@@ -14,9 +14,9 @@ All listed commands with relative paths are assumed to be run from the repositor
 
 ### GKE Requirements
 
-1. all the nodes must have zfs utils installed (handled by installing the common helm chart with zfs enabled)
-2. The zpool has been set up for provisioning the volume (handled by installing the common helm chart with zfs enabled)
-3. !Important! Node pools that have zfs volumes need to have a service account configured that allows them permission to
+1. all the nodes must have ZFS utils installed (handled by installing the common helm chart with ZFS enabled)
+2. The zpool has been set up for provisioning the volume (handled by installing the common helm chart with ZFS enabled)
+3. !Important! Node pools that have ZFS volumes need to have a service account configured that allows them permission to
    create and attach disks. The daemonset included in the helm chart performs this process.
     1. This can be done using the default service account for testing and just enabling the following
        scope `--scopes "https://www.googleapis.com/auth/cloud-platform"`
@@ -27,19 +27,10 @@ All listed commands with relative paths are assumed to be run from the repositor
 
 ## Security
 
-This guide instructs you to create a service account to initialize nodes running zfs pools. Ensure that this service
+This guide instructs you to create a service account to initialize nodes running ZFS pools. Ensure that this service
 account is limited to only components it needs (query instance metadata, create/list disks)
 
 ## Setup
-
-### Recommended Resource Requirements
-
-#### Node Pools
-
-| Category          | CPU | Memory | Attached Disk Size (Balanced-PD) |
-|-------------------|-----|--------|----------------------------------|
-| Citus Coordinator | 4   | 16GB   | 152GB                            |
-| Citus Worker      | 8   | 32GB   | 1.25TB                           |
 
 ### Infrastructure
 
@@ -55,7 +46,7 @@ account is limited to only components it needs (query instance metadata, create/
          value: "true"
          effect: NoSchedule
        nodeSelector:
-         citus-role: primary
+         citus-role: coordinator
          csi-type: zfs
           ```
     2. Create a node pool specific for the worker node(s)
@@ -81,13 +72,13 @@ Before performing these steps, ensure that your kubectl is pointing to the corre
 1. `cd charts`
 2. `helm dependency build hedera-mirror-common/`
 3. `helm upgrade --install  mirror ./hedera-mirror-common -f <valuesFile> --create-namespace --namespace common`
-4. Update the openebs CRDs (You can skip this step if you plan to not use zstd compression)
+4. Update the openEBS CRDs (You can skip this step if you plan to not use zstd compression)
     1. edit the compression regex to include zstd compression `zstd|zstd-[1-9]|zstd-1[0-9]`
         1. `kubectl edit crd zfsvolumes.zfs.openebs.io`
         2. `kubectl edit crd zfsrestores.zfs.openebs.io`
         3. `kubectl edit crd zfssnapshots.zfs.openebs.io`
 
-#### values.yaml (zfs components only)
+#### values.yaml
 
 ```yaml
 zfs:
@@ -113,21 +104,6 @@ zfs:
         operator: Equal
         value: "true"
         effect: NoSchedule
-
-loki:
-  enabled: false
-
-prometheus:
-  enabled: false
-
-prometheus-adapter:
-  enabled: false
-
-promtail:
-  enabled: false
-
-traefik:
-  enabled: false
 ```
 
 ### Install Citus
@@ -143,14 +119,14 @@ citus:
   enabled: true
   primary:
     nodeSelector:
-      citus-role: primary
+      citus-role: coordinator
     tolerations:
       - key: zfs
         operator: Equal
         value: "true"
         effect: NoSchedule
     persistence:
-      storageClass: openebs-zfspv
+      storageClass: zfs
       size: 128Gi
     resources:
       requests:
@@ -169,7 +145,7 @@ citus:
         cpu: 4
         memory: 16Gi
     persistence:
-      storageClass: openebs-zfspv
+      storageClass: zfs
       size: 1124Gi
     replicaCount: 3
 
@@ -204,7 +180,7 @@ guide [here](https://github.com/openebs/zfs-localpv#4-zfs-property-change)
 
 1. Identify your pvc `kubectl get pvc -n <namespace>`
 2. Identify your zv by matching the pvc `kubectl get zv --all-namespaces`
-3. Edit the parameters on the zv `kubectl edit zv -n openebs <zvName>`
+3. Edit the parameters on the zv `kubectl edit zv -n <namespace> <zvName>`
 
 ### Deleting a pool on a node
 
@@ -215,13 +191,13 @@ available in the zpool again
 
 ### GKE Cluster Upgrade
 
-1. Take note of where pods using the zfs volumes are being scheduled. You will need to know the node a particular
+1. Take note of where pods using the ZFS volumes are being scheduled. You will need to know the node a particular
    worker/coordinator was scheduled on and what zone it is in.
 2. Uninstall citus chart and any services that depend on it.
-3. Delete the zfs persistent volumes and persistent volume claims that are relevant to the decommissioned nodes
+3. Delete the ZFS persistent volumes and persistent volume claims that are relevant to the decommissioned nodes
 4. Follow the steps [here](https://cloud.google.com/kubernetes-engine/docs/how-to/upgrading-a-cluster#upgrading-nodes)
    to perform the upgrade of the cluster and node pools
-5. Wait for the new nodes to come up and for the init containers to install zfs tools on the new nodes
+5. Wait for the new nodes to come up and for the init containers to install ZFS tools on the new nodes
 6. Install just citus chart again
 7. Wait for citus to be ready
 8. Kill citus again (we just wanted it to create the new PV and PVCs)
