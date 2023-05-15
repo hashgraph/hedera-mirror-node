@@ -32,7 +32,7 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.22.4")
+    set("protobufVersion", "3.23.0")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.3.2")
