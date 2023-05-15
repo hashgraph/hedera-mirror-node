@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-
 import EntityId from '../entityId';
 import {nsToSecNs, toHexString} from '../utils';
 
