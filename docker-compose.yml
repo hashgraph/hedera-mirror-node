@@ -109,7 +109,6 @@ services:
     pull_policy: always
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
-      HEDERA_MIRROR_REST_LOG_LEVEL: TRACE
     ports:
       - 5551:5551
     restart: unless-stopped
