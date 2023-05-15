@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -37,5 +37,14 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .map(TokenAllowance::getAmount)
                         .orElse(0L))
                 .isEqualTo(tokenAllowance.getAmount());
+    }
+
+    @Test
+    void findByOwner() {
+        long owner = 22L;
+        final var tokenAllowance =
+                domainBuilder.tokenAllowance().customize(a -> a.owner(owner)).persist();
+
+        assertThat(repository.findByOwner(owner)).hasSize(1).contains(tokenAllowance);
     }
 }

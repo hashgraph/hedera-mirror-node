@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+import AccountAlias from './accountAlias.js';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
+import {EntityService} from './service/index.js';
+import {EvmAddressType} from './constants';
+import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
@@ -72,10 +76,11 @@ const entityJoin = `join (select id, public_key from entity where type in ('ACCO
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  utils.validateReq(req, acceptedBalancesParameters);
+  utils.validateReq(req, acceptedBalancesParameters, balanceFilterValidator);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
-  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const [accountQuery, accountParamsPromise] = parseAccountIdQueryParam(req.query, 'ab.account_id');
+  const accountParams = await Promise.all(accountParamsPromise);
   // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
   let [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'consensus_timestamp', {
     [utils.opsMap.eq]: utils.opsMap.lte,
@@ -184,6 +189,51 @@ const getTokenAccountBalanceSubQuery = (order) => {
       order by token_id ${order}
       limit ${tokenBalanceLimit.multipleAccounts}
     ) as account_token_balance`;
+};
+
+const parseAccountIdQueryParam = (query, columnName) => {
+  let evmAliasAddressCount = 0;
+  return utils.parseParams(
+    query[constants.filterKeys.ACCOUNT_ID],
+    (value) => {
+      if (EntityId.isValidEntityId(value, false)) {
+        return EntityId.parse(value).getEncodedId();
+      }
+      if (EntityId.isValidEvmAddress(value, EvmAddressType.NO_SHARD_REALM) && ++evmAliasAddressCount === 1) {
+        return EntityService.getEncodedId(value);
+      }
+      if (AccountAlias.isValid(value, true) && ++evmAliasAddressCount === 1) {
+        return EntityService.getAccountIdFromAlias(AccountAlias.fromString(value));
+      }
+
+      if (evmAliasAddressCount > 1) {
+        throw new InvalidArgumentError({
+          message: `Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`,
+          detail: `Only one EVM address or alias is allowed.`,
+        });
+      }
+      throw new InvalidArgumentError(`Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`);
+    },
+    (op, value) => {
+      if (evmAliasAddressCount > 0 && op !== utils.opsMap.eq) {
+        throw new InvalidArgumentError({
+          message: `Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`,
+          detail: `EVM address or alias only supports equals operator`,
+        });
+      }
+
+      return Array.isArray(value)
+        ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
+        : [`${columnName}${op}?`, [value]];
+    },
+    true
+  );
+};
+
+const balanceFilterValidator = (param, op, val) => {
+  return param === constants.filterKeys.ACCOUNT_ID
+    ? utils.validateOpAndValue(op, val)
+    : utils.filterValidityChecks(param, op, val);
 };
 
 const acceptedBalancesParameters = new Set([

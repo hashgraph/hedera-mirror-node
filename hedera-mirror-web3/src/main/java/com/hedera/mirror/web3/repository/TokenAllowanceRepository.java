@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_T
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance.Id;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
@@ -30,4 +31,6 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
     @Override
     @Cacheable(cacheNames = "token_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<TokenAllowance> findById(Id id);
+
+    List<TokenAllowance> findByOwner(long owner);
 }

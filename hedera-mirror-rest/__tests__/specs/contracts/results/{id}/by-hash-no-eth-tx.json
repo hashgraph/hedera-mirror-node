@@ -15,8 +15,9 @@
         "payer_account_id": 8001,
         "sender_id": 8001,
         "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-        "transaction_result": 22,
-        "transaction_index": 1
+        "transaction_index": 1,
+        "transaction_nonce": 0,
+        "transaction_result": 22
       }
     ],
     "contractlogs": [
@@ -59,15 +60,6 @@
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": 167654000123456,
-        "payerAccountId": "8001",
-        "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb639200000000000000000000000000000000",
-        "type": 7,
-        "valid_start_timestamp": 167654000123400
       }
     ]
   },

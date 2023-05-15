@@ -102,6 +102,11 @@ class HexValidatorTest {
             public long minLength() {
                 return minLength;
             }
+
+            @Override
+            public boolean allowEmpty() {
+                return false;
+            }
         };
     }
 }

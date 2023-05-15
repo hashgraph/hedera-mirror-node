@@ -46,6 +46,7 @@ class ContractResult {
   static SENDER_ID = 'sender_id';
   static TRANSACTION_HASH = 'transaction_hash';
   static TRANSACTION_INDEX = 'transaction_index';
+  static TRANSACTION_NONCE = 'transaction_nonce';
   static TRANSACTION_RESULT = 'transaction_result';
 
   /**

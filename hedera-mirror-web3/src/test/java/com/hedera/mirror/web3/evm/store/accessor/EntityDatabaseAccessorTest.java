@@ -16,22 +16,50 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.Web3IntegrationTest;
-import lombok.RequiredArgsConstructor;
+import com.hedera.mirror.web3.repository.EntityRepository;
+import java.util.Optional;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class EntityDatabaseAccessorTest extends Web3IntegrationTest {
+@ExtendWith(MockitoExtension.class)
+class EntityDatabaseAccessorTest {
+    private static final String HEX = "0x00000000000000000000000000000000000004e4";
+    private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
+    private static final Address ADDRESS = Address.fromHexString(HEX);
+    private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
 
-    private final EntityDatabaseAccessor entityDatabaseAccessor;
+    private static final Entity entity = mock(Entity.class);
+
+    @InjectMocks
+    private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @Mock
+    private EntityRepository entityRepository;
 
     @Test
-    void testGet() {
-        Entity entity = domainBuilder.entity().persist();
-        assertThat(entityDatabaseAccessor.get(entity.getId())).get().isEqualTo(entity);
+    void getEntityByAddress() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+
+        entityDatabaseAccessor.get(ADDRESS);
+
+        verify(entityRepository).findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS));
+    }
+
+    @Test
+    void getEntityByAlias() {
+        entityDatabaseAccessor.get(ALIAS_ADDRESS);
+
+        verify(entityRepository).findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe());
     }
 }

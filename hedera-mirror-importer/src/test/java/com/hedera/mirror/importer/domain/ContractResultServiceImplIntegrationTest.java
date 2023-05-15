@@ -175,8 +175,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, true);
-        assertContractLogs(recordItem, true);
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
         assertThat(contractRepository.count()).isZero();
@@ -459,19 +459,12 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @SuppressWarnings("deprecation")
     private void assertContractResult(RecordItem recordItem) {
-        assertContractResult(recordItem, false);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void assertContractResult(RecordItem recordItem, boolean ethereum) {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList().stream()
                 .map(x -> EntityId.of(x).getId())
                 .collect(Collectors.toList());
         var failedInitcode = getFailedInitcode(recordItem);
-        var hash = ethereum
-                ? recordItem.getEthereumTransaction().getHash()
-                : Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+        var hash = getTransactionHash(recordItem);
 
         assertThat(contractResultRepository.findAll())
                 .hasSize(1)
@@ -485,6 +478,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed)
                 .returns(toBytes(failedInitcode), ContractResult::getFailedInitcode)
                 .returns(transaction.getIndex(), ContractResult::getTransactionIndex)
+                .returns(transaction.getNonce(), ContractResult::getTransactionNonce)
                 .returns(transaction.getResult(), ContractResult::getTransactionResult)
                 .extracting(ContractResult::getTransactionHash, InstanceOfAssertFactories.BYTE_ARRAY)
                 .hasSize(32)
@@ -553,16 +547,16 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .containsAll(expected);
     }
 
-    private void assertContractLogs(RecordItem recordItem) {
-        assertContractLogs(recordItem, false);
+    private byte[] getTransactionHash(RecordItem recordItem) {
+        return recordItem.getEthereumTransaction() == null
+                ? Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32)
+                : recordItem.getEthereumTransaction().getHash();
     }
 
-    private void assertContractLogs(RecordItem recordItem, boolean ethereum) {
+    private void assertContractLogs(RecordItem recordItem) {
         var contractFunctionResult = getFunctionResult(recordItem);
         var listAssert = assertThat(contractLogRepository.findAll()).hasSize(contractFunctionResult.getLogInfoCount());
-        var transactionHash = ethereum
-                ? recordItem.getEthereumTransaction().getHash()
-                : Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+        var transactionHash = getTransactionHash(recordItem);
         Integer transactionIndex = transaction.getIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {

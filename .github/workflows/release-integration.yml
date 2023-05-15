@@ -8,7 +8,7 @@ jobs:
   publish:
     strategy:
       matrix:
-        module: [ graphql, grpc, importer, monitor, rest, rest-monitor, rosetta, web3 ]
+        module: [ graphql, grpc, importer, monitor, rest, rest-monitor, rosetta, test, web3 ]
     env:
       CONTEXT: hedera-mirror-${{ matrix.module }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}

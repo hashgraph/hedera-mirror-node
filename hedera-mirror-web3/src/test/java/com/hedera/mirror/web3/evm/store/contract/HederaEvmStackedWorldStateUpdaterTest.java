@@ -66,10 +66,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void accountTests() {
-        when(updater.getForMutation(address)).thenReturn(updatedHederaEvmAccount);
         updatedHederaEvmAccount.setBalance(Wei.of(100));
-        assertThat(subject.createAccount(address, 1, Wei.ONE)).isNull();
-        assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.of(100L));
+        assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
+        assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();
         assertThat(subject.getDeletedAccountAddresses()).isEmpty();
         subject.commit();

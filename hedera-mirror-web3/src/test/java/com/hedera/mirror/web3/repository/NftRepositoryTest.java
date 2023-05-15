@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NftRepositoryTest extends Web3IntegrationTest {
+    private final EntityId accountId = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
     private final NftRepository nftRepository;
 
     @Test
@@ -35,9 +36,55 @@ class NftRepositoryTest extends Web3IntegrationTest {
         final var spender = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
         final var nft = domainBuilder.nft().customize(n -> n.spender(spender)).persist();
 
-        assertThat(nftRepository.findById(nft.getId()).get())
+        assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
                 .returns(nft.getSpender(), Nft::getSpender)
                 .returns(nft.getAccountId(), Nft::getAccountId)
-                .returns(nft.getMetadata(), Nft::getMetadata);
+                .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
+    void countByAccountIdNotDeleted() {
+        final var firstNft =
+                domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(firstNft.getId().getTokenId().getId()))
+                .persist();
+
+        final var secondNft =
+                domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(secondNft.getId().getTokenId().getId()).deleted(null))
+                .persist();
+
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isEqualTo(2);
+    }
+
+    @Test
+    void countByAccountIdNotDeletedShouldNotCountDeletedNft() {
+        final var deletedNft = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(accountId).deleted(true))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(deletedNft.getId().getTokenId().getId()))
+                .persist();
+
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();
+    }
+
+    @Test
+    void countByAccountIdNotDeletedShouldNotCountDeletedEntity() {
+        final var deletedEntityNft =
+                domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
+        domainBuilder
+                .entity()
+                .customize(
+                        e -> e.id(deletedEntityNft.getId().getTokenId().getId()).deleted(true))
+                .persist();
+
+        assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();
     }
 }

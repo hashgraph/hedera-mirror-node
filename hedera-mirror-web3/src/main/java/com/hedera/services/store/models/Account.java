@@ -194,6 +194,10 @@ public class Account extends HederaEvmAccount {
         return approveForAllNfts;
     }
 
+    public int getNumAssociations() {
+        return numAssociations;
+    }
+
     public int getNumTreasuryTitles() {
         return numTreasuryTitles;
     }

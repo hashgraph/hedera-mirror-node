@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_T
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
@@ -29,4 +30,6 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     @Override
     @Cacheable(cacheNames = "nft_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<NftAllowance> findById(Id id);
+
+    List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 }

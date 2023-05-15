@@ -48,8 +48,6 @@ public class MirrorProperties {
 
     private Path initialAddressBook;
 
-    private boolean leaderElection = false;
-
     @NotNull
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
