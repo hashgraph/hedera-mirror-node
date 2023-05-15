@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.TracingProperties;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,6 +43,9 @@ class MirrorOperationTracerTest {
     @Mock
     private TracingProperties tracingProperties;
 
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private MirrorOperationTracer mirrorOperationTracer;
 
     private static final Address contract = Address.fromHexString("0x2");
@@ -52,7 +56,7 @@ class MirrorOperationTracerTest {
 
     @Test
     void tracePostExecution(CapturedOutput output) {
-        mirrorOperationTracer = new MirrorOperationTracer(tracingProperties);
+        mirrorOperationTracer = new MirrorOperationTracer(tracingProperties, mirrorEvmContractAliases);
         given(tracingProperties.isEnabled()).willReturn(true);
 
         final var topLevelMessageFrame = mock(MessageFrame.class);
@@ -62,13 +66,14 @@ class MirrorOperationTracerTest {
         given(topLevelMessageFrame.getRecipientAddress()).willReturn(recipient);
         given(topLevelMessageFrame.getSenderAddress()).willReturn(sender);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
 
         mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
         assertThat(output)
                 .contains(
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=Mock for MessageFrame",
-                        "inputData=inputData",
+                        "inputData=0x696e70757444617461",
                         "callDepth=0",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",

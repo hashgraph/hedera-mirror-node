@@ -16,8 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.TracingProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +34,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
     private final TracingProperties tracingProperties;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
@@ -46,16 +46,15 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
         }
 
         final var recipientAddress = currentFrame.getRecipientAddress();
-        final var recipientNum = entityIdNumFromEvmAddress(recipientAddress);
+        final var recipientNum = mirrorEvmContractAliases.resolveForEvm(recipientAddress);
 
         if (tracingProperties.contractFilterCheck(recipientNum)) {
             return;
         }
 
-        final var inputData = new String(
-                currentFrame.getInputData() != null
-                        ? currentFrame.getInputData().toArray()
-                        : new byte[0]);
+        final var inputData = currentFrame.getInputData() != null
+                ? currentFrame.getInputData().toHexString()
+                : "0x";
 
         log.info(
                 "messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
