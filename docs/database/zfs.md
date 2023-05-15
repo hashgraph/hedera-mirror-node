@@ -83,27 +83,6 @@ Before performing these steps, ensure that your kubectl is pointing to the corre
 ```yaml
 zfs:
   enabled: true
-  parameters:
-    recordsize: 32k
-    fstype: zfs
-    poolname: zfspv-pool
-    compression: zstd-6
-  zfsController:
-    nodeSelector:
-      csi-type: zfs
-    tolerations:
-      - key: zfs
-        operator: Equal
-        value: "true"
-        effect: NoSchedule
-  zfsNode:
-    nodeSelector:
-      csi-type: zfs
-    tolerations:
-      - key: zfs
-        operator: Equal
-        value: "true"
-        effect: NoSchedule
 ```
 
 ### Install Citus

@@ -4,7 +4,8 @@ kind: ConfigMap
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
     app: zfs-init
-  name: entrypoint
+  name: node-init-entrypoint
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
 data:
   entrypoint.sh: |
     #!/usr/bin/env bash
@@ -23,8 +24,11 @@ data:
     echo "Installing gcloud SDK"
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 467B942D3A79BD29
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
-     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-     apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-cli -y
+     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+     apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - 
+    apt-get update -y
+    apt-get install google-cloud-cli -y
 
     echo "Getting node metadata"
     NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')"

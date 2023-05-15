@@ -5,6 +5,7 @@ metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
     app: zfs-init
   name: node-initializer
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
 spec:
   selector:
     matchLabels:
@@ -34,14 +35,14 @@ spec:
           volumeMounts:
             - name: root-mount
               mountPath: /root
-            - name: entrypoint
+            - name: node-init-entrypoint
               mountPath: /scripts
       nodeSelector: {{ toYaml .Values.zfs.zfsNode.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.zfs.zfsNode.tolerations | nindent 8 }}
       volumes:
-        - name: entrypoint
+        - name: node-init-entrypoint
           configMap:
-            name: entrypoint
+            name: node-init-entrypoint
             defaultMode: 0744
         - name: root-mount
           hostPath:
