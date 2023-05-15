@@ -35,11 +35,12 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
     curl -sL "https://<hostname>/api/v1/blocks?limit=1&order=desc" | jq -r '.blocks[0].name'
     2023-05-10T16_38_28.618260003Z.rcd.gz
    ``` 
-4. In the Google Console, click on the database replica and note all the values in the Configuration section. It may be helpful to take a screenshot of the values and to click Edit and view every section in detail as the values will be used to recreate the Replica in step 8. 
+4. In the Google Console, click on the database replica and note all the values in the <i>Configuration</i> section and the IP in the <i>Connect to this instance</i> section. It may be helpful to take a screenshot of the values and to click Edit and view every section in detail as the values will be used to recreate the Replica in step 8. 
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="replicaConfig.png" width="100" height="150"/>](replicaConfig.png "Google Cloud Replica Config")   
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="replicaConfig.png"/>](replicaConfig.png "Google Cloud Replica Config")   
 
 &nbsp;&nbsp;&nbsp;&nbsp;Here is a list of the values in particular that will be needed to recreate the Replica:
+- IP - Note the IP. If it is not the same after the Replica is recreated than any config using the old IP will need to be updated.
 - Region
 - Machine Type: vCPUs and Memory
 - Connections (Public IP checked or unchecked)
@@ -48,14 +49,15 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
 - Query Insights (Values for each of the checkboxes)
 - Labels
 
-5. In the Google Console Delete the Replica.
+5. In the Google Console Delete the Replica by clicking the Delete button at the top of the page and then confirming the deletion in the next window.
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="deleteReplica1.png" width="250" height="150"/>](deleteReplica1.png "Google Cloud Replica Delete part 1")
-[<img src="deleteReplica2.png" width="250" height="150"/>](deleteReplica2.png "Google Cloud Replica Delete part 2")
+[<img src="deleteReplica1.png"/>](deleteReplica1.png "Google Cloud Replica Delete part 1")
+[<img src="deleteReplica2.png"/>](deleteReplica2.png "Google Cloud Replica Delete part 2")
+
 6. In the Google Console, restore the database from the backup. Restore to a backup that was created before the invalid data was persisted. 
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="backup1.png" width="250"/>](backup1.png "Google Cloud Backups")
-[<img src="backup2.png" width="250"/>](backup2.png "Restore from Backup")
+[<img src="backup1.png"/>](backup1.png "Google Cloud Backups")
+[<img src="backup2.png"/>](backup2.png "Restore from Backup")
 
 7. After the Restore process has completed verify that the database has been restored by running the command from step 3, it should show that the record file is now at a point in time prior to the invalid data.
 
@@ -98,24 +100,15 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
     ```shell
     kubectl scale --replicas=1 deployment/mirror-monitor
     ```
-13. Get the names of the REST pods for use in step 14.
 
-    ```shell
-    kubectl get pod -o name | grep rest
-    pod/mirror-rest-bb68f656-j6bwd
-    pod/mirror-rest-bb68f656-vqb8g
-    ```
+13. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
 
-14. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
-
-- Verify that traffic is being routed to the cluster by looking for the pod name in the logs.
+- Verify that traffic is being routed to the cluster by looking at the pod names in the logs.
 - Verify that the record file is at a point in time prior to the date of the invalid data.
 
-
-&nbsp;The REST pods logs should show that the query is being routed to the cluster: 
    ```shell
-   [pod/mirror-rest-bb68f656-j6bwd/rest] 2023-05-10T11:10:10.134Z INFO 06534719 GET /api/v1/blocks?limit=1 in 5 ms: 200
-   [pod/mirror-rest-bb68f656-vqb8g/rest] 2023-05-10T11:10:17.183Z INFO 194ee756 GET /api/v1/blocks?limit=1 in 4 ms: 200
+   kubectl logs -f --prefix -l app.kubernetes.io/name=rest
+   [pod/mirror-rest-bb68f656-h8vhv/rest] 2023-05-10T11:09:14.497Z INFO 1ad53fb6 ::ffff:10.4.11.226 GET /api/v1/blocks/871774 in 3 ms: 200
    ```
 
-15. Perform these steps on the other cluster.
+14. Perform these steps on the other cluster.
