@@ -101,14 +101,33 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
     kubectl scale --replicas=1 deployment/mirror-monitor
     ```
 
-13. Watch the logs of the REST pods while querying the REST API multiple times with the command from step 3. 
+13. Watch the logs of the REST pods while querying the REST API multiple times. 
 
 - Verify that traffic is being routed to the cluster by looking at the pod names in the logs.
 - Verify that the record file is at a point in time prior to the date of the invalid data.
 
+
+   This can be setup in three terminals:
+
+   13.1. In terminal 1 initiate port forwarding to the REST service:
+   ```shell
+   kubectl port-forward service/mirror-rest 8080:80   
+   ```
+   13.2. In terminal 2 output the REST logs:
    ```shell
    kubectl logs -f --prefix -l app.kubernetes.io/name=rest
-   [pod/mirror-rest-bb68f656-h8vhv/rest] 2023-05-10T11:09:14.497Z INFO 1ad53fb6 ::ffff:10.4.11.226 GET /api/v1/blocks/871774 in 3 ms: 200
+   ```
+   13.3. In terminal 3 query the REST API multiple times through the port forward:
+   ```shell
+   curl -sL "http://localhost:8080/api/v1/blocks?limit=1&order=desc" | jq -r '.blocks[0].name'
+   2023-05-05T15_35_28.044896003Z.rcd.gz
+   ```
+
+   The logs in terminal 2 should show the traffic being routed to the REST pods: 
+   ```shell
+   [pod/mirror-rest-bb68f656-h8vhv/rest] 2023-05-10T11:01:24.827Z INFO 1ad53fb6 ::ffff:127.0.0.1 GET /api/v1/blocks?limit=1&order=desc in 3 ms: 200
+   [pod/mirror-rest-bb68f656-rwdx9/rest] 2023-05-10T11:01:25.433Z INFO ad06c293 ::ffff:127.0.0.1 GET /api/v1/blocks?limit=1&order=desc in 3 ms: 200
+   [pod/mirror-rest-bb68f656-rwdx9/rest] 2023-05-10T11:01:26.063Z INFO 83d6cafe ::ffff:127.0.0.1 GET /api/v1/blocks?limit=1&order=desc in 2 ms: 200
    ```
 
 14. Perform these steps on the other cluster.
