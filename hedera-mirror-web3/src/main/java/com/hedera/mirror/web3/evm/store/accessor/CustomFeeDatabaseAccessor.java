@@ -26,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<CustomFee>> {
+public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<CustomFee>> {
 
     private final CustomFeeRepository customFeeRepository;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Long key) {
-        return Optional.ofNullable(customFeeRepository.findByTokenId(key));
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object key) {
+        return Optional.ofNullable(customFeeRepository.findByTokenId((Long) key));
     }
 }

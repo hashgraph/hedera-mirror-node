@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import javax.inject.Named;
@@ -29,11 +30,15 @@ import org.jetbrains.annotations.NotNull;
 
 @Named
 @RequiredArgsConstructor
-public class EntityDatabaseAccessor extends DatabaseAccessor<Address, Entity> {
+public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Address address) {
+    public @NotNull Optional<Entity> get(@NotNull Object key) {
+        if (key instanceof EntityId) {
+            return entityRepository.findByIdAndDeletedIsFalse(((EntityId) key).getId());
+        }
+        var address = (Address) key;
         var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdNumFromEvmAddress(address);

@@ -23,17 +23,20 @@ import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.accessor.*;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.mirror.web3.repository.*;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import java.time.Instant;
+import java.util.List;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,15 +45,29 @@ import org.hyperledger.besu.datatypes.Address;
 @SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
+    private final EntityRepository entityRepository;
+    private final TokenRepository tokenRepository;
+    private final NftRepository nftRepository;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
+    private final NftAllowanceRepository nftAllowanceRepository;
+    private final CustomFeeRepository customFeeRepository;
     private final MirrorNodeEvmProperties evmProperties;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
     private final PricesAndFeesImpl pricesAndFees;
     private final AbstractCodeCache codeCache;
-    private final HederaEvmMutableWorldState worldState;
+    private final HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
 
     public MirrorEvmTxProcessorFacadeImpl(
+            final EntityRepository entityRepository,
+            final TokenRepository tokenRepository,
+            final NftRepository nftRepository,
+            final TokenAccountRepository tokenAccountRepository,
+            final TokenAllowanceRepository tokenAllowanceRepository,
+            final NftAllowanceRepository nftAllowanceRepository,
+            final CustomFeeRepository customFeeRepository,
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
             final StaticBlockMetaSource blockMetaSource,
@@ -60,6 +77,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer) {
+        this.entityRepository = entityRepository;
+        this.tokenRepository = tokenRepository;
+        this.nftRepository = nftRepository;
+        this.tokenAccountRepository = tokenAccountRepository;
+        this.tokenAllowanceRepository = tokenAllowanceRepository;
+        this.nftAllowanceRepository = nftAllowanceRepository;
+        this.customFeeRepository = customFeeRepository;
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
@@ -83,6 +107,16 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(
+                new NftDatabaseAccessor(nftRepository),
+                new EntityDatabaseAccessor(entityRepository),
+                new TokenDatabaseAccessor(tokenRepository),
+                new TokenAllowanceDatabaseAccessor(tokenAllowanceRepository),
+                new TokenAccountDatabaseAccessor(tokenAccountRepository),
+                new NftAllowanceDatabaseAccessor(nftAllowanceRepository),
+                new CustomFeeDatabaseAccessor(customFeeRepository));
+        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        worldState.setState(stackedStateFrames);
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,

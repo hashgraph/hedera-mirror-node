@@ -26,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Id, TokenAccount> {
+public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Object, TokenAccount> {
 
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<TokenAccount> get(@NonNull Id key) {
-        return tokenAccountRepository.findById(key);
+    public @NonNull Optional<TokenAccount> get(@NonNull Object key) {
+        return tokenAccountRepository.findById((Id) key);
     }
 }

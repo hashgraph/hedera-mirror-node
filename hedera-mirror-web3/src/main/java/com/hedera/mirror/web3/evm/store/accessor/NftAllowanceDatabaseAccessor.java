@@ -26,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Id, NftAllowance> {
+public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAllowance> {
 
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Override
-    public @NonNull Optional<NftAllowance> get(@NonNull Id key) {
-        return nftAllowanceRepository.findById(key);
+    public @NonNull Optional<NftAllowance> get(@NonNull Object key) {
+        return nftAllowanceRepository.findById((Id) key);
     }
 }
