@@ -3,7 +3,7 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.20
 
 require (
-	github.com/Code-Hex/go-generics-cache v1.3.0
+	github.com/Code-Hex/go-generics-cache v1.3.1
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.12.6
