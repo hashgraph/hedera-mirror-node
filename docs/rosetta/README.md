@@ -66,7 +66,7 @@ Configure and run the server in online mode:
 
 4. To automatically restore the embedded PostgreSQL database to a particular database snapshot, pass a URL to a backup
    file via `-e RESTORE=https://example.com/db.tar`. The database dump should be in the format specified in
-   the [backup](/docs/database.md#backup) section of the database upgrade documentation. The container database should
+   the [backup](/docs/database/README.md#backup) section of the database upgrade documentation. The container database should
    be empty otherwise the restore process will be skipped.
 
 5. To use custom passwords for the database owner (used by importer) and the rosetta user (used by rosetta server), set
