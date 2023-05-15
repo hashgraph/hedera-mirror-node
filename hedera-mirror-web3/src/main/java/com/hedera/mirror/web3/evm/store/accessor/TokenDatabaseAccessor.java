@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import static com.hedera.mirror.web3.evm.store.accessor.AccessorUtils.getEntityExpiration;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -24,6 +25,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
@@ -55,38 +57,46 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         if (databaseToken == null) {
             return null;
         }
+        return new Token(
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap(),
+                false,
+                Optional.ofNullable(databaseToken.getType())
+                        .map(t -> TokenType.valueOf(t.name()))
+                        .orElse(null),
+                Optional.ofNullable(databaseToken.getSupplyType())
+                        .map(st -> TokenSupplyType.valueOf(st.name()))
+                        .orElse(null),
+                Optional.ofNullable(databaseToken.getTotalSupply()).orElse(0L),
+                databaseToken.getMaxSupply(),
+                parseJkey(databaseToken.getKycKey()),
+                parseJkey(databaseToken.getFreezeKey()),
+                parseJkey(databaseToken.getSupplyKey()),
+                parseJkey(databaseToken.getWipeKey()),
+                parseJkey(entity.getKey()),
+                parseJkey(databaseToken.getFeeScheduleKey()),
+                parseJkey(databaseToken.getPauseKey()),
+                Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
+                null,
+                null,
+                Optional.ofNullable(entity.getDeleted()).orElse(false),
+                TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
+                false,
+                getEntityExpiration(entity),
+                false,
+                entity.getMemo(),
+                databaseToken.getName(),
+                databaseToken.getSymbol(),
+                Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
+                Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
+                0L);
+    }
+
+    private static JKey parseJkey(byte[] keyBytes) {
         try {
-            return new Token(
-                    new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                    Collections.emptyList(),
-                    Collections.emptyList(),
-                    Collections.emptyMap(),
-                    false,
-                    TokenType.valueOf(databaseToken.getType().name()),
-                    TokenSupplyType.valueOf(databaseToken.getSupplyType().name()),
-                    databaseToken.getTotalSupply(),
-                    databaseToken.getMaxSupply(),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getKycKey())),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getFreezeKey())),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getSupplyKey())),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getWipeKey())),
-                    asFcKeyUnchecked(Key.parseFrom(entity.getKey())),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getFeeScheduleKey())),
-                    asFcKeyUnchecked(Key.parseFrom(databaseToken.getPauseKey())),
-                    databaseToken.getFreezeDefault(),
-                    null,
-                    null,
-                    entity.getDeleted(),
-                    databaseToken.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED),
-                    false,
-                    entity.getExpirationTimestamp(),
-                    false,
-                    entity.getMemo(),
-                    databaseToken.getName(),
-                    databaseToken.getSymbol(),
-                    databaseToken.getDecimals(),
-                    entity.getAutoRenewPeriod(),
-                    0L);
+            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
         } catch (InvalidProtocolBufferException e) {
             return null;
         }
