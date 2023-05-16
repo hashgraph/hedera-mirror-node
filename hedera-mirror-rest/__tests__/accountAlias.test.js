@@ -65,6 +65,24 @@ describe('AccountAlias', () => {
     });
   });
 
+  describe('isValid', () => {
+    const shardRealmInputs = _.flattenDeep([
+      {alias: '', noShardRealm: false, expected: false},
+      {alias: undefined, noShardRealm: false, expected: false},
+      {alias: null, noShardRealm: false, expected: false},
+      {alias: '99999.99999.AABBCC22', noShardRealm: false, expected: true},
+      {alias: '99999.99999.AABBCC22', noShardRealm: true, expected: false},
+      {alias: 'AABBCC22', noShardRealm: true, expected: true},
+      {alias: 'AABBCC22', noShardRealm: false, expected: true},
+    ]);
+
+    shardRealmInputs.forEach((input) => {
+      test(`${input}`, () => {
+        expect(AccountAlias.isValid(input.alias, input.noShardRealm)).toBe(input.expected);
+      });
+    });
+  });
+
   describe('toString', () => {
     test('only alias', () => {
       const accountAlias = new AccountAlias(null, null, 'AABBCC22');

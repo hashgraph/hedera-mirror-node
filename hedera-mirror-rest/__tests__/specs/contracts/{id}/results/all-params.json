@@ -8,7 +8,9 @@
         "call_result": [2, 2],
         "consensus_timestamp": "187654000123456",
         "contract_id": 5001,
-        "gas_used": 101
+        "gas_used": 101,
+        "transaction_index": 1,
+        "transaction_nonce": 0
       },
       {
         "amount": 30,
@@ -18,7 +20,9 @@
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "payer_account_id": 8001,
-        "gas_used": 102
+        "gas_used": 102,
+        "transaction_index": 2,
+        "transaction_nonce": 0
       },
       {
         "amount": 40,
@@ -28,7 +32,9 @@
         "contract_id": 5001,
         "created_contract_ids": [7002],
         "payer_account_id": 8001,
-        "gas_used": 103
+        "gas_used": 103,
+        "transaction_index": 3,
+        "transaction_nonce": 0
       },
       {
         "amount": 50,
@@ -38,65 +44,9 @@
         "contract_id": 5001,
         "created_contract_ids": [7003],
         "payer_account_id": 8001,
-        "gas_used": 104
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": "187654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "187654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "187654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash1",
-        "nonce": 0,
-        "payerAccountId": 8001,
-        "index": 1
-      },
-      {
-        "consensus_timestamp": "787654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "787654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "787654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash2",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 2
-      },
-      {
-        "consensus_timestamp": "887654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "887654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "887654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash2",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 3
-      },
-      {
-        "consensus_timestamp": "987654000123456",
-        "type": 11,
-        "result": 22,
-        "valid_start_ns": "987654000123456",
-        "valid_duration_seconds": 5,
-        "valid_start_timestamp": "987654000123456",
-        "node_account_id": 3,
-        "entity_id": 5001,
-        "transaction_hash": "hash2",
-        "nonce": 0,
-        "payerAccountId": 9001,
-        "index": 4
+        "gas_used": 104,
+        "transaction_index": 4,
+        "transaction_nonce": 0
       }
     ],
     "recordFiles": [

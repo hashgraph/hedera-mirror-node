@@ -1,0 +1,11 @@
+{{- if .Values.zfs.enabled -}}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: zfs
+parameters: {{- toYaml .Values.zfs.parameters | nindent 2 }}
+provisioner: zfs.csi.openebs.io
+reclaimPolicy: Retain
+volumeBindingMode:  WaitForFirstConsumer
+{{- end -}}

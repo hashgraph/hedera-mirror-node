@@ -21,16 +21,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
-import org.hibernate.validator.group.GroupSequenceProvider;
+import org.hyperledger.besu.datatypes.Address;
 
 @Data
-@GroupSequenceProvider(TransferValidation.class)
 public class ContractCallRequest {
 
     private static final int ADDRESS_LENGTH = 40;
@@ -45,7 +43,6 @@ public class ContractCallRequest {
     private boolean estimate;
 
     @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
-    @NotNull(groups = TransferCheck.class)
     private String from;
 
     @Min(21_000)
@@ -55,11 +52,28 @@ public class ContractCallRequest {
     @Min(0)
     private long gasPrice;
 
-    @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
-    @NotEmpty
+    @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH, allowEmpty = true)
     private String to;
 
     @PositiveOrZero
-    @Min(value = 1, groups = TransferCheck.class)
     private long value;
+
+    @AssertTrue(message = "must not be empty")
+    private boolean hasFrom() {
+        return value <= 0 || from != null;
+    }
+
+    @AssertTrue(message = "must not be empty")
+    private boolean hasTo() {
+        final var isBlankOrEmpty = to == null || to.isEmpty();
+        if (!estimate && isBlankOrEmpty) {
+            return false;
+        }
+        /*When performing estimateGas with an empty "to" field, we set a default value of the zero address
+        to avoid any potential NullPointerExceptions throughout the process.*/
+        if (isBlankOrEmpty) {
+            to = Address.ZERO.toHexString();
+        }
+        return true;
+    }
 }

@@ -24,6 +24,8 @@ hedera:
           checksum: 3
         initializeEntityBalanceMigration:
           checksum: 3
+        syntheticTokenAllowanceOwnerMigration:
+          checksum: 2
         tokenAccountBalanceMigration:
           checksum: 3
 
@@ -77,6 +79,8 @@ spring:
       pubsub:
         enabled: false
     kubernetes:
+      leader:
+        enabled: false
       reload:
         enabled: true
       secrets:

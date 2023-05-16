@@ -238,7 +238,7 @@ paths:
       description: Returns a timestamped list of account balances on the network, limited to at most 50 token balances per account as outlined in HIP-367. This includes both HBAR and token balances for accounts.
       operationId: listAccountBalances
       parameters:
-        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressQueryParam"
         - $ref: "#/components/parameters/accountBalanceQueryParam"
         - $ref: "#/components/parameters/accountPublicKeyQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -300,7 +300,25 @@ paths:
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
-      description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+      description: |
+
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+
+        **The table below defines the restrictions and support for the endpoint**
+
+        | Estimate         | Operation Type                                               | Services Version | Mirror Node Version                 |
+        | -------------    | ------------------------------------------------------------ | ---------------- | ---------------------------------   |
+        | false            | static contract state reads for non precompile functions     | 0.36+             | 0.78+                              |
+        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll  | 0.37+   | 0.78+             |
+        |                  | static contract state reads for precompile functions with allowance  | 0.37+  | 0.79+                                 |
+        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38+ | 0.81+                            |
+        |                  | non-static contract state reads for non precompile functions | 0.37+ | 0.80+                                          |
+        |                  | non-static contract state reads for precompile functions | Not supported  | Not supported                             |
+        | true             | non-static contract state reads or modifications for non precompile functions     | Not supported  | Not supported    |
+        |                  | non-static contract state reads or modifications for precompile functions     | Not supported  | Not supported        |
+
+        The operations types which are not currently supported should return 501 error status.
+
       operationId: contractsCall
       requestBody:
         required: true
@@ -1237,7 +1255,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.80.0-SNAPSHOT
+  version: 0.82.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -3622,6 +3640,26 @@ components:
           value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
         evmAddressWithShardAndRealm:
           value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
+      schema:
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
+        type: string
+    accountIdOrAliasOrEvmAddressQueryParam:
+      name: account.id
+      in: query
+      description: Account id or account alias with no shard realm or evm address with no shard realm
+      examples:
+        aliasOnly:
+          value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
+        accountNumOnly:
+          value: 8
+        realmAccountNum:
+          value: 0.8
+        shardRealmAccountNum:
+          value: 0.0.8
+        evmAddress:
+          value: ac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        evmAddressWithPrefix:
+          value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
         pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
         type: string

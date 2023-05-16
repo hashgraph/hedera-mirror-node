@@ -68,7 +68,7 @@ jobs:
     timeout-minutes: 15
     env:
       OFFLINE_URL: http://localhost:5700
-      ROSETTA_CLI_VERSION: v0.10.0
+      ROSETTA_CLI_VERSION: v0.10.3
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -207,7 +207,7 @@ jobs:
           rm -fr tmp
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2.14.0
+        uses: securego/gosec@v2.15.0
         with:
           args: ./...
 

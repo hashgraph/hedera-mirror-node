@@ -69,8 +69,6 @@ func addTransaction(
 	validStartNs int64,
 	cryptoTransfers []domain.CryptoTransfer,
 	nonFeeTransfers []domain.NonFeeTransfer,
-	tokenTransfers []domain.TokenTransfer,
-	nftTransfers []domain.NftTransfer,
 	memo []byte,
 ) {
 	tx := &domain.Transaction{
@@ -95,14 +93,6 @@ func addTransaction(
 
 	if len(nonFeeTransfers) != 0 {
 		tdb.CreateDbRecords(dbClient, nonFeeTransfers)
-	}
-
-	if len(tokenTransfers) != 0 {
-		tdb.CreateDbRecords(dbClient, tokenTransfers)
-	}
-
-	if len(nftTransfers) != 0 {
-		tdb.CreateDbRecords(dbClient, nftTransfers)
 	}
 }
 

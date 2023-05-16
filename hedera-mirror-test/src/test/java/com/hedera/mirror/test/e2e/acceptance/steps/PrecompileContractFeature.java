@@ -20,7 +20,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -60,7 +62,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -75,20 +76,14 @@ import org.apache.tuweni.bytes.Bytes;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
-    private final List<TokenId> tokenIds = new ArrayList<>();
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
     public static final String IS_TOKEN_SELECTOR = "bff9834f";
     public static final String IS_TOKEN_FROZEN_SELECTOR = "565ca6fa";
     public static final String IS_KYC_GRANTED_SELECTOR = "bc2fb00e";
@@ -101,37 +96,39 @@ public class PrecompileContractFeature extends AbstractFeature {
     public static final String GET_TYPE_SELECTOR = "f429f19b";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
     public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "1955de0b";
-
     public static final String NAME_SELECTOR = "06fdde03";
     public static final String SYMBOL_SELECTOR = "95d89b41";
     public static final String DECIMALS_SELECTOR = "313ce567";
     public static final String TOTAL_SUPPLY_SELECTOR = "18160ddd";
     public static final String BALANCE_OF_SELECTOR = "70a08231";
     public static final String ALLOWANCE_SELECTOR = "dd62ed3e";
-
     public static final String OWNER_OF_SELECTOR = "6352211e";
     public static final String GET_APPROVED_SELECTOR = "081812fc";
     public static final String IS_APPROVED_FOR_ALL_SELECTOR = "e985e9c5";
-
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    private static final long firstNftSerialNumber = 1;
+    private final List<TokenId> tokenIds = new ArrayList<>();
     private final ContractClient contractClient;
     private final TokenClient tokenClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
-    private static final long firstNftSerialNumber = 1;
     private ExpandedAccountId ecdsaEaId;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    private Path precompileTestContract;
+    private Resource precompileTestContract;
 
     private ContractId contractId;
     private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
     @Before
-    public void initialization() throws IOException {
-        compiledSolidityArtifact =
-                MAPPER.readValue(ResourceUtils.getFile(precompileTestContract.toUri()), CompiledSolidityArtifact.class);
+    public void initialization() throws Exception {
+        try (var in = precompileTestContract.getInputStream()) {
+            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+        }
     }
 
     @After

@@ -82,6 +82,8 @@ public class ContractResult implements Persistable<Long> {
 
     private Integer transactionIndex;
 
+    private int transactionNonce;
+
     private Integer transactionResult;
 
     @JsonIgnore

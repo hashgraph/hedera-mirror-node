@@ -111,6 +111,33 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles);
     }
 
+    /**
+     *
+     * Creates new instance of {@link Account} with updated numPositiveBalances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newNumPositiveBalances
+     * @return the new instance of {@link Account} with updated {@link #numPositiveBalances} property
+     */
+    private Account createNewAccountWithNewPositiveBalances(Account oldAccount, int newNumPositiveBalances) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                newNumPositiveBalances,
+                oldAccount.numTreasuryTitles);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -167,12 +194,20 @@ public class Account extends HederaEvmAccount {
         return approveForAllNfts;
     }
 
+    public int getNumAssociations() {
+        return numAssociations;
+    }
+
     public int getNumTreasuryTitles() {
         return numTreasuryTitles;
     }
 
     public int getNumPositiveBalances() {
         return numPositiveBalances;
+    }
+
+    public Account setNumPositiveBalances(int newNumPositiveBalances) {
+        return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }
 
     @Override

@@ -14,7 +14,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "transaction_nonce": 0
       }
     ],
     "recordFiles": [
@@ -23,14 +24,6 @@
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
-      }
-    ],
-    "transactions": [
-      {
-        "consensus_timestamp": 167654000123456,
-        "payerAccountId": "5",
-        "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123400
       }
     ]
   },

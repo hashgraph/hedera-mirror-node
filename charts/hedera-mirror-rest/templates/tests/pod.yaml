@@ -2,9 +2,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  annotations:
-    helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-rest-test.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rest.namespace" . }}

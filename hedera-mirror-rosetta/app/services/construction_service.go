@@ -444,8 +444,8 @@ func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operatio
 		}
 
 		var amount types.Amount
+		var rErr *rTypes.Error
 		if operation.Amount != nil {
-			var rErr *rTypes.Error
 			if amount, rErr = types.NewAmount(operation.Amount); rErr != nil {
 				return nil, rErr
 			}

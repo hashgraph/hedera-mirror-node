@@ -142,7 +142,7 @@ loki:
     resources:
       limits:
         cpu: 200m
-        memory: 256Mi
+        memory: 384Mi
       requests:
         cpu: 50m
         memory: 64Mi
@@ -400,11 +400,39 @@ traefik:
   priorityClassName: critical
   resources:
     limits:
-      cpu: 850m
+      cpu: 1500m
       memory: 2000Mi
     requests:
-      cpu: 250m
-      memory: 150Mi
+      cpu: 1000m
+      memory: 500Mi
   service:
     spec: {}
     type: ClusterIP
+
+zfs:
+  coordinator:
+    diskSize: 128GB
+  enabled: false
+  parameters:
+    compression: zstd-6
+    fstype: zfs
+    poolname: zfspv-pool
+    recordsize: 32k
+  worker:
+    diskSize: 256GB
+  zfsController:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"
+  zfsNode:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"

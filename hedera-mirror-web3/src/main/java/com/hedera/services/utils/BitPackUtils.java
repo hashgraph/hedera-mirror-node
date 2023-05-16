@@ -23,73 +23,8 @@ public class BitPackUtils {
     private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
     private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
 
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
-    private static final long MASK_HI_ORDER_32 = MASK_INT_AS_UNSIGNED_LONG << 32;
-
     public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
-
-    /**
-     * Returns a {@code long} whose high-order 32 bits "encode" an unsigned integer value, and whose
-     * low-order 32 bits are a signed integer. For use with the {@link
-     * BitPackUtils#unsignedHighOrder32From(long)} and {@link
-     * BitPackUtils#signedLowOrder32From(long)} helpers below. This format can represent timestamps
-     * through January 2106.
-     *
-     * @param seconds some number of seconds since the epoch
-     * @param nanos some number of nanos after the above second
-     * @return a "packed" version of these values
-     */
-    public static long packedTime(long seconds, int nanos) {
-        assertValid(seconds);
-        return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
-    }
-
-    /**
-     * Returns a {@code long} whose high-order and low-order 32 bits both "encode" an unsigned
-     * integer value. For use with the {@link BitPackUtils#unsignedHighOrder32From(long)} and {@link
-     * BitPackUtils#unsignedLowOrder32From(long)}.
-     *
-     * @param a some number in the range [0, MAX_NUM_ALLOWED]
-     * @param b some other number in the range [0, MAX_NUM_ALLOWED]
-     * @return a "packed" version of these values
-     * @throws IllegalArgumentException if either argument is less than 0 or greater than
-     *     4_294_967_295
-     */
-    public static long packedNums(long a, long b) {
-        assertValid(a);
-        assertValid(b);
-        return a << 32 | b;
-    }
-
-    /**
-     * Returns the high-order 32 bits of the given {@code long}, interpreted as an unsigned integer.
-     *
-     * @param l any long
-     * @return the high-order 32 bits as an unsigned integer
-     */
-    public static long unsignedHighOrder32From(long l) {
-        return (l & MASK_HI_ORDER_32) >>> 32;
-    }
-
-    /**
-     * Returns the low-order 32 bits of the given {@code long}, interpreted as an unsigned integer.
-     *
-     * @param l any long
-     * @return the low-order 32 bits as an unsigned integer
-     */
-    public static long unsignedLowOrder32From(long l) {
-        return l & MASK_INT_AS_UNSIGNED_LONG;
-    }
-
-    /**
-     * Returns the low-order 32 bits of the given {@code long} as a signed integer.
-     *
-     * @param packedTime any long
-     * @return the low-order 32 bits as a signed integer
-     */
-    public static int signedLowOrder32From(long packedTime) {
-        return (int) (packedTime & MASK_INT_AS_UNSIGNED_LONG);
-    }
+    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     /**
      * Returns the positive long represented by the given integer code.
@@ -125,19 +60,14 @@ public class BitPackUtils {
     }
 
     /**
-     * Returns a {@code int} whose higher-order 16 bits "encode" an unsigned int value which
-     * represent the already used AutomaticAssociations of an account and lower-order 16 bits
-     * "encode" an unsigned int value which represent the maximum allowed AutomaticAssociations for
-     * that account.
+     * Checks if the given long is not a number in the allowed range
      *
-     * @param maxAutoAssociations maximum allowed automatic associations of an account.
-     * @param alreadyUsedAutoAssociations already used automatic associations of an account.
-     * @return metadata of
+     * @param num given long number to check
+     * @return true if valid, else returns false
      */
-    public static int buildAutomaticAssociationMetaData(int maxAutoAssociations, int alreadyUsedAutoAssociations) {
-        return (alreadyUsedAutoAssociations << 16) | maxAutoAssociations;
+    public static boolean isValidNum(long num) {
+        return num >= 0 && num <= MAX_NUM_ALLOWED;
     }
-
     /**
      * Returns the lower-order 16 bits of a given {@code int}
      *
@@ -156,54 +86,5 @@ public class BitPackUtils {
      */
     public static int getAlreadyUsedAutomaticAssociationsFrom(int autoAssociationMetadata) {
         return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) >>> 16;
-    }
-
-    /**
-     * Set the lower-order 16 bits of automatic association Metadata
-     *
-     * @param autoAssociationMetadata metadata of already used automatic associations and max
-     *     allowed automatic associations
-     * @param maxAutomaticAssociations new max allowed automatic associations to set
-     * @return metadata after changing the new max.
-     */
-    public static int setMaxAutomaticAssociationsTo(int autoAssociationMetadata, int maxAutomaticAssociations) {
-        return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
-    }
-
-    /**
-     * Set the higher-order 16 bits of automatic association Metadata
-     *
-     * @param autoAssociationMetadata metadata of already used automatic associations and max
-     *     allowed automatic associations
-     * @param alreadyUsedAutoAssociations new already used automatic associations to set
-     * @return metadata after changing the already used associations count.
-     */
-    public static int setAlreadyUsedAutomaticAssociationsTo(
-            int autoAssociationMetadata, int alreadyUsedAutoAssociations) {
-        return (alreadyUsedAutoAssociations << 16) | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
-    }
-
-    /**
-     * Checks if the given long is not a number in the allowed range
-     *
-     * @param num given long number to check
-     * @return true if valid, else returns false
-     */
-    public static boolean isValidNum(long num) {
-        return num >= 0 && num <= MAX_NUM_ALLOWED;
-    }
-
-    public static long perm64(long x) {
-        // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-        x += x << 30;
-        x ^= x >>> 27;
-        x += x << 16;
-        x ^= x >>> 20;
-        x += x << 5;
-        x ^= x >>> 18;
-        x += x << 10;
-        x ^= x >>> 24;
-        x += x << 30;
-        return x;
     }
 }

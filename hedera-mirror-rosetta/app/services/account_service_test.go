@@ -28,43 +28,15 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	tdomain "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
-var (
-	token1 = domain.Token{
-		TokenId:  domain.MustDecodeEntityId(2001),
-		Decimals: 5,
-		Name:     "foobar1",
-		Symbol:   "foobar1",
-		Type:     domain.TokenTypeFungibleCommon,
-	}
-	token2 = domain.Token{
-		TokenId:  domain.MustDecodeEntityId(2002),
-		Decimals: 6,
-		Name:     "foobar2",
-		Symbol:   "foobar2",
-		Type:     domain.TokenTypeFungibleCommon,
-	}
-	token3 = domain.Token{
-		TokenId:  domain.MustDecodeEntityId(2003),
-		Decimals: 7,
-		Name:     "foobar3",
-		Symbol:   "foobar3",
-		Type:     domain.TokenTypeNonFungibleUnique,
-	}
-)
-
 func amount() types.AmountSlice {
 	return types.AmountSlice{
 		&types.HbarAmount{Value: int64(1000)},
-		types.NewTokenAmount(token1, 100),
-		types.NewTokenAmount(token2, 200),
-		types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{1, 5}),
 	}
 }
 
@@ -106,9 +78,6 @@ func expectedAccountBalanceResponse(customizers ...func(*rTypes.AccountBalanceRe
 				Value:    "1000",
 				Currency: types.CurrencyHbar,
 			},
-			types.NewTokenAmount(token1, 100).ToRosetta(),
-			types.NewTokenAmount(token2, 200).ToRosetta(),
-			types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{1, 5}).ToRosetta(),
 		},
 	}
 	for _, customize := range customizers {

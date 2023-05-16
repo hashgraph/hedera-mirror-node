@@ -63,7 +63,7 @@ const errorMessageFormat = (errorMessages) => {
   return {
     _status: {
       messages: errorMessages.map((m) => {
-        return {message: m};
+        return m.detail ? {message: m.message, detail: m.detail} : {message: m};
       }),
     },
   };
