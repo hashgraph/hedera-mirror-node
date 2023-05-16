@@ -42,6 +42,7 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +81,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
-            // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
+            addDefaultEthereumTransactionContractResult(recordItem, transaction);
+            // skip any other transaction which is neither a create/call and has no valid ContractFunctionResult
             return;
         }
 
@@ -104,6 +106,37 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         processContractResult(
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
+    }
+
+    private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction) {
+        var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+        if (recordItem.isSuccessful()
+                || status == ResponseCodeEnum.DUPLICATE_TRANSACTION
+                || status == ResponseCodeEnum.WRONG_NONCE
+                || !recordItem.getTransactionBody().hasEthereumTransaction()) {
+            // Don't add default contract result for the transaction if it's successful, or the result is
+            // DUPLICATE_TRANSACTION, or the result is WRONG_NONCE, or it's not an ethereum transaction
+            return;
+        }
+
+        var ethereumTransaction = recordItem.getEthereumTransaction();
+        var functionParameters = ethereumTransaction.getCallData() != null
+                ? ethereumTransaction.getCallData()
+                : DomainUtils.EMPTY_BYTE_ARRAY;
+        var contractResult = ContractResult.builder()
+                .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .contractId(0)
+                .functionParameters(functionParameters)
+                .gasLimit(ethereumTransaction.getGasLimit())
+                .gasUsed(0L)
+                .payerAccountId(transaction.getPayerAccountId())
+                .transactionHash(ethereumTransaction.getHash())
+                .transactionIndex(transaction.getIndex())
+                .transactionNonce(transaction.getNonce())
+                .transactionResult(transaction.getResult())
+                .build();
+        entityListener.onContractResult(contractResult);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {

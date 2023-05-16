@@ -63,7 +63,7 @@
     "chain_id": "0x",
     "contract_id": "0.0.5001",
     "created_contract_ids": [],
-    "error_message": null,
+    "error_message": "CONTRACT_REVERT_EXECUTED",
     "address": "0x0000000000000000000000000000000000001389",
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
