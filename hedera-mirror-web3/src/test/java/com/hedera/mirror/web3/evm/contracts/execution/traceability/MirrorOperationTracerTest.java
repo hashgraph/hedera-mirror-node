@@ -26,6 +26,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.frame.MessageFrame.Type;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,21 +61,45 @@ class MirrorOperationTracerTest {
         given(tracingProperties.isEnabled()).willReturn(true);
 
         final var topLevelMessageFrame = mock(MessageFrame.class);
+        given(topLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(topLevelMessageFrame.getContractAddress()).willReturn(contract);
         given(topLevelMessageFrame.getRemainingGas()).willReturn(initialGas);
         given(topLevelMessageFrame.getInputData()).willReturn(input);
         given(topLevelMessageFrame.getRecipientAddress()).willReturn(recipient);
         given(topLevelMessageFrame.getSenderAddress()).willReturn(sender);
-        given(topLevelMessageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
+        given(topLevelMessageFrame.getMessageStackDepth()).willReturn(0);
+        mirrorOperationTracer.init(topLevelMessageFrame);
+
+        final var childLevelMessageFrame = mock(MessageFrame.class);
+        given(childLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(childLevelMessageFrame.getContractAddress()).willReturn(contract);
+        given(childLevelMessageFrame.getRemainingGas()).willReturn(initialGas);
+        given(childLevelMessageFrame.getInputData()).willReturn(input);
+        given(childLevelMessageFrame.getRecipientAddress()).willReturn(recipient);
+        given(childLevelMessageFrame.getSenderAddress()).willReturn(sender);
+        given(childLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(childLevelMessageFrame.getMessageStackDepth()).willReturn(1);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
 
-        mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
+        mirrorOperationTracer.tracePostExecution(childLevelMessageFrame, operationResult);
         assertThat(output)
                 .contains(
+                        "0.0.1.0 MESSAGE_CALL",
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=Mock for MessageFrame",
                         "inputData=0x696e70757444617461",
                         "callDepth=0",
+                        "remainingGas=1000",
+                        "sender=0x0000000000000000000000000000000000000004",
+                        "revertReason=");
+        assertThat(output)
+                .contains(
+                        "0.0.1.1 MESSAGE_CALL",
+                        "recipient=0x0000000000000000000000000000000000000003",
+                        "messageFrame=Mock for MessageFrame",
+                        "inputData=0x696e70757444617461",
+                        "callDepth=1",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=");

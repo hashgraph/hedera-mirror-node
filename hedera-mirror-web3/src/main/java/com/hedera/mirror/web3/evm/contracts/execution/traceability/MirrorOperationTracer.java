@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.operation.Operation;
 
 @CustomLog
@@ -35,6 +36,14 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
     private final TracingProperties tracingProperties;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Override
+    public void init(final MessageFrame initialFrame) {
+        if (tracingProperties.isEnabled()) {
+            final String parentIndex = "0.0.1.0 " + initialFrame.getType();
+            trace(initialFrame, parentIndex);
+        }
+    }
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
@@ -52,12 +61,23 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
             return;
         }
 
+        final var frameState = currentFrame.getState();
+        if (frameState != State.CODE_EXECUTING) {
+            if (frameState == State.CODE_SUSPENDED) {
+                final String childIndex = "0.0.1." + currentFrame.getMessageStackDepth() + " " + currentFrame.getType();
+                trace(currentFrame, childIndex);
+            }
+        }
+    }
+
+    public void trace(final MessageFrame currentFrame, String index) {
         final var inputData = currentFrame.getInputData() != null
                 ? currentFrame.getInputData().toHexString()
                 : "0x";
 
         log.info(
-                "messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
+                index
+                        + " messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
                 currentFrame.toString(),
                 currentFrame.getMessageStackDepth(),
                 currentFrame.getRemainingGas(),
