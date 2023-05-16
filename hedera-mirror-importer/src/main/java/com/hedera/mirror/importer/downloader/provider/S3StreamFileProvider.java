@@ -50,7 +50,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     static final String SIDECAR_FOLDER = "sidecar/";
     private static final String SEPARATOR = "/";
-
+    private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
+    private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%s/%s/%s/";
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
@@ -120,21 +121,15 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private String getAccountIdPrefix(PathKey key) {
         var streamType = key.type();
         var nodeAccount = key.node().getNodeAccountId().toString();
-        return streamType.getPath() + SEPARATOR + streamType.getNodePrefix() + nodeAccount + SEPARATOR;
+        return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(streamType.getPath(), streamType.getNodePrefix(), nodeAccount);
     }
 
     private String getNodeIdPrefix(PathKey key) {
         var networkPrefix = commonDownloaderProperties.getMirrorProperties().getNetworkPrefix();
         var shard = commonDownloaderProperties.getMirrorProperties().getShard();
         var streamFolder = key.type().getNodeIdBasedSuffix();
-        return networkPrefix
-                + SEPARATOR
-                + shard
-                + SEPARATOR
-                + key.node().getNodeId()
-                + SEPARATOR
-                + streamFolder
-                + SEPARATOR;
+        return TEMPLATE_NODE_ID_PREFIX.formatted(
+                networkPrefix, shard, key.node().getNodeId(), streamFolder);
     }
 
     private String getPrefix(PathKey key, PathType pathType) {
