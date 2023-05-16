@@ -62,11 +62,9 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
         }
 
         final var frameState = currentFrame.getState();
-        if (frameState != State.CODE_EXECUTING) {
-            if (frameState == State.CODE_SUSPENDED) {
-                final String childIndex = "0.0.1." + currentFrame.getMessageStackDepth() + " " + currentFrame.getType();
-                trace(currentFrame, childIndex);
-            }
+        if (frameState == State.CODE_SUSPENDED) {
+            final String childIndex = "0.0.1." + currentFrame.getMessageStackDepth() + " " + currentFrame.getType();
+            trace(currentFrame, childIndex);
         }
     }
 

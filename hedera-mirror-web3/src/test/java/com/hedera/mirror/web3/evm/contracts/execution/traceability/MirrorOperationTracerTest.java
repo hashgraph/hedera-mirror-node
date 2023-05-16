@@ -92,8 +92,7 @@ class MirrorOperationTracerTest {
                         "callDepth=0",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
-                        "revertReason=");
-        assertThat(output)
+                        "revertReason=")
                 .contains(
                         "0.0.1.1 MESSAGE_CALL",
                         "recipient=0x0000000000000000000000000000000000000003",
