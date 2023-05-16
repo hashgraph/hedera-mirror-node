@@ -19,11 +19,9 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
-import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_ACCOUNT;
-import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -76,6 +74,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
@@ -179,6 +178,67 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void processFailedEthereumTransactionWithoutContractResult(boolean hasInitCode) {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(hasInitCode).get();
+        var recordItem = recordItemBuilder
+                .ethereumTransaction()
+                .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
+                .record(r -> r.clearContractCallResult().clearContractCreateResult())
+                .receipt(r -> r.setStatus(ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED))
+                .sidecarRecords(List::clear)
+                .build();
+
+        process(recordItem);
+
+        var expectedFunctionParameters = hasInitCode ? ethereumTransaction.getCallData() : DomainUtils.EMPTY_BYTE_ARRAY;
+        var expected = ContractResult.builder()
+                .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .contractId(0)
+                .functionParameters(expectedFunctionParameters)
+                .gasLimit(ethereumTransaction.getGasLimit())
+                .gasUsed(0L)
+                .payerAccountId(recordItem.getPayerAccountId())
+                .transactionHash(ethereumTransaction.getHash())
+                .transactionIndex(recordItem.getTransactionIndex())
+                .transactionNonce(
+                        recordItem.getTransactionRecord().getTransactionID().getNonce())
+                .transactionResult(ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED_VALUE)
+                .build();
+        assertThat(contractResultRepository.findAll()).containsExactly(expected);
+        assertThat(contractLogRepository.count()).isZero();
+        assertThat(contractActionRepository.count()).isZero();
+        assertThat(contractStateChangeRepository.count()).isZero();
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            names = {"DUPLICATE_TRANSACTION", "WRONG_NONCE"})
+    void processFailedEthereumTransactionNoDefaultContractResult(ResponseCodeEnum status) {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(false).get();
+        var recordItem = recordItemBuilder
+                .ethereumTransaction()
+                .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
+                .record(r -> r.clearContractCallResult().clearContractCreateResult())
+                .receipt(r -> r.setStatus(status))
+                .sidecarRecords(List::clear)
+                .build();
+
+        process(recordItem);
+
+        assertThat(contractResultRepository.count()).isZero();
+        assertThat(contractLogRepository.count()).isZero();
+        assertThat(contractActionRepository.count()).isZero();
+        assertThat(contractStateChangeRepository.count()).isZero();
         assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
     }
@@ -626,9 +686,17 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
-                .customize(t -> t.transactionHash(
-                        DomainUtils.toBytes(recordItem.getTransactionRecord().getTransactionHash())))
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp())
+                        .entityId(entityId)
+                        .payerAccountId(recordItem.getPayerAccountId())
+                        .result(recordItem.getTransactionRecord().getReceipt().getStatusValue())
+                        .transactionHash(DomainUtils.toBytes(
+                                recordItem.getTransactionRecord().getTransactionHash()))
+                        .type(recordItem.getTransactionType())
+                        .validStartNs(DomainUtils.timeStampInNanos((recordItem
+                                .getTransactionRecord()
+                                .getTransactionID()
+                                .getTransactionValidStart()))))
                 .get();
 
         transactionTemplate.executeWithoutResult(status -> {
