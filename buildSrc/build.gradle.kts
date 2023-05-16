@@ -34,7 +34,7 @@ dependencies {
     implementation("com.github.node-gradle:gradle-node-plugin:5.0.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
-    implementation("gradle.plugin.com.graphql-java-generator:graphql-gradle-plugin:1.18.11")
+    implementation("com.graphql-java-generator:graphql-gradle-plugin:2.0")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
     implementation("io.freefair.gradle:lombok-plugin:8.0.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
