@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.79.1'
+      version: '0.80.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -70,5 +70,5 @@ spec:
               acceptance:
                 network: MAINNET
       cucumberTags: "@critical"
-      enabled: false
+      enabled: true
 
