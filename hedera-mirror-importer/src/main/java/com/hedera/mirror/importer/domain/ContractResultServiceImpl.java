@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -58,8 +57,6 @@ import lombok.extern.log4j.Log4j2;
 @RequiredArgsConstructor
 public class ContractResultServiceImpl implements ContractResultService {
 
-    private static final byte[] EMPTY = new byte[0];
-
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
@@ -84,16 +81,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
-            var status = recordItem.getTransactionRecord().getReceipt().getStatus();
-            if (!recordItem.isSuccessful()
-                    && status != ResponseCodeEnum.DUPLICATE_TRANSACTION
-                    && status != ResponseCodeEnum.WRONG_NONCE
-                    && transactionBody.hasEthereumTransaction()) {
-                // if it's a failed ethereum transaction with no contract result and the failure is not duplicate
-                // transaction or wrong nonce, create a default one
-                addDefaultContractResult(recordItem.getEthereumTransaction(), transaction);
-            }
-
+            addDefaultEthereumTransactionContractResult(recordItem, transaction);
             // skip any other transaction which is neither a create/call and has no valid ContractFunctionResult
             return;
         }
@@ -120,10 +108,23 @@ public class ContractResultServiceImpl implements ContractResultService {
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
     }
 
-    private void addDefaultContractResult(EthereumTransaction ethereumTransaction, Transaction transaction) {
-        var functionParameters = ethereumTransaction.getCallData() != null ? ethereumTransaction.getCallData() : EMPTY;
+    private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction) {
+        var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+        if (recordItem.isSuccessful()
+                || status == ResponseCodeEnum.DUPLICATE_TRANSACTION
+                || status == ResponseCodeEnum.WRONG_NONCE
+                || !recordItem.getTransactionBody().hasEthereumTransaction()) {
+            // Don't add default contract result for the transaction if it's successful, or the result is
+            // DUPLICATE_TRANSACTION, or the result is WRONG_NONCE, or it's not an ethereum transaction
+            return;
+        }
+
+        var ethereumTransaction = recordItem.getEthereumTransaction();
+        var functionParameters = ethereumTransaction.getCallData() != null
+                ? ethereumTransaction.getCallData()
+                : DomainUtils.EMPTY_BYTE_ARRAY;
         var contractResult = ContractResult.builder()
-                .callResult(EMPTY)
+                .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .consensusTimestamp(transaction.getConsensusTimestamp())
                 .contractId(0)
                 .functionParameters(functionParameters)

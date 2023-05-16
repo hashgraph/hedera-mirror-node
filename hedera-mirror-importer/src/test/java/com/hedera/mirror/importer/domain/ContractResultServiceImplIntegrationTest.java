@@ -196,9 +196,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        var expectedFunctionParameters = hasInitCode ? ethereumTransaction.getCallData() : new byte[] {};
+        var expectedFunctionParameters = hasInitCode ? ethereumTransaction.getCallData() : DomainUtils.EMPTY_BYTE_ARRAY;
         var expected = ContractResult.builder()
-                .callResult(new byte[] {})
+                .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .contractId(0)
                 .functionParameters(expectedFunctionParameters)

@@ -21,20 +21,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.io.File;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -42,14 +44,12 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "spring.flyway.target=1.79.0")
 class BackfillFailedEthereumTransactionContractResultMigrationTest extends IntegrationTest {
 
-    private static final byte[] EMPTY = new byte[] {};
-
     private final ContractResultRepository contractResultRepository;
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.79.1__backfill_ethereum_transaction_contract_result.sql")
-    private final File sql;
+    @Value("classpath:db/migration/v1/V1.80.0__backfill_ethereum_transaction_contract_result.sql")
+    private final Resource sql;
 
     @Test
     void empty() {
@@ -106,7 +106,7 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
         runMigration();
 
         // then
-        var expectedContractResult4 = toContractResult(EMPTY, ethTx4, transaction4);
+        var expectedContractResult4 = toContractResult(DomainUtils.EMPTY_BYTE_ARRAY, ethTx4, transaction4);
         var expectedContractResult5 = toContractResult(ethTx5.getCallData(), ethTx5, transaction5);
         assertThat(contractResultRepository.findAll())
                 .containsExactlyInAnyOrder(contractResult1, expectedContractResult4, expectedContractResult5);
@@ -115,7 +115,7 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     private ContractResult toContractResult(
             byte[] callData, EthereumTransaction ethereumTransaction, Transaction transaction) {
         return ContractResult.builder()
-                .callResult(EMPTY)
+                .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .contractId(0)
                 .consensusTimestamp(ethereumTransaction.getConsensusTimestamp())
                 .createdContractIds(null)
@@ -132,6 +132,8 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
 
     @SneakyThrows
     private void runMigration() {
-        jdbcTemplate.update(FileUtils.readFileToString(sql, "UTF-8"));
+        try (var is = sql.getInputStream()) {
+            jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+        }
     }
 }
