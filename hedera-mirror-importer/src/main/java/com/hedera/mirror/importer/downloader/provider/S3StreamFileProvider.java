@@ -114,7 +114,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         batchSize,
                         commonDownloaderProperties.getBucketName(),
                         startAfter))
-                .switchIfEmpty(pathResult.fallback() ? list(node, lastFilename) : Flux.empty());
+                .switchIfEmpty(Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename) : Flux.empty()));
     }
 
     private String getAccountIdPrefix(PathKey key) {
@@ -191,11 +191,13 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 return;
             }
 
-            // Retry NODE_ID on the next attempt
+            // If ACCOUNT_ID auto mode interval has expired, try NODE_ID if no files were found
             var now = Instant.now();
             if (now.isAfter(expiration)) {
                 expiration = now.plus(commonDownloaderProperties.getPathRefreshInterval());
-                pathType = PathType.NODE_ID;
+                if (!found) {
+                    pathType = PathType.NODE_ID;
+                }
             }
         }
 
