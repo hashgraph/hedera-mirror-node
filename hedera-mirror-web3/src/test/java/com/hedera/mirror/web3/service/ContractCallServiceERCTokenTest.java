@@ -113,6 +113,8 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
 
     @Test
     void unsupportedApprovePrecompileTest() {
+        properties.setAllowanceEnabled(false);
+
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "allowance", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
         final var serviceParameters = serviceParametersForEthCall(functionHash);
@@ -124,6 +126,8 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
 
     @Test
     void unsupportedIsApprovedForAllPrecompileTest() {
+        properties.setApprovedForAllEnabled(false);
+
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "isApprovedForAll", ABI_PATH, NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
         final var serviceParameters = serviceParametersForEthCall(functionHash);

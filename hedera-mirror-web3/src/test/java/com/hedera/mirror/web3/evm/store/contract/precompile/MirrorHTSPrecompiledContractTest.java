@@ -38,9 +38,6 @@ class MirrorHTSPrecompiledContractTest {
     private MessageFrame messageFrame;
 
     @Mock
-    private MessageFrame parentMessageFrame;
-
-    @Mock
     private Deque<MessageFrame> stack;
 
     @Mock
@@ -74,39 +71,37 @@ class MirrorHTSPrecompiledContractTest {
 
         given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any())).willReturn(viewExecutor);
         given(messageFrame.isStatic()).willReturn(true);
-        given(messageFrame.getMessageFrameStack()).willReturn(stack);
-        given(stack.iterator()).willReturn(iterator);
-        given(iterator.hasNext()).willReturn(false);
 
-        final var result = Pair.of(1000L, Bytes.EMPTY);
-        given(viewExecutor.computeCosted()).willReturn(result);
+        final var expectedResult = Pair.of(1000L, Bytes.EMPTY);
+        given(viewExecutor.computeCosted()).willReturn(expectedResult);
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
-        assertThat(result).isEqualTo(precompileResult);
+        assertThat(expectedResult).isEqualTo(precompileResult);
     }
 
     @Test
-    void throwExceptionOnNonStaticFrame() {
+    void returnResultForNonStaticFrameAndViewFunction() {
         //isTokenAddress signature
         final var functionHash = Bytes.fromHexString("0x19f37361");
 
         given(messageFrame.isStatic()).willReturn(false);
 
-        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor)).hasMessage(ERROR_MESSAGE);
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, Bytes.EMPTY);
+        assertThat(expectedResult).isEqualTo(precompileResult);
     }
 
     @Test
-    void throwExceptionOnNonStaticParentFrame() {
+    void returnResultForNonStaticFrameAndErcViewFunction() {
         //name signature
         final var functionHash = Bytes.fromHexString("0x06fdde03");
 
         given(messageFrame.isStatic()).willReturn(true);
-        given(messageFrame.getMessageFrameStack()).willReturn(stack);
-        given(stack.iterator()).willReturn(iterator);
-        given(iterator.hasNext()).willReturn(true);
-        given(iterator.next()).willReturn(parentMessageFrame);
-        given(parentMessageFrame.isStatic()).willReturn(false);
 
-        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor)).hasMessage(ERROR_MESSAGE);
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, null);
+        assertThat(expectedResult).isEqualTo(precompileResult);
     }
 }
