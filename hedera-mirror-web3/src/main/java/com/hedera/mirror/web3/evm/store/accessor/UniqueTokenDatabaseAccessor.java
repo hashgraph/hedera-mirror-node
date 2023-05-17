@@ -41,8 +41,13 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueT
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
+        Id tokenId = mapEntityIdToId(nft.getId().getTokenId());
+        if (tokenId == null) {
+            return null;
+        }
+
         return new UniqueToken(
-                mapEntityIdToId(nft.getId().getTokenId()),
+                tokenId,
                 nft.getId().getSerialNumber(),
                 mapNanosToRichInstant(nft.getCreatedTimestamp()),
                 mapEntityIdToId(nft.getAccountId()),

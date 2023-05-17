@@ -17,6 +17,8 @@
 package com.hedera.mirror.web3.evm.store.accessor;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -42,19 +44,17 @@ class UniqueTokenDatabaseAccessorTest {
     @Mock
     private NftRepository nftRepository;
 
+    private final EntityId accountId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+    private final EntityId tokenId = new EntityId(4L, 5L, 6L, EntityType.TOKEN);
+    private final long serialNumber = 123L;
+    private final NftId nftId = new NftId(serialNumber, tokenId);
+
     @Test
     void get() {
-        EntityId accountId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
-        EntityId tokenId = new EntityId(4L, 5L, 6L, EntityType.TOKEN);
         EntityId spenderId = new EntityId(7L, 8L, 9L, EntityType.TOKEN);
-        long serialNumber = 123L;
         int createdTimestampNanos = 13;
         long createdTimestampSecs = 12;
         byte[] metadata = "metadata1".getBytes();
-
-        NftId nftId = new NftId();
-        nftId.setTokenId(tokenId);
-        nftId.setSerialNumber(serialNumber);
 
         Nft nft = new Nft();
         nft.setId(nftId);
@@ -77,5 +77,28 @@ class UniqueTokenDatabaseAccessorTest {
 
     private Id mapEntityIdToId(EntityId entityId) {
         return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+    }
+
+    @Test
+    void returnEmptyIfNoTokenId() {
+        Nft nft = new Nft();
+        nft.setId(new NftId(0, null));
+
+        when(nftRepository.findById(any())).thenReturn(Optional.of(nft));
+
+        assertThat(uniqueTokenDatabaseAccessor.get(mock(NftId.class))).isEmpty();
+    }
+
+    @Test
+    void missingRichInstantWhenNoCreatedTimestamp() {
+        Nft nft = new Nft();
+        nft.setId(nftId);
+        nft.setCreatedTimestamp(null);
+
+        when(nftRepository.findById(any())).thenReturn(Optional.of(nft));
+
+        assertThat(uniqueTokenDatabaseAccessor.get(nftId))
+                .hasValueSatisfying(uniqueToken ->
+                        assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
     }
 }
