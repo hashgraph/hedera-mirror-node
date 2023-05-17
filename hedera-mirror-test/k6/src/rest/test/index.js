@@ -18,26 +18,14 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 
 // import test modules
 import * as accounts from './accounts.js';
-import * as accountsBalanceFalse from './accountsBalanceFalse.js';
-import * as accountsBalanceFalsePubkey from './accountsBalanceFalsePubkey.js';
-import * as accountsBalanceGt0 from './accountsBalanceGt0.js';
-import * as accountsBalanceGt0Pubkey from './accountsBalanceGte0Pubkey.js';
-import * as accountsBalanceNe from './accountsBalanceNe.js';
-import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsId from './accountsId.js';
-import * as accountsIdNe from './accountsIdNe.js';
+import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 
 // add test modules here
 const tests = {
   accounts,
-  accountsBalanceFalse,
-  accountsBalanceFalsePubkey,
-  accountsBalanceGt0,
-  accountsBalanceGt0Pubkey,
-  accountsBalanceNe,
-  accountsCryptoAllowance,
   accountsId,
-  accountsIdNe,
+  accountsIdTimestampLte,
 };
 
 const {funcs, options, requiredParameters, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
