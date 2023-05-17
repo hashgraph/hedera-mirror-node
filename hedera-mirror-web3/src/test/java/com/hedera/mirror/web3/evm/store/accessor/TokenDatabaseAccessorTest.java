@@ -61,6 +61,9 @@ class TokenDatabaseAccessorTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
+    @Mock
+    private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
+
     com.hedera.mirror.common.domain.token.Token databaseToken;
 
     private Entity entity;

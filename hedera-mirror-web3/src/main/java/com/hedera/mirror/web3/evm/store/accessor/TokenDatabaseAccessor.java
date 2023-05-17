@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.store.accessor.model.Treasury;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Id;
@@ -33,6 +34,7 @@ import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -46,6 +48,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final TokenRepository tokenRepository;
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
+
+    private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
     public @NonNull Optional<Token> get(@NonNull Address address) {
@@ -93,7 +97,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 databaseToken.getSymbol(),
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
-                0L);
+                0L,
+                getCustomFees(entity.getId()));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -113,5 +118,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 .map(entity -> new Treasury(
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
                 .orElse(null);
+    }
+
+    private List<CustomFee> getCustomFees(Long tokenId) {
+        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
     }
 }
