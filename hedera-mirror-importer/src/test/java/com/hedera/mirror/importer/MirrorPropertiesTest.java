@@ -44,14 +44,14 @@ class MirrorPropertiesTest {
     void networkPrefixDefined(HederaNetwork network) {
         mirrorProperties.setNetworkPrefix(MIXED_CASE_NETWORK_PREFIX);
         mirrorProperties.setNetwork(network);
-        assertEquals(LOWER_CASE_NETWORK_PREFIX, mirrorProperties.getNetworkPrefix());
+        assertEquals(LOWER_CASE_NETWORK_PREFIX, mirrorProperties.getEffectiveNetwork());
     }
 
     @ParameterizedTest(name = "Default to lowercase network name: {0}")
     @EnumSource(value = HederaNetwork.class, mode = Mode.EXCLUDE, names = "OTHER")
     void networkPrefixUndefined(HederaNetwork network) {
         mirrorProperties.setNetwork(network);
-        assertEquals(network.name().toLowerCase(), mirrorProperties.getNetworkPrefix());
+        assertEquals(network.name().toLowerCase(), mirrorProperties.getEffectiveNetwork());
     }
 
     @Test
@@ -59,7 +59,7 @@ class MirrorPropertiesTest {
         mirrorProperties.setNetwork(HederaNetwork.OTHER);
         assertThrows(
                 InvalidConfigurationException.class,
-                () -> mirrorProperties.getNetworkPrefix(),
+                () -> mirrorProperties.getEffectiveNetwork(),
                 "InvalidConfigurationException was expected");
     }
 }
