@@ -51,7 +51,9 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueT
     }
 
     private Id mapEntityIdToId(EntityId entityId) {
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+        return entityId == null
+                ? null
+                : new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private RichInstant mapNanosToRichInstant(Long nanos) {
