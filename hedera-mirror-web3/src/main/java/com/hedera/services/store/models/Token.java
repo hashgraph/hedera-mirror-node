@@ -988,6 +988,10 @@ public class Token {
         return lastUsedSerialNumber;
     }
 
+    public List<CustomFee> getCustomFees() {
+        return customFees;
+    }
+
     public boolean hasMintedUniqueTokens() {
         return !mintedUniqueTokens.isEmpty();
     }
