@@ -19,11 +19,9 @@ package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
-import java.nio.charset.StandardCharsets;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
@@ -77,8 +75,7 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
                 currentFrame.getSenderAddress(),
                 currentFrame.getRecipientAddress(),
                 currentFrame.getContractAddress(),
-                StringUtils.toEncodedString(
-                        currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16),
+                currentFrame.getRevertReason().orElse(Bytes.EMPTY).toHexString(),
                 currentFrame.getInputData());
     }
 }

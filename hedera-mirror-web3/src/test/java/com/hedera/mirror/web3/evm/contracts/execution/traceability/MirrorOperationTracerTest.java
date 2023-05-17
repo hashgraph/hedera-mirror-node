@@ -83,6 +83,7 @@ class MirrorOperationTracerTest {
         final var topLevelMessageFrame = mock(MessageFrame.class);
         mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
         given(traceProperties.isEnabled()).willReturn(true);
+        given(mirrorEvmContractAliases.resolveForEvm(any())).willReturn(recipient);
         given(traceProperties.contractFilterCheck(any())).willReturn(true);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
 
@@ -95,6 +96,8 @@ class MirrorOperationTracerTest {
     void tracePostExecution(CapturedOutput output) {
         mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
         given(traceProperties.isEnabled()).willReturn(true);
+        given(traceProperties.stateFilterCheck(any())).willReturn(false);
+        given(traceProperties.contractFilterCheck(any())).willReturn(false);
 
         final var topLevelMessageFrame = mock(MessageFrame.class);
         given(topLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
