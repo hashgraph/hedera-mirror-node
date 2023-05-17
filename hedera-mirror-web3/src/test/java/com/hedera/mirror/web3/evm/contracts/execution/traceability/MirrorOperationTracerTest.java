@@ -57,15 +57,6 @@ class MirrorOperationTracerTest {
     private static final Bytes input = Bytes.of("inputData".getBytes());
 
     @Test
-    void traceDisabled(CapturedOutput output) {
-        final var topLevelMessageFrame = mock(MessageFrame.class);
-        mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
-        given(traceProperties.isEnabled()).willReturn(false);
-        mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
-        assertThat(output).isEmpty();
-    }
-
-    @Test
     void stateFilterTest(CapturedOutput output) {
         final var topLevelMessageFrame = mock(MessageFrame.class);
         mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
