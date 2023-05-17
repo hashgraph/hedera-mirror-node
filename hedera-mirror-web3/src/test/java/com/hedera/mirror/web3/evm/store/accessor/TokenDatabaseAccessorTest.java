@@ -147,7 +147,6 @@ class TokenDatabaseAccessorTest {
     @Test
     void getPartialTreasuryAccount() {
         setupToken();
-
         final var treasuryId = mock(EntityId.class);
         databaseToken.setTreasuryAccountId(treasuryId);
 
@@ -194,6 +193,22 @@ class TokenDatabaseAccessorTest {
                 .returns(asFcKeyUnchecked(FEE_SCHEDULE_KEY), Token::getFeeScheduleKey));
     }
 
+    @Test
+    void getTokenEmptyWhenDatabaseTokenNotFound() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
+    }
+
+    @Test
+    void keyIsNullIfNotParsable() {
+        setupToken();
+        databaseToken.setKycKey("wrOng".getBytes());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(token -> assertThat(token).returns(null, Token::getKycKey));
+    }
+
     private void setupToken() {
         final var tokenId = new TokenId(entity.toEntityId());
         databaseToken = new com.hedera.mirror.common.domain.token.Token();
@@ -214,12 +229,5 @@ class TokenDatabaseAccessorTest {
         databaseToken.setSymbol(SYMBOL);
         databaseToken.setDecimals(DECIMALS);
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
-    }
-
-    @Test
-    void getTokenEmptyWhenDatabaseTokenNotFound() {
-        when(tokenRepository.findById(any())).thenReturn(Optional.empty());
-
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
     }
 }
