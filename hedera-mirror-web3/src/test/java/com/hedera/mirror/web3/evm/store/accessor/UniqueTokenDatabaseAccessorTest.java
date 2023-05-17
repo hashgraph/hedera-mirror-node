@@ -43,7 +43,7 @@ class UniqueTokenDatabaseAccessorTest {
     private NftRepository nftRepository;
 
     @Test
-    public void get() {
+    void get() {
         EntityId accountId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
         EntityId tokenId = new EntityId(4L, 5L, 6L, EntityType.TOKEN);
         EntityId spenderId = new EntityId(7L, 8L, 9L, EntityType.TOKEN);

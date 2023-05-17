@@ -53,7 +53,7 @@ class TokenRelationshipDatabaseAccessorTest {
     private TokenAccountRepository tokenAccountRepository;
 
     @Test
-    public void get() {
+    void get() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(new Id(1, 2, 3));
         Token token = mock(Token.class);
