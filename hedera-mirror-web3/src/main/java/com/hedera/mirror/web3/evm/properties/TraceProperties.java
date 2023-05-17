@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Data;
 import lombok.NonNull;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -33,7 +32,7 @@ public class TraceProperties {
     private boolean enabled = false;
 
     @NonNull
-    private Set<Address> contract = new HashSet<>();
+    private Set<String> contract = new HashSet<>();
 
     @NonNull
     private Set<State> status = new HashSet<>();
@@ -42,7 +41,7 @@ public class TraceProperties {
         return !getStatus().isEmpty() && !getStatus().contains(state);
     }
 
-    public boolean contractFilterCheck(Address contract) {
+    public boolean contractFilterCheck(String contract) {
         return !getContract().isEmpty() && !getContract().contains(contract);
     }
 }

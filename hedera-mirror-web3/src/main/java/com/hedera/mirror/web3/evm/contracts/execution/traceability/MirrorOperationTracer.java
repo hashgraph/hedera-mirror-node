@@ -57,7 +57,7 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
         final var recipientAddress = currentFrame.getRecipientAddress();
         final var recipientNum = mirrorEvmContractAliases.resolveForEvm(recipientAddress);
 
-        if (traceProperties.contractFilterCheck(recipientNum)) {
+        if (traceProperties.contractFilterCheck(recipientNum.toHexString())) {
             return;
         }
 
