@@ -21,7 +21,7 @@ import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 const urlTag = '/accounts/{accountId}?timestamp={timestamp}';
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('accountsId') // use unique scenario name among all tests
+  .name('accountsIdTimestampLte') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}?timestamp=${testParameters['DEFAULT_ACCOUNT_ID_TIMESTAMP']}`;
