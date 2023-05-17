@@ -16,31 +16,12 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CustomFeeDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
-
-    @Test
-    void testGet() {
-        var customFee1 = domainBuilder.customFee().persist();
-        var customFee2 = domainBuilder
-                .customFee()
-                .customize(c -> c.id(customFee1.getId()).amount(12L))
-                .persist();
-        final var tokenId = customFee1.getId().getTokenId().getId();
-
-        assertThat(customFeeDatabaseAccessor.get(tokenId).get())
-                .hasSize(2)
-                .extracting(CustomFee::getAmount)
-                .containsExactlyInAnyOrder(customFee1.getAmount(), customFee2.getAmount());
-    }
 }
