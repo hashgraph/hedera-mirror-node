@@ -121,6 +121,80 @@ class TokenDatabaseAccessorTest {
         entity.setMemo(MEMO);
         entity.setKey(ADMIN_KEY.toByteArray());
         when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
+    }
+
+    @Test
+    void getTokenMappeddValues() {
+        setupToken();
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
+                .returns(TokenType.NON_FUNGIBLE_UNIQUE, Token::getType)
+                .returns(TokenSupplyType.FINITE, Token::getSupplyType)
+                .returns(TOTAL_SUPPLY, Token::getTotalSupply)
+                .returns(MAX_SUPPLY, Token::getMaxSupply)
+                .returns(FREEZE_DEFAULT, Token::isFrozenByDefault)
+                .returns(false, Token::isDeleted)
+                .returns(false, Token::isPaused)
+                .returns(EXPIRATION_TIMESTAMP, Token::getExpiry)
+                .returns(MEMO, Token::getMemo)
+                .returns(NAME, Token::getName)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(DECIMALS, Token::getDecimals)
+                .returns(AUTO_RENEW_PERIOD, Token::getAutoRenewPeriod));
+    }
+
+    @Test
+    void getPartialTreasuryAccount() {
+        setupToken();
+
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity treasuryEntity = mock(Entity.class);
+        when(treasuryEntity.getShard()).thenReturn(11L);
+        when(treasuryEntity.getRealm()).thenReturn(12L);
+        when(treasuryEntity.getNum()).thenReturn(13L);
+        when(treasuryEntity.getBalance()).thenReturn(14L);
+        when(entityDatabaseAccessor.getById(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
+                .returns(new Id(11, 12, 13), Account::getId)
+                .returns(14L, Account::getBalance));
+    }
+
+    @Test
+    void getTokenDefaultValues() {
+        setupToken();
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+                .returns(Collections.emptyList(), Token::mintedUniqueTokens)
+                .returns(Collections.emptyList(), Token::removedUniqueTokens)
+                .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
+                .returns(false, Token::hasChangedSupply)
+                .returns(null, Token::getTreasury)
+                .returns(null, Token::getAutoRenewAccount)
+                .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
+                .returns(false, Token::isNew)
+                .returns(null, Token::getTreasury)
+                .returns(0L, Token::getLastUsedSerialNumber));
+    }
+
+    @Test
+    void getTokenKeysValues() {
+        setupToken();
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+                .returns(asFcKeyUnchecked(ADMIN_KEY), Token::getAdminKey)
+                .returns(asFcKeyUnchecked(KYC_KEY), Token::getKycKey)
+                .returns(asFcKeyUnchecked(PAUSE_KEY), Token::getPauseKey)
+                .returns(asFcKeyUnchecked(FREEZE_KEY), Token::getFreezeKey)
+                .returns(asFcKeyUnchecked(WIPE_KEY), Token::getWipeKey)
+                .returns(asFcKeyUnchecked(SUPPLY_KEY), Token::getSupplyKey)
+                .returns(asFcKeyUnchecked(FEE_SCHEDULE_KEY), Token::getFeeScheduleKey));
+    }
+
+    private void setupToken() {
         final var tokenId = new TokenId(entity.toEntityId());
         databaseToken = new com.hedera.mirror.common.domain.token.Token();
         databaseToken.setTokenId(tokenId);
@@ -143,65 +217,9 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
-    void getTokenMappeddValues() {
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
-                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
-                .returns(TokenType.NON_FUNGIBLE_UNIQUE, Token::getType)
-                .returns(TokenSupplyType.FINITE, Token::getSupplyType)
-                .returns(TOTAL_SUPPLY, Token::getTotalSupply)
-                .returns(MAX_SUPPLY, Token::getMaxSupply)
-                .returns(FREEZE_DEFAULT, Token::isFrozenByDefault)
-                .returns(false, Token::isDeleted)
-                .returns(false, Token::isPaused)
-                .returns(EXPIRATION_TIMESTAMP, Token::getExpiry)
-                .returns(MEMO, Token::getMemo)
-                .returns(NAME, Token::getName)
-                .returns(SYMBOL, Token::getSymbol)
-                .returns(DECIMALS, Token::getDecimals)
-                .returns(AUTO_RENEW_PERIOD, Token::getAutoRenewPeriod));
-    }
+    void getTokenEmptyWhenDatabaseTokenNotFound() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.empty());
 
-    @Test
-    void getPartialTreasuryAccount() {
-        final var treasuryId = mock(EntityId.class);
-        databaseToken.setTreasuryAccountId(treasuryId);
-
-        Entity treasuryEntity = mock(Entity.class);
-        when(treasuryEntity.getShard()).thenReturn(11L);
-        when(treasuryEntity.getRealm()).thenReturn(12L);
-        when(treasuryEntity.getNum()).thenReturn(13L);
-        when(treasuryEntity.getBalance()).thenReturn(14L);
-        when(entityDatabaseAccessor.getById(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
-
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
-                .returns(new Id(11, 12, 13), Account::getId)
-                .returns(14L, Account::getBalance));
-    }
-
-    @Test
-    void getTokenDefaultValues() {
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
-                .returns(Collections.emptyList(), Token::mintedUniqueTokens)
-                .returns(Collections.emptyList(), Token::removedUniqueTokens)
-                .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
-                .returns(false, Token::hasChangedSupply)
-                .returns(null, Token::getTreasury)
-                .returns(null, Token::getAutoRenewAccount)
-                .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
-                .returns(false, Token::isNew)
-                .returns(null, Token::getTreasury)
-                .returns(0L, Token::getLastUsedSerialNumber));
-    }
-
-    @Test
-    void getTokenKeysValues() {
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
-                .returns(asFcKeyUnchecked(ADMIN_KEY), Token::getAdminKey)
-                .returns(asFcKeyUnchecked(KYC_KEY), Token::getKycKey)
-                .returns(asFcKeyUnchecked(PAUSE_KEY), Token::getPauseKey)
-                .returns(asFcKeyUnchecked(FREEZE_KEY), Token::getFreezeKey)
-                .returns(asFcKeyUnchecked(WIPE_KEY), Token::getWipeKey)
-                .returns(asFcKeyUnchecked(SUPPLY_KEY), Token::getSupplyKey)
-                .returns(asFcKeyUnchecked(FEE_SCHEDULE_KEY), Token::getFeeScheduleKey));
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
     }
 }
