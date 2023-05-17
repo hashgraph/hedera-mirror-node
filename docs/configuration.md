@@ -578,6 +578,6 @@ Name                                                        | Default           
 `hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                                | Maximal procent of gas refunding
 `hedera.mirror.web3.evm.network`                            | TESTNET                                            | Which Hedera network to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
 `hedera.mirror.web3.evm.rateLimit`                          | 100s                                               | Maximum RPS limit
-`hedera.mirror.web3.evm.tracing.enabled`                    | false                                              | Flag enabling tracer
-`hedera.mirror.web3.evm.tracing.contract`                   | []                                                 | A set with contract addresses to filter. By default it is empty to indicate it will trace all contract addresses.
-`hedera.mirror.web3.evm.tracing.status`                     | []                                                 | A set with frame statuses to filter. By default it is empty to indicate it will trace all frames regardless of status.
+`hedera.mirror.web3.evm.trace.enabled`                    | false                                              | Flag enabling tracer
+`hedera.mirror.web3.evm.trace.contract`                   | []                                                 | A set with contract addresses to filter. By default it is empty to indicate it will trace all contract addresses.
+`hedera.mirror.web3.evm.trace.status`                     | []                                                 | A set with frame statuses to filter. By default it is empty to indicate it will trace all frames regardless of status.
