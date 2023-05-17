@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract;
+package com.hedera.mirror.web3.evm.store.contracts;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -46,6 +47,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final TokenAccessor tokenAccessor;
 
     private final EntityAddressSequencer entityAddressSequencer;
+    private final MirrorEvmContractAliases mirrorAliasManager;
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -53,13 +55,15 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final AbstractCodeCache abstractCodeCache,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorAliasManager) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.mirrorAliasManager = mirrorAliasManager;
     }
 
     public Account get(final Address address) {
@@ -94,7 +98,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     @Override
     public HederaEvmWorldUpdater updater() {
         return new Updater(
-                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, entityAddressSequencer);
+                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, entityAddressSequencer, mirrorAliasManager);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
@@ -104,18 +108,22 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         private final EvmProperties evmProperties;
         private final EntityAddressSequencer entityAddressSequencer;
 
+        private final MirrorEvmContractAliases mirrorAliasManager;
+
         protected Updater(
                 final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,
                 final HederaEvmEntityAccess hederaEvmEntityAccess,
                 final TokenAccessor tokenAccessor,
                 final EvmProperties evmProperties,
-                final EntityAddressSequencer contractAddressState) {
+                final EntityAddressSequencer contractAddressState,
+                final MirrorEvmContractAliases mirrorAliasManager) {
             super(world, accountAccessor);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
             this.entityAddressSequencer = contractAddressState;
+            this.mirrorAliasManager = mirrorAliasManager;
         }
 
         @Override
@@ -137,7 +145,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
+                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, mirrorAliasManager);
         }
     }
 

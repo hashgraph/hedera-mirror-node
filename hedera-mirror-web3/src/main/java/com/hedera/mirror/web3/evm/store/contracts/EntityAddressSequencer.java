@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract;
+package com.hedera.mirror.web3.evm.store.contracts;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 

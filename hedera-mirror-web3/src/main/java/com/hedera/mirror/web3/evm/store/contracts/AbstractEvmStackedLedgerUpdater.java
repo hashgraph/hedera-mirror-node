@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract;
+package com.hedera.mirror.web3.evm.store.contracts;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
@@ -28,12 +30,17 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
+    protected MirrorEvmContractAliases mirrorEvmContractAliases;
+
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
-            final HederaEvmEntityAccess entityAccess) {
+            final HederaEvmEntityAccess entityAccess,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
+
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     @Override
@@ -41,5 +48,9 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
         final var wrapped = wrappedWorldView();
         final A account = wrapped.getForMutation(address);
         return account == null ? null : new UpdateTrackingAccount<>(account, null);
+    }
+
+    public HederaEvmContractAliases aliases() {
+        return mirrorEvmContractAliases;
     }
 }
