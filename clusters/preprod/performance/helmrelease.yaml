@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.80.0-rc1'
+      version: '0.81.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -30,6 +30,11 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    grpc:
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 1024Mi
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
