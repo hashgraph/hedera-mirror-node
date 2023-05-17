@@ -52,6 +52,7 @@ public enum StreamType {
     private final String path;
     private final SortedSet<Extension> signatureExtensions;
     private final String suffix;
+    private final String nodeIdBasedSuffix; // HIP-679
     private final Supplier<? extends StreamFile<?>> supplier;
     private final Duration fileCloseInterval;
 
@@ -66,6 +67,7 @@ public enum StreamType {
         this.path = path;
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
+        this.nodeIdBasedSuffix = name().toLowerCase();
         this.fileCloseInterval = fileCloseInterval;
 
         dataExtensions = IntStream.range(0, extensions.size())

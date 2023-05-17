@@ -20,6 +20,7 @@ import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
@@ -36,11 +37,8 @@ public class FileCopier {
     private final FileFilter dirFilter;
     private final FileFilter fileFilter;
 
-    private FileCopier(Path from, Path to, FileFilter dirFilter, FileFilter fileFilter) {
-        assert from != null;
-        assert to != null;
-        assert dirFilter != null;
-        assert fileFilter != null;
+    private FileCopier(
+            @NonNull Path from, @NonNull Path to, @NonNull FileFilter dirFilter, @NonNull FileFilter fileFilter) {
         this.from = from;
         this.to = to;
         this.dirFilter = dirFilter;
@@ -94,7 +92,9 @@ public class FileCopier {
             FileUtils.copyDirectory(from.toFile(), to.toFile(), combinedFilter);
 
             if (log.isTraceEnabled()) {
-                Files.walk(to).forEach(p -> log.trace("Moved: {}", p));
+                try (var paths = Files.walk(to)) {
+                    paths.forEach(p -> log.trace("Moved: {}", p));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

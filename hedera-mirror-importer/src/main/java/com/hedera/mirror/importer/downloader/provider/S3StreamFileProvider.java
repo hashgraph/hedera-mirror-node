@@ -20,11 +20,18 @@ import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import lombok.CustomLog;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -43,12 +50,21 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     static final String SIDECAR_FOLDER = "sidecar/";
     private static final String SEPARATOR = "/";
-
+    private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
+    private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
     private final CommonDownloaderProperties commonDownloaderProperties;
+    private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var prefix = getPrefix(node, streamFilename);
+        var key = new PathKey(node, streamFilename.getStreamType());
+        var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
+        var prefix = getPrefix(key, pathResult.getPathType());
+
+        if (streamFilename.getFileType() == SIDECAR) {
+            prefix += SIDECAR_FOLDER;
+        }
+
         var s3Key = prefix + streamFilename.getFilename();
 
         var request = GetObjectRequest.builder()
@@ -70,7 +86,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-        var prefix = getPrefix(node, lastFilename);
+        var key = new PathKey(node, lastFilename.getStreamType());
+        var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
+        var prefix = getPrefix(key, pathResult.getPathType());
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -84,7 +102,10 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         return Mono.fromFuture(s3Client.listObjectsV2(listRequest))
                 .timeout(commonDownloaderProperties.getTimeout())
-                .doOnNext(l -> log.debug("Returned {} s3 objects", l.contents().size()))
+                .doOnNext(l -> {
+                    pathResult.update(!l.contents().isEmpty());
+                    log.debug("Returned {} s3 objects", l.contents().size());
+                })
                 .flatMapIterable(ListObjectsV2Response::contents)
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
@@ -93,19 +114,29 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         "Searching for the next {} files after {}/{}",
                         batchSize,
                         commonDownloaderProperties.getBucketName(),
-                        startAfter));
+                        startAfter))
+                .switchIfEmpty(Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename) : Flux.empty()));
     }
 
-    private String getPrefix(ConsensusNode node, StreamFilename streamFilename) {
-        var streamType = streamFilename.getStreamType();
-        var nodeAccount = node.getNodeAccountId().toString();
-        var prefix = streamType.getPath() + SEPARATOR + streamType.getNodePrefix() + nodeAccount + SEPARATOR;
+    private String getAccountIdPrefix(PathKey key) {
+        var streamType = key.type();
+        var nodeAccount = key.node().getNodeAccountId().toString();
+        return TEMPLATE_ACCOUNT_ID_PREFIX.formatted(streamType.getPath(), streamType.getNodePrefix(), nodeAccount);
+    }
 
-        if (streamFilename.getFileType() == SIDECAR) {
-            prefix += SIDECAR_FOLDER;
-        }
+    private String getNodeIdPrefix(PathKey key) {
+        var networkPrefix = commonDownloaderProperties.getMirrorProperties().getNetworkPrefix();
+        var shard = commonDownloaderProperties.getMirrorProperties().getShard();
+        var streamFolder = key.type().getNodeIdBasedSuffix();
+        return TEMPLATE_NODE_ID_PREFIX.formatted(
+                networkPrefix, shard, key.node().getNodeId(), streamFolder);
+    }
 
-        return prefix;
+    private String getPrefix(PathKey key, PathType pathType) {
+        return switch (pathType) {
+            case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
+            case NODE_ID -> getNodeIdPrefix(key);
+        };
     }
 
     private StreamFilename toStreamFilename(S3Object s3Object) {
@@ -117,6 +148,56 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         } catch (Exception e) {
             log.warn("Unable to parse stream filename for {}", key, e);
             return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
+        }
+    }
+
+    record PathKey(ConsensusNode node, StreamType type) {}
+
+    @Data
+    private class PathResult {
+
+        @Nullable
+        private volatile Instant expiration;
+
+        private volatile PathType pathType = commonDownloaderProperties.getPathType();
+
+        private PathResult() {
+            if (commonDownloaderProperties.getPathType() == PathType.AUTO) {
+                this.expiration = Instant.now().plus(commonDownloaderProperties.getPathRefreshInterval());
+                this.pathType = PathType.ACCOUNT_ID;
+            }
+        }
+
+        void update(boolean found) {
+            // Path is statically configured or has permanently transitioned from ACCOUNT_ID to NODE_ID
+            if (expiration == null) {
+                return;
+            }
+
+            // Permanently switch to NODE_ID
+            if (found && pathType == PathType.NODE_ID) {
+                expiration = null;
+                return;
+            }
+
+            // NODE_ID attempt failed so revert back to ACCOUNT_ID for now
+            if (!found && pathType == PathType.NODE_ID) {
+                pathType = PathType.ACCOUNT_ID;
+                return;
+            }
+
+            // If ACCOUNT_ID auto mode interval has expired, try NODE_ID if no files were found
+            var now = Instant.now();
+            if (now.isAfter(expiration)) {
+                expiration = now.plus(commonDownloaderProperties.getPathRefreshInterval());
+                if (!found) {
+                    pathType = PathType.NODE_ID;
+                }
+            }
+        }
+
+        boolean fallback() {
+            return expiration != null && pathType == PathType.NODE_ID;
         }
     }
 }
