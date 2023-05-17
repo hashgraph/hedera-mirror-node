@@ -70,7 +70,7 @@ public class MirrorProperties {
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
 
-    public String getNetworkPrefix() {
+    public String getEffectiveNetwork() {
         if (!StringUtils.isBlank(networkPrefix)) {
             return networkPrefix.toLowerCase();
         } else {
