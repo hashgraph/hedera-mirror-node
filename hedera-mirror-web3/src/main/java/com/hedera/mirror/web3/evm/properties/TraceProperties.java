@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
+import static com.hedera.mirror.web3.viewmodel.ContractCallRequest.ADDRESS_LENGTH;
+
+import com.hedera.mirror.web3.validation.Hex;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Data;
@@ -32,7 +35,7 @@ public class TraceProperties {
     private boolean enabled = false;
 
     @NonNull
-    private Set<String> contract = new HashSet<>();
+    private Set<@Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH) String> contract = new HashSet<>();
 
     @NonNull
     private Set<State> status = new HashSet<>();
