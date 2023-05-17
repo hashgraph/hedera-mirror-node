@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.accessor.key;
+package com.hedera.mirror.web3.evm.store.accessor.model;
 
 import org.hyperledger.besu.datatypes.Address;
 

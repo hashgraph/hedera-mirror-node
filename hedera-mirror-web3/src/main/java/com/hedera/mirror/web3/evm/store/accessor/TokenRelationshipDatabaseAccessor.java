@@ -21,7 +21,7 @@ import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
-import com.hedera.mirror.web3.evm.store.accessor.key.TokenRelationshipKey;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
