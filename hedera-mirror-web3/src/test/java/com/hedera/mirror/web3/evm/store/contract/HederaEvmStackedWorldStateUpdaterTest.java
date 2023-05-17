@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -55,13 +57,16 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private EvmProperties properties;
 
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private HederaEvmStackedWorldStateUpdater subject;
     private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
     void setUp() {
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties);
+                updater, accountAccessor, entityAccess, tokenAccessor, properties, mirrorEvmContractAliases);
     }
 
     @Test

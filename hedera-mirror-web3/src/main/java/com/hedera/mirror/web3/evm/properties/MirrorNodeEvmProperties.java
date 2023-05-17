@@ -85,6 +85,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
+    @Getter
+    @NotNull
+    private long htsDefaultGasCost = 10000;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;

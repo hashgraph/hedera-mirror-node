@@ -21,17 +21,19 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import java.util.Optional;
 import javax.inject.Named;
+
+import com.hederahashgraph.api.proto.java.TokenID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class TokenDatabaseAccessor extends DatabaseAccessor<TokenId, Token> {
+public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private final TokenRepository tokenRepository;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull TokenId key) {
-        return tokenRepository.findById(key);
+    public @NonNull Optional<Token> get(@NonNull Object key) {
+        return tokenRepository.findById((TokenId) key);
     }
 }

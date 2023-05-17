@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -65,33 +66,56 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     private final MirrorNodeEvmProperties properties;
 
     @ParameterizedTest
-    @EnumSource(ContractFunctions.class)
-    void ercPrecompileOperationsTest(ContractFunctions ercFunction) {
+    @EnumSource(ContractReadOnlyFunctions.class)
+    void ercReadOnlyPrecompileOperationsTest(ContractReadOnlyFunctions ercFunction) {
         properties.setAllowanceEnabled(true);
         properties.setApprovedForAllEnabled(true);
 
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
         final var successfulResponse =
                 functionEncodeDecoder.encodedResultFor(ercFunction.name, ABI_PATH, ercFunction.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
+    @ParameterizedTest
+    @EnumSource(ContractModificationFunctions.class)
+    void ercModificationPrecompileOperationsTest(ContractModificationFunctions ercFunction) {
+        properties.setAllowanceEnabled(true);
+        properties.setApprovedForAllEnabled(true);
+
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Precompile not supported for non-static frames");
+    }
+
     @Test
     void metadataOf() {
         final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ABI_PATH, NFT_ADDRESS, 1L);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
+    }
+
+    @Test
+    void delegateTransferDoesNotExecuteAndReturnEmpty() {
+        final var functionHash = functionEncodeDecoder.functionHashFor("delegateTransfer", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(Bytes.EMPTY.toHexString());
     }
 
     @Test
     void unsupportedApprovePrecompileTest() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "allowance", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -102,7 +126,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     void unsupportedIsApprovedForAllPrecompileTest() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "isApprovedForAll", ABI_PATH, NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -110,7 +134,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     }
 
     @RequiredArgsConstructor
-    public enum ContractFunctions {
+    public enum ContractReadOnlyFunctions {
         GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL(
                 "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true
@@ -132,7 +156,17 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         private final Object[] expectedResultFields;
     }
 
-    private CallServiceParameters serviceParameters(Bytes callData) {
+    @RequiredArgsConstructor
+    public enum ContractModificationFunctions {
+        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L}),
+        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS, 2L}),
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, 2L});
+
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+    private CallServiceParameters serviceParametersForEthCall(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -144,6 +178,21 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
                 .gas(15_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
+                .build();
+    }
+
+    private CallServiceParameters serviceParametersForEthEstimateGas(final Bytes callData) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        persistEntities();
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .value(0L)
+                .receiver(CONTRACT_ADDRESS)
+                .callData(callData)
+                .gas(15_000_000L)
+                .isStatic(false)
+                .callType(ETH_ESTIMATE_GAS)
                 .build();
     }
 

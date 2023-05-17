@@ -1,5 +1,8 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.contracts.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
@@ -29,6 +32,9 @@ class MirrorHTSPrecompiledContractTest {
     private EvmInfrastructureFactory evmInfrastructureFactory;
 
     @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Mock
     private MessageFrame messageFrame;
 
     @Mock
@@ -49,13 +55,16 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private ViewExecutor viewExecutor;
 
+    @Mock
+    private StackedStateFrames<Object> stackedStateFrames;
+
     private MirrorHTSPrecompiledContract subject;
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @BeforeEach
     void setUp() {
         subject = new MirrorHTSPrecompiledContract(
-                evmInfrastructureFactory);
+                evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames);
     }
 
     @Test

@@ -18,19 +18,26 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.contracts.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import javax.inject.Named;
+
+import com.hedera.services.utils.EntityNum;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Named
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
+    private Map<ByteString, EntityNum> aliases = new HashMap<>();
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
@@ -59,5 +66,9 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         } else {
             throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
         }
+    }
+
+    private Map<ByteString, EntityNum> curAliases() {
+        return aliases;
     }
 }

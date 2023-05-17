@@ -28,8 +28,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -110,6 +111,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private BlockMetaSource blockMetaSource;
 
+    @Mock
+    private StackedStateFrames<Object> stackedStateFrames;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
     @BeforeEach
@@ -126,7 +130,7 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator),
+                mcps(gasCalculator, stackedStateFrames),
                 ccps(gasCalculator),
                 blockMetaSource,
                 hederaEvmContractAliases,

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.web3.evm.store.contracts.EntityAddressSequencer;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;

@@ -106,7 +106,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var expectedGasUsed = 22217L;
         final var serviceParameters =
-                serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -120,7 +120,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var expectedGasUsed = 21773L;
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, false, 0, Address.ZERO);
 
         persistEntities(false);
 
@@ -153,7 +153,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var expectedGasUsed = 23175L;
         final var serviceParameters =
-                serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -195,7 +195,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var expectedGasUsed = 22738L;
         final var params =
-                serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, false, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -360,14 +360,16 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @Test
     void ercPrecompileCallRevertsForEstimateGas() {
         final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000003e4";
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+        final var expectedGasUsed = 29263L;
         final var serviceParameters =
                 serviceParameters(tokenNameCall, 0, ETH_ESTIMATE_GAS, false, 0L, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test

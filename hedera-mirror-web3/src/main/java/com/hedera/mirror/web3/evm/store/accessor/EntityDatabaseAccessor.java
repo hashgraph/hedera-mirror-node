@@ -29,14 +29,14 @@ import org.jetbrains.annotations.NotNull;
 
 @Named
 @RequiredArgsConstructor
-public class EntityDatabaseAccessor extends DatabaseAccessor<Address, Entity> {
+public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Address address) {
-        var addressBytes = address.toArrayUnsafe();
+    public @NotNull Optional<Entity> get(@NotNull Object address) {
+        var addressBytes = ((Address) address).toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress(address);
+            final var entityId = entityIdNumFromEvmAddress(((Address) address));
             return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);

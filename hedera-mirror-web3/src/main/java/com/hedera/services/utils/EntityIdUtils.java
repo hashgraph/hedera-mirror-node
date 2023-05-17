@@ -105,6 +105,12 @@ public final class EntityIdUtils {
         return evmAddress;
     }
 
+    public static byte[] asEvmAddress(final long num) {
+        final byte[] evmAddress = new byte[20];
+        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
+        return evmAddress;
+    }
+
     public static long shardFromEvmAddress(final byte[] bytes) {
         return Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
     }

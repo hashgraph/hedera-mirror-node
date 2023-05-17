@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -37,7 +39,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public interface Precompile {
 
     // Construct the synthetic transaction
-    void body(Bytes input, UnaryOperator<byte[]> aliasResolver);
+    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime);

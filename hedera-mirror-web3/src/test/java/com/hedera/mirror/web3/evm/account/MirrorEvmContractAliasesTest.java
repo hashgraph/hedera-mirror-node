@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.contracts.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import java.util.Optional;
