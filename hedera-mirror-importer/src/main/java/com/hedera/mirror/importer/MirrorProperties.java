@@ -26,7 +26,6 @@ import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
@@ -35,7 +34,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
@@ -72,7 +70,7 @@ public class MirrorProperties {
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
 
-    public String getNetworkPrefix() {
+    public String getEffectiveNetwork() {
         if (!StringUtils.isBlank(networkPrefix)) {
             return networkPrefix.toLowerCase();
         } else {
