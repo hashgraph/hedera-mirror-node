@@ -24,10 +24,10 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.web3.evm.store.accessor.model.Treasury;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
@@ -104,27 +104,14 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         }
     }
 
-    private Account getTreasury(EntityId treasuryId) {
+    private Treasury getTreasury(EntityId treasuryId) {
         if (treasuryId == null) {
             return null;
         }
         return entityDatabaseAccessor
                 .getById(treasuryId.getId())
-                .map(entity -> new Account(
-                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                        0,
-                        entity.getBalance(),
-                        false,
-                        0,
-                        0,
-                        null,
-                        0,
-                        null,
-                        null,
-                        null,
-                        0,
-                        0,
-                        0))
+                .map(entity -> new Treasury(
+                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
                 .orElse(null);
     }
 }
