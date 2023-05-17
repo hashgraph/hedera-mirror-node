@@ -115,9 +115,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within at most 20% bigger than the gas used from the first call")
-                .isGreaterThan(expectedGasUsed)
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20));
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -132,9 +132,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within at most 20% bigger than the gas used from the first call")
-                .isGreaterThan(expectedGasUsed)
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20));
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -168,9 +168,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within at most 20% bigger than the gas used from the first call")
-                .isGreaterThan(expectedGasUsed)
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20));
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -204,7 +204,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void estimateGasForBalanceCall() {
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var serviceParameters =
                 serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
@@ -213,11 +212,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within at most 20% bigger than the gas used from the first call")
-                .isGreaterThan(expectedGasUsed)
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20));
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -322,9 +319,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within at most 20% bigger than the gas used from the first call")
-                .isGreaterThan(expectedGasUsed)
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20));
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
