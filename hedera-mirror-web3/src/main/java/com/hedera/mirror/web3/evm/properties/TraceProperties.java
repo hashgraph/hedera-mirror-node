@@ -21,13 +21,14 @@ import java.util.Set;
 import lombok.Data;
 import lombok.NonNull;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties(prefix = "hedera.mirror.web3.evm.tracing")
-public class TracingProperties {
+@ConfigurationProperties(prefix = "hedera.mirror.web3.evm.trace")
+public class TraceProperties {
 
     private boolean enabled = false;
 
@@ -35,9 +36,9 @@ public class TracingProperties {
     private Set<Address> contract = new HashSet<>();
 
     @NonNull
-    private Set<String> status = new HashSet<>();
+    private Set<State> status = new HashSet<>();
 
-    public boolean stateFilterCheck(String state) {
+    public boolean stateFilterCheck(State state) {
         return !getStatus().isEmpty() && !getStatus().contains(state);
     }
 

@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.TracingProperties;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import java.nio.charset.StandardCharsets;
 import javax.inject.Named;
@@ -34,12 +34,12 @@ import org.hyperledger.besu.evm.operation.Operation;
 @RequiredArgsConstructor
 public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
-    private final TracingProperties tracingProperties;
+    private final TraceProperties traceProperties;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Override
     public void init(final MessageFrame initialFrame) {
-        if (tracingProperties.isEnabled()) {
+        if (traceProperties.isEnabled()) {
             final String parentIndex = "0.0.1.0 " + initialFrame.getType();
             trace(initialFrame, parentIndex);
         }
@@ -47,17 +47,17 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
-        if (!tracingProperties.isEnabled()) {
+        if (!traceProperties.isEnabled()) {
             return;
         }
-        if (tracingProperties.stateFilterCheck(currentFrame.getState().name())) {
+        if (traceProperties.stateFilterCheck(currentFrame.getState())) {
             return;
         }
 
         final var recipientAddress = currentFrame.getRecipientAddress();
         final var recipientNum = mirrorEvmContractAliases.resolveForEvm(recipientAddress);
 
-        if (tracingProperties.contractFilterCheck(recipientNum)) {
+        if (traceProperties.contractFilterCheck(recipientNum)) {
             return;
         }
 
@@ -69,21 +69,16 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
     }
 
     public void trace(final MessageFrame currentFrame, String index) {
-        final var inputData = currentFrame.getInputData() != null
-                ? currentFrame.getInputData().toHexString()
-                : "0x";
-
         log.info(
                 index
-                        + " messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
+                        + " messageFrame={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
                 currentFrame.toString(),
-                currentFrame.getMessageStackDepth(),
                 currentFrame.getRemainingGas(),
                 currentFrame.getSenderAddress(),
                 currentFrame.getRecipientAddress(),
                 currentFrame.getContractAddress(),
                 StringUtils.toEncodedString(
                         currentFrame.getRevertReason().orElse(Bytes.EMPTY).toArray(), StandardCharsets.UTF_16),
-                inputData);
+                currentFrame.getInputData());
     }
 }

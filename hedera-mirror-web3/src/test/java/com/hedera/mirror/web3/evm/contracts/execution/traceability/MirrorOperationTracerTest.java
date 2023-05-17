@@ -17,11 +17,12 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.TracingProperties;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -42,7 +43,7 @@ class MirrorOperationTracerTest {
     private OperationResult operationResult;
 
     @Mock
-    private TracingProperties tracingProperties;
+    private TraceProperties traceProperties;
 
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
@@ -56,9 +57,35 @@ class MirrorOperationTracerTest {
     private static final Bytes input = Bytes.of("inputData".getBytes());
 
     @Test
+    void stateFilterTest(CapturedOutput output) {
+        final var topLevelMessageFrame = mock(MessageFrame.class);
+        mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+        given(traceProperties.isEnabled()).willReturn(true);
+        given(traceProperties.stateFilterCheck(any())).willReturn(true);
+        given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+
+        mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
+
+        assertThat(output).isEmpty();
+    }
+
+    @Test
+    void contractFilterTest(CapturedOutput output) {
+        final var topLevelMessageFrame = mock(MessageFrame.class);
+        mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+        given(traceProperties.isEnabled()).willReturn(true);
+        given(traceProperties.contractFilterCheck(any())).willReturn(true);
+        given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+
+        mirrorOperationTracer.tracePostExecution(topLevelMessageFrame, operationResult);
+
+        assertThat(output).isEmpty();
+    }
+
+    @Test
     void tracePostExecution(CapturedOutput output) {
-        mirrorOperationTracer = new MirrorOperationTracer(tracingProperties, mirrorEvmContractAliases);
-        given(tracingProperties.isEnabled()).willReturn(true);
+        mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+        given(traceProperties.isEnabled()).willReturn(true);
 
         final var topLevelMessageFrame = mock(MessageFrame.class);
         given(topLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
@@ -68,7 +95,6 @@ class MirrorOperationTracerTest {
         given(topLevelMessageFrame.getRecipientAddress()).willReturn(recipient);
         given(topLevelMessageFrame.getSenderAddress()).willReturn(sender);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
-        given(topLevelMessageFrame.getMessageStackDepth()).willReturn(0);
         mirrorOperationTracer.init(topLevelMessageFrame);
 
         final var childLevelMessageFrame = mock(MessageFrame.class);
@@ -89,7 +115,6 @@ class MirrorOperationTracerTest {
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=Mock for MessageFrame",
                         "inputData=0x696e70757444617461",
-                        "callDepth=0",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=")
@@ -98,7 +123,6 @@ class MirrorOperationTracerTest {
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=Mock for MessageFrame",
                         "inputData=0x696e70757444617461",
-                        "callDepth=1",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=");
