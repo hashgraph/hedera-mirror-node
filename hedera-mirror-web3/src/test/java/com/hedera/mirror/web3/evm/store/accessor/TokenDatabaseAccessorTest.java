@@ -21,15 +21,18 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
@@ -159,6 +162,23 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
+    void getPartialTreasuryAccount() {
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity treasuryEntity = mock(Entity.class);
+        when(treasuryEntity.getShard()).thenReturn(11L);
+        when(treasuryEntity.getRealm()).thenReturn(12L);
+        when(treasuryEntity.getNum()).thenReturn(13L);
+        when(treasuryEntity.getBalance()).thenReturn(14L);
+        when(entityDatabaseAccessor.getById(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
+                .returns(new Id(11, 12, 13), Account::getId)
+                .returns(14L, Account::getBalance));
+    }
+
+    @Test
     void getTokenDefaultValues() {
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(Collections.emptyList(), Token::mintedUniqueTokens)
@@ -169,6 +189,7 @@ class TokenDatabaseAccessorTest {
                 .returns(null, Token::getAutoRenewAccount)
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
+                .returns(null, Token::getTreasury)
                 .returns(0L, Token::getLastUsedSerialNumber));
     }
 
