@@ -149,57 +149,6 @@ const extractSqlFromContractFilters = async (filters) => {
 };
 
 /**
- * Extracts the aggregated timestamp range condition from the timestamp filters
- * @param filters
- */
-const extractTimestampConditionsFromContractFilters = (filters) => {
-  const conditions = [];
-  const params = [];
-  const timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
-
-  filters
-    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
-    .forEach((filter) => {
-      // the first param is the contract id, the param for the current filter will be pushed later, so add 2
-      const position = `$${params.length + 1}`;
-      let condition;
-      let range;
-
-      if (filter.operator === utils.opsMap.ne) {
-        // handle ne filter differently
-        condition = `not ${timestampRangeColumn} @> ${position}`; // @> is the pg range "contains" operator
-        range = Range(filter.value, filter.value, '[]');
-      } else {
-        condition = `${timestampRangeColumn} && ${position}`; // && is the pg range "overlaps" operator
-
-        switch (filter.operator) {
-          case utils.opsMap.lt:
-            range = Range(null, filter.value, '()');
-            break;
-          case utils.opsMap.eq:
-          case utils.opsMap.lte:
-            range = Range(null, filter.value, '(]');
-            break;
-          case utils.opsMap.gt:
-            range = Range(filter.value, null, '()');
-            break;
-          case utils.opsMap.gte:
-            range = Range(filter.value, null, '[)');
-            break;
-        }
-      }
-
-      conditions.push(condition);
-      params.push(range);
-    });
-
-  return {
-    conditions,
-    params,
-  };
-};
-
-/**
  * Formats a contract row from database to the contract view model
  * @param row
  * @param viewModel
@@ -426,6 +375,8 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = async (req) => {
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req, acceptedParameters) => {
+  logger.debug('The req query is ');
+  logger.debug(req.query);
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query, acceptedParameters, contractResultsFilterValidityChecks);
@@ -731,8 +682,10 @@ class ContractController extends BaseController {
       acceptedContractByIdParameters
     );
 
-    const {conditions: timestampConditions, params: timestampParams} =
-      extractTimestampConditionsFromContractFilters(filters);
+    const {conditions: timestampConditions, params: timestampParams} = utils.extractTimestampRangeConditionFilters(
+      filters,
+      true
+    );
 
     const {query, params} = getContractByIdOrAddressContractEntityQuery({
       timestampConditions,
@@ -1351,7 +1304,6 @@ if (utils.isTestEnv()) {
       contractSelectFields,
       contractWithBytecodeSelectFields,
       extractSqlFromContractFilters,
-      extractTimestampConditionsFromContractFilters,
       formatContractRow,
       getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,

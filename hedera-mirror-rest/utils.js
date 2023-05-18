@@ -21,7 +21,7 @@ import JSONBigFactory from 'json-bigint';
 import long from 'long';
 import * as math from 'mathjs';
 import pg from 'pg';
-import pgRange from 'pg-range';
+import pgRange, {Range} from 'pg-range';
 import util from 'util';
 
 import * as constants from './constants';
@@ -29,7 +29,8 @@ import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
-import {FeeSchedule, TransactionResult, TransactionType} from './model';
+import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
+import {filterKeys} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -677,6 +678,71 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
     (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
     false
   );
+};
+
+/**
+ * Extracts the aggregated timestamp range condition from the timestamp filters
+ * @param filters
+ * @param usePositions
+ * @param timestampRangeColumn
+ */
+const extractTimestampRangeConditionFilters = (
+  filters,
+  usePositions = false,
+  timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE)
+) => {
+  const conditions = [];
+  const params = [];
+  logger.debug('The filters are ');
+  logger.debug(filters);
+  logger.debug(filters.filter((filter) => filter.key === filterKeys.TIMESTAMP));
+  logger.debug('got here');
+
+  filters
+    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
+    .forEach((filter) => {
+      // the first param is the contract id, the param for the current filter will be pushed later, so add 2
+      const position = usePositions ? `$${params.length + 1}` : '?';
+      let condition;
+      let range;
+
+      if (filter.operator === opsMap.ne) {
+        // handle ne filter differently
+        condition = `not ${timestampRangeColumn} @> ${position}`; // @> is the pg range "contains" operator
+        range = Range(filter.value, filter.value, '[]');
+      } else {
+        condition = `${timestampRangeColumn} && ${position}`; // && is the pg range "overlaps" operator
+
+        switch (filter.operator) {
+          case opsMap.lt:
+            range = Range(null, filter.value, '()');
+            break;
+          case opsMap.eq:
+          case opsMap.lte:
+            range = Range(null, filter.value, '(]');
+            break;
+          case opsMap.gt:
+            range = Range(filter.value, null, '()');
+            break;
+          case opsMap.gte:
+            range = Range(filter.value, null, '[)');
+            break;
+        }
+      }
+
+      conditions.push(condition);
+      params.push(range);
+    });
+
+  logger.debug('REturning this stuff');
+  logger.debug({
+    conditions,
+    params,
+  });
+  return {
+    conditions,
+    params,
+  };
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -1516,6 +1582,7 @@ export {
   encodeBinary,
   encodeKey,
   encodeUtf8,
+  extractTimestampRangeConditionFilters,
   filterDependencyCheck,
   filterValidityChecks,
   formatComparator,

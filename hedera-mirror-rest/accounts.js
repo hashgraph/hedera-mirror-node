@@ -22,6 +22,8 @@ import * as utils from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
+import Entity from './model/entity.js';
+import balances from './balances';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -97,6 +99,7 @@ const entityFields = [
   'e.staked_node_id',
   'e.stake_period_start',
   'e.type',
+  'e.timestamp_range',
   `(case when es.pending_reward is null then 0
          when e.decline_reward is true or coalesce(e.staked_node_id, -1) = -1 then 0
          when e.stake_period_start >= es.end_stake_period then 0
@@ -109,6 +112,7 @@ const entityFields = [
  *
  * @param balanceQuery
  * @param entityAccountQuery
+ * @param tsQuery
  * @param limitAndOrderQuery
  * @param pubKeyQuery
  * @param tokenBalanceQuery
@@ -117,16 +121,23 @@ const entityFields = [
 const getEntityBalanceQuery = (
   balanceQuery,
   entityAccountQuery,
+  tsQuery,
   limitAndOrderQuery,
   pubKeyQuery,
-  tokenBalanceQuery
+  tokenBalanceQuery,
+  balanceFileTs // tODO describe in doc
 ) => {
+  //TODO Remove these logs
+  //TODO handle token balance query
+  logger.debug('The tsQuery is ');
+  logger.debug(tsQuery);
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
   const whereCondition = [
     `e.type in ('ACCOUNT', 'CONTRACT')`,
     balanceQuery.query,
-    entityAccountQuery.query,
+    entityAccountQuery.query, //TODO maybe update the entity account query
     pubKeyQuery.query,
+    tsQuery.query,
   ]
     .filter((x) => !!x)
     .join(' and ');
@@ -136,32 +147,64 @@ const getEntityBalanceQuery = (
     balanceQuery.params,
     entityAccountQuery.params,
     pubKeyQuery.params,
-    limitParams
+    tsQuery.params
   );
-  const query = `
-    with latest_token_balance as (
-      select account_id, balance, token_id
-      from token_account
-      where associated is true
-    )
-    select
-      ${entityFields},
-      (select max(consensus_end) from record_file) as consensus_timestamp,
-      balance,
-      (
-        select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-        from (
-          select token_id, balance
-          from latest_token_balance
-          where ${tokenBalanceQuery.query}
-        order by token_id ${order}
-        limit ${tokenBalanceQuery.limit}) as account_token_balance
-      ) as token_balances
-    from entity e
-    left join entity_stake es on es.id = e.id
-    where ${whereCondition}
-    order by e.id ${order}
-    ${limitQuery}`;
+
+  const getEntitySql = (
+    tableName,
+    balanceSelect = 'balance',
+    consensusTimestampSelect = '(select max(consensus_end) from record_file)  as consensus_timestamp',
+    orderBy = `order by id ${order}`
+  ) => {
+    return `
+      (with latest_token_balance as (select account_id, balance, token_id
+                                    from token_account
+                                    where associated is true)
+       select ${entityFields},
+                       ${consensusTimestampSelect},
+                       ${balanceSelect},
+                       (select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+                        from (select token_id, balance
+                              from latest_token_balance
+                              where ${tokenBalanceQuery.query}
+                              order by token_id ${order}
+        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances -- TODO:// include timestamp range
+                from ${tableName} e
+                        -- TODO need to limit this by timestamp
+                         left join entity_stake es on es.id = e.id
+                where ${whereCondition} ${orderBy})`;
+  };
+  const queries = [getEntitySql(Entity.tableName)];
+
+  if (tsQuery.query) {
+    //todo use constants for names. //todo fix to reliable reference sub select and dont hard code query (maybe)
+    logger.debug(`The balance file ts here is ${balanceFileTs}`);
+    const consensusTimestampSelect = `${balanceFileTs} as consensus_timestamp`;
+    const balanceSelect =
+      '(select balance from account_balance where account_id = ? and consensus_timestamp = ?) as balance';
+    const orderBy = `order by ${Entity.TIMESTAMP_RANGE} desc limit 1`;
+    queries.push(
+      `
+          UNION ALL
+          ${getEntitySql(Entity.historyTableName, balanceSelect, consensusTimestampSelect, orderBy)} 
+          order by ${Entity.TIMESTAMP_RANGE} desc limit 1` // TODO do this better
+    );
+    utils.mergeParams(
+      params,
+      [entityAccountQuery.params[0], balanceFileTs], //todo fix to reliable reference sub select
+      tokenBalanceQuery.params,
+      balanceQuery.params,
+      entityAccountQuery.params,
+      pubKeyQuery.params,
+      tsQuery.params
+    );
+  } else {
+    queries.push(limitQuery);
+    utils.mergeParams(params, limitParams);
+  }
+  const query = queries.join('\n');
+  logger.info(`The final querry ${query}`);
+  logger.info(params);
   return {query, params};
 };
 
@@ -169,8 +212,9 @@ const getEntityBalanceQuery = (
  * Creates account query and params from filters with limit and order
  *
  * @param entityAccountQuery entity id query
- * @param tokenBalanceLimit The max number of token balances for an account
  * @param tokenBalanceQuery token balance query
+ * @param entityTsQuery optional timestamp query
+ * @param balanceFileTs optional timestamp of relevant balance file
  * @param balanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -180,6 +224,8 @@ const getEntityBalanceQuery = (
 const getAccountQuery = (
   entityAccountQuery,
   tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts},
+  entityTsQuery = {query: '', params: []},
+  balanceFileTs = undefined,
   balanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
@@ -191,18 +237,27 @@ const getAccountQuery = (
       .join(' and ');
 
     const entityOnlyQuery = `
-      select ${entityFields}
-      from entity e left join entity_stake es on es.id = e.id
-      where ${entityCondition}
-      order by id ${limitAndOrderQuery.order}
-      ${limitAndOrderQuery.query}`;
+            select ${entityFields}
+            from entity e
+                     left join entity_stake es on es.id = e.id
+            where ${entityCondition}
+            order by id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`;
     return {
       query: entityOnlyQuery,
       params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitAndOrderQuery.params),
     };
   }
 
-  return getEntityBalanceQuery(balanceQuery, entityAccountQuery, limitAndOrderQuery, pubKeyQuery, tokenBalanceQuery);
+  //TODO:// TOKEN BALANCE QUERY NEEDS TO BE UPDATED
+  return getEntityBalanceQuery(
+    balanceQuery,
+    entityAccountQuery,
+    entityTsQuery,
+    limitAndOrderQuery,
+    pubKeyQuery,
+    tokenBalanceQuery,
+    balanceFileTs
+  );
 };
 
 const toQueryObject = (queryAndParams) => {
@@ -243,6 +298,8 @@ const getAccounts = async (req, res) => {
 
   const {query, params} = getAccountQuery(
     entityAccountQuery,
+    undefined,
+    undefined,
     undefined,
     balanceQuery,
     limitAndOrderQuery,
@@ -297,23 +354,38 @@ const getAccounts = async (req, res) => {
  * @return {Promise}
  */
 const getOneAccount = async (req, res) => {
+  logger.debug('The req query is ');
+  logger.debug(req.query);
   // Validate query parameters first
-  utils.validateReq(req, acceptedSingleAccountParameters);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
+
+  console.log('The filters are');
+  console.log(filters);
 
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
   const parsedQueryParams = req.query;
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_timestamp');
+  const [transactionTsQuery, transactionTsParams] = utils.parseTimestampQueryParam(
+    parsedQueryParams,
+    't.consensus_timestamp'
+  ); //TODO use alias
+  const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(filters);
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
   const accountIdParams = [encodedId, encodedId];
   const tokenBalanceParams = [encodedId];
+  // TODO use entity query
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     {query: 'e.id = ? and (es.id = ? OR es.id IS NULL)', params: accountIdParams},
-    {query: 'account_id = ?', params: tokenBalanceParams, limit: tokenBalanceResponseLimit.singleAccount}
+    {query: 'account_id = ?', params: tokenBalanceParams, limit: tokenBalanceResponseLimit.singleAccount},
+    {query: entityTsQuery.join(' and '), params: entityTsParams},
+    await balances.getAccountBalanceTimestamp('consensus_timestamp <= ?', [entityTsParams[0].end]) // TODO fix reference
   );
+  logger.info('The data is ');
+  logger.info(entityQuery);
+  logger.info(entityParams);
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
   if (logger.isTraceEnabled()) {
@@ -330,7 +402,7 @@ const getOneAccount = async (req, res) => {
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
-    tsQuery,
+    transactionTsQuery,
     resultTypeQuery,
     query,
     creditDebitQuery,
@@ -338,7 +410,7 @@ const getOneAccount = async (req, res) => {
     order
   );
 
-  const innerParams = utils.mergeParams(accountParams, tsParams, params);
+  const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
   const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
