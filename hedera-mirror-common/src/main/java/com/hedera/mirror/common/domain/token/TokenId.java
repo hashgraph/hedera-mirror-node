@@ -18,9 +18,9 @@ package com.hedera.mirror.common.domain.token;
 
 import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Embeddable;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

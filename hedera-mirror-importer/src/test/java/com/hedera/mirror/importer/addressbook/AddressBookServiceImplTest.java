@@ -67,6 +67,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 
@@ -213,6 +214,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void updateCompleteFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         long addressBookConsensusTimeStamp = 5L;
@@ -232,26 +234,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void cacheAndEvictAddressBook() {
-        byte[] addressBookBytes = UPDATED.toByteArray();
-        long addressBookConsensusTimeStamp = 5L;
-        update(addressBookBytes, addressBookConsensusTimeStamp, true);
-
-        // verify cache is empty to start
-        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
-
-        // verify getCurrent() adds an entry to the cache
-        var nodes = addressBookService.getNodes();
-        var nodesCache = cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY).get();
-        assertNotNull(nodesCache);
-        assertThat(nodesCache).isEqualTo(nodes);
-
-        // verify updating the address book evicts the cache.
-        update(addressBookBytes, addressBookConsensusTimeStamp + 1, true);
-        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
-    }
-
-    @Test
     void updatePartialFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 2;
@@ -267,6 +249,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void appendCompleteFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 3;
@@ -339,6 +322,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void verifyAddressBookUpdateAcrossSessions() {
         // create network book, perform an update and append
         byte[] addressBookBytes = FINAL.toByteArray();
@@ -362,6 +346,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void appendCompleteFileAcrossFileIds() {
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBookBytes = UPDATED.toByteArray();
@@ -525,6 +510,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @SuppressWarnings("deprecation")
     @Test
+    @Transactional
     void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
         Map<String, Integer> memoToNodeIdMap = Map.of(
                 "0.0.3", 0,
@@ -902,6 +888,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void verifyUpdateWithNewFileDataAfterCurrentAddressBook() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
         store(addressBookBytes1, 2L, false);

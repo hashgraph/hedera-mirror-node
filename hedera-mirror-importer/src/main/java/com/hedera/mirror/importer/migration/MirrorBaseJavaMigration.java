@@ -29,10 +29,6 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
 
     protected final Logger log = LogManager.getLogger(getClass());
 
-    public boolean isBaselineMigration() {
-        return false;
-    }
-
     protected MigrationVersion getMinimumVersion() {
         return null;
     }
@@ -114,10 +110,5 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
     @Override
     public Integer getChecksum() {
         return null;
-    }
-
-    @Override
-    public boolean isUndo() {
-        return false;
     }
 }

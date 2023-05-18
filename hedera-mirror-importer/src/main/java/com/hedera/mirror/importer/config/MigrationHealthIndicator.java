@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.config;
 
+import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.callback.BaseCallback;
 import org.flywaydb.core.api.callback.Context;

@@ -17,13 +17,13 @@
 package com.hedera.mirror.monitor.properties;
 
 import com.google.common.collect.Lists;
+import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2

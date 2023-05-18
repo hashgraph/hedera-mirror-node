@@ -17,10 +17,10 @@
 package com.hedera.mirror.importer.reconciliation;
 
 import com.hedera.mirror.importer.util.Utility;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.Instant;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;

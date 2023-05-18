@@ -25,7 +25,7 @@ import com.hedera.hashgraph.sdk.FileInfoQuery;
 import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named

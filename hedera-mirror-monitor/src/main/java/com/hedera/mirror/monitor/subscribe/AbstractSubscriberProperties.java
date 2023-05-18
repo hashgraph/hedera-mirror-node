@@ -17,8 +17,8 @@
 package com.hedera.mirror.monitor.subscribe;
 
 import com.hedera.mirror.monitor.ScenarioProperties;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 

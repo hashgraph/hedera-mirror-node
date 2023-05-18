@@ -23,9 +23,9 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
 

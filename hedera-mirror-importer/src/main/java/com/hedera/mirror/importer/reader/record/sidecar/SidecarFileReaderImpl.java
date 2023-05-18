@@ -19,9 +19,9 @@ package com.hedera.mirror.importer.reader.record.sidecar;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import jakarta.inject.Named;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import javax.inject.Named;
 
 @Named
 public class SidecarFileReaderImpl implements SidecarFileReader {

@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.importer.repository.upsert;
 
+import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 

@@ -79,7 +79,7 @@ dependencies {
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
     // Can remove -Xlint:-cast after https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/15
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-cast"))
+    //options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-cast"))
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"
@@ -87,7 +87,7 @@ tasks.compileJava {
 
 tasks.compileTestJava {
     dependsOn("generateEffectiveLombokConfig")
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
+    //options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"

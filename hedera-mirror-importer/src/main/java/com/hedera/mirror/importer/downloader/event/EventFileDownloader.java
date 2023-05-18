@@ -28,7 +28,7 @@ import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import io.micrometer.core.instrument.MeterRegistry;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Named

@@ -18,11 +18,11 @@ package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
