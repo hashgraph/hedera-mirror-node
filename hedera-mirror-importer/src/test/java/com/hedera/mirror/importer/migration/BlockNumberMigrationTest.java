@@ -51,7 +51,7 @@ class BlockNumberMigrationTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        mirrorProperties.setNetwork(TESTNET);
+        mirrorProperties.setNetwork(TESTNET.name());
     }
 
     @Test
@@ -62,7 +62,7 @@ class BlockNumberMigrationTest extends IntegrationTest {
     @Test
     void unsupportedNetwork() {
         var previousNetwork = mirrorProperties.getNetwork();
-        mirrorProperties.setNetwork(PREVIEWNET);
+        mirrorProperties.setNetwork(PREVIEWNET.name());
         List<Tuple> expectedBlockNumbersAndConsensusEnd =
                 insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
                         .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))

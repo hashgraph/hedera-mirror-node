@@ -167,7 +167,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
         otherNetworkMirrorProperties.setDataPath(dataPath);
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
-        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER.name());
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
                 fileDataRepository,
@@ -205,7 +205,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
         otherNetworkMirrorProperties.setDataPath(dataPath);
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
-        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER.name());
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
                 fileDataRepository,

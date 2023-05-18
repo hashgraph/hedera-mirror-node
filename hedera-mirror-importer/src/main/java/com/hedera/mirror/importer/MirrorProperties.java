@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer;
 
-import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.validation.constraints.Min;
@@ -24,12 +23,14 @@ import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -54,9 +55,7 @@ public class MirrorProperties {
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
     @NotNull
-    private HederaNetwork network = HederaNetwork.DEMO;
-
-    private String networkPrefix;
+    private String network = HederaNetwork.DEMO.name();
 
     @Min(0)
     private long shard = 0L;
@@ -69,19 +68,6 @@ public class MirrorProperties {
 
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
-
-    public String getEffectiveNetwork() {
-        if (!StringUtils.isBlank(networkPrefix)) {
-            return networkPrefix.toLowerCase();
-        } else {
-            if (network.equals(HederaNetwork.OTHER)) {
-                throw new InvalidConfigurationException(
-                        "Unable to retrieve the network prefix for network type " + network);
-            }
-            // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
-            return network.toString().toLowerCase();
-        }
-    }
 
     public enum ConsensusMode {
         EQUAL, // all nodes equally weighted
@@ -100,8 +86,22 @@ public class MirrorProperties {
 
         private final String bucketName;
 
+        public static HederaNetwork getHederaNetworkByName(@NonNull String networkName) {
+            Optional<HederaNetwork> networkOpt = Arrays.stream(values())
+                    .filter(v -> v.name().equalsIgnoreCase(networkName))
+                    .findFirst();
+            return networkOpt.orElse(OTHER);
+        }
+
         public boolean isAllowAnonymousAccess() {
             return this == DEMO;
+        }
+
+        // TODO can't be true for instance OTHER if networkName is one of the other enum values
+        // Just OTHER itself and anything else not the other values
+        public boolean is(String networkName) {
+            HederaNetwork hederaNetwork = getHederaNetworkByName(networkName);
+            return this == hederaNetwork || this == OTHER;
         }
     }
 }

@@ -16,50 +16,33 @@
 
 package com.hedera.mirror.importer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
-import com.hedera.mirror.importer.exception.InvalidConfigurationException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class MirrorPropertiesTest {
 
-    private static final String MIXED_CASE_NETWORK_PREFIX = "NetworkPrefiX";
-    private static final String LOWER_CASE_NETWORK_PREFIX = MIXED_CASE_NETWORK_PREFIX.toLowerCase();
-
-    private MirrorProperties mirrorProperties;
-
-    @BeforeEach
-    void setup() {
-        mirrorProperties = new MirrorProperties();
-    }
-
-    @ParameterizedTest(name = "Network prefix overrides all network types: {0}")
+    @ParameterizedTest(name = "Network name is enum instance: {0}")
     @EnumSource(value = HederaNetwork.class)
-    void networkPrefixDefined(HederaNetwork network) {
-        mirrorProperties.setNetworkPrefix(MIXED_CASE_NETWORK_PREFIX);
-        mirrorProperties.setNetwork(network);
-        assertEquals(LOWER_CASE_NETWORK_PREFIX, mirrorProperties.getEffectiveNetwork());
+    void verifyIsness(HederaNetwork hederaNetwork) {
+        assertTrue(hederaNetwork.is(hederaNetwork.name()));
+        assertTrue(hederaNetwork.is(hederaNetwork.name().toUpperCase()));
     }
 
-    @ParameterizedTest(name = "Default to lowercase network name: {0}")
+    @ParameterizedTest(name = "OTHER network is names: {0}")
+    @ValueSource(strings = {"Other", "integration", "My-Network-Name"})
+    void verifyOtherIsness(String networkName) {
+        assertTrue(HederaNetwork.OTHER.is(networkName));
+    }
+
+    @ParameterizedTest(name = "OTHER network is not names: {0}")
     @EnumSource(value = HederaNetwork.class, mode = Mode.EXCLUDE, names = "OTHER")
-    void networkPrefixUndefined(HederaNetwork network) {
-        mirrorProperties.setNetwork(network);
-        assertEquals(network.name().toLowerCase(), mirrorProperties.getEffectiveNetwork());
-    }
-
-    @Test
-    void networkOtherRequiresPrefix() {
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
-        assertThrows(
-                InvalidConfigurationException.class,
-                () -> mirrorProperties.getEffectiveNetwork(),
-                "InvalidConfigurationException was expected");
+    void verifyOtherIsNotness(HederaNetwork network) {
+        assertFalse(HederaNetwork.OTHER.is(network.name()));
     }
 }

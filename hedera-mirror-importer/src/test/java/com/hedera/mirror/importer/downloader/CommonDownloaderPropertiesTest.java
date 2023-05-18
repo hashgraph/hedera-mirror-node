@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.downloader.StreamSourceProperties.Sourc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,7 +34,8 @@ class CommonDownloaderPropertiesTest {
         var mirrorProperties = new MirrorProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
         assertThat(properties.getBucketName())
-                .isEqualTo(mirrorProperties.getNetwork().getBucketName());
+                .isEqualTo(HederaNetwork.getHederaNetworkByName(mirrorProperties.getNetwork())
+                        .getBucketName());
 
         var bucketName = "test";
         properties.setBucketName(bucketName);

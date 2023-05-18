@@ -58,7 +58,7 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(HederaNetwork.TESTNET.name());
     }
 
     @Test
@@ -96,7 +96,7 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     void otherNetwork() {
         // given
         setupForNetwork(HederaNetwork.MAINNET);
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        mirrorProperties.setNetwork(HederaNetwork.OTHER.name());
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L)
@@ -274,7 +274,7 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     private void setupForNetwork(HederaNetwork network) {
-        mirrorProperties.setNetwork(network);
+        mirrorProperties.setNetwork(network.name());
         lastHapi26RecordFileConsensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(network);
         lastHapi26EpochDay = Utility.getEpochDay(lastHapi26RecordFileConsensusEnd);
         persistLastHapi26RecordFile(lastHapi26RecordFileConsensusEnd);

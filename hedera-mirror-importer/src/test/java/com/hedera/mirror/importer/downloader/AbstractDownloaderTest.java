@@ -266,7 +266,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setStartBlockNumber(101L);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);

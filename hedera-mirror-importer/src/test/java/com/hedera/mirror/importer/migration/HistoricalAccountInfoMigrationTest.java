@@ -56,13 +56,13 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final MirrorProperties mirrorProperties;
 
-    private MirrorProperties.HederaNetwork network;
+    private String network;
 
     @BeforeEach
     void before() {
         network = mirrorProperties.getNetwork();
         mirrorProperties.setImportHistoricalAccountInfo(true);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET.name());
     }
 
     @AfterEach
@@ -146,7 +146,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void notMainnet() throws Exception {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO.name());
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }

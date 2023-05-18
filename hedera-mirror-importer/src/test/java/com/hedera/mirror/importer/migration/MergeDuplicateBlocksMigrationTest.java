@@ -58,7 +58,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
     @Test
     void notMainnet() throws Exception {
         // Given
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
 
         // When
         migration.doMigrate();
@@ -75,7 +75,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
     @Test
     void mainnet() throws Exception {
         // Given
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET.name());
 
         // When
         migration.doMigrate();

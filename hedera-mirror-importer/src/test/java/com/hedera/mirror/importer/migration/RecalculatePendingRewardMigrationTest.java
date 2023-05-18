@@ -52,7 +52,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(HederaNetwork.TESTNET.name());
     }
 
     @Test
@@ -65,7 +65,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     void otherNetwork() {
         // given
         setupNodeStakeForNetwork(HederaNetwork.MAINNET);
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        mirrorProperties.setNetwork(HederaNetwork.OTHER.name());
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay))
@@ -347,7 +347,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     private void setupNodeStakeForNetwork(HederaNetwork network) {
-        mirrorProperties.setNetwork(network);
+        mirrorProperties.setNetwork(network.name());
 
         long firstNonZeroRewardTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(network);
         firstNonZeroRewardEpochDay = Utility.getEpochDay(firstNonZeroRewardTimestamp);
