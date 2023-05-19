@@ -28,7 +28,7 @@ dependencies {
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
     api("com.querydsl:querydsl-apt")
     api("com.querydsl:querydsl-jpa")
-    api("com.vladmihalcea:hibernate-types-60")
+    api("io.hypersistence:hypersistence-utils-hibernate-62")
     api("commons-codec:commons-codec")
     api("io.projectreactor:reactor-core")
     api("org.apache.commons:commons-lang3")

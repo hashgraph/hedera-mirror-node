@@ -22,7 +22,7 @@ import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

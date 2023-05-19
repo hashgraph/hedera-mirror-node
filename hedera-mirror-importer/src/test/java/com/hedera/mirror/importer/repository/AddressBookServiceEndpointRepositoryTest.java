@@ -57,8 +57,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotNull()
                 .hasSize(4)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(80, 443, 8000, 8443);
     }
 
@@ -72,8 +71,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotNull()
                 .hasSize(12)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(80, 443, 80, 443, 8080, 8443, 8080, 8443, 50211, 50212, 50211, 50212);
     }
 

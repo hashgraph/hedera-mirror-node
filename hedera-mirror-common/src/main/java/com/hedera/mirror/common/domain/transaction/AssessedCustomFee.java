@@ -23,7 +23,7 @@ import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;

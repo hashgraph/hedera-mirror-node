@@ -18,7 +18,7 @@ package com.hedera.mirror.common.converter;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Range;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

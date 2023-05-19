@@ -22,7 +22,7 @@ import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.EmbeddedId;

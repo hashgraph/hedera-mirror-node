@@ -18,7 +18,11 @@ package com.hedera.mirror.importer.addressbook;
 
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.CACHE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
@@ -948,13 +952,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @CsvSource(
             textBlock =
                     """
-    EQUAL, 10000, 1, 4
-    EQUAL, 0, 1, 4
-    STAKE, 10000, 10000, 40000
-    STAKE, 0, 1, 4
-    STAKE_IN_ADDRESS_BOOK, 10000, 10000, 40000
-    STAKE_IN_ADDRESS_BOOK, 0, 1, 4
-    """)
+                            EQUAL, 10000, 1, 4
+                            EQUAL, 0, 1, 4
+                            STAKE, 10000, 10000, 40000
+                            STAKE, 0, 1, 4
+                            STAKE_IN_ADDRESS_BOOK, 10000, 10000, 40000
+                            STAKE_IN_ADDRESS_BOOK, 0, 1, 4
+                            """)
     @ParameterizedTest
     void getNodes(ConsensusMode mode, long stake, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
@@ -978,11 +982,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @CsvSource(textBlock = """
-    EQUAL, 1, 6
-    STAKE, 10000, 60000
-    STAKE_IN_ADDRESS_BOOK, 10000, 40000
-    """)
+    @CsvSource(
+            textBlock =
+                    """
+            EQUAL, 1, 6
+            STAKE, 10000, 60000
+            STAKE_IN_ADDRESS_BOOK, 10000, 40000
+            """)
     @ParameterizedTest
     void getNodesWithNodeStakeCountMoreThanAddressBook(
             ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {

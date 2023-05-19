@@ -18,8 +18,8 @@ package com.hedera.mirror.grpc.domain;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;

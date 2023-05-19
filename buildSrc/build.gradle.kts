@@ -28,7 +28,7 @@ repositories {
 }
 
 extra.apply {
-    set("springBootVersion", "3.0.7")
+    set("springBootVersion", "3.1.0")
 }
 
 dependencies {
@@ -52,6 +52,9 @@ dependencies {
 
     // Temporary due to https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/16
     implementation("org.springframework.boot:spring-boot-starter-graphql:${springBootVersion}")
+
+    // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
+    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.14")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {

@@ -121,6 +121,7 @@ spring:
       shardCount: 16
     user: ${hedera.mirror.importer.db.owner}
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         hbm2ddl:

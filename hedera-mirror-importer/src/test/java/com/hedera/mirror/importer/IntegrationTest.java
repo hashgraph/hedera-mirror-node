@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
 import java.sql.SQLException;
 import java.time.Instant;

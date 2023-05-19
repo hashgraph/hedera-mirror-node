@@ -19,7 +19,7 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;

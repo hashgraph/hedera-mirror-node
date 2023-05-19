@@ -24,7 +24,7 @@ import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.IdClass;

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
