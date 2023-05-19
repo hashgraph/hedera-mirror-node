@@ -31,10 +31,9 @@ import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRelationshipKey, TokenRelationship> {
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;

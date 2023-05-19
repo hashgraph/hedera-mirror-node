@@ -28,10 +28,9 @@ import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueToken> {
     private final NftRepository nftRepository;
 
