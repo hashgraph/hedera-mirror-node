@@ -51,7 +51,6 @@ public class AccountFeature extends AbstractFeature {
     private final MirrorNodeClient mirrorClient;
 
     private AccountId receiverAccountId;
-
     private ExpandedAccountId senderAccountId;
     private ExpandedAccountId spenderAccountId;
     private long startingBalance;
@@ -226,11 +225,11 @@ public class AccountFeature extends AbstractFeature {
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTransfers())
                 .contains(MirrorTransfer.builder()
-                        .account(
-                                accountClient.getClient().getOperatorAccountId().toString())
+                        .account(owner)
                         .amount(-transferAmount)
                         .isApproval(true)
                         .build()));
