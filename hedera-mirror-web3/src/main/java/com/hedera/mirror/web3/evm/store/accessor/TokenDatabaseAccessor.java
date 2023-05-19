@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.web3.evm.store.accessor.AccessorUtils.getEntityExpiration;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -89,7 +88,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
-                getEntityExpiration(entity),
+                entity.getEffectiveExpiration(),
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
