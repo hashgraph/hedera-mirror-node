@@ -49,11 +49,11 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRel
                                 token,
                                 account,
                                 tokenAccount.getBalance(),
-                                TokenFreezeStatusEnum.FROZEN.equals(tokenAccount.getFreezeStatus()),
-                                TokenKycStatusEnum.GRANTED.equals(tokenAccount.getKycStatus()),
+                                TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
+                                TokenKycStatusEnum.GRANTED == tokenAccount.getKycStatus(),
                                 false,
                                 false,
-                                Boolean.TRUE.equals(tokenAccount.getAutomaticAssociation()),
+                                Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
                                 0))));
     }
 
