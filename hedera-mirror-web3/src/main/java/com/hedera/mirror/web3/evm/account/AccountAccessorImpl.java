@@ -16,11 +16,10 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -31,17 +30,20 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
+    private StackedStateFrames<Object> state;
     private final MirrorEntityAccess mirrorEntityAccess;
-    private final EntityRepository entityRepository;
+
+    public void setState(StackedStateFrames<Object> state) {
+        this.state = state;
+    }
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var addressBytes = addressOrAlias.toArrayUnsafe();
-        if (!isMirror(addressBytes)) {
-            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-            if (entityFoundByAlias.isPresent()) {
-                return addressOrAlias;
-            }
+        final var topFrame = state.top();
+        final var entityAccessor = topFrame.getAccessor(Entity.class);
+        final var entityFoundByAlias = entityAccessor.get(addressOrAlias);
+        if (entityFoundByAlias.isPresent()) {
+            return addressOrAlias;
         }
 
         return getAddressOrAlias(addressOrAlias);

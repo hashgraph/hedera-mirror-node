@@ -59,6 +59,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final AbstractCodeCache codeCache;
     private final HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
+    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final EntityRepository entityRepository,
@@ -76,7 +77,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.entityRepository = entityRepository;
         this.tokenRepository = tokenRepository;
         this.nftRepository = nftRepository;
@@ -89,6 +91,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
+        this.databaseAccessors = databaseAccessors;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
@@ -107,16 +110,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
-        final List<DatabaseAccessor<Object, ?>> accessors = List.of(
-                new NftDatabaseAccessor(nftRepository),
-                new EntityDatabaseAccessor(entityRepository),
-                new TokenDatabaseAccessor(tokenRepository),
-                new TokenAllowanceDatabaseAccessor(tokenAllowanceRepository),
-                new TokenAccountDatabaseAccessor(tokenAccountRepository),
-                new NftAllowanceDatabaseAccessor(nftAllowanceRepository),
-                new CustomFeeDatabaseAccessor(customFeeRepository));
-        final var stackedStateFrames = new StackedStateFrames<>(accessors);
-        worldState.setState(stackedStateFrames);
+        final var state = new StackedStateFrames<>(databaseAccessors);
+        worldState.setState(state);
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,

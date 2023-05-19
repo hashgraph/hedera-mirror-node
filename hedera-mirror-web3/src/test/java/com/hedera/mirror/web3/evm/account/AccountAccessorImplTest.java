@@ -22,11 +22,16 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -52,8 +57,17 @@ class AccountAccessorImplTest {
     @Mock
     private Entity account;
 
+    private StackedStateFrames<Object> state;
+
     @InjectMocks
     public AccountAccessorImpl accountAccessor;
+
+    @BeforeEach
+    void setUp() {
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+        state = new StackedStateFrames<>(accessors);
+        accountAccessor.setState(state);
+    }
 
     @Test
     void isTokenAddressTrue() {

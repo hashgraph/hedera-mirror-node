@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -40,19 +41,18 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
-    private final HederaEvmEntityAccess hederaEvmEntityAccess;
+    private final MirrorEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
-    private final AccountAccessor accountAccessor;
+    private final AccountAccessorImpl accountAccessor;
     private final TokenAccessorImpl tokenAccessor;
-
     private final EntityAddressSequencer entityAddressSequencer;
 
     public HederaEvmWorldState(
-            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            final MirrorEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
             final AbstractCodeCache abstractCodeCache,
-            final AccountAccessor accountAccessor,
+            final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
@@ -65,6 +65,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     public void setState(StackedStateFrames<Object> state) {
         this.tokenAccessor.setState(state);
+        this.hederaEvmEntityAccess.setState(state);
+        this.accountAccessor.setState(state);
     }
 
     public Account get(final Address address) {

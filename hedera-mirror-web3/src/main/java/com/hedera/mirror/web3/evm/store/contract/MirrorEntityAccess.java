@@ -22,11 +22,11 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import java.time.Instant;
 import java.util.Optional;
@@ -38,9 +38,12 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 @RequiredArgsConstructor
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
-    private final EntityRepository entityRepository;
-    private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
+    private StackedStateFrames<Object> state;
+
+    public void setState(StackedStateFrames<Object> state) {
+        this.state = state;
+    }
 
     @Override
     public boolean isUsable(final Address address) {
@@ -110,18 +113,19 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return Bytes.EMPTY;
         }
 
-        final var runtimeCode = contractRepository.findRuntimeBytecode(entityId);
-        return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
+        final var topFrame = state.top();
+        final var contractAccessor = topFrame.getAccessor(Contract.class);
+        final var contractOptional = contractAccessor.get(entityId);
+        if (contractOptional.isEmpty()) {
+            return Bytes.EMPTY;
+        }
+        return Bytes.of(contractOptional.get().getRuntimeBytecode());
     }
 
     public Optional<Entity> findEntity(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress(address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
-        } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-        }
+        final var topFrame = state.top();
+        final var entityAccessor = topFrame.getAccessor(Entity.class);
+        return entityAccessor.get(address);
     }
 
     private Long fetchEntityId(final Address address) {
@@ -130,9 +134,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return entityIdNumFromEvmAddress(address);
         }
 
-        return entityRepository
-                .findByEvmAddressAndDeletedIsFalse(addressBytes)
-                .map(AbstractEntity::getId)
-                .orElse(0L);
+        final var topFrame = state.top();
+        final var entityAccessor = topFrame.getAccessor(Entity.class);
+        return entityAccessor.get(address).map(AbstractEntity::getId).orElse(0L);
     }
 }

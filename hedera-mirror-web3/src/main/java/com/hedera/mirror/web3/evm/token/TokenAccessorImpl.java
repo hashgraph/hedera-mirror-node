@@ -30,7 +30,6 @@ import com.hedera.mirror.common.domain.token.*;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.repository.*;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.*;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -81,11 +80,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isTokenAddress(final Address address) {
-
         final var topFrame = state.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         final var entityOptional = entityAccessor.get(address);
-
         return entityOptional.filter(e -> e.getType() == TOKEN).isPresent();
     }
 
@@ -123,7 +120,6 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenAccountId = new AbstractTokenAccount.Id();
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
         tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
-
         final var topFrame = state.top();
         final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         return tokenAccountAccessor
@@ -140,7 +136,6 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public TokenType typeOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-
         final var topFrame = state.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor
@@ -205,7 +200,6 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-
         return tokenAccountAccessor
                 .get(tokenAccountId)
                 .map(AbstractTokenAccount::getBalance)
