@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -26,6 +26,7 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -66,12 +67,10 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRel
 
     private Optional<TokenAccount> findTokenAccount(Token token, Account account) {
         AbstractTokenAccount.Id id = new AbstractTokenAccount.Id();
-        id.setTokenId(EntityIdEndec.encode(
-                token.getId().shard(), token.getId().realm(), token.getId().num()));
-        id.setAccountId(EntityIdEndec.encode(
-                account.getId().shard(),
-                account.getId().realm(),
-                account.getId().num()));
+        id.setTokenId(
+                EntityIdUtils.entityIdFromId(token.getId(), EntityType.TOKEN).getId());
+        id.setAccountId(EntityIdUtils.entityIdFromId(account.getId(), EntityType.ACCOUNT)
+                .getId());
         return tokenAccountRepository.findById(id);
     }
 }

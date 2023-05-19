@@ -22,6 +22,8 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -213,5 +215,9 @@ public final class EntityIdUtils {
 
     public static String asHexedEvmAddress(final Id id) {
         return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
+    }
+
+    public static EntityId entityIdFromId(Id id, EntityType type) {
+        return new EntityId(id.shard(), id.realm(), id.num(), type);
     }
 }
