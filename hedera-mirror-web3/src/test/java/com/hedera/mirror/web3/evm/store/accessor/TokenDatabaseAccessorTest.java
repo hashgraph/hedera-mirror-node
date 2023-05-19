@@ -122,6 +122,7 @@ class TokenDatabaseAccessorTest {
     @Test
     void getTokenDefaultValues() {
         setupToken();
+        databaseToken.setTreasuryAccountId(null);
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(Collections.emptyList(), Token::mintedUniqueTokens)
@@ -176,7 +177,6 @@ class TokenDatabaseAccessorTest {
 
     private void setupToken() {
         final var tokenId = new TokenId(entity.toEntityId());
-        domainBuilder.id();
         databaseToken = domainBuilder.token().customize(t -> t.tokenId(tokenId)).get();
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
     }
