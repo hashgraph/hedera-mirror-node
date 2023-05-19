@@ -29,7 +29,7 @@ import jakarta.persistence.criteria.Root;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.AvailableHints;
 
 @Log4j2
 @Named
@@ -63,7 +63,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         query = query.select(root).where(predicate).orderBy(cb.asc(root.get(CONSENSUS_TIMESTAMP)));
 
         TypedQuery<TopicMessage> typedQuery = entityManager.createQuery(query);
-        typedQuery.setHint(QueryHints.HINT_READONLY, true);
+        typedQuery.setHint(AvailableHints.HINT_READ_ONLY, true);
 
         if (filter.hasLimit()) {
             typedQuery.setMaxResults((int) filter.getLimit());

@@ -41,7 +41,7 @@ import lombok.SneakyThrows;
 import org.springframework.http.MediaType;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
@@ -60,7 +60,7 @@ public class StartupProbe {
             .infiniteRetry()
             .notRetryOn(TimeoutException.class)
             .fixedBackoff(1000L)
-            .withListener(new RetryListenerSupport() {
+            .withListener(new RetryListener() {
                 @Override
                 public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
                     log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());

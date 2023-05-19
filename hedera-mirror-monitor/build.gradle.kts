@@ -29,7 +29,6 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.swagger:swagger-annotations")
     implementation("jakarta.inject:jakarta.inject-api")

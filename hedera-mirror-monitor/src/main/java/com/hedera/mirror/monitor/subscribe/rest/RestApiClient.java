@@ -53,8 +53,7 @@ public class RestApiClient {
                 .retrieve()
                 .bodyToMono(responseClass)
                 .onErrorResume(Mono::error) // Needed for some reason to avoid onErrorDropped
-                .name("rest")
-                .metrics();
+                .name("rest");
     }
 
     public Flux<NetworkNode> getNodes() {

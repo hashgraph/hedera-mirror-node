@@ -18,6 +18,7 @@ package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import org.springframework.data.redis.listener.ReactiveRedisMessageListenerConta
 import org.springframework.data.redis.listener.Topic;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -44,15 +46,18 @@ public class RedisTopicListener extends SharedTopicListener {
     private final Mono<ReactiveRedisMessageListenerContainer> container;
     private final SerializationPair<String> channelSerializer;
     private final SerializationPair<TopicMessage> messageSerializer;
+    private final ObservationRegistry observationRegistry;
     private final Map<String, Flux<TopicMessage>> topicMessages; // Topic name to active subscription
 
     public RedisTopicListener(
             ListenerProperties listenerProperties,
+            ObservationRegistry observationRegistry,
             ReactiveRedisConnectionFactory connectionFactory,
             RedisSerializer<TopicMessage> redisSerializer) {
         super(listenerProperties);
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
         this.messageSerializer = SerializationPair.fromSerializer(redisSerializer);
+        this.observationRegistry = observationRegistry;
         this.topicMessages = new ConcurrentHashMap<>();
 
         // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry
@@ -60,7 +65,7 @@ public class RedisTopicListener extends SharedTopicListener {
         this.container = Mono.defer(() -> Mono.just(new ReactiveRedisMessageListenerContainer(connectionFactory)))
                 .name(METRIC)
                 .tag(METRIC_TAG, "redis")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnError(t -> log.error("Error connecting to Redis: ", t))
                 .doOnSubscribe(s -> log.info("Attempting to connect to Redis"))
                 .doOnSuccess(c -> log.info("Connected to Redis"))

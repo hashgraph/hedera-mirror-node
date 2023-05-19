@@ -1,3 +1,4 @@
+debug: true
 hedera:
   mirror:
     grpc:
@@ -24,22 +25,14 @@ logging:
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    export:
-      elastic:
-        autoCreateIndex: false
+  elastic:
+    metrics:
+      export:
+        auto-create-index: false
         enabled: false
         index: mirror
-        indexDateFormat: yyyy-MM-dd
+        index-date-format: yyyy-MM-dd
         step: 30s
-      prometheus:
-        step: 30s
-    tags:
-      application: ${spring.application.name}
   endpoint:
     health:
       group:
@@ -47,6 +40,17 @@ management:
           include: ping
         readiness:
           include: db, grpc, grpcChannel, ping, redis
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        step: 60s
 server:
   compression:
     enabled: true

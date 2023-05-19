@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.RetryListener;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.ResourceUtils;
 
@@ -61,13 +61,13 @@ public class IntegrationTestConfiguration {
     String getV2CleanupSql(JdbcOperations jdbcOperations) {
         var tables = jdbcOperations.query(
                 """
-                select table_name
-                from information_schema.tables
-                left join time_partitions on partition::text = table_name::text
-                where table_schema = 'public' and table_type <> 'VIEW'
-                  and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
-                order by table_name
-                """,
+                        select table_name
+                        from information_schema.tables
+                        left join time_partitions on partition::text = table_name::text
+                        where table_schema = 'public' and table_type <> 'VIEW'
+                          and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
+                        order by table_name
+                        """,
                 (rs, rowNum) -> rs.getString(1));
         return tables.stream().map((t) -> String.format("delete from %s;", t)).collect(Collectors.joining("\n"));
     }
@@ -78,7 +78,7 @@ public class IntegrationTestConfiguration {
     }
 
     // Records retry attempts made via Spring @Retryable or RetryTemplate for verification in tests
-    public class RetryRecorder extends RetryListenerSupport {
+    public class RetryRecorder implements RetryListener {
 
         private final Multiset<Class<? extends Throwable>> retries = ConcurrentHashMultiset.create();
 
