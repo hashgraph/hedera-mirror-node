@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.store.accessor.model.Treasury;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
@@ -46,6 +47,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final TokenRepository tokenRepository;
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
+
+    private final EntityRepository entityRepository;
 
     @Override
     public @NonNull Optional<Token> get(@NonNull Address address) {
@@ -108,8 +111,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         if (treasuryId == null) {
             return null;
         }
-        return entityDatabaseAccessor
-                .getById(treasuryId.getId())
+        return entityRepository
+                .findByIdAndDeletedIsFalse(treasuryId.getId())
                 .map(entity -> new Treasury(
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
                 .orElse(null);

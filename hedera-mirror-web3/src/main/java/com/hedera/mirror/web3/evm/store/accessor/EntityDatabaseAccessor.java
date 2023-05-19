@@ -37,13 +37,9 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Address, Entity> {
         var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdNumFromEvmAddress(address);
-            return getById(entityId);
+            return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
-    }
-
-    public Optional<Entity> getById(Long entityId) {
-        return entityRepository.findByIdAndDeletedIsFalse(entityId);
     }
 }

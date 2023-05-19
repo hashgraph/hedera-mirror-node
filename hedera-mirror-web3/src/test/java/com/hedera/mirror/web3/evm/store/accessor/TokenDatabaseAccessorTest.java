@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
@@ -60,6 +61,9 @@ class TokenDatabaseAccessorTest {
 
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @Mock
+    private EntityRepository entityRepository;
 
     com.hedera.mirror.common.domain.token.Token databaseToken;
 
@@ -155,7 +159,7 @@ class TokenDatabaseAccessorTest {
         when(treasuryEntity.getRealm()).thenReturn(12L);
         when(treasuryEntity.getNum()).thenReturn(13L);
         when(treasuryEntity.getBalance()).thenReturn(14L);
-        when(entityDatabaseAccessor.getById(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
+        when(entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
                 .returns(new Id(11, 12, 13), Account::getId)
