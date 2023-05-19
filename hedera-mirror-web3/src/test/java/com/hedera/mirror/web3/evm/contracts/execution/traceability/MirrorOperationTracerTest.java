@@ -66,14 +66,14 @@ class MirrorOperationTracerTest {
     }
 
     @Test
-    void traceDisabledTest(CapturedOutput output) {
+    void traceDisabled(CapturedOutput output) {
         traceProperties.setEnabled(false);
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
         assertThat(output).isEmpty();
     }
 
     @Test
-    void stateFilterTest(CapturedOutput output) {
+    void stateFilterMismatch(CapturedOutput output) {
         traceProperties.setEnabled(true);
         traceProperties.setStatus(Set.of(State.CODE_EXECUTING));
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
@@ -84,7 +84,37 @@ class MirrorOperationTracerTest {
     }
 
     @Test
-    void contractFilterTest(CapturedOutput output) {
+    void stateFilter(CapturedOutput output) {
+        traceProperties.setEnabled(true);
+        traceProperties.setStatus(Set.of(State.CODE_SUSPENDED));
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(mirrorEvmContractAliases.resolveForEvm(any())).willReturn(recipient);
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getSenderAddress()).willReturn(sender);
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(messageFrame.getMessageStackDepth()).willReturn(1);
+        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
+
+        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
+
+        assertThat(output)
+                .contains(
+                        "0.0.1.1 MESSAGE_CALL",
+                        "recipient=0x0000000000000000000000000000000000000003",
+                        "messageFrame=messageFrame",
+                        "inputData=0x696e70757444617461",
+                        "remainingGas=1000",
+                        "sender=0x0000000000000000000000000000000000000004",
+                        "revertReason=");
+    }
+
+    @Test
+    void contractFilterMismatch(CapturedOutput output) {
         traceProperties.setEnabled(true);
         traceProperties.setContract(Set.of(contract.toHexString()));
         given(mirrorEvmContractAliases.resolveForEvm(any())).willReturn(recipient);
@@ -93,6 +123,35 @@ class MirrorOperationTracerTest {
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
 
         assertThat(output).isEmpty();
+    }
+
+    @Test
+    void contractFilter(CapturedOutput output) {
+        traceProperties.setEnabled(true);
+        traceProperties.setContract(Set.of(recipient.toHexString()));
+        given(mirrorEvmContractAliases.resolveForEvm(any())).willReturn(recipient);
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getSenderAddress()).willReturn(sender);
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(messageFrame.getMessageStackDepth()).willReturn(1);
+        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
+
+        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
+
+        assertThat(output)
+                .contains(
+                        "0.0.1.1 MESSAGE_CALL",
+                        "recipient=0x0000000000000000000000000000000000000003",
+                        "messageFrame=messageFrame",
+                        "inputData=0x696e70757444617461",
+                        "remainingGas=1000",
+                        "sender=0x0000000000000000000000000000000000000004",
+                        "revertReason=");
     }
 
     @Test
@@ -139,7 +198,7 @@ class MirrorOperationTracerTest {
     }
 
     @Test
-    void tracePost(CapturedOutput output) {
+    void tracePostWrongStateFails(CapturedOutput output) {
         traceProperties.setEnabled(true);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
