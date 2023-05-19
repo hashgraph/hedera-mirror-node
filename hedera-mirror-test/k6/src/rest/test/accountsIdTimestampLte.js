@@ -24,7 +24,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsIdTimestampLte') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}?timestamp=${testParameters['DEFAULT_ACCOUNT_ID_TIMESTAMP']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}?timestamp=lte:${testParameters['DEFAULT_ACCOUNT_ID_TIMESTAMP']}`;
     return http.get(url);
   })
   .requiredParameters('DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_ID_TIMESTAMP')
