@@ -76,7 +76,7 @@ Acceptance and performance tests should be updated whenever there's an API chang
 ## Documentation
 
 - [ ] [Configuration Properties](/docs/configuration.md)
-- [ ] [Database Indexes Table](/docs/database.md#indexes)
+- [ ] [Database Indexes Table](/docs/database/README.md#indexes)
 - [ ] [REST Database Table](/docs/rest/README.md#database)
 
 ## ETL

@@ -1134,17 +1134,18 @@ class ContractController extends BaseController {
       ]);
     }
 
-    if (ethTransactions.length === 0 && contractResults.length === 0) {
+    if (contractResults.length === 0) {
+      if (ethTransactions.length !== 0) {
+        logger.error(
+          `Contract result not found for ethereum transaction at consensus timestamp ${ethTransactions[0].consensusTimestamp}`
+        );
+      }
+
       throw new NotFoundError();
     }
 
+    const contractResult = contractResults[0];
     const ethTransaction = ethTransactions[0];
-
-    // If contractResults is empty and ethTransactions is not, create a default contract result
-    const contractResult =
-      contractResults.length !== 0
-        ? contractResults[0]
-        : this.getDefaultFailureContractResultByTransaction(ethTransaction);
 
     const [recordFile, contractLogs, contractStateChanges] = await Promise.all([
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractResult.consensusTimestamp),
@@ -1264,20 +1265,6 @@ class ContractController extends BaseController {
       contractStateChanges,
       fileData
     );
-  };
-
-  getDefaultFailureContractResultByTransaction = (transaction) => {
-    return {
-      bloom: emptyBloomBuffer,
-      callResult: [],
-      consensusTimestamp: transaction.consensusTimestamp,
-      contractId: null,
-      createdContractIds: [],
-      errorMessage: TransactionResult.getName(transaction.result),
-      functionParameters: [],
-      gasUsed: 0,
-      payerAccountId: transaction.payerAccountId,
-    };
   };
 }
 
