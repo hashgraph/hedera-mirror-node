@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -24,15 +23,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
-import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -65,65 +64,19 @@ class TokenDatabaseAccessorTest {
     @Mock
     private EntityRepository entityRepository;
 
+    private DomainBuilder domainBuilder;
+
     com.hedera.mirror.common.domain.token.Token databaseToken;
 
     private Entity entity;
 
-    private static final long SHARD = 0L;
-
-    private static final long REALM = 1L;
-    private static final long EXPIRATION_TIMESTAMP = 2L;
-
-    private static final long TOTAL_SUPPLY = 3L;
-    private static final long AUTO_RENEW_PERIOD = 4L;
-
-    private static final int DECIMALS = 5;
-
-    private static final long MAX_SUPPLY = 6L;
-
-    private static final boolean FREEZE_DEFAULT = false;
-
-    private static final String MEMO = "memo1";
-    private static final String NAME = "name1";
-    private static final String SYMBOL = "symbol1";
-
-    private final Key KYC_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27a"))
-            .build();
-    private final Key FREEZE_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27b"))
-            .build();
-    private final Key SUPPLY_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27c"))
-            .build();
-    private final Key WIPE_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"))
-            .build();
-    private final Key FEE_SCHEDULE_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27e"))
-            .build();
-
-    private final Key PAUSE_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27f"))
-            .build();
-
-    private final Key ADMIN_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb271"))
-            .build();
-
     @BeforeEach
     void setup() {
-        final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
-        entity = new Entity();
-        entity.setId(entityNum);
-        entity.setShard(SHARD);
-        entity.setRealm(REALM);
-        entity.setNum(entityNum);
-        entity.setDeleted(false);
-        entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
-        entity.setExpirationTimestamp(EXPIRATION_TIMESTAMP);
-        entity.setMemo(MEMO);
-        entity.setKey(ADMIN_KEY.toByteArray());
+        domainBuilder = new DomainBuilder();
+        entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(entityIdNumFromEvmAddress(ADDRESS)))
+                .get();
         when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
     }
 
@@ -133,19 +86,19 @@ class TokenDatabaseAccessorTest {
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
-                .returns(TokenType.NON_FUNGIBLE_UNIQUE, Token::getType)
-                .returns(TokenSupplyType.FINITE, Token::getSupplyType)
-                .returns(TOTAL_SUPPLY, Token::getTotalSupply)
-                .returns(MAX_SUPPLY, Token::getMaxSupply)
-                .returns(FREEZE_DEFAULT, Token::isFrozenByDefault)
+                .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
+                .returns(TokenSupplyType.valueOf(databaseToken.getSupplyType().name()), Token::getSupplyType)
+                .returns(databaseToken.getTotalSupply(), Token::getTotalSupply)
+                .returns(databaseToken.getMaxSupply(), Token::getMaxSupply)
+                .returns(databaseToken.getFreezeDefault(), Token::isFrozenByDefault)
                 .returns(false, Token::isDeleted)
                 .returns(false, Token::isPaused)
-                .returns(EXPIRATION_TIMESTAMP, Token::getExpiry)
-                .returns(MEMO, Token::getMemo)
-                .returns(NAME, Token::getName)
-                .returns(SYMBOL, Token::getSymbol)
-                .returns(DECIMALS, Token::getDecimals)
-                .returns(AUTO_RENEW_PERIOD, Token::getAutoRenewPeriod));
+                .returns(entity.getExpirationTimestamp(), Token::getExpiry)
+                .returns(entity.getMemo(), Token::getMemo)
+                .returns(databaseToken.getName(), Token::getName)
+                .returns(databaseToken.getSymbol(), Token::getSymbol)
+                .returns(databaseToken.getDecimals(), Token::getDecimals)
+                .returns(entity.getAutoRenewPeriod(), Token::getAutoRenewPeriod));
     }
 
     @Test
@@ -188,13 +141,21 @@ class TokenDatabaseAccessorTest {
         setupToken();
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
-                .returns(asFcKeyUnchecked(ADMIN_KEY), Token::getAdminKey)
-                .returns(asFcKeyUnchecked(KYC_KEY), Token::getKycKey)
-                .returns(asFcKeyUnchecked(PAUSE_KEY), Token::getPauseKey)
-                .returns(asFcKeyUnchecked(FREEZE_KEY), Token::getFreezeKey)
-                .returns(asFcKeyUnchecked(WIPE_KEY), Token::getWipeKey)
-                .returns(asFcKeyUnchecked(SUPPLY_KEY), Token::getSupplyKey)
-                .returns(asFcKeyUnchecked(FEE_SCHEDULE_KEY), Token::getFeeScheduleKey));
+                .returns(parseJkey(entity.getKey()), Token::getAdminKey)
+                .returns(parseJkey(databaseToken.getKycKey()), Token::getKycKey)
+                .returns(parseJkey(databaseToken.getPauseKey()), Token::getPauseKey)
+                .returns(parseJkey(databaseToken.getFreezeKey()), Token::getFreezeKey)
+                .returns(parseJkey(databaseToken.getWipeKey()), Token::getWipeKey)
+                .returns(parseJkey(databaseToken.getSupplyKey()), Token::getSupplyKey)
+                .returns(parseJkey(databaseToken.getFeeScheduleKey()), Token::getFeeScheduleKey));
+    }
+
+    private JKey parseJkey(byte[] keyBytes) {
+        try {
+            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
+        } catch (InvalidProtocolBufferException e) {
+            return null;
+        }
     }
 
     @Test
@@ -215,23 +176,8 @@ class TokenDatabaseAccessorTest {
 
     private void setupToken() {
         final var tokenId = new TokenId(entity.toEntityId());
-        databaseToken = new com.hedera.mirror.common.domain.token.Token();
-        databaseToken.setTokenId(tokenId);
-        databaseToken.setType(NON_FUNGIBLE_UNIQUE);
-        databaseToken.setSupplyType(TokenSupplyTypeEnum.FINITE);
-        databaseToken.setTotalSupply(TOTAL_SUPPLY);
-        databaseToken.setMaxSupply(MAX_SUPPLY);
-        databaseToken.setKycKey(KYC_KEY.toByteArray());
-        databaseToken.setFreezeKey(FREEZE_KEY.toByteArray());
-        databaseToken.setSupplyKey(SUPPLY_KEY.toByteArray());
-        databaseToken.setWipeKey(WIPE_KEY.toByteArray());
-        databaseToken.setFeeScheduleKey(FEE_SCHEDULE_KEY.toByteArray());
-        databaseToken.setPauseKey(PAUSE_KEY.toByteArray());
-        databaseToken.setFreezeDefault(FREEZE_DEFAULT);
-        databaseToken.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
-        databaseToken.setName(NAME);
-        databaseToken.setSymbol(SYMBOL);
-        databaseToken.setDecimals(DECIMALS);
+        domainBuilder.id();
+        databaseToken = domainBuilder.token().customize(t -> t.tokenId(tokenId)).get();
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
     }
 }
