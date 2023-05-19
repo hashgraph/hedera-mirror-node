@@ -18,4 +18,4 @@ package com.hedera.mirror.web3.evm.store.accessor.model;
 
 import org.hyperledger.besu.datatypes.Address;
 
-public record TokenRelationshipKey(Address accountAddress, Address tokenAddress) {}
+public record TokenRelationshipKey(Address tokenAddress, Address accountAddress) {}

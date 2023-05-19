@@ -70,7 +70,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_ADD, Address.ALTBN128_MUL)))
+                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
