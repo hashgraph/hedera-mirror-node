@@ -2,7 +2,6 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.contracts.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;

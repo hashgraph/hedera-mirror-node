@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contracts;
+package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;

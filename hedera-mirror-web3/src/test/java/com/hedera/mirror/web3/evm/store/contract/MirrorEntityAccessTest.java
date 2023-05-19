@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.web3.evm.store.contracts.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;

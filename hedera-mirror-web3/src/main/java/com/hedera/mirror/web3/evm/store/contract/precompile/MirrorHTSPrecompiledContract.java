@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contracts.precompile;
+package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.exception.ResourceLimitException;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -27,6 +27,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contracts;
+package com.hedera.mirror.web3.evm.store.contract;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;

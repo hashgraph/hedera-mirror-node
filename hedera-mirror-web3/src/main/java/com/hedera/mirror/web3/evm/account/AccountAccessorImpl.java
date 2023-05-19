@@ -19,7 +19,7 @@ package com.hedera.mirror.web3.evm.account;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.contracts.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import javax.inject.Named;

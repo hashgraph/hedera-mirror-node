@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.evm.store.contracts.HederaEvmWorldState;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;

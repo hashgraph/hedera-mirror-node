@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.contracts.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;

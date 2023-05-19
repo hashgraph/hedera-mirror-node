@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
