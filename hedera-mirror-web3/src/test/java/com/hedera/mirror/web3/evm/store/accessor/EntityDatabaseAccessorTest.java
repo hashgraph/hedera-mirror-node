@@ -63,14 +63,4 @@ class EntityDatabaseAccessorTest {
         assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
-
-    @Test
-    void getById() {
-        Long entityId = 123L;
-
-        when(entityRepository.findByIdAndDeletedIsFalse(entityId)).thenReturn(Optional.of(mockEntity));
-
-        assertThat(entityDatabaseAccessor.getById(entityId))
-                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
-    }
 }

@@ -29,6 +29,8 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.sql.Date;
+import java.util.concurrent.TimeUnit;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EnumType;
@@ -53,6 +55,9 @@ public abstract class AbstractEntity implements History {
 
     public static final long ACCOUNT_ID_CLEARED = 0L;
     public static final long NODE_ID_CLEARED = -1L;
+
+    public static final long DEFAULT_EXPIRY_TIMESTAMP =
+            TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
 
     @Column(updatable = false)
     @ToString.Exclude
@@ -157,6 +162,18 @@ public abstract class AbstractEntity implements History {
 
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
+    }
+
+    public long getEffectiveExpiration() {
+        if (expirationTimestamp != null) {
+            return expirationTimestamp;
+        }
+
+        if (createdTimestamp != null && autoRenewPeriod != null) {
+            return createdTimestamp + TimeUnit.SECONDS.toNanos(autoRenewPeriod);
+        }
+
+        return DEFAULT_EXPIRY_TIMESTAMP;
     }
 
     @SuppressWarnings("java:S1610")

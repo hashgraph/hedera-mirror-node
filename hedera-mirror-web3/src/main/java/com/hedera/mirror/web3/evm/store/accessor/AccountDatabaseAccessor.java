@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.web3.evm.store.accessor.AccessorUtils.getEntityExpiration;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -72,7 +71,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                getEntityExpiration(entity),
+                entity.getEffectiveExpiration(),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId()),

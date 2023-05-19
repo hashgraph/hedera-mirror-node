@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.web3.evm.store.accessor.AccessorUtils.getEntityExpiration;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -24,6 +23,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
@@ -46,6 +46,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final TokenRepository tokenRepository;
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
+
+    private final EntityRepository entityRepository;
 
     @Override
     public @NonNull Optional<Token> get(@NonNull Address address) {
@@ -86,7 +88,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
-                getEntityExpiration(entity),
+                entity.getEffectiveExpiration(),
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
@@ -99,7 +101,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private JKey parseJkey(byte[] keyBytes) {
         try {
             return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
-        } catch (InvalidProtocolBufferException e) {
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }
     }
@@ -108,23 +110,10 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         if (treasuryId == null) {
             return null;
         }
-        return entityDatabaseAccessor
-                .getById(treasuryId.getId())
-                .map(entity -> new Account(
-                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                        0,
-                        entity.getBalance(),
-                        false,
-                        0,
-                        0,
-                        null,
-                        0,
-                        null,
-                        null,
-                        null,
-                        0,
-                        0,
-                        0))
+        return entityRepository
+                .findByIdAndDeletedIsFalse(treasuryId.getId())
+                .map(entity ->
+                        new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
                 .orElse(null);
     }
 }
