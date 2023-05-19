@@ -104,7 +104,8 @@ class MirrorOperationTracerTest {
 
         assertThat(output)
                 .contains(
-                        "0.0.1.1 MESSAGE_CALL",
+                        "MESSAGE_CALL",
+                        "callDepth=1",
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=messageFrame",
                         "inputData=0x696e70757444617461",
@@ -145,7 +146,8 @@ class MirrorOperationTracerTest {
 
         assertThat(output)
                 .contains(
-                        "0.0.1.1 MESSAGE_CALL",
+                        "MESSAGE_CALL",
+                        "callDepth=1",
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=messageFrame",
                         "inputData=0x696e70757444617461",
@@ -165,7 +167,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
-        mirrorOperationTracer.init(messageFrame);
+        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
 
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
@@ -180,7 +182,8 @@ class MirrorOperationTracerTest {
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
         assertThat(output)
                 .contains(
-                        "0.0.1.0 MESSAGE_CALL",
+                        "MESSAGE_CALL",
+                        "callDepth=0",
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=messageFrame",
                         "inputData=0x696e70757444617461",
@@ -188,22 +191,13 @@ class MirrorOperationTracerTest {
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=")
                 .contains(
-                        "0.0.1.1 MESSAGE_CALL",
+                        "MESSAGE_CALL",
+                        "callDepth=1",
                         "recipient=0x0000000000000000000000000000000000000003",
                         "messageFrame=messageFrame",
                         "inputData=0x696e70757444617461",
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=");
-    }
-
-    @Test
-    void tracePostWrongStateFails(CapturedOutput output) {
-        traceProperties.setEnabled(true);
-        given(messageFrame.getRecipientAddress()).willReturn(recipient);
-        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
-        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
-        assertThat(output).isEmpty();
     }
 }

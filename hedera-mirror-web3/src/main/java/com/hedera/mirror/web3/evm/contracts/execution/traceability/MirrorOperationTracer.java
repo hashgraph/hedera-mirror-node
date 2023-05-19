@@ -24,7 +24,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.operation.Operation;
 
 @CustomLog
@@ -34,14 +33,6 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
 
     private final TraceProperties traceProperties;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Override
-    public void init(final MessageFrame initialFrame) {
-        if (traceProperties.isEnabled()) {
-            final String parentIndex = "0.0.1.0 " + initialFrame.getType();
-            trace(initialFrame, parentIndex);
-        }
-    }
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final Operation.OperationResult operationResult) {
@@ -59,18 +50,11 @@ public class MirrorOperationTracer implements HederaEvmOperationTracer {
             return;
         }
 
-        final var frameState = currentFrame.getState();
-        if (frameState == State.CODE_SUSPENDED) {
-            final String childIndex = "0.0.1." + currentFrame.getMessageStackDepth() + " " + currentFrame.getType();
-            trace(currentFrame, childIndex);
-        }
-    }
-
-    public void trace(final MessageFrame currentFrame, String index) {
         log.info(
-                index
-                        + " messageFrame={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
+                "{} messageFrame={}, callDepth={}, remainingGas={}, sender={}, recipient={}, contract={}, revertReason={}, inputData={}",
+                currentFrame.getType(),
                 currentFrame.toString(),
+                currentFrame.getMessageStackDepth(),
                 currentFrame.getRemainingGas(),
                 currentFrame.getSenderAddress(),
                 currentFrame.getRecipientAddress(),
