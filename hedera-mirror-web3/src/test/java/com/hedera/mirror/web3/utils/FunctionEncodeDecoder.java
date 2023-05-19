@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -71,6 +72,18 @@ public class FunctionEncodeDecoder {
         Tuple parametersBytes = encodeTupleParameters(function.getInputs().getCanonicalType(), parameters);
 
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
+    }
+
+    public Bytes functionHashWithEmptyDataFor(final String functionName, final Path contractPath, final Object... parameters) {
+        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
+        Function function = Function.fromJson(jsonFunction);
+        return Bytes.wrap(encodeCall(function).array());
+    }
+
+    public ByteBuffer encodeCall(Function function) {
+        ByteBuffer dest = ByteBuffer.allocate(function.selector().length + 3200);
+        dest.put(function.selector());
+        return dest;
     }
 
     public String encodedResultFor(final String functionName, final Path contractPath, final Object... results) {

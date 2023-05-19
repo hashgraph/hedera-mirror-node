@@ -23,6 +23,7 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.mirror.web3.utils.FunctionEncodeDecoder.convertAddress;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -65,6 +66,13 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     private Path ABI_PATH;
 
+    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
+    private Path MODIFICATION_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
+    private Path MODIFICATION_CONTRACT_ABI_PATH;
+
+    private static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
     private static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1252, TOKEN));
@@ -75,15 +83,16 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     };
     private static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     private static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+    private static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder encodeDecoder;
 
     @ParameterizedTest
-    @EnumSource(ContractFunctions.class)
-    void evmPrecompileTokenFunctionsTest(ContractFunctions contractFunc) {
+    @EnumSource(ContractReadFunctions.class)
+    void evmPrecompileReadOnlyTokenFunctionsTest(ContractReadFunctions contractFunc) {
         final var functionHash =
                 encodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
         final var successfulResponse =
                 encodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
 
@@ -91,11 +100,23 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     }
 
     @ParameterizedTest
+    @EnumSource(UnsupportedContractModificationFunctions.class)
+    void evmPrecompileModificationTokenFunctionsTest(UnsupportedContractModificationFunctions contractFunc) {
+        final var functionHash =
+                encodeDecoder.functionHashWithEmptyDataFor(contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Precompile not supported for non-static frames");
+    }
+
+    @ParameterizedTest
     @EnumSource(FeeCase.class)
     void customFees(FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
         customFeesPersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -142,7 +163,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         final var functionHash = isNft
                 ? encodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
         customFeesPersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -208,7 +229,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void nftInfoForInvalidSerialNo() {
         final var functionHash =
                 encodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -218,14 +239,14 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void tokenInfoForNonTokenAccount() {
         final var functionHash =
                 encodeDecoder.functionHashFor("getInformationForFungibleToken", ABI_PATH, SENDER_ADDRESS);
-        final var serviceParameters = serviceParameters(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
     @RequiredArgsConstructor
-    enum ContractFunctions {
+    enum ContractReadFunctions {
         IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_FROZEN_ETH_ADDRESS(
                 "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
@@ -266,7 +287,48 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         private final Object[] expectedResultFields;
     }
 
-    private CallServiceParameters serviceParameters(Bytes callData) {
+    @RequiredArgsConstructor
+    enum UnsupportedContractModificationFunctions {
+        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] { new Object[] {EMPTY_ADDRESS, 0L, false}, new Object[] {EMPTY_ADDRESS, new Object[] { EMPTY_ADDRESS,
+        0L, false}}, new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}}),
+        MINT_TOKEN("mintTokenExternal", new Object[] { EMPTY_ADDRESS, 0L, new byte[0]}),
+        BURN_TOKEN("burnTokenExternal", new Object[] { EMPTY_ADDRESS, 0L, new long[0]}),
+        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0]}),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0]}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] { new Object[]{}, 0L, 0}),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesExternal", new Object[] { new Object[]{}, 0L, 0, new Object[]{}, new Object[]{}}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] { new Object[]{}}),
+        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createNonFungibleTokenWithCustomFeesExternal", new Object[] { new Object[]{}, new Object[]{}, new Object[]{}}),
+        APPROVE("approveExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM("transferFromExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        APPROVE_NFT("approveNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        FREEZE_TOKEN("freezeTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
+        TRANSFER_TOKENS("transferTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0], new long[0]}),
+        TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] { EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
+        TRANSFER_TOKEN("transferTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        PAUSE_TOKEN("pauseTokenExternal", new Object[] { EMPTY_ADDRESS}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] { EMPTY_ADDRESS}),
+        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] { EMPTY_ADDRESS}),
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
+        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
+        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS});
+
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+
+    private CallServiceParameters serviceParametersForEthCall(Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -278,6 +340,21 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 .gas(15_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
+                .build();
+    }
+
+    private CallServiceParameters serviceParametersForEthEstimateGas(Bytes callData) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        persistEntities();
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .value(0L)
+                .receiver(MODIFICATION_CONTRACT_ADDRESS)
+                .callData(callData)
+                .gas(15_000_000L)
+                .isStatic(false)
+                .callType(ETH_ESTIMATE_GAS)
                 .build();
     }
 
@@ -310,6 +387,24 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 .persist();
 
         domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+
+        final var modificationContractBytes = encodeDecoder.getContractBytes(MODIFICATION_CONTRACT_BYTES_PATH);
+        final var modificationContractEntityId = fromEvmAddress(MODIFICATION_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var modificationContractEvmAddress = toEvmAddress(modificationContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(modificationContractEntityId.getId())
+                        .num(modificationContractEntityId.getEntityNum())
+                        .evmAddress(modificationContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(modificationContractEntityId.getId()).runtimeBytecode(modificationContractBytes))
+                .persist();
 
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
 
