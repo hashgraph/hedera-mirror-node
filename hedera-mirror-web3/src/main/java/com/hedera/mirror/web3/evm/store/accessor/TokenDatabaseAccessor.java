@@ -102,7 +102,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private JKey parseJkey(byte[] keyBytes) {
         try {
             return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
-        } catch (InvalidProtocolBufferException e) {
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }
     }
