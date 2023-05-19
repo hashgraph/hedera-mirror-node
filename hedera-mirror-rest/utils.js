@@ -693,10 +693,6 @@ const extractTimestampRangeConditionFilters = (
 ) => {
   const conditions = [];
   const params = [];
-  logger.debug('The filters are ');
-  logger.debug(filters);
-  logger.debug(filters.filter((filter) => filter.key === filterKeys.TIMESTAMP));
-  logger.debug('got here');
 
   filters
     .filter((filter) => filter.key === filterKeys.TIMESTAMP)
@@ -734,11 +730,6 @@ const extractTimestampRangeConditionFilters = (
       params.push(range);
     });
 
-  logger.debug('REturning this stuff');
-  logger.debug({
-    conditions,
-    params,
-  });
   return {
     conditions,
     params,
