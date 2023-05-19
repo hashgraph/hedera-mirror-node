@@ -18,7 +18,7 @@ import http from 'k6/http';
 
 import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
-const urlTag = '/accounts/{accountId}?timestamp={timestamp}';
+const urlTag = '/accounts/{accountId}?timestamp=lte:{timestamp}';
 
 const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsIdTimestampLte') // use unique scenario name among all tests

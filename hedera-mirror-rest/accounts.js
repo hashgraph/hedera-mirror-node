@@ -113,7 +113,6 @@ const entityFields = [
  *
  * @param entityBalanceQuery
  * @param entityAccountQuery
- * @param tsQuery
  * @param limitAndOrderQuery
  * @param pubKeyQuery
  * @param tokenBalanceQuery
@@ -211,7 +210,6 @@ const getEntityBalanceQuery = (
  *
  * @param entityAccountQuery entity id query
  * @param tokenBalanceQuery token balance query
- * @param entityTsQuery optional timestamp query
  * @param accountBalanceQuery optional query for relevant balance file
  * @param entityBalanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
