@@ -22,10 +22,10 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import java.time.Instant;
@@ -39,10 +39,11 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
-    private StackedStateFrames<Object> state;
+    private final ContractRepository contractRepository;
+    private StackedStateFrames<Object> stackedStateFrames;
 
-    public void setState(StackedStateFrames<Object> state) {
-        this.state = state;
+    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
@@ -113,17 +114,12 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return Bytes.EMPTY;
         }
 
-        final var topFrame = state.top();
-        final var contractAccessor = topFrame.getAccessor(Contract.class);
-        final var contractOptional = contractAccessor.get(entityId);
-        if (contractOptional.isEmpty()) {
-            return Bytes.EMPTY;
-        }
-        return Bytes.of(contractOptional.get().getRuntimeBytecode());
+        final var runtimeCode = contractRepository.findRuntimeBytecode(entityId);
+        return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     public Optional<Entity> findEntity(final Address address) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         return entityAccessor.get(address);
     }
@@ -134,7 +130,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return entityIdNumFromEvmAddress(address);
         }
 
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         return entityAccessor.get(address).map(AbstractEntity::getId).orElse(0L);
     }

@@ -26,14 +26,19 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -67,6 +72,15 @@ class MirrorEntityAccessTest {
 
     @InjectMocks
     private MirrorEntityAccess mirrorEntityAccess;
+
+    private StackedStateFrames<Object> stackedStateFrames;
+
+    @BeforeEach
+    void setUp() {
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+        stackedStateFrames = new StackedStateFrames<>(accessors);
+        mirrorEntityAccess.setStackedStateFrames(stackedStateFrames);
+    }
 
     @Test
     void isUsableWithPositiveBalance() {
@@ -270,7 +284,6 @@ class MirrorEntityAccessTest {
 
     @Test
     void fetchCodeIfPresentForNonMirrorEvm() {
-        when(mirrorEntityAccess.findEntity(NON_MIRROR_ADDRESS)).thenReturn(Optional.of(entity));
         when(entity.getId()).thenReturn(ENTITY_ID);
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
         final var result = mirrorEntityAccess.fetchCodeIfPresent(NON_MIRROR_ADDRESS);

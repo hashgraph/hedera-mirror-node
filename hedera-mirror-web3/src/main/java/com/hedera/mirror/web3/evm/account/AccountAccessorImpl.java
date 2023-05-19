@@ -30,16 +30,17 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
-    private StackedStateFrames<Object> state;
+    private StackedStateFrames<Object> stackedStateFrames;
+
     private final MirrorEntityAccess mirrorEntityAccess;
 
-    public void setState(StackedStateFrames<Object> state) {
-        this.state = state;
+    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         final var entityFoundByAlias = entityAccessor.get(addressOrAlias);
         if (entityFoundByAlias.isPresent()) {

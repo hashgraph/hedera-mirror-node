@@ -63,10 +63,10 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         this.entityAddressSequencer = entityAddressSequencer;
     }
 
-    public void setState(StackedStateFrames<Object> state) {
-        this.tokenAccessor.setState(state);
-        this.hederaEvmEntityAccess.setState(state);
-        this.accountAccessor.setState(state);
+    public void setState(StackedStateFrames<Object> stackedStateFrames) {
+        this.tokenAccessor.setStackedStateFrames(stackedStateFrames);
+        this.hederaEvmEntityAccess.setStackedStateFrames(stackedStateFrames);
+        this.accountAccessor.setStackedStateFrames(stackedStateFrames);
     }
 
     public Account get(final Address address) {

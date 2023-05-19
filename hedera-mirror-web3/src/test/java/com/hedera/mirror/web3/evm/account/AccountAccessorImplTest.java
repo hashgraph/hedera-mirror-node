@@ -57,7 +57,7 @@ class AccountAccessorImplTest {
     @Mock
     private Entity account;
 
-    private StackedStateFrames<Object> state;
+    private StackedStateFrames<Object> stackedStateFrames;
 
     @InjectMocks
     public AccountAccessorImpl accountAccessor;
@@ -65,8 +65,8 @@ class AccountAccessorImplTest {
     @BeforeEach
     void setUp() {
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        state = new StackedStateFrames<>(accessors);
-        accountAccessor.setState(state);
+        stackedStateFrames = new StackedStateFrames<>(accessors);
+        accountAccessor.setStackedStateFrames(stackedStateFrames);
     }
 
     @Test

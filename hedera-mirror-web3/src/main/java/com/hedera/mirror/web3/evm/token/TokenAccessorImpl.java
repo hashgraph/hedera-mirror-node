@@ -47,11 +47,11 @@ import org.springframework.util.CollectionUtils;
 @RequiredArgsConstructor
 public class TokenAccessorImpl implements TokenAccessor {
 
-    private StackedStateFrames<Object> state;
+    private StackedStateFrames<Object> stackedStateFrames;
     private final MirrorNodeEvmProperties properties;
 
-    public void setState(StackedStateFrames<Object> state) {
-        this.state = state;
+    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var nftAccessor = topFrame.getAccessor(Nft.class);
         final var nftOptional = nftAccessor.get(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
         if (nftOptional.isEmpty()) {
@@ -80,7 +80,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isTokenAddress(final Address address) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         final var entityOptional = entityAccessor.get(address);
         return entityOptional.filter(e -> e.getType() == TOKEN).isPresent();
@@ -89,7 +89,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean isFrozen(final Address account, final Address token) {
         final var tokenAccountId = new AbstractTokenAccount.Id();
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
         tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
@@ -102,7 +102,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean defaultFreezeStatus(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getFreezeDefault).orElse(false);
     }
@@ -110,7 +110,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean defaultKycStatus(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getKycKey).isPresent();
     }
@@ -120,7 +120,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenAccountId = new AbstractTokenAccount.Id();
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
         tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         return tokenAccountAccessor
                 .get(tokenAccountId)
@@ -136,7 +136,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public TokenType typeOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor
                 .get(tokenId)
@@ -164,7 +164,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public String nameOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getName).orElse("");
     }
@@ -172,7 +172,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public String symbolOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getSymbol).orElse("");
     }
@@ -180,7 +180,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long totalSupplyOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getTotalSupply).orElse(0L);
     }
@@ -188,7 +188,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public int decimalsOf(final Address token) {
         final var tokenId = new TokenId(entityIdFromEvmAddress(token));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor.get(tokenId).map(Token::getDecimals).orElse(0);
     }
@@ -196,7 +196,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long balanceOf(Address account, Address token) {
         final var tokenAccountId = new AbstractTokenAccount.Id();
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
@@ -217,7 +217,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
         tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
 
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAllowanceAccessor = topFrame.getAccessor(TokenAllowance.class);
         return tokenAllowanceAccessor
                 .get(tokenAllowanceId)
@@ -228,7 +228,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var nftAccessor = topFrame.getAccessor(Nft.class);
         final var spenderEntity = nftAccessor.get(nftId).map(Nft::getSpender);
 
@@ -251,7 +251,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
         nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
 
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var nftAllowanceAccessor = topFrame.getAccessor(NftAllowance.class);
 
         return nftAllowanceAccessor
@@ -263,7 +263,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var nftAccessor = topFrame.getAccessor(Nft.class);
         final var ownerEntity = nftAccessor.get(nftId).map(Nft::getAccountId);
 
@@ -283,7 +283,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     public String metadataOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
 
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var nftAccessor = topFrame.getAccessor(Nft.class);
         return nftAccessor
                 .get(nftId)
@@ -297,7 +297,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         final var tokenEntityOptional = tokenAccessor.get(new TokenId(fromEvmAddress(token.toArray())));
@@ -356,7 +356,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @SuppressWarnings("unchecked")
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var customFeeAccessor = topFrame.getAccessor(List.class);
         final List<com.hedera.mirror.common.domain.transaction.CustomFee> customFeesCollection =
                 customFeeAccessor.get(entityIdNumFromEvmAddress(token)).get();
@@ -443,13 +443,13 @@ public class TokenAccessorImpl implements TokenAccessor {
             return id != null ? id.getId() : 0L;
         }
 
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         return entityAccessor.get(address).map(AbstractEntity::getId).orElse(0L);
     }
 
     private Address evmAddressFromId(EntityId entityId) {
-        final var topFrame = state.top();
+        final var topFrame = stackedStateFrames.top();
         final var entityAccessor = topFrame.getAccessor(Entity.class);
         Entity entity = entityAccessor.get(entityId).orElse(null);
 
