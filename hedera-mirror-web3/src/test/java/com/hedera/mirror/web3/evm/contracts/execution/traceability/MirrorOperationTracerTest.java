@@ -66,6 +66,13 @@ class MirrorOperationTracerTest {
     }
 
     @Test
+    void traceDisabledTest(CapturedOutput output) {
+        traceProperties.setEnabled(false);
+        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
+        assertThat(output).isEmpty();
+    }
+
+    @Test
     void stateFilterTest(CapturedOutput output) {
         traceProperties.setEnabled(true);
         traceProperties.setStatus(Set.of(State.CODE_EXECUTING));
@@ -129,5 +136,15 @@ class MirrorOperationTracerTest {
                         "remainingGas=1000",
                         "sender=0x0000000000000000000000000000000000000004",
                         "revertReason=");
+    }
+
+    @Test
+    void tracePost(CapturedOutput output) {
+        traceProperties.setEnabled(true);
+        given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
+        mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
+        assertThat(output).isEmpty();
     }
 }
