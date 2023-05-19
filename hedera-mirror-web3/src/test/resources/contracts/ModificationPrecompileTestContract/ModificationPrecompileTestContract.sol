@@ -296,11 +296,15 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function getBalanceOfWithDirectRedirect(address token, address account) public returns (bytes memory result) {
+    function getBalanceOfWithDirectRedirect(address token, address account) external returns (bytes memory result) {
         (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token redirect failed");
         }
         return result;
+    }
+
+    function callNotExistingPrecompile(address token) public {
+        HederaTokenService.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
     }
 }

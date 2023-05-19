@@ -92,7 +92,19 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void evmPrecompileReadOnlyTokenFunctionsTest(ContractReadFunctions contractFunc) {
         final var functionHash =
                 encodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var successfulResponse =
+                encodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @EnumSource(ContractReadFunctions.class)
+    void evmPrecompileReadOnlyTokenFunctionsTestWithNonStaticFrame(ContractReadFunctions contractFunc) {
+        final var functionHash =
+                encodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, false);
         final var successfulResponse =
                 encodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
 
@@ -101,7 +113,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
     @ParameterizedTest
     @EnumSource(UnsupportedContractModificationFunctions.class)
-    void evmPrecompileModificationTokenFunctionsTest(UnsupportedContractModificationFunctions contractFunc) {
+    void evmPrecompileUnsupportedModificationTokenFunctionsTest(UnsupportedContractModificationFunctions contractFunc) {
         final var functionHash =
                 encodeDecoder.functionHashWithEmptyDataFor(contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
@@ -116,7 +128,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void customFees(FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
         customFeesPersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -163,7 +175,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         final var functionHash = isNft
                 ? encodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
         customFeesPersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -229,7 +241,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void nftInfoForInvalidSerialNo() {
         final var functionHash =
                 encodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -239,10 +251,19 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     void tokenInfoForNonTokenAccount() {
         final var functionHash =
                 encodeDecoder.functionHashFor("getInformationForFungibleToken", ABI_PATH, SENDER_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
+    }
+
+    @Test
+    void notExistingPrecompileCallWorks() {
+        final var functionHash =
+                encodeDecoder.functionHashFor("callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
+        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isNotEmpty();
     }
 
     @RequiredArgsConstructor
@@ -328,7 +349,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     }
 
 
-    private CallServiceParameters serviceParametersForEthCall(Bytes callData) {
+    private CallServiceParameters serviceParametersForEthCall(Bytes callData, boolean isStatic) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -338,7 +359,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 .receiver(CONTRACT_ADDRESS)
                 .callData(callData)
                 .gas(15_000_000L)
-                .isStatic(true)
+                .isStatic(isStatic)
                 .callType(ETH_CALL)
                 .build();
     }
@@ -354,6 +375,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 .callData(callData)
                 .gas(15_000_000L)
                 .isStatic(false)
+                .isEstimate(true)
                 .callType(ETH_ESTIMATE_GAS)
                 .build();
     }

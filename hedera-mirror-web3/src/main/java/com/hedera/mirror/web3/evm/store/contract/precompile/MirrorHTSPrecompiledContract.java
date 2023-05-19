@@ -57,6 +57,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String UNSUPPORTED_ERROR_MESSAGE = "Precompile not supported for non-static frames";
     private final MirrorNodeEvmProperties evmProperties;
+    private final EvmInfrastructureFactory infrastructureFactory;
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
     private long gasRequirement = 0;
@@ -71,6 +72,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
                                        final MirrorNodeEvmProperties evmProperties,
                                         final StackedStateFrames<Object> stackedStateFrames) {
         super(infrastructureFactory);
+        this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
     }
@@ -105,14 +107,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         //This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
         //After the Precompile classes are implemented, this workaround won't be needed.
         if(isViewFunction(input)) {
-            final var resultFromExecutor = super.computeCosted(
-                    input,
-                    frame,
-                    viewGasCalculator,
-                    tokenAccessor);
-            return resultFromExecutor == null
-                    ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                    : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
+            return handleReadsFromDynamicContext(input, frame);
         }
 
         if (unqualifiedDelegateDetected(frame)) {
@@ -201,6 +196,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return result;
     }
 
+    @SuppressWarnings({"java:S2583", "java:S1479", "java:S4165"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = null;
         this.transactionBody = null;
@@ -316,6 +312,22 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+    }
+
+    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
+        Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
+        if (isTokenProxyRedirect(input)) {
+            final var executor =
+                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+            resultFromExecutor = executor.computeCosted();
+        } else if (isViewFunction(input)) {
+            final var executor =
+                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
+            resultFromExecutor = executor.computeCosted();
+        }
+        return resultFromExecutor == null
+                    ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
+                    : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
