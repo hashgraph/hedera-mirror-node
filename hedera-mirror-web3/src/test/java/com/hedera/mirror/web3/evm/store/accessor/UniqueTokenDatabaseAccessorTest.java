@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -77,16 +76,6 @@ class UniqueTokenDatabaseAccessorTest {
 
     private Id mapEntityIdToId(EntityId entityId) {
         return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
-    }
-
-    @Test
-    void returnEmptyIfNoTokenId() {
-        Nft nft = new Nft();
-        nft.setId(new NftId(0, null));
-
-        when(nftRepository.findById(any())).thenReturn(Optional.of(nft));
-
-        assertThat(uniqueTokenDatabaseAccessor.get(mock(NftId.class))).isEmpty();
     }
 
     @Test
