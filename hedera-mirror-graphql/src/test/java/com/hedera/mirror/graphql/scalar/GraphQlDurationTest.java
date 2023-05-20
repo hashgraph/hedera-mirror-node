@@ -35,7 +35,8 @@ class GraphQlDurationTest {
         assertThat(graphQlDuration.parseLiteral(
                         StringValue.newStringValue("PT1s").build(), null, null, null))
                 .isEqualTo(duration);
-        assertThatThrownBy(() -> graphQlDuration.parseLiteral(new BooleanValue(true), null, null, null))
+        var invalidValue = new BooleanValue(true);
+        assertThatThrownBy(() -> graphQlDuration.parseLiteral(invalidValue, null, null, null))
                 .isInstanceOf(CoercingParseLiteralException.class);
     }
 

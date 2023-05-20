@@ -46,7 +46,6 @@ public class RedisTopicListener extends SharedTopicListener {
     private final Mono<ReactiveRedisMessageListenerContainer> container;
     private final SerializationPair<String> channelSerializer;
     private final SerializationPair<TopicMessage> messageSerializer;
-    private final ObservationRegistry observationRegistry;
     private final Map<String, Flux<TopicMessage>> topicMessages; // Topic name to active subscription
 
     public RedisTopicListener(
@@ -57,7 +56,6 @@ public class RedisTopicListener extends SharedTopicListener {
         super(listenerProperties);
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
         this.messageSerializer = SerializationPair.fromSerializer(redisSerializer);
-        this.observationRegistry = observationRegistry;
         this.topicMessages = new ConcurrentHashMap<>();
 
         // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry

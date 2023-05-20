@@ -34,7 +34,8 @@ class GraphQlTimestampTest {
         var instant = Instant.EPOCH;
         var value = StringValue.newStringValue(instant.toString()).build();
         assertThat(graphQlTimestamp.parseLiteral(value, null, null, null)).isEqualTo(instant);
-        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(new BooleanValue(true), null, null, null))
+        var invalidValue = new BooleanValue(true);
+        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(invalidValue, null, null, null))
                 .isInstanceOf(CoercingParseLiteralException.class);
     }
 

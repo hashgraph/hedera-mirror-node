@@ -110,8 +110,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                             delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
                             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
                             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
-            include = Throwable.class,
-            exclude = OutOfMemoryError.class,
+            retryFor = Throwable.class,
+            noRetryFor = OutOfMemoryError.class,
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
@@ -143,7 +143,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             recordFile.finishLoad(count);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
         }

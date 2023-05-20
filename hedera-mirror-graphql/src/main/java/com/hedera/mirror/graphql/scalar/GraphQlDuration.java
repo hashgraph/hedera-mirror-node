@@ -40,6 +40,7 @@ public class GraphQlDuration implements Coercing<Duration, String> {
             .coercing(new GraphQlDuration())
             .build();
 
+    @Override
     public Duration parseLiteral(
             @NotNull Value<?> input,
             @NotNull CoercedVariables variables,
