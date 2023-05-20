@@ -210,16 +210,16 @@ grpc:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_GRPC_DB_USERNAME
-    SPRING_REDIS_HOST:
+    SPRING_DATA_REDIS_HOST:
       valueFrom:
         secretKeyRef:
           name: "{{ .Release.Name }}-redis"
-          key: SPRING_REDIS_HOST
-    SPRING_REDIS_PASSWORD:
+          key: SPRING_DATA_REDIS_HOST
+    SPRING_DATA_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: "{{ .Release.Name }}-redis"
-          key: SPRING_REDIS_PASSWORD
+          key: SPRING_DATA_REDIS_PASSWORD
 
 importer:
   db:
@@ -319,7 +319,7 @@ postgresql:
 redis:
   auth:
     existingSecret: "{{ .Release.Name }}-redis"
-    existingSecretPasswordKey: SPRING_REDIS_PASSWORD
+    existingSecretPasswordKey: SPRING_DATA_REDIS_PASSWORD
     password: ""  # Randomly generated if left blank
   enabled: true
   host: "{{ .Release.Name }}-redis"
