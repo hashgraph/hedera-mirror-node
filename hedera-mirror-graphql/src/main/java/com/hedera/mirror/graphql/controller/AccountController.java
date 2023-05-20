@@ -74,6 +74,6 @@ class AccountController {
 
     @SchemaMapping
     Mono<Long> balance(@Argument @Valid HbarUnit unit, Account account) {
-        return Mono.just(convertCurrency(unit, account.getBalance()));
+        return Mono.justOrEmpty(convertCurrency(unit, account.getBalance()));
     }
 }
