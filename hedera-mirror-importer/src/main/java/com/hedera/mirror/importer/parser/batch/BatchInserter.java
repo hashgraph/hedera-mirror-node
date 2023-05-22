@@ -119,6 +119,8 @@ public class BatchInserter implements BatchPersister {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
+        String csvMYK = writer.writeValueAsString(items);
+        log.warn("MYK: Generated SQL: {}\n{}", sql, csvMYK);
         if (log.isTraceEnabled()) {
             String csv = writer.writeValueAsString(items);
             log.trace("Generated SQL: {}\n{}", sql, csv);

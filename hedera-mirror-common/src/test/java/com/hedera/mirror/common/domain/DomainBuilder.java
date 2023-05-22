@@ -60,7 +60,6 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
@@ -576,7 +575,6 @@ public class DomainBuilder {
 
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
         var builder = NftTransfer.builder()
-                .id(new NftTransferId(timestamp(), 1L, entityId(TOKEN)))
                 .receiverAccountId(entityId(ACCOUNT))
                 .payerAccountId(entityId(ACCOUNT))
                 .senderAccountId(entityId(ACCOUNT));

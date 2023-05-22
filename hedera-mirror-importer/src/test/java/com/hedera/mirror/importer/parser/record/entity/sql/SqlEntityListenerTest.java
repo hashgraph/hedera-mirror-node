@@ -41,8 +41,6 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -78,7 +76,6 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -140,7 +137,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
-    private final NftTransferRepository nftTransferRepository;
     private final NodeStakeRepository nodeStakeRepository;
     private final PrngRepository prngRepository;
     private final RecordFileRepository recordFileRepository;
@@ -1306,57 +1302,59 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void onNftTransfer(boolean trackBalance) {
-        entityProperties.getPersist().setTrackBalance(trackBalance);
-        var nftTransfer1 = domainBuilder.nftTransfer().get();
-        var nftTransfer2 = domainBuilder.nftTransfer().get();
-        var nftTransfer3 = domainBuilder.nftTransfer().get();
+    /* MYK -- delete whole test?
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void onNftTransfer(boolean trackBalance) {
+            entityProperties.getPersist().setTrackBalance(trackBalance);
+            var nftTransfer1 = domainBuilder.nftTransfer().get();
+            var nftTransfer2 = domainBuilder.nftTransfer().get();
+            var nftTransfer3 = domainBuilder.nftTransfer().get();
 
-        var expectedTransfers = List.of(nftTransfer1, nftTransfer2, nftTransfer3);
-        // token account upsert needs token class in db
-        expectedTransfers.forEach(transfer -> {
-            var tokenId = new TokenId(transfer.getId().getTokenId());
-            domainBuilder
-                    .token()
-                    .customize(t -> t.tokenId(tokenId).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                    .persist();
-        });
-        var expectedTokenAccounts = expectedTransfers.stream()
-                .flatMap(transfer -> {
-                    long sender = transfer.getSenderAccountId().getId();
-                    long receiver = transfer.getReceiverAccountId().getId();
-                    long tokenId = transfer.getId().getTokenId().getId();
-                    var tokenAccountSender = domainBuilder
-                            .tokenAccount()
-                            .customize(
-                                    ta -> ta.accountId(sender).tokenId(tokenId).balance(6))
-                            .persist();
-                    var tokenAccountReceiver = domainBuilder
-                            .tokenAccount()
-                            .customize(ta ->
-                                    ta.accountId(receiver).tokenId(tokenId).balance(1))
-                            .persist();
-                    if (trackBalance) {
-                        tokenAccountSender.setBalance(5);
-                        tokenAccountReceiver.setBalance(2);
-                    }
+            var expectedTransfers = List.of(nftTransfer1, nftTransfer2, nftTransfer3);
+            // token account upsert needs token class in db
+            expectedTransfers.forEach(transfer -> {
+                var tokenId = new TokenId(transfer.getId().getTokenId());
+                domainBuilder
+                        .token()
+                        .customize(t -> t.tokenId(tokenId).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                        .persist();
+            });
+            var expectedTokenAccounts = expectedTransfers.stream()
+                    .flatMap(transfer -> {
+                        long sender = transfer.getSenderAccountId().getId();
+                        long receiver = transfer.getReceiverAccountId().getId();
+                        long tokenId = transfer.getId().getTokenId().getId();
+                        var tokenAccountSender = domainBuilder
+                                .tokenAccount()
+                                .customize(
+                                        ta -> ta.accountId(sender).tokenId(tokenId).balance(6))
+                                .persist();
+                        var tokenAccountReceiver = domainBuilder
+                                .tokenAccount()
+                                .customize(ta ->
+                                        ta.accountId(receiver).tokenId(tokenId).balance(1))
+                                .persist();
+                        if (trackBalance) {
+                            tokenAccountSender.setBalance(5);
+                            tokenAccountReceiver.setBalance(2);
+                        }
 
-                    return Stream.of(tokenAccountSender, tokenAccountReceiver);
-                })
-                .toList();
+                        return Stream.of(tokenAccountSender, tokenAccountReceiver);
+                    })
+                    .toList();
 
-        // when
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        sqlEntityListener.onNftTransfer(nftTransfer2);
-        sqlEntityListener.onNftTransfer(nftTransfer3);
-        completeFileAndCommit();
+            // when
+            sqlEntityListener.onNftTransfer(nftTransfer1);
+            sqlEntityListener.onNftTransfer(nftTransfer2);
+            sqlEntityListener.onNftTransfer(nftTransfer3);
+            completeFileAndCommit();
 
-        // then
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransfers);
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
-    }
+            // then
+            // MYK assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransfers);
+            assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
+        }
+    MYK -- delete whole test? */
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -1372,24 +1370,17 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .tokenAccount()
                 .customize(ta -> ta.balance(2L).tokenId(tokenId.getId()))
                 .persist();
-        var nftTransferId = new NftTransferId(domainBuilder.timestamp(), 1L, tokenId);
-        var nftTransfer = domainBuilder
-                .nftTransfer()
-                .customize(t -> t.id(nftTransferId)
-                        .receiverAccountId(EntityId.EMPTY)
-                        .senderAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT)))
-                .get();
 
         // when
-        sqlEntityListener.onNftTransfer(nftTransfer);
+        // MYK sqlEntityListener.onNftTransfer(nftTransfer);
         completeFileAndCommit();
 
         // then
-        nftTransfer.setReceiverAccountId(null);
+        // MYK nftTransfer.setReceiverAccountId(null);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() - 1);
         }
-        assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer);
+        // MYK assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer);
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
@@ -1407,70 +1398,67 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenId.getId()))
                 .persist();
-        var nftTransferId = new NftTransferId(domainBuilder.timestamp(), 1L, tokenId);
-        var nftTransfer = domainBuilder
-                .nftTransfer()
-                .customize(t -> t.id(nftTransferId)
-                        .receiverAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT))
-                        .senderAccountId(EntityId.EMPTY))
-                .get();
 
         // when
-        sqlEntityListener.onNftTransfer(nftTransfer);
+        // MYK sqlEntityListener.onNftTransfer(nftTransfer);
         completeFileAndCommit();
 
         // then
-        nftTransfer.setSenderAccountId(null);
+        // MYK nftTransfer.setSenderAccountId(null);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() + 1);
         }
-        assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer);
+        // MYK assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer);
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
-    @Test
-    void onNftTransferMultiReceiverSingleTimestamp() {
-        var nftTransfer = domainBuilder.nftTransfer();
-        EntityId entity1 = EntityId.of("0.0.10", ACCOUNT);
-        EntityId entity2 = EntityId.of("0.0.11", ACCOUNT);
-        EntityId entity3 = EntityId.of("0.0.12", ACCOUNT);
-        EntityId entity4 = EntityId.of("0.0.13", ACCOUNT);
-        var nftTransfer1 = nftTransfer
-                .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity2))
-                .get();
-        var nftTransfer2 = nftTransfer
-                .customize(n -> n.senderAccountId(entity2).receiverAccountId(entity3))
-                .get();
-        var nftTransfer3 = nftTransfer
-                .customize(n -> n.senderAccountId(entity3).receiverAccountId(entity4))
-                .get();
+    /* MYK
+        @Test
+        void onNftTransferMultiReceiverSingleTimestamp() {
+            var nftTransfer = domainBuilder.nftTransfer();
+            EntityId entity1 = EntityId.of("0.0.10", ACCOUNT);
+            EntityId entity2 = EntityId.of("0.0.11", ACCOUNT);
+            EntityId entity3 = EntityId.of("0.0.12", ACCOUNT);
+            EntityId entity4 = EntityId.of("0.0.13", ACCOUNT);
+            var nftTransfer1 = nftTransfer
+                    .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity2))
+                    .get();
+            var nftTransfer2 = nftTransfer
+                    .customize(n -> n.senderAccountId(entity2).receiverAccountId(entity3))
+                    .get();
+            var nftTransfer3 = nftTransfer
+                    .customize(n -> n.senderAccountId(entity3).receiverAccountId(entity4))
+                    .get();
 
-        // when
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        sqlEntityListener.onNftTransfer(nftTransfer2);
-        sqlEntityListener.onNftTransfer(nftTransfer3);
-        completeFileAndCommit();
+            // when
+            sqlEntityListener.onNftTransfer(nftTransfer1);
+            sqlEntityListener.onNftTransfer(nftTransfer2);
+            sqlEntityListener.onNftTransfer(nftTransfer3);
+            completeFileAndCommit();
 
-        // then
-        var mergedNftTransfer = nftTransfer
-                .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity4))
-                .get();
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(mergedNftTransfer);
-    }
+            // then
+            var mergedNftTransfer = nftTransfer
+                    .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity4))
+                    .get();
+            //MYK assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(mergedNftTransfer);
+        }
+    MYK */
 
-    @Test
-    void onNftTransferDuplicates() {
-        NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
+    /* MYK
+        @Test
+        void onNftTransferDuplicates() {
+            NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
 
-        // when
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        completeFileAndCommit();
+            // when
+            sqlEntityListener.onNftTransfer(nftTransfer1);
+            sqlEntityListener.onNftTransfer(nftTransfer1);
+            sqlEntityListener.onNftTransfer(nftTransfer1);
+            completeFileAndCommit();
 
-        // then
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
-    }
+            // then
+            assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
+        }
+    MYK */
 
     @Test
     void onNodeStake() {

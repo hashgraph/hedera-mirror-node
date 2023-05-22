@@ -41,7 +41,6 @@ import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -136,7 +135,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
     private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
-    private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
@@ -201,7 +199,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         entityState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
-        nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
@@ -346,47 +343,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    @SuppressWarnings({"java:S2259"})
-    // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        var nftTransferId = nftTransfer.getId();
-        long tokenId = nftTransferId.getTokenId().getId();
-        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-            flushNftState();
-
-            long payerAccountId = nftTransfer.getPayerAccountId().getId();
-            var newTreasury = nftTransfer.getReceiverAccountId();
-            var previousTreasury = nftTransfer.getSenderAccountId();
-
-            nftRepository.updateTreasury(
-                    tokenId,
-                    previousTreasury.getId(),
-                    newTreasury.getId(),
-                    nftTransferId.getConsensusTimestamp(),
-                    payerAccountId,
-                    nftTransfer.getIsApproval());
-            return;
-        }
-
-        if (entityProperties.getPersist().isTrackBalance()) {
-            if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(-1);
-                onTokenAccount(tokenAccount);
-            }
-
-            if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(1);
-                onTokenAccount(tokenAccount);
-            }
-        }
-
-        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
+        // now handled inside EntityRecordItemListener
     }
 
     @Override
@@ -523,7 +481,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
-            nftTransferState.clear();
             nodeStakes.clear();
             nonFeeTransfers.clear();
             prngs.clear();
@@ -587,7 +544,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransferState.values());
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 

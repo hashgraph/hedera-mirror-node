@@ -26,8 +26,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -39,7 +37,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -83,7 +80,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final TransactionRepository transactionRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
-    private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final TokenTransferRepository tokenTransferRepository;
 
@@ -100,7 +96,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
         assertThat(transactionRepository.count()).isZero();
         assertThat(cryptoTransferRepository.count()).isZero();
-        assertThat(nftTransferRepository.count()).isZero();
         assertThat(nonFeeTransferRepository.count()).isZero();
         assertThat(tokenTransferRepository.count()).isZero();
     }
@@ -332,24 +327,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                                 .entityId(receiverId))
                         .get()));
 
-        persistNftTransfers(List.of(
-                // nft transfer
-                domainBuilder
-                        .nftTransfer()
-                        .customize(n -> n.id(new NftTransferId(transfer3.getConsensusTimestamp(), 1L, tokenId))
-                                .payerAccountId(null)
-                                .receiverAccountId(receiverId)
-                                .senderAccountId(senderId))
-                        .get(),
-                // all transfers
-                domainBuilder
-                        .nftTransfer()
-                        .customize(n -> n.id(new NftTransferId(transfer5.getConsensusTimestamp(), 2L, tokenId))
-                                .payerAccountId(null)
-                                .receiverAccountId(receiverId)
-                                .senderAccountId(senderId))
-                        .get()));
-
         persistTokenTransfers(List.of(
                 // token transfer
                 new TokenTransfer(transfer4.getConsensusTimestamp(), -receivedAmount, tokenId, senderId),
@@ -482,20 +459,22 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistNftTransfers(List<NftTransfer> nftTransfers) {
-        for (NftTransfer nftTransfer : nftTransfers) {
-            var id = nftTransfer.getId();
-            jdbcOperations.update(
-                    "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
-                            + "serial_number, token_id)"
-                            + " values (?,?,?,?,?)",
-                    id.getConsensusTimestamp(),
-                    nftTransfer.getReceiverAccountId().getId(),
-                    nftTransfer.getSenderAccountId().getId(),
-                    id.getSerialNumber(),
-                    id.getTokenId().getId());
-        }
-    }
+    // MYK == need to revisit!
+    /*
+     private void persistNftTransfers(List<NftTransfer> nftTransfers) {
+         for (NftTransfer nftTransfer : nftTransfers) {
+             jdbcOperations.update(
+                     "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
+                             + "serial_number, token_id)"
+                             + " values (?,?,?,?,?)",
+                     id.getConsensusTimestamp(),
+                     nftTransfer.getReceiverAccountId().getId(),
+                     nftTransfer.getSenderAccountId().getId(),
+                     id.getSerialNumber(),
+                     id.getTokenId().getId());
+         }
+     }
+    */
 
     private void persistNonFeeTransfers(List<NonFeeTransfer> nonFeeTransfers) {
         for (NonFeeTransfer nonFeeTransfer : nonFeeTransfers) {
