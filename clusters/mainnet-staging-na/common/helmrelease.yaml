@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.80.0'
+      version: '0.81.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -27,11 +27,6 @@ spec:
     - kind: Secret
       name: mirror
   values:
-    loki:
-      singleBinary:
-        resources:
-          limits:
-            memory: 384Mi
     prometheus:
       prometheus:
         prometheusSpec:
