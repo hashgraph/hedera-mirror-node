@@ -21,11 +21,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.util.Collections;
 import java.util.List;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -54,7 +55,7 @@ public class ContractResult implements Persistable<Long> {
     private long contractId;
 
     @Builder.Default
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
+    @Type(ListArrayType.class)
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Long> createdContractIds = Collections.emptyList();
 

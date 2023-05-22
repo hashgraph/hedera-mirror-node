@@ -21,8 +21,8 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import jakarta.inject.Named;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.NotNull;

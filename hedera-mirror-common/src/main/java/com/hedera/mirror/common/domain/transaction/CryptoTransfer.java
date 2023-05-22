@@ -19,21 +19,20 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.IdClass;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -42,20 +41,19 @@ import org.springframework.data.domain.Persistable;
 @Entity
 @IdClass(CryptoTransfer.Id.class)
 @NoArgsConstructor
-@TypeDef(name = "pgsql_enum", typeClass = PostgreSQLEnumType.class)
 public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long amount;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long entityId;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private ErrataType errata;
 
     private Boolean isApproval;

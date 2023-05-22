@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -98,6 +99,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         // store initial address books
         addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.FILE_101), 1, 4));

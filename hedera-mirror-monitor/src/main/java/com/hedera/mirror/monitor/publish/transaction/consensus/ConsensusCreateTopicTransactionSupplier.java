@@ -23,7 +23,7 @@ import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import com.hedera.mirror.monitor.util.Utility;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 @Data

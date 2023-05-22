@@ -17,12 +17,12 @@
 package com.hedera.mirror.monitor.subscribe.rest;
 
 import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;

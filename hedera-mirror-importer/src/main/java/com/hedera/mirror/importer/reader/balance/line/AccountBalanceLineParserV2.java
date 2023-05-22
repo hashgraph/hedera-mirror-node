@@ -26,10 +26,10 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 

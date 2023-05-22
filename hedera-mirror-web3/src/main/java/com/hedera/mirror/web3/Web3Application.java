@@ -20,7 +20,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import reactor.core.scheduler.Schedulers;
 
 @ConfigurationPropertiesScan
 @EntityScan("com.hedera.mirror.common.domain")
@@ -28,7 +27,6 @@ import reactor.core.scheduler.Schedulers;
 public class Web3Application {
 
     public static void main(String[] args) {
-        Schedulers.enableMetrics();
         SpringApplication.run(Web3Application.class, args);
     }
 }

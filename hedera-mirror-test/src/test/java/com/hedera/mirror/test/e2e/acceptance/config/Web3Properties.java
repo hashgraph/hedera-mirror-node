@@ -18,7 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 
 import static com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties.URL_SUFFIX;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;

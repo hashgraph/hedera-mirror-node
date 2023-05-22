@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {

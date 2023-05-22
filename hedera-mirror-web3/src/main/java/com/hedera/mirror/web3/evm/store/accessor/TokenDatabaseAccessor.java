@@ -19,9 +19,8 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import jakarta.inject.Named;
 import java.util.Optional;
-import javax.inject.Named;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 

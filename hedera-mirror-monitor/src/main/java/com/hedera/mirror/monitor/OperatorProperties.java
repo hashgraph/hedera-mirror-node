@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.monitor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 

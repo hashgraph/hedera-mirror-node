@@ -40,7 +40,7 @@ dependencies {
     testImplementation("io.grpc:grpc-okhttp")
     testImplementation(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
-    testImplementation("javax.inject:javax.inject")
+    testImplementation("jakarta.inject:jakarta.inject-api")
     testImplementation("org.apache.commons:commons-lang3")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.junit.platform:junit-platform-suite")

@@ -26,22 +26,6 @@ logging:
     com.hedera.hashgraph.sdk.TransactionReceiptQuery: error
     org.springframework.cloud.kubernetes.fabric8.config: error
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    export:
-      elastic:
-        autoCreateIndex: false
-        enabled: false
-        index: mirror
-        indexDateFormat: yyyy-MM-dd
-        step: 30s
-      prometheus:
-        step: 30s
-    tags:
-      application: ${spring.application.name}
   endpoint:
     health:
       group:
@@ -51,6 +35,17 @@ management:
           include: ping
         readiness:
           include: ping
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        step: 60s
 server:
   compression:
     enabled: true
@@ -96,5 +91,5 @@ spring:
       secrets:
         paths: /usr/etc/${spring.application.name}
   config:
-    active:
+    activate:
       on-profile: kubernetes

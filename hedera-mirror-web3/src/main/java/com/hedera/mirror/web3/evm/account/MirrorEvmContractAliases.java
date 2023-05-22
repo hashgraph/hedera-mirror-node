@@ -23,12 +23,10 @@ import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import javax.inject.Named;
-
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-
 
 @Named
 @RequiredArgsConstructor
@@ -62,5 +60,4 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
         }
     }
-
 }

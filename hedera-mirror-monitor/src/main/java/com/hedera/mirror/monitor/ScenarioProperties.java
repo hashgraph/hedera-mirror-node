@@ -16,9 +16,9 @@
 
 package com.hedera.mirror.monitor;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;

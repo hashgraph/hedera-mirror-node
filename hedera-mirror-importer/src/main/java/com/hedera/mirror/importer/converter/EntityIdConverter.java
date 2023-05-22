@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.converter;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
 
