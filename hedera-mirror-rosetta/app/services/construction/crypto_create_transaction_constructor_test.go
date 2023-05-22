@@ -117,7 +117,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestNewTransactionConstruc
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
 	h := newCryptoCreateTransactionConstructor()
-	assert.Equal(suite.T(), types.HbarAmount{Value: 3_00000000}, h.GetDefaultMaxTransactionFee())
+	assert.Equal(suite.T(), types.HbarAmount{Value: 5_00000000}, h.GetDefaultMaxTransactionFee())
 }
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetOperationType() {
