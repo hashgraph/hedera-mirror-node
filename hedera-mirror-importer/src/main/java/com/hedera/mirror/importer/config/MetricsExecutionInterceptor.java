@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -35,6 +36,7 @@ import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.springframework.beans.factory.annotation.Autowired;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
@@ -45,13 +47,13 @@ import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
  */
 @Log4j2
 @Named
-@RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
+    static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute<>("size");
+    static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute<>("start-time");
     private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
-    private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute<>("size");
-    private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute<>("start-time");
+    private static final Pattern NODE_ID_PATTERN = Pattern.compile("[^/]+/(\\d{1,10})/(\\d{1,10})/([^/]+)");
     private static final String LIST = "list";
     private static final String SIDECAR = "sidecar";
     private static final String SIGNATURE = "signature";
@@ -59,14 +61,28 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private static final String START_AFTER = "start-after";
 
     private final MeterRegistry meterRegistry;
+    private final Timer.Builder requestMetric;
+    private final DistributionSummary.Builder responseSizeMetric;
 
-    private final Timer.Builder requestMetric = Timer.builder("hedera.mirror.download.request")
-            .description("The time in seconds it took to receive the response from S3");
+    @Autowired
+    public MetricsExecutionInterceptor(MeterRegistry meterRegistry) {
+        this(
+                meterRegistry,
+                Timer.builder("hedera.mirror.download.request")
+                        .description("The time in seconds it took to receive the response from S3"),
+                DistributionSummary.builder("hedera.mirror.download.response")
+                        .description("The size of the response in bytes returned from S3")
+                        .baseUnit("bytes"));
+    }
 
-    private final DistributionSummary.Builder responseSizeMetric = DistributionSummary.builder(
-                    "hedera.mirror.download.response")
-            .description("The size of the response in bytes returned from S3")
-            .baseUnit("bytes");
+    MetricsExecutionInterceptor(
+            MeterRegistry meterRegistry,
+            Timer.Builder timerBuilder,
+            DistributionSummary.Builder distributionSummaryBuilder) {
+        this.meterRegistry = meterRegistry;
+        this.requestMetric = timerBuilder;
+        this.responseSizeMetric = distributionSummaryBuilder;
+    }
 
     @Override
     public void beforeTransmission(Context.BeforeTransmission context, ExecutionAttributes executionAttributes) {
@@ -87,19 +103,18 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     @Override
     public void afterExecution(Context.AfterExecution context, ExecutionAttributes executionAttributes) {
         try {
-            String uri = context.httpRequest().getUri().toString();
-            EntityId nodeAccountId = getNodeAccountId(uri);
-            Instant startTime = executionAttributes.getAttribute(START_TIME);
-            ResponseSizeSubscriber responseSizeSubscriber = executionAttributes.getAttribute(SIZE);
+            var uriAttributes = getUriAttributes(context.httpRequest().getUri());
+            var startTime = executionAttributes.getAttribute(START_TIME);
+            var responseSizeSubscriber = executionAttributes.getAttribute(SIZE);
 
             String[] tags = {
-                "action", getAction(uri),
+                "action", uriAttributes.action(),
                 "method", context.httpRequest().method().name(),
-                "nodeAccount", nodeAccountId.getEntityNum().toString(),
-                "realm", nodeAccountId.getRealmNum().toString(),
-                "shard", nodeAccountId.getShardNum().toString(),
+                "node", uriAttributes.nodeId().toString(),
+                "realm", uriAttributes.realm().toString(),
+                "shard", uriAttributes.shard().toString(),
                 "status", String.valueOf(context.httpResponse().statusCode()),
-                "type", getType(uri)
+                "type", uriAttributes.streamType()
             };
 
             if (startTime != null) {
@@ -117,6 +132,29 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         }
     }
 
+    private UriAttributes getUriAttributes(URI uri) {
+        var decodedUri = URLDecoder.decode(uri.toString(), StandardCharsets.UTF_8);
+        var action = getAction(decodedUri);
+
+        Matcher accountIdMatcher = ENTITY_ID_PATTERN.matcher(decodedUri);
+        if (accountIdMatcher.find() && accountIdMatcher.groupCount() == 1) {
+            var streamType = getType(t -> decodedUri.contains(t.getPath()));
+            var entityId = EntityId.of(accountIdMatcher.group(1), EntityType.ACCOUNT);
+            return new UriAttributes(
+                    entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum() - 3L, streamType, action);
+        }
+
+        Matcher nodeIdMatcher = NODE_ID_PATTERN.matcher(decodedUri);
+        if (nodeIdMatcher.find() && nodeIdMatcher.groupCount() == 3) {
+            var streamType = getType(t -> decodedUri.contains(t.getNodeIdBasedSuffix()));
+            var shard = Long.valueOf(nodeIdMatcher.group(1));
+            var nodeId = Long.valueOf(nodeIdMatcher.group(2));
+            return new UriAttributes(shard, 0L, nodeId, streamType, action);
+        }
+
+        throw new IllegalStateException("Could not detect a node ID or account ID in URI: " + uri);
+    }
+
     // Instead of tagging the URI path, simplify it to the 3 actions we use from the S3 API
     private String getAction(String uri) {
         if (uri.contains(START_AFTER)) {
@@ -130,25 +168,16 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         }
     }
 
-    private EntityId getNodeAccountId(String uri) {
-        Matcher matcher = ENTITY_ID_PATTERN.matcher(uri);
-
-        if (matcher.find() && matcher.groupCount() == 1) {
-            return EntityId.of(matcher.group(1), EntityType.ACCOUNT);
-        }
-
-        throw new IllegalStateException("Could not detect a node account ID in URI: " + uri);
-    }
-
-    private String getType(String uri) {
+    private String getType(Predicate<StreamType> matcher) {
         for (StreamType streamType : StreamType.values()) {
-            if (uri.contains(streamType.getPath())) {
+            if (matcher.test(streamType)) {
                 return streamType.name();
             }
         }
-
         return "UNKNOWN";
     }
+
+    private record UriAttributes(Long shard, Long realm, Long nodeId, String streamType, String action) {}
 
     @Getter
     @RequiredArgsConstructor
