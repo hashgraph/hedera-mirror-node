@@ -100,17 +100,16 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse sendApprovedCryptoTransfer(
-            ExpandedAccountId sender, AccountId recipient, Hbar hbarAmount) {
+            ExpandedAccountId spender, AccountId recipient, Hbar hbarAmount) {
         var transferTransaction = new TransferTransaction()
-                .addHbarTransfer(sender.getAccountId(), hbarAmount.negated())
-                .addApprovedHbarTransfer(recipient, hbarAmount)
+                .addApprovedHbarTransfer(getClient().getOperatorAccountId(), hbarAmount.negated())
+                .addHbarTransfer(recipient, hbarAmount)
                 .setTransactionMemo(getMemo("Approved transfer"));
-        var keyList = KeyList.of(sender.getPrivateKey());
-        var response = executeTransactionAndRetrieveReceipt(transferTransaction, keyList);
+        var response = executeTransactionAndRetrieveReceipt(transferTransaction, spender);
         log.info(
                 "Approved transfer {} from {} to {} via {}",
                 hbarAmount,
-                sender,
+                spender,
                 recipient,
                 response.getTransactionId());
         return response;
