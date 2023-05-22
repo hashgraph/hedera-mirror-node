@@ -29,7 +29,6 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,7 +88,7 @@ class MetricsExecutionInterceptorTest {
     private DistributionSummary.Builder distributionSummaryBuilder;
 
     @Captor
-    private ArgumentCaptor<String> timerTagsCaptor;
+    private ArgumentCaptor<String[]> timerTagsCaptor;
 
     private AutoCloseable openMocksCloseable;
     private MetricsExecutionInterceptor metricsExecutionInterceptor;
@@ -101,7 +100,7 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
         when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
 
-        when(timerBuilder.tags(any(String.class))).thenReturn(timerBuilder);
+        when(timerBuilder.tags(any(String[].class))).thenReturn(timerBuilder);
         when(timerBuilder.register(meterRegistry)).thenReturn(timer);
 
         executionAttributes.putAttribute(
@@ -128,7 +127,7 @@ class MetricsExecutionInterceptorTest {
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
         verify(timerBuilder, times(1)).tags(timerTagsCaptor.capture());
-        List<String> providedTags = timerTagsCaptor.getAllValues();
+        var providedTags = timerTagsCaptor.getValue();
 
         verifyTags(providedTags, "list", NODE_ID, StreamType.RECORD);
     }
@@ -168,7 +167,7 @@ class MetricsExecutionInterceptorTest {
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
         verify(timerBuilder, times(1)).tags(timerTagsCaptor.capture());
-        List<String> providedTags = timerTagsCaptor.getAllValues();
+        var providedTags = timerTagsCaptor.getValue();
 
         verifyTags(providedTags, expectedAction, NODE_ID, streamType);
     }
@@ -181,19 +180,18 @@ class MetricsExecutionInterceptorTest {
         return "%s/%s%d.%d.%d/".formatted(streamType.getPath(), streamType.getNodePrefix(), shard, realm, accountNum);
     }
 
-    private void verifyTags(
-            List<String> tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
+    private void verifyTags(String[] tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
         assertNotNull(tags);
-        assertEquals(14, tags.size());
+        assertEquals(14, tags.length);
 
         // The tags are in a defined order, with the tag name followed by its value. All are Strings.
-        assertEquals(expectedAction, tags.get(1));
-        assertEquals("GET", tags.get(3));
-        assertEquals(expectedNodeId, Long.valueOf(tags.get(5)));
-        assertEquals("0", tags.get(7)); // realm
-        assertEquals("0", tags.get(9)); // shard
-        assertEquals("200", tags.get(11));
-        assertEquals(expectedStreamType.name(), tags.get(13));
+        assertEquals(expectedAction, tags[1]);
+        assertEquals("GET", tags[3]);
+        assertEquals(expectedNodeId, Long.valueOf(tags[5]));
+        assertEquals("0", tags[7]); // realm
+        assertEquals("0", tags[9]); // shard
+        assertEquals("200", tags[11]);
+        assertEquals(expectedStreamType.name(), tags[13]);
     }
 
     /*
