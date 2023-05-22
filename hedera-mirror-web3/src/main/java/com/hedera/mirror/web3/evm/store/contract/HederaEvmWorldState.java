@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -44,8 +45,12 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final AccountAccessor accountAccessor;
     private final TokenAccessor tokenAccessor;
-
     private final EntityAddressSequencer entityAddressSequencer;
+    private static StackedStateFrames<Object> stackedStateFrames;
+
+    public void setStackedStateFrames(StackedStateFrames<Object> stateFrames) {
+        stackedStateFrames = stateFrames;
+    }
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -137,7 +142,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
+                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, stackedStateFrames);
         }
     }
 
