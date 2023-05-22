@@ -72,7 +72,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.12.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.55.1")
-        api("io.swagger:swagger-annotations:1.6.10")
+        api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("javax.inject:javax.inject:1")
