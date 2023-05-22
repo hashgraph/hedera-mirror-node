@@ -72,6 +72,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
     private Path MODIFICATION_CONTRACT_ABI_PATH;
 
+    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
     private static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
@@ -120,7 +121,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @ParameterizedTest
@@ -258,12 +259,13 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     }
 
     @Test
-    void notExistingPrecompileCallWorks() {
+    void notExistingPrecompileCallFails() {
         final var functionHash =
                 encodeDecoder.functionHashFor("callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isNotEmpty();
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(UnsupportedOperationException.class).hasMessage(ERROR_MESSAGE);
     }
 
     @RequiredArgsConstructor

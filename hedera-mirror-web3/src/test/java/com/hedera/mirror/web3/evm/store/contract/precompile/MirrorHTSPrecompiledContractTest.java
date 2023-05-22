@@ -54,7 +54,6 @@ class MirrorHTSPrecompiledContractTest {
     private StackedStateFrames<Object> stackedStateFrames;
 
     private MirrorHTSPrecompiledContract subject;
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @BeforeEach
     void setUp() {
@@ -82,6 +81,8 @@ class MirrorHTSPrecompiledContractTest {
         //isTokenAddress signature
         final var functionHash = Bytes.fromHexString("0x19f37361");
 
+        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any())).willReturn(viewExecutor);
+        given(viewExecutor.computeCosted()).willReturn(Pair.of(0L, Bytes.EMPTY));
         given(messageFrame.isStatic()).willReturn(false);
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);

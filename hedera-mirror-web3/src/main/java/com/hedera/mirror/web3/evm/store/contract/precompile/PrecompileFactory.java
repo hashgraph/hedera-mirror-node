@@ -8,7 +8,7 @@ import javax.inject.Named;
 public class PrecompileFactory {
 
     private static final String UNSUPPORTED_ERROR_MESSAGE = "Precompile not supported for non-static frames";
-    private final int NON_EXISTING_ABI = 0x00000000;
+    private static final int NON_EXISTING_ABI = 0x00000000;
 
     public Precompile lookup(int functionSelector) {
         //Temporary case for non-existing ABI, until we implement our first Precompile
