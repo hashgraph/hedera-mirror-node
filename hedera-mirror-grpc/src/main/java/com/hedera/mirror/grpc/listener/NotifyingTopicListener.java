@@ -25,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.SslMode;
 import io.vertx.pgclient.pubsub.PgChannel;
 import io.vertx.pgclient.pubsub.PgSubscriber;
 import jakarta.inject.Named;
@@ -86,7 +87,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .setHost(dbProperties.getHost())
                 .setPassword(dbProperties.getPassword())
                 .setPort(dbProperties.getPort())
-                .setSslMode(dbProperties.getSslMode())
+                .setSslMode(SslMode.DISABLE)
                 .setUser(dbProperties.getUsername());
 
         Duration interval = listenerProperties.getInterval();
