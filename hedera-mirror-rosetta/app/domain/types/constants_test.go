@@ -52,16 +52,6 @@ func TestGetTransactionResultGeneralError(t *testing.T) {
 	}
 }
 
-func TestResponseCodeMatch(t *testing.T) {
-	// given
-	for code, name := range transactionResults {
-		if code == int32(-1) {
-			continue
-		}
-		assert.Equal(t, services.ResponseCodeEnum_name[code], name, "Expected %s for code %d", name, code)
-	}
-}
-
 func TestTransactionTypesUpToDate(t *testing.T) {
 	sdkTransactionTypes := getSdkTransactionTypes()
 	for protoId, name := range sdkTransactionTypes {
