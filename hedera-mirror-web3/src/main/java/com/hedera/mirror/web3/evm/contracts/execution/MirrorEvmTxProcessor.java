@@ -70,7 +70,8 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Instant consensusTime,
             final boolean isStatic) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
-        super.setupFields(false);
+        // in cases where the receiver is the zero address, we now it's estimate gas call for contract create
+        super.setupFields(receiver.equals(Address.ZERO));
 
         return super.execute(
                 sender,
