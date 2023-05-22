@@ -21,11 +21,11 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static java.util.Objects.requireNonNullElse;
 
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
+import jakarta.inject.Named;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
-import jakarta.inject.Named;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
