@@ -17,7 +17,7 @@
 package com.hedera.mirror.common.domain.addressbook;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +32,7 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class NetworkStake implements Persistable<Long> {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
     private long epochDay;

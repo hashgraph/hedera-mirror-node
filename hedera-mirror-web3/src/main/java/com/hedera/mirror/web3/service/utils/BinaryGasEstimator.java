@@ -18,9 +18,9 @@ package com.hedera.mirror.web3.service.utils;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import jakarta.inject.Named;
 import java.util.function.LongFunction;
 import java.util.function.ObjIntConsumer;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

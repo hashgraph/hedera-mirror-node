@@ -24,29 +24,32 @@ logging:
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    export:
-      elastic:
-        autoCreateIndex: false
+  elastic:
+    metrics:
+      export:
+        auto-create-index: false
         enabled: false
         index: mirror
-        indexDateFormat: yyyy-MM-dd
+        index-date-format: yyyy-MM-dd
         step: 30s
-      prometheus:
-        step: 30s
-    tags:
-      application: ${spring.application.name}
   endpoint:
     health:
       group:
         liveness:
           include: ping
         readiness:
-          include: db, grpcServices, grpcChannel, ping, redis
+          include: db, grpc, grpcChannel, ping, redis
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        step: 60s
 server:
   compression:
     enabled: true
@@ -82,7 +85,7 @@ spring:
       minimum-idle: 4
       validation-timeout: 3000
   jpa:
-    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true

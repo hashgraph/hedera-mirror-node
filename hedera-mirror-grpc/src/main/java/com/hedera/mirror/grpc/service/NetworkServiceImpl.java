@@ -23,15 +23,17 @@ import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
 import com.hedera.mirror.grpc.repository.AddressBookRepository;
+import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -51,6 +53,7 @@ public class NetworkServiceImpl implements NetworkService {
     private final AddressBookProperties addressBookProperties;
     private final AddressBookRepository addressBookRepository;
     private final AddressBookEntryRepository addressBookEntryRepository;
+    private final TransactionOperations transactionOperations;
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
@@ -76,21 +79,28 @@ public class NetworkServiceImpl implements NetworkService {
     }
 
     private Flux<AddressBookEntry> page(AddressBookContext context) {
-        var timestamp = context.getTimestamp();
-        var nextNodeId = context.getNextNodeId();
-        var pageSize = addressBookProperties.getPageSize();
-        var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
+        return transactionOperations.execute(t -> {
+            var timestamp = context.getTimestamp();
+            var nextNodeId = context.getNextNodeId();
+            var pageSize = addressBookProperties.getPageSize();
+            var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
+            var endpoints = new AtomicInteger(0);
 
-        if (nodes.size() < pageSize) {
-            context.completed();
-        }
+            // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
+            nodes.forEach(e -> endpoints.addAndGet(e.getServiceEndpoints().size()));
 
-        log.info(
-                "Retrieved {} address book entries for timestamp {} and node ID {}",
-                nodes.size(),
-                timestamp,
-                nextNodeId);
-        return Flux.fromIterable(nodes);
+            if (nodes.size() < pageSize) {
+                context.completed();
+            }
+
+            log.info(
+                    "Retrieved {} address book entries and {} endpoints for timestamp {} and node ID {}",
+                    nodes.size(),
+                    endpoints,
+                    timestamp,
+                    nextNodeId);
+            return Flux.fromIterable(nodes);
+        });
     }
 
     @Value

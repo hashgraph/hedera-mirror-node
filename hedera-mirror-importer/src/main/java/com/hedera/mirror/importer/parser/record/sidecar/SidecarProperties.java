@@ -17,9 +17,9 @@
 package com.hedera.mirror.importer.parser.record.sidecar;
 
 import com.hedera.services.stream.proto.SidecarType;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.Set;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

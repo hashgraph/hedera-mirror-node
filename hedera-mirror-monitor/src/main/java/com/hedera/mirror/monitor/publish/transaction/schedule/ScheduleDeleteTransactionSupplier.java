@@ -20,8 +20,8 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data

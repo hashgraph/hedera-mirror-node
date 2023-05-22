@@ -19,7 +19,7 @@ package com.hedera.mirror.common.converter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 import lombok.Getter;
 
 public abstract class AbstractEntityIdConverter implements AttributeConverter<EntityId, Long> {

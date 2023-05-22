@@ -23,6 +23,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import jakarta.annotation.Resource;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.CollectionUtils;
 
@@ -57,8 +57,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotNull()
                 .hasSize(4)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(80, 443, 8000, 8443);
     }
 
@@ -72,8 +71,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotNull()
                 .hasSize(12)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(80, 443, 80, 443, 8080, 8443, 8080, 8443, 50211, 50212, 50211, 50212);
     }
 

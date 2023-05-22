@@ -25,6 +25,12 @@ hedera:
       retriever:
         pollingFrequency: 50ms
 spring:
+  data:
+    redis:
+      host: ${embedded.redis.host}
+      password: ${embedded.redis.password}
+      port: ${embedded.redis.port}
+      username: "" # Redis 5 does not support authentication with a username and will fail if provided
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
@@ -33,7 +39,7 @@ spring:
   flyway:
     baselineOnMigrate: true
     connectRetries: 10
-    ignoreMissingMigrations: true
+    ignoreMigrationPatterns: ["*:missing", "*:ignored"]
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
@@ -53,11 +59,6 @@ spring:
       schema: public
       shardCount: 2
       topicRunningHashV2AddedTimestamp: 0
-  redis:
-    host: ${embedded.redis.host}
-    password: ${embedded.redis.password}
-    port: ${embedded.redis.port}
-    username: "" # Redis 5 does not support authentication with a username and will fail if provided
   test:
     database:
       replace: NONE

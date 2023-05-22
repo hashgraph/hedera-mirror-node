@@ -34,7 +34,7 @@ dependencies {
     implementation("com.graphql-java:graphql-java-extended-scalars")
     implementation("com.graphql-java:graphql-java-extended-validation")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.mapstruct:mapstruct")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-starter-graphql")
@@ -56,6 +56,7 @@ dependencies {
 generatePojoConf {
     isAddRelayConnections = false
     isCopyRuntimeSources = true
+    isUseJakartaEE9 = true
     javaTypeForIDType = "java.lang.String"
     mode = PluginMode.server
     packageName = "com.hedera.mirror.graphql.viewmodel"
@@ -84,7 +85,7 @@ tasks.withType<JavaCompile> {
     if (name == "compileJava") {
         options.compilerArgs.addAll(
             listOf(
-                "-Amapstruct.defaultComponentModel=jsr330",
+                "-Amapstruct.defaultComponentModel=jakarta",
                 "-Amapstruct.defaultInjectionStrategy=constructor",
                 "-Amapstruct.disableBuilders=true",
                 "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have

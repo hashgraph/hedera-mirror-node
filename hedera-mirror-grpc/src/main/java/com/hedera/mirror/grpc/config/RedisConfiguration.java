@@ -18,15 +18,11 @@ package com.hedera.mirror.grpc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.grpc.domain.TopicMessage;
-import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
-import io.lettuce.core.metrics.MicrometerOptions;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.data.redis.ClientResourcesBuilderCustomizer;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,19 +39,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 class RedisConfiguration {
 
-    // Override default auto-configuration to disable histogram metrics
-    @Bean
-    ClientResourcesBuilderCustomizer lettuceMetrics(MeterRegistry meterRegistry) {
-        MicrometerOptions options = MicrometerOptions.builder().histogram(false).build();
-        return client -> client.commandLatencyRecorder(new MicrometerCommandLatencyRecorder(meterRegistry, options));
-    }
-
     @Bean
     RedisSerializer<TopicMessage> redisSerializer() {
-        var objectMapper = new ObjectMapper(new MessagePackFactory());
-        var jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(TopicMessage.class);
-        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
-        return jackson2JsonRedisSerializer;
+        return new Jackson2JsonRedisSerializer<>(new ObjectMapper(new MessagePackFactory()), TopicMessage.class);
     }
 
     @Bean
