@@ -41,6 +41,7 @@ dependencies {
     testImplementation(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("jakarta.inject:jakarta.inject-api")
+    testImplementation("net.java.dev.jna:jna")
     testImplementation("org.apache.commons:commons-lang3")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.junit.platform:junit-platform-suite")
@@ -55,6 +56,9 @@ dependencies {
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
 // task
 tasks.named("test") { enabled = false }
+
+// Resolve warning about using the deprecated '-debug' fallback
+tasks.compileTestJava { options.compilerArgs.addAll(listOf("-parameters")) }
 
 tasks.register<Test>("acceptance") {
     val maxParallelism = project.property("maxParallelism") as String
