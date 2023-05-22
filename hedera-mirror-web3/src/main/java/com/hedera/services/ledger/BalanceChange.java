@@ -200,6 +200,10 @@ public class BalanceChange {
         return nftId;
     }
 
+    public boolean isForCustomFee() {
+        return this.isForCustomFee;
+    }
+
     public TokenID tokenId() {
         return (tokenId != null) ? tokenId : NO_TOKEN_FOR_HBAR_ADJUST;
     }
