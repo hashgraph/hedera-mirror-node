@@ -34,19 +34,27 @@ public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
+    public static final String CACHE_MANAGER_TABLE_TIME_PARTITION = "cacheManagerTableTimePartition";
 
     @Bean(EXPIRE_AFTER_5M)
     @Primary
     CacheManager cacheManager5m() {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        var caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=5m");
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
     @Bean(CACHE_MANAGER_ALIAS)
     CacheManager cacheManagerAlias() {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        var caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_TABLE_TIME_PARTITION)
+    CacheManager cacheManagerTableTimePartition() {
+        var caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification("maximumSize=50,expireAfterWrite=1d");
         return caffeineCacheManager;
     }
 }
