@@ -28,10 +28,10 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Named;
 import lombok.CustomLog;
 import org.springframework.core.annotation.Order;
 

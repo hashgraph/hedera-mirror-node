@@ -20,9 +20,9 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.StreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 

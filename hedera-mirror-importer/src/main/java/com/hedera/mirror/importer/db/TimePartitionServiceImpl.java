@@ -19,12 +19,12 @@ package com.hedera.mirror.importer.db;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_TABLE_TIME_PARTITION;
 
 import com.google.common.collect.Range;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;

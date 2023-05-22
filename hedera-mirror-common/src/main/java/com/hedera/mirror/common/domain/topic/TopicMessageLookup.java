@@ -24,10 +24,10 @@ import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serial;
 import java.io.Serializable;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,9 +43,9 @@ import lombok.NoArgsConstructor;
 @Upsertable
 public class TopicMessageLookup {
 
-    public static final String COALESCE_RANGE = "int8range(coalesce(lower(e_{0}), lower({0})), upper({0}))";
+    private static final String COALESCE_RANGE = "int8range(coalesce(lower(e_{0}), lower({0})), upper({0}))";
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private String partition;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
@@ -58,7 +58,7 @@ public class TopicMessageLookup {
     @UpsertColumn(coalesce = COALESCE_RANGE)
     private Range<Long> timestampRange;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long topicId;
 
     public static TopicMessageLookup from(String partition, TopicMessage topicMessage) {
