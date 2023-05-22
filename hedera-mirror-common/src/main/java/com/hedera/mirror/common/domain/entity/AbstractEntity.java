@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
@@ -164,6 +165,7 @@ public abstract class AbstractEntity implements History {
         return new EntityId(shard, realm, num, type);
     }
 
+    @JsonIgnore
     public long getEffectiveExpiration() {
         if (expirationTimestamp != null) {
             return expirationTimestamp;
