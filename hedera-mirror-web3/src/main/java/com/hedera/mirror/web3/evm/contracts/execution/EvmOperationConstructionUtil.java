@@ -22,6 +22,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
+import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileFactory;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
@@ -32,10 +33,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
@@ -85,7 +83,8 @@ public class EvmOperationConstructionUtil {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
         final var mirrorNodeEvmProperties = new MirrorNodeEvmProperties();
-        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, new MirrorHTSPrecompiledContract(evmFactory, mirrorNodeEvmProperties, stackedStateFrames));
+        final var precompileFactory = new PrecompileFactory(new HashSet<>());
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, new MirrorHTSPrecompiledContract(evmFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileFactory));
 
         return hederaPrecompiles;
     }

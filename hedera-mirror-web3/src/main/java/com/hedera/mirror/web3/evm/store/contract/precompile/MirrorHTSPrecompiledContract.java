@@ -53,6 +53,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+    private static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private Precompile precompile;
@@ -68,12 +69,13 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     public MirrorHTSPrecompiledContract(final EvmInfrastructureFactory infrastructureFactory,
                                        final MirrorNodeEvmProperties evmProperties,
-                                        final StackedStateFrames<Object> stackedStateFrames) {
+                                        final StackedStateFrames<Object> stackedStateFrames,
+                                        final PrecompileFactory precompileFactory) {
         super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
-        this.precompileFactory = new PrecompileFactory();
+        this.precompileFactory = precompileFactory;
     }
 
     @Override
@@ -117,15 +119,13 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         try {
             prepareComputation(input, updater::unaliased);
         } catch (InvalidTransactionException e) {
-            final var haltReason = NOT_SUPPORTED.equals(e.getResponseCode())
-                    ? HederaExceptionalHaltReason.NOT_SUPPORTED
-                    : HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
         }
 
         gasRequirement = defaultGas();
-        if (this.precompile == null || this.transactionBody == null) {
+        if (this.transactionBody == null) {
             final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
             frame.setExceptionalHaltReason(haltReason);
             return PrecompileContractResult.halt(null, haltReason);
@@ -186,12 +186,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             result = precompile.getFailureResultFor(FAIL_INVALID);
         }
 
-        // This should always have a parent stacked updater
-        final var parentUpdater = updater.parentUpdater();
-        if (parentUpdater.isEmpty()) {
-            throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
-        }
-
         return result;
     }
 
@@ -207,6 +201,8 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
         if (precompile != null) {
             decodeInput(input, aliasResolver);
+        } else {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
         }
     }
 

@@ -4,8 +4,9 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class PrecompileFactoryTest {
 
@@ -13,20 +14,13 @@ class PrecompileFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new PrecompileFactory();
+        subject = new PrecompileFactory(Set.of(new MockPrecompile()));
     }
 
     @Test
     void nonExistingAbiReturnsNull() {
-        int functionSelector = 0x00000000;
+        int functionSelector = 0x11111111;
         final Precompile result = subject.lookup(functionSelector);
         assertThat(result).isNull();
-    }
-
-    @Test
-    void noMatchingAbiThrowsException() {
-        int functionSelector = 0x00000001;
-
-        assertThatThrownBy(() -> subject.lookup(functionSelector)).isInstanceOf(UnsupportedOperationException.class).hasMessage("Precompile not supported for non-static frames");
     }
 }

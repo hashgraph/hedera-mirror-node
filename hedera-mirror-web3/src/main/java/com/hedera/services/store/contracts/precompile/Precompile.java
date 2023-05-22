@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -48,6 +49,8 @@ public interface Precompile {
     void run(MessageFrame frame);
 
     long getGasRequirement(long blockTimestamp);
+
+    Set<Integer> getFunctionSelectors();
 
     default void handleSentHbars(final MessageFrame frame) {
         if (!Objects.equals(Wei.ZERO, frame.getValue())) {
