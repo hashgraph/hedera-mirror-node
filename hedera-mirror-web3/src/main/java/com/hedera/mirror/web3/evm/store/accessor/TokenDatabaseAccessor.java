@@ -22,7 +22,6 @@ import com.hedera.mirror.web3.repository.TokenRepository;
 import java.util.Optional;
 import javax.inject.Named;
 
-import com.hederahashgraph.api.proto.java.TokenID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 

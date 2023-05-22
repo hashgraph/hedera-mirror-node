@@ -37,7 +37,6 @@ import java.util.Map;
 @Named
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-    private Map<ByteString, EntityNum> aliases = new HashMap<>();
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
@@ -68,7 +67,4 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
     }
 
-    private Map<ByteString, EntityNum> curAliases() {
-        return aliases;
-    }
 }
