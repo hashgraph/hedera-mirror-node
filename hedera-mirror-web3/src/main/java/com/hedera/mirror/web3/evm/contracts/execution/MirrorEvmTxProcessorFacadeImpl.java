@@ -29,7 +29,6 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
-import com.hedera.mirror.web3.repository.*;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -44,13 +43,6 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 @SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
-    private final EntityRepository entityRepository;
-    private final TokenRepository tokenRepository;
-    private final NftRepository nftRepository;
-    private final TokenAccountRepository tokenAccountRepository;
-    private final TokenAllowanceRepository tokenAllowanceRepository;
-    private final NftAllowanceRepository nftAllowanceRepository;
-    private final CustomFeeRepository customFeeRepository;
     private final MirrorNodeEvmProperties evmProperties;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
@@ -61,13 +53,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
-            final EntityRepository entityRepository,
-            final TokenRepository tokenRepository,
-            final NftRepository nftRepository,
-            final TokenAccountRepository tokenAccountRepository,
-            final TokenAllowanceRepository tokenAllowanceRepository,
-            final NftAllowanceRepository nftAllowanceRepository,
-            final CustomFeeRepository customFeeRepository,
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
             final StaticBlockMetaSource blockMetaSource,
@@ -78,13 +63,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
-        this.entityRepository = entityRepository;
-        this.tokenRepository = tokenRepository;
-        this.nftRepository = nftRepository;
-        this.tokenAccountRepository = tokenAccountRepository;
-        this.tokenAllowanceRepository = tokenAllowanceRepository;
-        this.nftAllowanceRepository = nftAllowanceRepository;
-        this.customFeeRepository = customFeeRepository;
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
