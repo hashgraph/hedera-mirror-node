@@ -105,7 +105,8 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
 
     @Test
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
-        final var functionHash = functionEncodeDecoder.functionHashFor("delegateTransfer", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L);
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "delegateTransfer", ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L);
         final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(Bytes.EMPTY.toHexString());

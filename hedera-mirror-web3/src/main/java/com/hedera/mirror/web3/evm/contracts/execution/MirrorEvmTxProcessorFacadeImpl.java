@@ -52,7 +52,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final AbstractCodeCache codeCache;
     private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
-    private final List<DatabaseAccessor<Object,?>> databaseAccessors;
+    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -64,7 +64,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object,?>> databaseAccessors) {
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
@@ -78,7 +78,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
 
         this.worldState = new HederaEvmWorldState(
-                entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityAddressSequencer, mirrorEvmContractAliases);
+                entityAccess,
+                evmProperties,
+                codeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
     }
 
     @Override

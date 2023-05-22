@@ -115,8 +115,8 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @ParameterizedTest
     @EnumSource(UnsupportedContractModificationFunctions.class)
     void evmPrecompileUnsupportedModificationTokenFunctionsTest(UnsupportedContractModificationFunctions contractFunc) {
-        final var functionHash =
-                encodeDecoder.functionHashWithEmptyDataFor(contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var functionHash = encodeDecoder.functionHashWithEmptyDataFor(
+                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -260,12 +260,13 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
     @Test
     void notExistingPrecompileCallFails() {
-        final var functionHash =
-                encodeDecoder.functionHashFor("callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
+        final var functionHash = encodeDecoder.functionHashFor(
+                "callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class).hasMessage(ERROR_MESSAGE);
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @RequiredArgsConstructor
@@ -312,44 +313,51 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
     @RequiredArgsConstructor
     enum UnsupportedContractModificationFunctions {
-        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] { new Object[] {EMPTY_ADDRESS, 0L, false}, new Object[] {EMPTY_ADDRESS, new Object[] { EMPTY_ADDRESS,
-        0L, false}}, new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}}),
-        MINT_TOKEN("mintTokenExternal", new Object[] { EMPTY_ADDRESS, 0L, new byte[0]}),
-        BURN_TOKEN("burnTokenExternal", new Object[] { EMPTY_ADDRESS, 0L, new long[0]}),
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0]}),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] { new Object[]{}, 0L, 0}),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesExternal", new Object[] { new Object[]{}, 0L, 0, new Object[]{}, new Object[]{}}),
-        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] { new Object[]{}}),
-        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createNonFungibleTokenWithCustomFeesExternal", new Object[] { new Object[]{}, new Object[]{}, new Object[]{}}),
-        APPROVE("approveExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM("transferFromExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        FREEZE_TOKEN("freezeTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
-        TRANSFER_TOKENS("transferTokensExternal", new Object[] { EMPTY_ADDRESS, new Address[0], new long[0]}),
-        TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] { EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
-        TRANSFER_TOKEN("transferTokenExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        PAUSE_TOKEN("pauseTokenExternal", new Object[] { EMPTY_ADDRESS}),
-        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] { EMPTY_ADDRESS}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] { EMPTY_ADDRESS}),
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
-        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] { EMPTY_ADDRESS, new Object[]{}}),
-        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] { EMPTY_ADDRESS, EMPTY_ADDRESS});
+        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] {
+            new Object[] {EMPTY_ADDRESS, 0L, false},
+            new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
+            new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
+        }),
+        MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
+        BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
+        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createFungibleTokenWithCustomFeesExternal",
+                new Object[] {new Object[] {}, 0L, 0, new Object[] {}, new Object[] {}}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {new Object[] {}}),
+        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createNonFungibleTokenWithCustomFeesExternal",
+                new Object[] {new Object[] {}, new Object[] {}, new Object[] {}}),
+        APPROVE("approveExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
+        TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
+        TRANSFER_NFT_TOKENS(
+                "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
+        TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;
     }
-
 
     private CallServiceParameters serviceParametersForEthCall(Bytes callData, boolean isStatic) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);

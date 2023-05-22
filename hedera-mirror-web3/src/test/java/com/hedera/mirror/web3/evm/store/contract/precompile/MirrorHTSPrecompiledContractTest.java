@@ -1,4 +1,26 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.web3.evm.store.contract.precompile;
+
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -9,6 +31,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExec
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -21,15 +44,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
-
-
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
 
@@ -41,7 +55,6 @@ class MirrorHTSPrecompiledContractTest {
 
     @Mock
     private MessageFrame messageFrame;
-
 
     @Mock
     private BlockValues blockValues;
@@ -84,10 +97,11 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void returnResultForStaticFrame() {
-        //isTokenAddress signature
+        // isTokenAddress signature
         final var functionHash = Bytes.fromHexString("0x19f37361");
 
-        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any())).willReturn(viewExecutor);
+        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                .willReturn(viewExecutor);
         given(messageFrame.isStatic()).willReturn(true);
 
         final var expectedResult = Pair.of(1000L, Bytes.EMPTY);
@@ -99,10 +113,11 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void returnResultForNonStaticFrameAndViewFunction() {
-        //isTokenAddress signature
+        // isTokenAddress signature
         final var functionHash = Bytes.fromHexString("0x19f37361");
 
-        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any())).willReturn(viewExecutor);
+        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                .willReturn(viewExecutor);
         given(viewExecutor.computeCosted()).willReturn(Pair.of(0L, Bytes.EMPTY));
         given(messageFrame.isStatic()).willReturn(false);
 
@@ -114,7 +129,7 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void returnResultForNonStaticFrameAndErcViewFunction() {
-        //name signature
+        // name signature
         final var functionHash = Bytes.fromHexString("0x06fdde03");
 
         given(messageFrame.isStatic()).willReturn(true);
@@ -127,7 +142,7 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void prepareComputationForUnsupportedPrecompileThrowsException() {
-        //mint signature
+        // mint signature
         final var functionHash = Bytes.fromHexString("0x278e0b88");
 
         given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
@@ -146,7 +161,7 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void nonStaticCallToPrecompileWorks() {
-        //mock precompile signature
+        // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x00000000");
 
         given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);

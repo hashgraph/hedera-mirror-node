@@ -16,6 +16,13 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -29,6 +36,8 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 import lombok.CustomLog;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,16 +45,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
-import java.util.Optional;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @CustomLog
 public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
@@ -66,11 +65,11 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private TokenAccessor tokenAccessor;
     private final PrecompileFactory precompileFactory;
 
-
-    public MirrorHTSPrecompiledContract(final EvmInfrastructureFactory infrastructureFactory,
-                                       final MirrorNodeEvmProperties evmProperties,
-                                        final StackedStateFrames<Object> stackedStateFrames,
-                                        final PrecompileFactory precompileFactory) {
+    public MirrorHTSPrecompiledContract(
+            final EvmInfrastructureFactory infrastructureFactory,
+            final MirrorNodeEvmProperties evmProperties,
+            final StackedStateFrames<Object> stackedStateFrames,
+            final PrecompileFactory precompileFactory) {
         super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
@@ -79,9 +78,11 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     }
 
     @Override
-    public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame,
-                                           final ViewGasCalculator viewGasCalculator,
-                                           final TokenAccessor tokenAccessor) {
+    public Pair<Long, Bytes> computeCosted(
+            final Bytes input,
+            final MessageFrame frame,
+            final ViewGasCalculator viewGasCalculator,
+            final TokenAccessor tokenAccessor) {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
@@ -91,11 +92,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
                 return Pair.of(defaultGas(), null);
             }
 
-            return super.computeCosted(
-                        input,
-                        frame,
-                        viewGasCalculator,
-                        tokenAccessor);
+            return super.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
         }
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
@@ -104,10 +101,10 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     @NonNull
     @Override
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
-        //Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
-        //This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
-        //After the Precompile classes are implemented, this workaround won't be needed.
-        if(isViewFunction(input)) {
+        // Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
+        // This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
+        // After the Precompile classes are implemented, this workaround won't be needed.
+        if (isViewFunction(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 
@@ -224,20 +221,20 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
     }
 
-    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
+    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
+            final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
         if (isTokenProxyRedirect(input)) {
             final var executor =
                     infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         } else if (isViewFunction(input)) {
-            final var executor =
-                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
+            final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         }
         return resultFromExecutor == null
-                    ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                    : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
+                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
+                : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {

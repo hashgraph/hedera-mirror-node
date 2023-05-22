@@ -24,12 +24,11 @@ import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;

@@ -74,7 +74,8 @@ public class FunctionEncodeDecoder {
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
     }
 
-    public Bytes functionHashWithEmptyDataFor(final String functionName, final Path contractPath, final Object... parameters) {
+    public Bytes functionHashWithEmptyDataFor(
+            final String functionName, final Path contractPath, final Object... parameters) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
         Function function = Function.fromJson(jsonFunction);
         return Bytes.wrap(encodeCall(function).array());

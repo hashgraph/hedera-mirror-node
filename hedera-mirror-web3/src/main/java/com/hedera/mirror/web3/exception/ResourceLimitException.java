@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.exception;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.io.Serial;
 
 /**

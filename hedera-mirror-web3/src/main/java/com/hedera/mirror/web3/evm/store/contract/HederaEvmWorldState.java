@@ -98,7 +98,13 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     @Override
     public HederaEvmWorldUpdater updater() {
         return new Updater(
-                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, entityAddressSequencer, mirrorAliasManager);
+                this,
+                accountAccessor,
+                hederaEvmEntityAccess,
+                tokenAccessor,
+                evmProperties,
+                entityAddressSequencer,
+                mirrorAliasManager);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
