@@ -56,7 +56,8 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute<>("start-time");
     private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
-    private static final Pattern NODE_ID_PATTERN = Pattern.compile("[^/]+/(\\d{1,10})/(\\d{1,10})/([^/]+)");
+    private static final Pattern NODE_ID_PATTERN =
+            Pattern.compile("[^\\/]{1,50}\\/(\\d{1,10})\\/(\\d{1,10})\\/([^\\/]{1,10})");
     private static final String LIST = "list";
     private static final String SIDECAR = "sidecar";
     private static final String SIGNATURE = "signature";
