@@ -172,6 +172,44 @@ class BalanceChangeTest {
     }
 
     @Test
+    void canSwitchHbarDebitToApprovedDebit() {
+        final var unapproved = BalanceChange.changingHbar(aaWith(1234, -5678L, false), payer);
+        final var approved = BalanceChange.changingHbar(aaWith(1234, -5678L, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
+    void canSwitchFungibleDebitToApprovedDebit() {
+        final var unapproved = BalanceChange.changingFtUnits(t, t.asGrpcToken(), aaWith(1234, -5678L, false), payer);
+        final var approved = BalanceChange.changingFtUnits(t, t.asGrpcToken(), aaWith(1234, -5678L, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
+    void canSwitchOwnershipChangeApproved() {
+        final var unapproved =
+                BalanceChange.changingNftOwnership(t, t.asGrpcToken(), ownershipChange(1234, 5678, 9, false), payer);
+        final var approved =
+                BalanceChange.changingNftOwnership(t, t.asGrpcToken(), ownershipChange(1234, 5678, 9, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
     void settersAndGettersOfDecimalsWorks() {
         final var created = new Id(1, 2, 3);
         final var token = new Id(4, 5, 6);
