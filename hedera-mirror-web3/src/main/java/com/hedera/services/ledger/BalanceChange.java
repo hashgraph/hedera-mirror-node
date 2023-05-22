@@ -216,6 +216,10 @@ public class BalanceChange {
         return counterPartyAccountId;
     }
 
+    public ByteString counterPartyAlias() {
+        return counterPartyAlias;
+    }
+
     public long getAggregatedUnits() {
         return this.aggregatedUnits;
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.services.utils;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -60,5 +61,9 @@ public class IdUtils {
     static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+    }
+
+    public static AccountID asAccountWithAlias(String alias) {
+        return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
     }
 }
