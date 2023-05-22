@@ -26,6 +26,7 @@ import java.util.*;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
@@ -125,7 +126,7 @@ class MirrorHTSPrecompiledContractTest {
     }
 
     @Test
-    void prepareComputationForUnsupportedPrecompileCausesFrameToHalt() {
+    void prepareComputationForUnsupportedPrecompileThrowsException() {
         //mint signature
         final var functionHash = Bytes.fromHexString("0x278e0b88");
 
@@ -138,10 +139,9 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
-
-        final var expectedResult = Pair.of(0L, null);
-        assertThat(expectedResult).isEqualTo(precompileResult);
+        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Precompile not supported for non-static frames");
     }
 
     @Test
