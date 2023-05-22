@@ -220,4 +220,8 @@ public final class EntityIdUtils {
     public static String asHexedEvmAddress(final Id id) {
         return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
+
+    public static boolean isAlias(final AccountID idOrAlias) {
+        return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+    }
 }

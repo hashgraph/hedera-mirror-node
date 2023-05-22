@@ -113,4 +113,12 @@ public class EntityNum implements Comparable<EntityNum> {
     public int compareTo(@NonNull final EntityNum that) {
         return Integer.compare(this.value, that.value);
     }
+
+    public AccountID scopedAccountWith() {
+        return AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(value)
+                .build();
+    }
 }
