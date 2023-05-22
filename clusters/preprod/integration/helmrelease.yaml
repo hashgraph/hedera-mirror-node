@@ -27,8 +27,6 @@ spec:
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 20
   valuesFrom:
     - kind: Secret
       name: mirror
