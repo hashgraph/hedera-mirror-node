@@ -53,7 +53,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
 /**
- * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database.md#errata
+ * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database/README.md#errata
  * for more detail.
  */
 @Named

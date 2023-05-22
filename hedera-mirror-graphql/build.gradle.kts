@@ -20,14 +20,14 @@ import com.graphql_java_generator.plugin.conf.PluginMode
 description = "Hedera Mirror Node GraphQL"
 
 plugins {
-    id("com.graphql_java_generator.graphql-gradle-plugin")
+    id("com.graphql-java-generator.graphql-gradle-plugin")
     id("spring-conventions")
 }
 
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies")
+    compileOnly("com.graphql-java-generator:graphql-java-client-runtime")
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.github.ben-manes.caffeine:caffeine")
@@ -54,12 +54,12 @@ dependencies {
 }
 
 generatePojoConf {
-    isAddRelayConnections = true
+    isAddRelayConnections = false
+    isCopyRuntimeSources = true
     javaTypeForIDType = "java.lang.String"
     mode = PluginMode.server
     packageName = "com.hedera.mirror.graphql.viewmodel"
     schemaFilePattern = "**/*.graphqls"
-    isSeparateUtilityClasses = true
     setCustomScalars(
         arrayOf(
             CustomScalarDefinition(

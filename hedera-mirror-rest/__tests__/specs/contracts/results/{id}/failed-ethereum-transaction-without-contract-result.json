@@ -33,39 +33,14 @@
     "/api/v1/contracts/results/0x6c515f5eae90c7a7ed8312b60a6990f19d809f9a5ad06ea90c172d0a1f7789da",
     "/api/v1/contracts/results/0.0.8001-167655-000123400"
   ],
-  "responseStatus": 200,
+  "responseStatus": 404,
   "responseJson": {
-    "access_list": "0x",
-    "address": null,
-    "amount": 0,
-    "block_gas_used": 50000000,
-    "block_hash": "0x6ceecd8bb224da491",
-    "block_number": 17,
-    "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "call_result": "0x",
-    "chain_id": "0x",
-    "contract_id": null,
-    "created_contract_ids": [],
-    "error_message": "INVALID_ACCOUNT_ID",
-    "failed_initcode": null,
-    "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": "0x",
-    "gas_limit": 1000000,
-    "gas_price": "0x4a817c80",
-    "gas_used": 0,
-    "hash": "0x",
-    "logs": [],
-    "max_fee_per_gas": "0x",
-    "max_priority_fee_per_gas": "0x",
-    "nonce": 1,
-    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
-    "result": "UNKNOWN",
-    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
-    "state_changes": [],
-    "status": "0x0",
-    "timestamp": "167655.000123456",
-    "to": null,
-    "type": 2,
-    "v": 1
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
   }
 }
