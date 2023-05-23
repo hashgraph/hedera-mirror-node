@@ -17,7 +17,9 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -39,7 +41,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
+    private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
+    private static final Address sponsor = Address.fromHexString("0xcba");
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
+
+    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @Mock
     private AccountAccessor accountAccessor;
@@ -60,7 +67,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private HederaEvmStackedWorldStateUpdater subject;
-    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
     void setUp() {
@@ -146,6 +152,22 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         assertThat(subject.isTokenAddress(someAddress)).isFalse();
+    }
+
+    @Test
+    void usesAliasesForDecodingHelp() {
+        given(mirrorEvmContractAliases.resolveForEvm(alias)).willReturn(sponsor);
+        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias);
+
+        final var resolved = subject.unaliased(alias.toArrayUnsafe());
+        assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+    }
+
+    @Test
+    void unaliasingFailsWhenNotUsingCanonicalAddress() {
+        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
+
+        assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
     }
 
     private void givenForRedirect() {

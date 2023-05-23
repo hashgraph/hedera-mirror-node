@@ -17,10 +17,10 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import com.hedera.services.store.contracts.precompile.Precompile;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Named;
 
 @Named
 public class PrecompileFactory {

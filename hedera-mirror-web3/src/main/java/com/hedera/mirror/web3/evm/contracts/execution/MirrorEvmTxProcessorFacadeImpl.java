@@ -36,8 +36,9 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.List;
+import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
