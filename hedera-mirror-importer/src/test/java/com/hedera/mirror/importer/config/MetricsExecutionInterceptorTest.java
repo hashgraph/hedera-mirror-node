@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -76,9 +77,6 @@ class MetricsExecutionInterceptorTest {
 
     @BeforeEach
     void setup() {
-        when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
-        when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
-
         executionAttributes.putAttribute(
                 MetricsExecutionInterceptor.START_TIME, Instant.now().minusSeconds(60L));
 
@@ -97,9 +95,11 @@ class MetricsExecutionInterceptorTest {
 
         var sdkHttpRequest = createListObjectsRequest(prefix, StreamFilename.EPOCH.getFilename());
 
+        when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
+        when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
-        metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
+        metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
         verifyTimerTags("list", NODE_ID, StreamType.RECORD);
     }
 
@@ -135,10 +135,28 @@ class MetricsExecutionInterceptorTest {
         var objectKey = prefix + fileName;
         var sdkHttpRequest = createGetObjectRequest(objectKey);
 
+        when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
+        when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
-        metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
+        metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
         verifyTimerTags(expectedAction, NODE_ID, streamType);
+    }
+
+    /*
+     * Test failure scenario where the SDK uri does not have a parsable bucket path. The resultant inner
+     * IllegalStateException is caught and logged and there is no visibility of that. However, a Timer
+     * will not have been created, so verify that is the case.
+     */
+    @Test
+    void invalids3GetObjectExecution() {
+        var sdkHttpRequest = createGetObjectRequest("uripaththatdoesnotmatchregex");
+        when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
+
+        metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
+        Collection<Timer> timers =
+                meterRegistry.find("hedera.mirror.download.request").timers();
+        assertEquals(0, timers.size());
     }
 
     private String nodeIdPrefix(StreamType streamType, String network, long shard, long nodeId) {
