@@ -39,6 +39,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -135,7 +136,7 @@ abstract class AbstractTransactionHandlerTest {
 
     protected TransactionHandler transactionHandler;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     protected EntityIdService entityIdService;
 
     @Mock

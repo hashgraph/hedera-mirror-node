@@ -64,7 +64,8 @@ public class FileCopier {
     }
 
     public FileCopier filterDirectories(String wildcardPattern) {
-        return filterDirectories(new WildcardFileFilter(wildcardPattern));
+        return filterDirectories(
+                WildcardFileFilter.builder().setWildcards(wildcardPattern).get());
     }
 
     public FileCopier filterFiles(FileFilter newFileFilter) {
@@ -74,7 +75,8 @@ public class FileCopier {
     }
 
     public FileCopier filterFiles(String wildcardPattern) {
-        return filterFiles(new WildcardFileFilter(wildcardPattern));
+        return filterFiles(
+                WildcardFileFilter.builder().setWildcards(wildcardPattern).get());
     }
 
     public FileCopier to(Path target) {

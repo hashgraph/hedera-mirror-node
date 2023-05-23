@@ -44,9 +44,9 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.List;
-import javax.inject.Named;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 

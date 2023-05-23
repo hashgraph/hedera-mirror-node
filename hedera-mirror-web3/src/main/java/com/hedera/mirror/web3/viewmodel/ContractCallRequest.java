@@ -21,10 +21,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
-import javax.validation.constraints.AssertTrue;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import org.hyperledger.besu.datatypes.Address;
 

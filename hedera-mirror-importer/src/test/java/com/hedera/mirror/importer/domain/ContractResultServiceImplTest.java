@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -57,7 +58,7 @@ class ContractResultServiceImplTest {
     private final EntityProperties entityProperties = new EntityProperties();
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private EntityIdService entityIdService;
 
     @Mock

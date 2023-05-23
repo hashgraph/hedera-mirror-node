@@ -23,9 +23,9 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.services.stream.proto.SignatureFile;
+import jakarta.inject.Named;
 import java.io.DataInputStream;
 import java.io.IOException;
-import javax.inject.Named;
 
 @Named
 public class ProtoSignatureFileReader implements SignatureFileReader {
