@@ -30,14 +30,14 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.http.SdkHttpMethod;
@@ -46,14 +46,10 @@ import software.amazon.awssdk.http.SdkHttpResponse;
 
 /*
  * This test class was introduced with issue 6023, and is focused around the MetricsExecutionInterceptor
- * afterExecution() method, specifically the micrometer metrics tags and values that are produced depending
- * on the S3 activity being intercepted.
- *
- * This required a bit of refactoring to make it possible to introduce the mock Timer.Builder and
- * DistributionSummary.Builder instances required for testing. The metric tags are captured via the
- * mock Timer.Builder only, and the DistributionSummary.Builder mock is ignored. The tags are then examined for the
- * expected results for the scenario. No other verification of MetricsExecutionInterceptor is performed at this time.
+ * afterExecution() method, specifically the micrometer metrics tags and values that are produced depending on
+ * the S3 activity being intercepted. No other verification of MetricsExecutionInterceptor is performed at this time.
  */
+@ExtendWith(MockitoExtension.class)
 class MetricsExecutionInterceptorTest {
 
     private static final int HTTP_STATUS_SUCCESS = 200;
@@ -69,21 +65,17 @@ class MetricsExecutionInterceptorTest {
     private static final String BATCH_SIZE = "100";
     private final ExecutionAttributes executionAttributes = new ExecutionAttributes();
 
-    private MeterRegistry meterRegistry;
-
     @Mock
     private SdkHttpResponse sdkHttpResponse;
 
     @Mock
     private Context.AfterExecution afterExecutionContext;
 
-    private AutoCloseable openMocksCloseable;
+    private MeterRegistry meterRegistry;
     private MetricsExecutionInterceptor metricsExecutionInterceptor;
 
     @BeforeEach
     void setup() {
-        openMocksCloseable = MockitoAnnotations.openMocks(this);
-
         when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
         when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
 
@@ -92,11 +84,6 @@ class MetricsExecutionInterceptorTest {
 
         meterRegistry = new SimpleMeterRegistry();
         metricsExecutionInterceptor = new MetricsExecutionInterceptor(meterRegistry);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        openMocksCloseable.close();
     }
 
     @ParameterizedTest(name = "S3 List using pathType {0}")
