@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
+import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
+
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -40,20 +41,14 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueT
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
-        Id tokenId = mapEntityIdToId(nft.getId().getTokenId());
+        Id tokenId = idFromEntityId(nft.getId().getTokenId());
         return new UniqueToken(
                 tokenId,
                 nft.getId().getSerialNumber(),
                 mapNanosToRichInstant(nft.getCreatedTimestamp()),
-                mapEntityIdToId(nft.getAccountId()),
-                mapEntityIdToId(nft.getSpender()),
+                idFromEntityId(nft.getAccountId()),
+                idFromEntityId(nft.getSpender()),
                 nft.getMetadata());
-    }
-
-    private Id mapEntityIdToId(EntityId entityId) {
-        return entityId == null
-                ? null
-                : new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private RichInstant mapNanosToRichInstant(Long nanos) {

@@ -224,4 +224,11 @@ public final class EntityIdUtils {
     public static EntityId entityIdFromId(Id id, EntityType type) {
         return new EntityId(id.shard(), id.realm(), id.num(), type);
     }
+
+    public static Id idFromEntityId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+    }
 }

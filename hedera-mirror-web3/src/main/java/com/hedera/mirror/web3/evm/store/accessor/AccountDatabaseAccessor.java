@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -88,13 +89,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
 
     private long getOwnedNfts(Long accountId) {
         return nftRepository.countByAccountIdNotDeleted(accountId);
-    }
-
-    private Id idFromEntityId(EntityId entityId) {
-        if (entityId == null) {
-            return null;
-        }
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {

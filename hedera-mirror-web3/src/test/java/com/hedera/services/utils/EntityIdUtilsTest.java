@@ -162,4 +162,12 @@ class EntityIdUtilsTest {
                 .returns(3L, EntityId::getEntityNum)
                 .returns(EntityType.ACCOUNT, EntityId::getType);
     }
+
+    @Test
+    void idFromEntityId() {
+        assertThat(EntityIdUtils.idFromEntityId(new EntityId(1L, 2L, 3L, EntityType.ACCOUNT)))
+                .returns(1L, Id::shard)
+                .returns(2L, Id::realm)
+                .returns(3L, Id::num);
+    }
 }
