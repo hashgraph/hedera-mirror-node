@@ -19,13 +19,11 @@ package com.hedera.mirror.web3.evm.token;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -46,6 +44,7 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -65,7 +64,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Named
@@ -73,6 +71,9 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenAccessorImpl implements TokenAccessor {
 
     private final EntityRepository entityRepository;
+
+    private final EntityDatabaseAccessor entityDatabaseAccessor;
+
     private final TokenRepository tokenRepository;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
@@ -95,10 +96,12 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
         final var ledgerId = properties.getNetwork().getLedgerId();
         final var nftEntity = nftOptional.get();
-        final var entityAddress = evmAddressFromId(nftEntity.getAccountId());
+        final var entityAddress = entityDatabaseAccessor.evmAddressFromId(nftEntity.getAccountId());
         final var creationTime = nftEntity.getCreatedTimestamp();
         final var metadata = nftEntity.getMetadata();
-        final var spender = nftEntity.getSpender() != null ? evmAddressFromId(nftEntity.getSpender()) : Address.ZERO;
+        final var spender = nftEntity.getSpender() != null
+                ? entityDatabaseAccessor.evmAddressFromId(nftEntity.getSpender())
+                : Address.ZERO;
         final var nftInfo = new EvmNftInfo(serialNo, entityAddress, creationTime, metadata, spender, ledgerId);
 
         return Optional.of(nftInfo);
@@ -242,7 +245,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Address.ZERO;
         }
 
-        return evmAddressFromId(spenderEntity.get());
+        return entityDatabaseAccessor.evmAddressFromId(spenderEntity.get());
     }
 
     @Override
@@ -272,7 +275,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Address.ZERO;
         }
 
-        return evmAddressFromId(ownerEntity.get());
+        return entityDatabaseAccessor.evmAddressFromId(ownerEntity.get());
     }
 
     @Override
@@ -315,7 +318,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getSymbol(),
                 tokenEntity.getName(),
                 entity.getMemo(),
-                evmAddressFromId(tokenEntity.getTreasuryAccountId()),
+                entityDatabaseAccessor.evmAddressFromId(tokenEntity.getTreasuryAccountId()),
                 tokenEntity.getTotalSupply(),
                 tokenEntity.getMaxSupply(),
                 tokenEntity.getDecimals(),
@@ -328,7 +331,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         evmTokenInfo.setIsPaused(isPaused);
 
         if (entity.getAutoRenewAccountId() != null) {
-            var autoRenewAddress = evmAddressFromId(EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
+            var autoRenewAddress = entityDatabaseAccessor.evmAddressFromId(
+                    EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
             evmTokenInfo.setAutoRenewAccount(autoRenewAddress);
         }
 
@@ -390,24 +394,5 @@ public class TokenAccessorImpl implements TokenAccessor {
                 .findByEvmAddressAndDeletedIsFalse(addressBytes)
                 .map(AbstractEntity::getId)
                 .orElse(0L);
-    }
-
-    private Address evmAddressFromId(EntityId entityId) {
-        Entity entity =
-                entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
-
-        if (entity == null) {
-            return Address.ZERO;
-        }
-
-        if (entity.getEvmAddress() != null) {
-            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-        }
-
-        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-            return Address.wrap(Bytes.wrap(entity.getAlias()));
-        }
-
-        return toAddress(entityId);
     }
 }
