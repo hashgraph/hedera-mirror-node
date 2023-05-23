@@ -18,8 +18,8 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import jakarta.inject.Named;
 import java.time.Instant;
-import javax.inject.Named;
 
 @Named
 public class PricesAndFeesImpl implements PricesAndFeesProvider {

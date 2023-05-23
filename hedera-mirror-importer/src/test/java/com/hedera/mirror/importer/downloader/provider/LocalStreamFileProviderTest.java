@@ -18,8 +18,12 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,15 +39,17 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected String getDirectory() {
-        return LocalStreamFileProvider.STREAMS;
+    protected FileCopier createFileCopier(Path dataPath) {
+        var fromPath = Path.of("data", "recordstreams", "v6");
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(LocalStreamFileProvider.STREAMS, StreamType.RECORD.getPath());
     }
 
     @Test
     void listDeletesFiles() throws Exception {
-        fileCopier.copy();
         var accountId = "0.0.3";
         var node = node(accountId);
+        getFileCopier(node).copy();
         var lastFilename = new StreamFilename(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))

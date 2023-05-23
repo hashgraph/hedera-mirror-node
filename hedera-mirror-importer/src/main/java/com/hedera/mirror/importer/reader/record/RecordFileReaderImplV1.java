@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.reader.record;
 
+import jakarta.inject.Named;
 import java.io.InputStream;
-import javax.inject.Named;
 
 @Named
 public class RecordFileReaderImplV1 extends AbstractPreV5RecordFileReader {

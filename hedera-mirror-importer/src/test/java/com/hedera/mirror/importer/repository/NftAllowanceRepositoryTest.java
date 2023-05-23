@@ -19,8 +19,8 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import jakarta.annotation.Resource;
 import java.util.List;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 

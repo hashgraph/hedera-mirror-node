@@ -25,11 +25,11 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
-import javax.inject.Singleton;
 
 @Singleton
 public class DecodingFacade {

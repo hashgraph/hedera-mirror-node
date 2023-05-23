@@ -19,11 +19,11 @@ package com.hedera.services.fees.pricing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
-import javax.inject.Inject;
 
 public class AssetsLoader {
     private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";

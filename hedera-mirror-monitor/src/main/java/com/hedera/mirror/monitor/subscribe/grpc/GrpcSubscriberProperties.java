@@ -17,10 +17,10 @@
 package com.hedera.mirror.monitor.subscribe.grpc;
 
 import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.Instant;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
 

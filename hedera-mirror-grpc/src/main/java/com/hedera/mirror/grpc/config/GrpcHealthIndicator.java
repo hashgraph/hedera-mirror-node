@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.grpc.config;
 
+import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.event.GrpcServerShutdownEvent;

@@ -23,13 +23,14 @@ import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,7 +53,7 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
     private long amount;
 
     @Builder.Default
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
+    @Type(ListArrayType.class)
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Long> effectivePayerAccountIds = Collections.emptyList();
 

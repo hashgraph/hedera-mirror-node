@@ -26,7 +26,7 @@ import com.hedera.mirror.graphql.service.EntityService;
 import com.hedera.mirror.graphql.viewmodel.Account;
 import com.hedera.mirror.graphql.viewmodel.AccountInput;
 import com.hedera.mirror.graphql.viewmodel.HbarUnit;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -74,6 +74,6 @@ class AccountController {
 
     @SchemaMapping
     Mono<Long> balance(@Argument @Valid HbarUnit unit, Account account) {
-        return Mono.just(convertCurrency(unit, account.getBalance()));
+        return Mono.justOrEmpty(convertCurrency(unit, account.getBalance()));
     }
 }

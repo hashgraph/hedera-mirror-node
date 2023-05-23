@@ -18,9 +18,9 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
+import jakarta.inject.Named;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;

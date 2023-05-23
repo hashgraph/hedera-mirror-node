@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.batch;
 
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
+import jakarta.inject.Named;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.CustomLog;
 import lombok.Data;

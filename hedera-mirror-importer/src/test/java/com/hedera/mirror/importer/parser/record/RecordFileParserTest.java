@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -69,10 +70,10 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     @Mock
     private RecordItemListener recordItemListener;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private RecordStreamFileListener recordStreamFileListener;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private long count = 0;

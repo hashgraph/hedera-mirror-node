@@ -18,12 +18,12 @@ package com.hedera.mirror.monitor.publish;
 
 import com.hedera.mirror.monitor.ScenarioProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;

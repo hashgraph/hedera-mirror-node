@@ -14,16 +14,6 @@ logging:
     com.hedera.mirror.web3: info
     org.springframework.cloud.kubernetes.fabric8.config: error
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    export:
-      prometheus:
-        step: 30s
-    tags:
-      application: ${spring.application.name}
   endpoint:
     health:
       group:
@@ -31,6 +21,17 @@ management:
           include: ping
         readiness:
           include: db, ping
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        step: 60s
 server:
   compression:
     enabled: true
@@ -69,7 +70,7 @@ spring:
       minimum-idle: 4
       validation-timeout: 3000
   jpa:
-    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true

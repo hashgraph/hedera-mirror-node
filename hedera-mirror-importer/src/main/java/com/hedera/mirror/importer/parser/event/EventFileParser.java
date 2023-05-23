@@ -21,7 +21,7 @@ import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import io.micrometer.core.instrument.MeterRegistry;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;

@@ -19,14 +19,16 @@ package com.hedera.mirror.grpc.listener;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -39,6 +41,7 @@ import reactor.retry.Repeat;
 public class PollingTopicListener implements TopicListener {
 
     private final ListenerProperties listenerProperties;
+    private final ObservationRegistry observationRegistry;
     private final TopicMessageRepository topicMessageRepository;
     private final Scheduler scheduler =
             Schedulers.newParallel("poll", 4 * Runtime.getRuntime().availableProcessors(), true);
@@ -56,7 +59,7 @@ public class PollingTopicListener implements TopicListener {
                         .withBackoffScheduler(scheduler))
                 .name(METRIC)
                 .tag(METRIC_TAG, "poll")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", interval.toMillis(), filter));
     }

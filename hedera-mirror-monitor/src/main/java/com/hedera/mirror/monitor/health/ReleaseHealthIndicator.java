@@ -18,10 +18,10 @@ package com.hedera.mirror.monitor.health;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.inject.Named;
 import lombok.AccessLevel;
 import lombok.CustomLog;
 import lombok.Getter;

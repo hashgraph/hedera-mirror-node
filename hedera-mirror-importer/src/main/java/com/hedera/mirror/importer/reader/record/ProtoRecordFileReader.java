@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.reader.record;
 
 import static java.lang.String.format;
-import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -30,6 +29,7 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.RecordStreamFile;
+import jakarta.inject.Named;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -42,8 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.output.NullOutputStream;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
@@ -142,7 +142,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
     }
 
     private String getMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile) throws IOException {
-        try (var digestOutputStream = new DigestOutputStream(NULL_OUTPUT_STREAM, createMessageDigest(algorithm));
+        try (var digestOutputStream =
+                        new DigestOutputStream(NullOutputStream.INSTANCE, createMessageDigest(algorithm));
                 var dataOutputStream = new DataOutputStream(digestOutputStream)) {
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
             dataOutputStream.writeInt(VERSION);

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@javax.persistence.Entity
+@jakarta.persistence.Entity
 @NoArgsConstructor
 @SuperBuilder
 public class NftAllowanceHistory extends AbstractNftAllowance {
