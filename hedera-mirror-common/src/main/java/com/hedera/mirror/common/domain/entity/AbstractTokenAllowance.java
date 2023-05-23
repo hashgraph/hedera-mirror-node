@@ -25,41 +25,41 @@ import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractTokenAllowance.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder
-@TypeDef(defaultForType = Range.class, typeClass = PostgreSQLGuavaRangeType.class)
 @Upsertable(history = true)
 public abstract class AbstractTokenAllowance implements History {
 
     private long amount;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long owner;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long spender;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
+    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long tokenId;
 
     @JsonIgnore

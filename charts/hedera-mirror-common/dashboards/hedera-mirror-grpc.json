@@ -1263,7 +1263,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
-      "description": "",
+      "description": "The amount of CPU consumed by the application",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1344,7 +1344,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
@@ -1355,7 +1355,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} * system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} * system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "usage",
@@ -1782,6 +1782,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
+      "description": "The number of database connections in the pool",
       "title": "Connection Pool",
       "tooltip": {
         "shared": true,
@@ -1816,6 +1817,7 @@
       "datasource": {
         "uid": "${prometheus}"
       },
+      "description": "The number of database connections",
       "fieldConfig": {
         "defaults": {
           "color": {

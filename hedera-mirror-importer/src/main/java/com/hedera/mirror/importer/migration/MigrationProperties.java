@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.migration;
 
+import jakarta.validation.constraints.NotNull;
 import java.util.Map;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 

@@ -16,18 +16,20 @@
 
 package com.hedera.mirror.importer;
 
+import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -54,6 +56,8 @@ public class MirrorProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
 
+    private String networkPrefix;
+
     @Min(0)
     private long shard = 0L;
 
@@ -66,10 +70,23 @@ public class MirrorProperties {
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
 
+    public String getEffectiveNetwork() {
+        if (!StringUtils.isBlank(networkPrefix)) {
+            return networkPrefix.toLowerCase();
+        } else {
+            if (network.equals(HederaNetwork.OTHER)) {
+                throw new InvalidConfigurationException(
+                        "Unable to retrieve the network prefix for network type " + network);
+            }
+            // Here (5713) we need to add logic to get the complete network prefix for resettable environments.
+            return network.toString().toLowerCase();
+        }
+    }
+
     public enum ConsensusMode {
         EQUAL, // all nodes equally weighted
         STAKE, // all nodes specify their node stake
-        STAKE_IN_ADDRESS_BOOK; // like STAKE, but only the nodes found in the address book are used in the calculation.
+        STAKE_IN_ADDRESS_BOOK // like STAKE, but only the nodes found in the address book are used in the calculation.
     }
 
     @Getter

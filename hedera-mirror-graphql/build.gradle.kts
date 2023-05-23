@@ -20,21 +20,21 @@ import com.graphql_java_generator.plugin.conf.PluginMode
 description = "Hedera Mirror Node GraphQL"
 
 plugins {
-    id("com.graphql_java_generator.graphql-gradle-plugin")
+    id("com.graphql-java-generator.graphql-gradle-plugin")
     id("spring-conventions")
 }
 
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies")
+    compileOnly("com.graphql-java-generator:graphql-java-client-runtime")
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.graphql-java:graphql-java-extended-scalars")
     implementation("com.graphql-java:graphql-java-extended-validation")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.mapstruct:mapstruct")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-starter-graphql")
@@ -54,12 +54,13 @@ dependencies {
 }
 
 generatePojoConf {
-    isAddRelayConnections = true
+    isAddRelayConnections = false
+    isCopyRuntimeSources = true
+    isUseJakartaEE9 = true
     javaTypeForIDType = "java.lang.String"
     mode = PluginMode.server
     packageName = "com.hedera.mirror.graphql.viewmodel"
     schemaFilePattern = "**/*.graphqls"
-    isSeparateUtilityClasses = true
     setCustomScalars(
         arrayOf(
             CustomScalarDefinition(
@@ -84,7 +85,7 @@ tasks.withType<JavaCompile> {
     if (name == "compileJava") {
         options.compilerArgs.addAll(
             listOf(
-                "-Amapstruct.defaultComponentModel=jsr330",
+                "-Amapstruct.defaultComponentModel=jakarta",
                 "-Amapstruct.defaultInjectionStrategy=constructor",
                 "-Amapstruct.disableBuilders=true",
                 "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have

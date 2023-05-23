@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.grpc.converter;
 
+import jakarta.inject.Named;
 import java.time.Instant;
-import javax.inject.Named;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
 

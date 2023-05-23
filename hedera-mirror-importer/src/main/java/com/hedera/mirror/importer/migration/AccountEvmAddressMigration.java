@@ -18,9 +18,9 @@ package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.util.Utility;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.Map;
-import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;

@@ -1,0 +1,84 @@
+{{- if .Values.zfs.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+    app: zfs-init
+  name: node-init-entrypoint
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    
+    set -euo pipefail
+
+    DEBIAN_FRONTEND=noninteractive
+    ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/root}"
+    DISK_SIZE_COORDINATOR=${DISK_SIZE_COORDINATOR:-75GB}
+    DISK_SIZE_WORKER=${DISK_SIZE_WORKER:-152GB}
+
+    echo "Installing dependencies"
+    apt-get update
+    apt-get install -y apt-transport-https curl gnupg lsb-release ca-certificates
+
+    echo "Installing gcloud SDK"
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 467B942D3A79BD29
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+     apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - 
+    apt-get update -y
+    apt-get install google-cloud-cli -y
+
+    echo "Getting node metadata"
+    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')"
+    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $4}')"
+    echo "Getting labels"
+    LABELS="$(gcloud compute instances describe $NODE_NAME --zone=$ZONE --flatten="metadata.kube-labels[]")"
+    CITUS_ROLE="$(echo $LABELS | grep -o 'citus-role[^, }]*' | sed -n 's/.*citus-role=\(.*\).*/\1/p')"
+    DISK_NAME="$NODE_NAME-zfs"
+    echo "Setting up disk $DISK_NAME for $CITUS_ROLE"
+    
+    if [[ "$CITUS_ROLE" == *"worker"* ]]; then
+        DISK_SIZE=$DISK_SIZE_WORKER
+    else
+        DISK_SIZE=$DISK_SIZE_COORDINATOR
+    fi
+
+    if ! gcloud compute disks list --filter="name:$DISK_NAME" | grep "$DISK_NAME" > /dev/null; then
+        echo "Creating $DISK_NAME for $CITUS_ROLE with size $DISK_SIZE"
+        gcloud compute disks create "$DISK_NAME" --size="$DISK_SIZE" --zone="$ZONE" --type=pd-balanced
+    else
+        echo "$DISK_NAME already exists for $CITUS_ROLE"
+    fi
+
+    if ! gcloud compute instances describe "$NODE_NAME" --zone "$ZONE" --format '(disks[].source)' | grep "$DISK_NAME" > /dev/null; then
+        echo "Attaching $DISK_NAME to $NODE_NAME"
+        gcloud compute instances attach-disk "$NODE_NAME" --device-name=sdb --disk "$DISK_NAME" --zone "$ZONE"
+    else
+        echo "$DISK_NAME is already attached to $NODE_NAME"
+    fi
+
+    echo "Configuring zpool {{ .Values.zfs.parameters.poolname }}"
+    chroot "${ROOT_MOUNT_DIR}" /bin/bash -x <<'EOF'
+    
+      echo "Installing zfs"
+      apt-get update
+      apt-get install -y zfsutils-linux
+      
+      if zfs list | grep -q '{{ .Values.zfs.parameters.poolname }}';
+        then
+          echo "found pool {{ .Values.zfs.parameters.poolname }}. Skipping creation"
+      elif zpool create {{ .Values.zfs.parameters.poolname }} /dev/sdb;
+        then
+          echo "Successfully created pool {{ .Values.zfs.parameters.poolname }}"
+      elif zpool import -f {{ .Values.zfs.parameters.poolname }};
+        then
+          echo "Successfully imported pool {{ .Values.zfs.parameters.poolname }}"
+      else
+        echo "Unable to create pool {{ .Values.zfs.parameters.poolname }}. Manual intervention necessary"
+        exit 1        
+      fi
+    EOF
+
+  {{- end -}}

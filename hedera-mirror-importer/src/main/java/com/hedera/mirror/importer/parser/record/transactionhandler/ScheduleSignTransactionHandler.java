@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Named
 class ScheduleSignTransactionHandler implements TransactionHandler {

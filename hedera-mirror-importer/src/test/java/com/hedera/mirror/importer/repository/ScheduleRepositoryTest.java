@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.from;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 class ScheduleRepositoryTest extends AbstractRepositoryTest {

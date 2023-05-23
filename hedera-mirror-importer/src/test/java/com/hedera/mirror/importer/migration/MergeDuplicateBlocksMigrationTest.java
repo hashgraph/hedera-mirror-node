@@ -28,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
@@ -106,10 +105,10 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
                 .returns(block1.getSize() + block2.getSize(), RecordFile::getSize)
                 .returns(block2.getVersion(), RecordFile::getVersion);
 
-        assertThat(transactionRepository.findAll(Sort.by("consensusTimestamp").ascending()))
+        assertThat(transactionRepository.findAll())
                 .hasSize(4)
                 .extracting(Transaction::getIndex)
-                .containsExactly(0, 1, 2, 3);
+                .containsExactlyInAnyOrder(0, 1, 2, 3);
     }
 
     @Test

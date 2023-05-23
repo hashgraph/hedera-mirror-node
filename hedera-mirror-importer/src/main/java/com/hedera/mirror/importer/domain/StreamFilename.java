@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -56,13 +57,14 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
     static {
         SIDECAR_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T(\\d{2}_){2}\\d{2}(\\.\\d{1,9})?Z_(\\d{2})\\.");
-        STREAM_TYPE_EXTENSION_MAP = new EnumMap<>(StreamType.class);
+        Map<StreamType, Map<String, StreamType.Extension>> streamTypeExtensionMap = new EnumMap<>(StreamType.class);
         for (StreamType type : StreamType.values()) {
             Map<String, StreamType.Extension> extensions = new HashMap<>();
             type.getDataExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
             type.getSignatureExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
-            STREAM_TYPE_EXTENSION_MAP.put(type, extensions);
+            streamTypeExtensionMap.put(type, Collections.unmodifiableMap(extensions));
         }
+        STREAM_TYPE_EXTENSION_MAP = Collections.unmodifiableMap(streamTypeExtensionMap);
         EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
     }
 

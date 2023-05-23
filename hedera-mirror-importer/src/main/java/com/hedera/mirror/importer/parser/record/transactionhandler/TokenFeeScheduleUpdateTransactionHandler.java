@@ -29,10 +29,10 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 

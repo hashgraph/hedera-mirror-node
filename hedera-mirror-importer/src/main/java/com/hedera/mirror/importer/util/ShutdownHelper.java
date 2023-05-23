@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.util;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 /**

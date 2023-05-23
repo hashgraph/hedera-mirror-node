@@ -26,8 +26,8 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import jakarta.inject.Named;
 import java.io.IOException;
-import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 

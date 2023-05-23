@@ -1,0 +1,52 @@
+{{- if .Values.zfs.enabled -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+    app: zfs-init
+  name: node-initializer
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: zfs-init
+  template:
+    metadata:
+      labels:
+        name: node-initializer
+        app: zfs-init
+    spec:
+      containers:
+        - image: "gcr.io/google-containers/pause:2.0"
+          name: pause
+      initContainers:
+        - image: ubuntu:22.04
+          name: node-initializer
+          command: [ "/scripts/entrypoint.sh" ]
+          env:
+            - name: ROOT_MOUNT_DIR
+              value: /root
+            - name: DISK_SIZE_COORDINATOR
+              value: {{ .Values.zfs.coordinator.diskSize }}
+            - name: DISK_SIZE_WORKER
+              value: {{ .Values.zfs.worker.diskSize }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: root-mount
+              mountPath: /root
+            - name: node-init-entrypoint
+              mountPath: /scripts
+      nodeSelector: {{ toYaml .Values.zfs.zfsNode.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.zfs.zfsNode.tolerations | nindent 8 }}
+      volumes:
+        - name: node-init-entrypoint
+          configMap:
+            name: node-init-entrypoint
+            defaultMode: 0744
+        - name: root-mount
+          hostPath:
+            path: /
+  updateStrategy:
+    type: RollingUpdate
+  {{- end -}}

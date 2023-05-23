@@ -408,3 +408,31 @@ traefik:
   service:
     spec: {}
     type: ClusterIP
+
+zfs:
+  coordinator:
+    diskSize: 128GB
+  enabled: false
+  parameters:
+    compression: zstd-6
+    fstype: zfs
+    poolname: zfspv-pool
+    recordsize: 32k
+  worker:
+    diskSize: 256GB
+  zfsController:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"
+  zfsNode:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"

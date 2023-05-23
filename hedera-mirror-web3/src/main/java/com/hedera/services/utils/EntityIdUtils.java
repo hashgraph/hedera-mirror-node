@@ -217,6 +217,10 @@ public final class EntityIdUtils {
         return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
 
+    public static boolean isAlias(final AccountID idOrAlias) {
+        return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+    }
+
     public static EntityId entityIdFromId(Id id, EntityType type) {
         return new EntityId(id.shard(), id.realm(), id.num(), type);
     }

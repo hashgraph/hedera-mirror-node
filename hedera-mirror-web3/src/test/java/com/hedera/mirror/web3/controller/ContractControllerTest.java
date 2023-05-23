@@ -34,7 +34,7 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import io.github.bucket4j.Bucket;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -236,11 +236,7 @@ class ContractControllerTest {
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(
-                        "Failed to read HTTP message",
-                        "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                                + " at [Source: (org.springframework.core.io.buffer"
-                                + ".DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]",
-                        StringUtils.EMPTY));
+                        "Failed to read HTTP message", "Unable to parse JSON", StringUtils.EMPTY));
     }
 
     @Test
