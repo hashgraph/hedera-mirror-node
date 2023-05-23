@@ -100,11 +100,7 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
-        Collection<Timer> timers =
-                meterRegistry.find("hedera.mirror.download.request").timers();
-        assertEquals(1, timers.size());
-        List<Tag> providedTags = timers.iterator().next().getId().getTags();
-        verifyTags(providedTags, "list", NODE_ID, StreamType.RECORD);
+        verifyTimerTags("list", NODE_ID, StreamType.RECORD);
     }
 
     @ParameterizedTest
@@ -142,11 +138,7 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
-        Collection<Timer> timers =
-                meterRegistry.find("hedera.mirror.download.request").timers();
-        assertEquals(1, timers.size());
-        List<Tag> providedTags = timers.iterator().next().getId().getTags();
-        verifyTags(providedTags, expectedAction, NODE_ID, streamType);
+        verifyTimerTags(expectedAction, NODE_ID, streamType);
     }
 
     private String nodeIdPrefix(StreamType streamType, String network, long shard, long nodeId) {
@@ -157,17 +149,22 @@ class MetricsExecutionInterceptorTest {
         return "%s/%s%d.%d.%d/".formatted(streamType.getPath(), streamType.getNodePrefix(), shard, realm, accountNum);
     }
 
-    private void verifyTags(List<Tag> tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
-        assertNotNull(tags);
-        assertEquals(6, tags.size());
+    private void verifyTimerTags(String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
+        Collection<Timer> timers =
+                meterRegistry.find("hedera.mirror.download.request").timers();
+        assertEquals(1, timers.size());
+
+        List<Tag> providedTags = timers.iterator().next().getId().getTags();
+        assertNotNull(providedTags);
+        assertEquals(6, providedTags.size());
 
         // The tags are in a defined order, with the tag name followed by its value. All are Strings.
-        assertEquals(expectedAction, tags.get(0).getValue());
-        assertEquals("GET", tags.get(1).getValue());
-        assertEquals(expectedNodeId, Long.valueOf(tags.get(2).getValue()));
-        assertEquals("0", tags.get(3).getValue());
-        assertEquals("200", tags.get(4).getValue());
-        assertEquals(expectedStreamType.name(), tags.get(5).getValue());
+        assertEquals(expectedAction, providedTags.get(0).getValue());
+        assertEquals("GET", providedTags.get(1).getValue());
+        assertEquals(expectedNodeId, Long.valueOf(providedTags.get(2).getValue()));
+        assertEquals("0", providedTags.get(3).getValue());
+        assertEquals("200", providedTags.get(4).getValue());
+        assertEquals(expectedStreamType.name(), providedTags.get(5).getValue());
     }
 
     /*
