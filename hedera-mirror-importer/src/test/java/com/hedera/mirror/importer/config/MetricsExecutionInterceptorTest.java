@@ -182,16 +182,15 @@ class MetricsExecutionInterceptorTest {
 
     private void verifyTags(String[] tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
         assertNotNull(tags);
-        assertEquals(14, tags.length);
+        assertEquals(12, tags.length);
 
         // The tags are in a defined order, with the tag name followed by its value. All are Strings.
         assertEquals(expectedAction, tags[1]);
         assertEquals("GET", tags[3]);
         assertEquals(expectedNodeId, Long.valueOf(tags[5]));
-        assertEquals("0", tags[7]); // realm
-        assertEquals("0", tags[9]); // shard
-        assertEquals("200", tags[11]);
-        assertEquals(expectedStreamType.name(), tags[13]);
+        assertEquals("0", tags[7]); // shard
+        assertEquals("200", tags[9]);
+        assertEquals(expectedStreamType.name(), tags[11]);
     }
 
     /*

@@ -17,20 +17,15 @@
 package com.hedera.mirror.importer.config;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -54,10 +49,11 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
     static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute<>("size");
     static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute<>("start-time");
-    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
+    private static final Pattern ENTITY_ID_PATTERN =
+            Pattern.compile("\\/(balance|event|record)(s_)?(\\d{1,10})\\.\\d{1,10}\\.(\\d{1,10})");
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
     private static final Pattern NODE_ID_PATTERN =
-            Pattern.compile("[^\\/]{1,50}\\/(\\d{1,10})\\/(\\d{1,10})\\/([^\\/]{1,10})");
+            Pattern.compile("[^\\/]{1}\\/(\\d{1,10})\\/(\\d{1,10})\\/(balance|event|record)\\/");
     private static final String LIST = "list";
     private static final String SIDECAR = "sidecar";
     private static final String SIGNATURE = "signature";
@@ -114,11 +110,10 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
             String[] tags = {
                 "action", uriAttributes.action(),
                 "method", context.httpRequest().method().name(),
-                "node", uriAttributes.nodeId().toString(),
-                "realm", uriAttributes.realm().toString(),
-                "shard", uriAttributes.shard().toString(),
+                "node", String.valueOf(uriAttributes.node()),
+                "shard", String.valueOf(uriAttributes.shard()),
                 "status", String.valueOf(context.httpResponse().statusCode()),
-                "type", uriAttributes.streamType()
+                "type", uriAttributes.type()
             };
 
             if (startTime != null) {
@@ -137,23 +132,24 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     }
 
     private UriAttributes getUriAttributes(URI uri) {
-        var decodedUri = URLDecoder.decode(uri.toString(), StandardCharsets.UTF_8);
-        var action = getAction(decodedUri);
+        var query = uri.getQuery();
+        var uriComponent = query != null && query.contains(START_AFTER) ? query : uri.getPath();
+        var action = getAction(uriComponent);
 
-        Matcher accountIdMatcher = ENTITY_ID_PATTERN.matcher(decodedUri);
-        if (accountIdMatcher.find() && accountIdMatcher.groupCount() == 1) {
-            var streamType = getType(t -> decodedUri.contains(t.getPath()));
-            var entityId = EntityId.of(accountIdMatcher.group(1), EntityType.ACCOUNT);
-            return new UriAttributes(
-                    entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum() - 3L, streamType, action);
+        Matcher accountIdMatcher = ENTITY_ID_PATTERN.matcher(uriComponent);
+        if (accountIdMatcher.find() && accountIdMatcher.groupCount() == 4) {
+            var shard = Long.valueOf(accountIdMatcher.group(3)).longValue();
+            var nodeId = Long.valueOf(accountIdMatcher.group(4)).longValue() - 3L;
+            var streamType = accountIdMatcher.group(1);
+            return new UriAttributes(action, nodeId, shard, streamType.toUpperCase());
         }
 
-        Matcher nodeIdMatcher = NODE_ID_PATTERN.matcher(decodedUri);
+        Matcher nodeIdMatcher = NODE_ID_PATTERN.matcher(uriComponent);
         if (nodeIdMatcher.find() && nodeIdMatcher.groupCount() == 3) {
-            var streamType = getType(t -> decodedUri.contains(t.getNodeIdBasedSuffix()));
-            var shard = Long.valueOf(nodeIdMatcher.group(1));
-            var nodeId = Long.valueOf(nodeIdMatcher.group(2));
-            return new UriAttributes(shard, 0L, nodeId, streamType, action);
+            var shard = Long.valueOf(nodeIdMatcher.group(1)).longValue();
+            var nodeId = Long.valueOf(nodeIdMatcher.group(2)).longValue();
+            var streamType = nodeIdMatcher.group(3);
+            return new UriAttributes(action, nodeId, shard, streamType.toUpperCase());
         }
 
         throw new IllegalStateException("Could not detect a node ID or account ID in URI: " + uri);
@@ -172,16 +168,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         }
     }
 
-    private String getType(Predicate<StreamType> matcher) {
-        for (StreamType streamType : StreamType.values()) {
-            if (matcher.test(streamType)) {
-                return streamType.name();
-            }
-        }
-        return "UNKNOWN";
-    }
-
-    private record UriAttributes(Long shard, Long realm, Long nodeId, String streamType, String action) {}
+    private record UriAttributes(String action, long node, long shard, String type) {}
 
     @Getter
     @RequiredArgsConstructor
