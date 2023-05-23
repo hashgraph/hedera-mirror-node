@@ -16,18 +16,14 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import jakarta.inject.Named;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,32 +37,9 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Address, Entity> {
         var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdNumFromEvmAddress(address);
-            return getById(entityId);
+            return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
-    }
-
-    public Optional<Entity> getById(Long entityId) {
-        return entityRepository.findByIdAndDeletedIsFalse(entityId);
-    }
-
-    public Address evmAddressFromId(EntityId entityId) {
-        Entity entity =
-                entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
-
-        if (entity == null) {
-            return Address.ZERO;
-        }
-
-        if (entity.getEvmAddress() != null) {
-            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-        }
-
-        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-            return Address.wrap(Bytes.wrap(entity.getAlias()));
-        }
-
-        return toAddress(entityId);
     }
 }

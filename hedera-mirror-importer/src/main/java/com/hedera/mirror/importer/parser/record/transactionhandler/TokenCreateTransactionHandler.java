@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.CustomLog;
 
 @CustomLog

@@ -55,10 +55,11 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
-    this.status =
-      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
-        ? ContractResultDetailsViewModel._SUCCESS_RESULT
-        : ContractResultDetailsViewModel._FAIL_RESULT;
+    const isTransactionSuccessful =
+      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID;
+    this.status = isTransactionSuccessful
+      ? ContractResultDetailsViewModel._SUCCESS_RESULT
+      : ContractResultDetailsViewModel._FAIL_RESULT;
     if (!_.isEmpty(contractResult.failedInitcode)) {
       this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
     } else if (
@@ -88,6 +89,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
       this.amount = ethTransaction.value && toBigIntBE(ethTransaction.value);
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
+
+      if (!isTransactionSuccessful && _.isEmpty(contractResult.errorMessage)) {
+        this.error_message = this.result;
+      }
 
       if (!_.isNil(contractResult.senderId)) {
         this.from = EntityId.parse(contractResult.senderId).toEvmAddress();

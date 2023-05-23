@@ -68,11 +68,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import jakarta.annotation.Resource;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import javax.annotation.Resource;
 import lombok.SneakyThrows;
 import org.springframework.transaction.support.TransactionTemplate;
 

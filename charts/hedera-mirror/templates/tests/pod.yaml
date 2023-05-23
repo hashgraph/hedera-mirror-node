@@ -34,6 +34,8 @@ spec:
         - name: config
           mountPath: /etc/secrets
           readOnly: true
+        - mountPath: /tmp
+          name: tmp
   securityContext:
     fsGroup: 1000
     runAsGroup: 1000
@@ -48,4 +50,7 @@ spec:
       secret:
         defaultMode: 420
         secretName: {{ include "hedera-mirror.fullname" . }}-acceptance
+    - name: tmp
+      emptyDir:
+        medium: Memory
 {{- end -}}

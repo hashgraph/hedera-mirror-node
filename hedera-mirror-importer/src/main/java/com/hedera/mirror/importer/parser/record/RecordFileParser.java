@@ -33,11 +33,11 @@ import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
 import org.apache.logging.log4j.Level;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -110,8 +110,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                             delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
                             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
                             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
-            include = Throwable.class,
-            exclude = OutOfMemoryError.class,
+            retryFor = Throwable.class,
+            noRetryFor = OutOfMemoryError.class,
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
@@ -143,7 +143,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             recordFile.finishLoad(count);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
         }

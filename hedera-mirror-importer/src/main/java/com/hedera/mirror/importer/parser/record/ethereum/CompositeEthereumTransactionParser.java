@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.context.annotation.Primary;

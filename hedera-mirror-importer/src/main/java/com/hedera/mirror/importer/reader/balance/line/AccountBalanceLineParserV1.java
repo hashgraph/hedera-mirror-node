@@ -22,9 +22,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @Named

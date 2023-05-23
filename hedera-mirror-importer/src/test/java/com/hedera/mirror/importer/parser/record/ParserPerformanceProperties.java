@@ -17,11 +17,11 @@
 package com.hedera.mirror.importer.parser.record;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

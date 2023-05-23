@@ -17,7 +17,7 @@
 package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
 import reactor.core.publisher.Flux;

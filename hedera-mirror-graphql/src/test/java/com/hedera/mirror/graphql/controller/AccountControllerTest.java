@@ -43,7 +43,7 @@ class AccountControllerTest extends GraphqlIntegrationTest {
             delimiter = '|',
             textBlock =
                     """
-              query { account { id }}                                                                    | Missing field argument input
+              query { account { id }}                                                                    | Missing field argument 'input'
               query { account(input: {}) { id }}                                                         | Must provide exactly one input value
               query { account(input: {alias: ""}) { id }}                                                | alias must match
               query { account(input: {alias: "abcZ"}) { id }}                                            | alias must match

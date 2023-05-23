@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.web3.evm.store.accessor.AccessorUtils.getEntityExpiration;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -35,6 +34,7 @@ import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.mysema.commons.lang.Pair;
+import jakarta.inject.Named;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -42,7 +42,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
@@ -73,7 +72,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                getEntityExpiration(entity),
+                entity.getEffectiveExpiration(),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId()),
