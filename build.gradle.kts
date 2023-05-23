@@ -56,7 +56,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.0")
         api("com.graphql-java:graphql-java-extended-scalars:20.2")
         api("com.graphql-java:graphql-java-extended-validation:20.0")
-        api("com.hedera.evm:hedera-evm:0.37.0")
+        api("com.hedera.evm:hedera-evm:0.38.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.38.10")
         api("com.hedera.hashgraph:sdk:2.24.1")
         api("com.ongres.scram:client:2.1")
@@ -94,6 +94,7 @@ dependencies {
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.20.69")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
+        api("tech.pegasys:jc-kzg-4844:0.4.0")
     }
 }
 
@@ -131,14 +132,14 @@ idea {
 fun replaceVersion(files: String, match: String) {
     ant.withGroovyBuilder {
         "replaceregexp"(
-            "match" to match,
-            "replace" to project.version,
-            "flags" to "gm"
+                "match" to match,
+                "replace" to project.version,
+                "flags" to "gm"
         ) {
             "fileset"(
-                "dir" to rootProject.projectDir,
-                "includes" to files,
-                "excludes" to "**/node_modules/"
+                    "dir" to rootProject.projectDir,
+                    "includes" to files,
+                    "excludes" to "**/node_modules/"
             )
         }
     }
@@ -151,8 +152,8 @@ project.tasks.register("release") {
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
-            "hedera-mirror-rest/**/package*.json",
-            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+                "hedera-mirror-rest/**/package*.json",
+                "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }

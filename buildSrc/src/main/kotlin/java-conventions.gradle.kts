@@ -18,7 +18,6 @@
  * ‍
  */
 
-import org.gradle.internal.impldep.org.junit.platform.launcher.TagFilter.excludeTags
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
@@ -50,6 +49,9 @@ repositories {
     }
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
+    }
+    maven {
+        url = uri("https://artifacts.consensys.net/public/maven/maven/")
     }
     exclusiveContent {
         forRepository {
