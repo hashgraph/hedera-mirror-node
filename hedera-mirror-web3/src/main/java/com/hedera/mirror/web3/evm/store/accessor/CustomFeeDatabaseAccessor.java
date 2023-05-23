@@ -28,7 +28,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyF
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -44,7 +43,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<Custo
         final var customFeesList = customFeeRepository.findByTokenId(tokenId).stream()
                 .filter(customFee -> customFee.getCollectorAccountId() != null)
                 .map(this::mapCustomFee)
-                .collect(Collectors.toList());
+                .toList();
 
         return Optional.of(customFeesList);
     }
