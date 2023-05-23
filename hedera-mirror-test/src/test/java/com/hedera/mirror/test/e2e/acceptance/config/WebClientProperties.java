@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;

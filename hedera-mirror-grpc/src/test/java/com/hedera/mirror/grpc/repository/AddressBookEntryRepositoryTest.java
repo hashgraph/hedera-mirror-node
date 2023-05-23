@@ -18,21 +18,18 @@ package com.hedera.mirror.grpc.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AddressBookEntryRepositoryTest extends GrpcIntegrationTest {
 
-    @Resource
-    private AddressBookEntryRepository addressBookEntryRepository;
-
-    @Autowired
-    private DomainBuilder domainBuilder;
+    private final AddressBookEntryRepository addressBookEntryRepository;
 
     @Test
     void findByConsensusTimestampAndNodeId() {
@@ -54,6 +51,7 @@ class AddressBookEntryRepositoryTest extends GrpcIntegrationTest {
     }
 
     @Test
+    @Transactional
     void serviceEndpoints() {
         AddressBookEntry addressBookEntry = domainBuilder.addressBookEntry(3).persist();
         assertThat(addressBookEntryRepository.findById(addressBookEntry.getId()))

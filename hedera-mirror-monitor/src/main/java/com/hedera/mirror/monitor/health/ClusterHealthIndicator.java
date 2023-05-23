@@ -19,7 +19,7 @@ package com.hedera.mirror.monitor.health;
 import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.Scenario;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.actuate.health.Health;

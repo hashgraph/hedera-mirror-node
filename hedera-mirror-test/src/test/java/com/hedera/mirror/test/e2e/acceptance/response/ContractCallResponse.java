@@ -18,9 +18,9 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
+import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import javax.inject.Named;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 

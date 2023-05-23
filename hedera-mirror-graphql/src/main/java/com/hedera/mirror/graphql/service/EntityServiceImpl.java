@@ -23,9 +23,9 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.graphql.repository.EntityRepository;
+import jakarta.inject.Named;
 import java.nio.ByteBuffer;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @Named

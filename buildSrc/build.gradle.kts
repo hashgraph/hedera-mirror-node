@@ -27,7 +27,12 @@ repositories {
     mavenCentral()
 }
 
+extra.apply {
+    set("springBootVersion", "3.1.0")
+}
+
 dependencies {
+    val springBootVersion: String by rootProject.extra
     implementation("com.bmuschko:gradle-docker-plugin:9.3.1")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.18.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
@@ -43,7 +48,13 @@ dependencies {
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.6.0")
     implementation("org.owasp:dependency-check-gradle:8.2.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.0.0.2929")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.11")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+
+    // Temporary due to https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/16
+    implementation("org.springframework.boot:spring-boot-starter-graphql:${springBootVersion}")
+
+    // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
+    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.14")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {

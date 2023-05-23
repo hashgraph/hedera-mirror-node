@@ -37,9 +37,9 @@ import com.hedera.mirror.importer.parser.contractlog.ApproveForAllAllowanceContr
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hederahashgraph.api.proto.java.AccountID;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
-import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 

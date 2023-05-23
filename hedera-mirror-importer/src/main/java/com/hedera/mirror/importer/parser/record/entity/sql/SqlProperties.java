@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

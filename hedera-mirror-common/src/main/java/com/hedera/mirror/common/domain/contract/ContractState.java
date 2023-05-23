@@ -19,10 +19,10 @@ package com.hedera.mirror.common.domain.contract;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serializable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +41,7 @@ public class ContractState {
 
     private static final int SLOT_BYTE_LENGTH = 32;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long contractId;
 
     @Column(updatable = false)
@@ -49,7 +49,7 @@ public class ContractState {
 
     private long modifiedTimestamp;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     @ToString.Exclude
     private byte[] slot;
 

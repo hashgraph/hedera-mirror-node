@@ -19,17 +19,17 @@ package com.hedera.mirror.grpc.repository;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import jakarta.inject.Named;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.util.stream.Stream;
-import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.HibernateHints;
 
 @Log4j2
 @Named
@@ -63,7 +63,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         query = query.select(root).where(predicate).orderBy(cb.asc(root.get(CONSENSUS_TIMESTAMP)));
 
         TypedQuery<TopicMessage> typedQuery = entityManager.createQuery(query);
-        typedQuery.setHint(QueryHints.HINT_READONLY, true);
+        typedQuery.setHint(HibernateHints.HINT_READ_ONLY, true);
 
         if (filter.hasLimit()) {
             typedQuery.setMaxResults((int) filter.getLimit());

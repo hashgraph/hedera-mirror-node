@@ -21,15 +21,17 @@ import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Named;
 import lombok.Data;
 import org.reactivestreams.Subscription;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -45,6 +47,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
 
     public SharedPollingTopicListener(
             ListenerProperties listenerProperties,
+            ObservationRegistry observationRegistry,
             TopicMessageRepository topicMessageRepository,
             InstantToLongConverter instantToLongConverter) {
         super(listenerProperties);
@@ -59,7 +62,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
                 .repeatWhen(Repeat.times(Long.MAX_VALUE).fixedBackoff(interval).withBackoffScheduler(scheduler))
                 .name(METRIC)
                 .tag(METRIC_TAG, "shared poll")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnCancel(() -> log.info("Cancelled polling"))
                 .doOnError(t -> log.error("Error polling the database", t))
                 .doOnSubscribe(context::onStart)
