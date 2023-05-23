@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -32,6 +32,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -52,20 +53,26 @@ class TokenRelationshipDatabaseAccessorTest {
     @Mock
     private TokenAccountRepository tokenAccountRepository;
 
-    @Test
-    void get() {
-        Account account = mock(Account.class);
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+
+    private Account account;
+    private Token token;
+
+    @BeforeEach
+    void setup() {
+        account = mock(Account.class);
         when(account.getId()).thenReturn(new Id(1, 2, 3));
-        Token token = mock(Token.class);
+        token = mock(Token.class);
         when(token.getId()).thenReturn(new Id(4, 5, 6));
 
         when(accountDatabaseAccessor.get(any())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(any())).thenReturn(Optional.of(token));
+    }
 
-        TokenAccount tokenAccount = new TokenAccount();
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
-        tokenAccount.setAutomaticAssociation(true);
+    @Test
+    void get() {
+        final var tokenAccount =
+                domainBuilder.tokenAccount().customize(t -> t.associated(true)).get();
 
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
@@ -74,11 +81,29 @@ class TokenRelationshipDatabaseAccessorTest {
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
-                        .returns(false, TokenRelationship::isFrozen)
-                        .returns(true, TokenRelationship::isKycGranted)
+                        .returns(
+                                tokenAccount.getFreezeStatus() == TokenFreezeStatusEnum.FROZEN,
+                                TokenRelationship::isFrozen)
+                        .returns(
+                                tokenAccount.getKycStatus() == TokenKycStatusEnum.GRANTED,
+                                TokenRelationship::isKycGranted)
                         .returns(false, TokenRelationship::isDestroyed)
                         .returns(false, TokenRelationship::isNotYetPersisted)
-                        .returns(true, TokenRelationship::isAutomaticAssociation)
+                        .returns(
+                                tokenAccount.getAutomaticAssociation() == Boolean.TRUE,
+                                TokenRelationship::isAutomaticAssociation)
                         .returns(0L, TokenRelationship::getBalanceChange));
+    }
+
+    @Test
+    void getEmptyIfTokenNotAssociated() {
+        final var tokenAccount =
+                domainBuilder.tokenAccount().customize(t -> t.associated(false)).get();
+
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                .isEmpty();
     }
 }

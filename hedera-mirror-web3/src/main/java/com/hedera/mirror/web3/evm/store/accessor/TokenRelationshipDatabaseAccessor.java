@@ -44,6 +44,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRel
     public @NonNull Optional<TokenRelationship> get(@NonNull TokenRelationshipKey key) {
         return findAccount(key.accountAddress())
                 .flatMap(account -> findToken(key.tokenAddress()).flatMap(token -> findTokenAccount(token, account)
+                        .filter(t -> t.getAssociated() == Boolean.TRUE)
                         .map(tokenAccount -> new TokenRelationship(
                                 token,
                                 account,
