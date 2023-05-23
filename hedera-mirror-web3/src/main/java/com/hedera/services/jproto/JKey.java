@@ -75,7 +75,10 @@ public abstract class JKey {
      */
     private static JKey convertBasic(Key key) throws org.apache.commons.codec.DecoderException {
         JKey rv;
-        if (!key.getECDSASecp256K1().isEmpty()) {
+        if (!key.getEd25519().isEmpty()) {
+            byte[] pubKeyBytes = key.getEd25519().toByteArray();
+            rv = new JEd25519Key(pubKeyBytes);
+        } else if (!key.getECDSASecp256K1().isEmpty()) {
             byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
             rv = new JECDSASecp256k1Key(pubKeyBytes);
         } else {
