@@ -50,7 +50,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Positive
-    private long estimateGasIterationThreshold = 1200L;
+    private long estimateGasIterationThreshold = 3600;
 
     private boolean directTokenCall = true;
 
