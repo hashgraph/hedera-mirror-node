@@ -45,6 +45,28 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
     }
 
     @Test
+    void disabled() {
+        // given
+        entityProperties.getPersist().setTopicMessageLookups(false);
+        long partition1Start = partitions.get(0).getTimestampRange().lowerEndpoint();
+        domainBuilder
+                .recordFile()
+                .customize(r ->
+                        r.consensusStart(partition1Start).consensusEnd(plus(partition1Start, RECORD_FILE_INTERVAL)))
+                .persist();
+        domainBuilder
+                .topicMessage()
+                .customize(t -> t.consensusTimestamp(partition1Start))
+                .persist();
+
+        // when
+        runMigration();
+
+        // then
+        assertThat(topicMessageLookupRepository.count()).isZero();
+    }
+
+    @Test
     void empty() {
         runMigration();
         assertThat(topicMessageLookupRepository.count()).isZero();

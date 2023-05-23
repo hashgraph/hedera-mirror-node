@@ -69,7 +69,7 @@ public class TopicMessageLookupEntityListener implements EntityListener, RecordS
         }
 
         var partitions = timePartitionService.getTimePartitions(TOPIC_MESSAGE_TABLE_NAME);
-        return partitions.isPresent();
+        return !partitions.isEmpty();
     }
 
     @Override

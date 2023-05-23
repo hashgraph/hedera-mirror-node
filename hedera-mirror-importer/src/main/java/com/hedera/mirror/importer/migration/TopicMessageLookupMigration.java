@@ -20,6 +20,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import java.io.IOException;
@@ -47,17 +48,20 @@ public class TopicMessageLookupMigration extends RepeatableMigration {
             group by topic_id
             """;
 
+    private final EntityProperties entityProperties;
     private final JdbcTemplate jdbcTemplate;
     private final RecordFileRepository recordFileRepository;
     private final TimePartitionService timePartitionService;
 
     @Lazy
     protected TopicMessageLookupMigration(
+            EntityProperties entityProperties,
             @Owner JdbcTemplate jdbcTemplate,
             MirrorProperties mirrorProperties,
             RecordFileRepository recordFileRepository,
             TimePartitionService timePartitionService) {
         super(mirrorProperties.getMigration());
+        this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
         this.recordFileRepository = recordFileRepository;
         this.timePartitionService = timePartitionService;
@@ -65,6 +69,13 @@ public class TopicMessageLookupMigration extends RepeatableMigration {
 
     @Override
     protected void doMigrate() throws IOException {
+        if (!entityProperties.getPersist().isTopicMessageLookups()) {
+            // don't skip migration when persist.topics is false since we should still create topic message lookups
+            // for topic messages ingested when topics is enabled
+            log.info("Skip the migration since topicMessageLookups persist is disabled");
+            return;
+        }
+
         var stopwatch = Stopwatch.createStarted();
         var lastRecordFile = recordFileRepository.findLatest();
         if (lastRecordFile.isEmpty()) {
@@ -72,13 +83,12 @@ public class TopicMessageLookupMigration extends RepeatableMigration {
             return;
         }
 
-        var partitionsOptional = timePartitionService.getTimePartitions(TOPIC_MESSAGE_TABLE_NAME);
-        if (partitionsOptional.isEmpty() || partitionsOptional.get().isEmpty()) {
+        var partitions = timePartitionService.getTimePartitions(TOPIC_MESSAGE_TABLE_NAME);
+        if (partitions.isEmpty()) {
             log.info("Skip the migration since topic_message is either not partitioned or without attached partitions");
             return;
         }
 
-        var partitions = partitionsOptional.get();
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(s -> {

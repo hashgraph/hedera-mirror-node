@@ -23,7 +23,6 @@ import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -70,12 +69,11 @@ public class TimePartitionServiceImpl implements TimePartitionService {
             return Collections.emptyList();
         }
 
-        var partitionsOptional = getTimePartitions(tableName);
-        if (partitionsOptional.isEmpty() || partitionsOptional.get().isEmpty()) {
+        var partitions = getTimePartitions(tableName);
+        if (partitions.isEmpty()) {
             return Collections.emptyList();
         }
 
-        var partitions = partitionsOptional.get();
         int index = Collections.binarySearch(partitions, null, (current, key) -> {
             if (current.getTimestampRange().contains(fromTimestamp)) {
                 return 0;
@@ -113,11 +111,11 @@ public class TimePartitionServiceImpl implements TimePartitionService {
 
     @Cacheable(cacheNames = CACHE_NAME_TABLES)
     @Override
-    public Optional<List<TimePartition>> getTimePartitions(String tableName) {
+    public List<TimePartition> getTimePartitions(String tableName) {
         try {
             var partitions = jdbcTemplate.query(GET_TIME_PARTITIONS_SQL, ROW_MAPPER, tableName);
             if (partitions.isEmpty()) {
-                return Optional.empty();
+                return Collections.emptyList();
             }
 
             var timePartitions = new ArrayList<TimePartition>();
@@ -128,7 +126,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
                             "Unable to parse time partition range for partition {}: {}",
                             partition.getName(),
                             partition.getRange());
-                    return Optional.empty();
+                    return Collections.emptyList();
                 }
 
                 var lowerBound = Long.parseLong(matcher.group(1));
@@ -138,10 +136,10 @@ public class TimePartitionServiceImpl implements TimePartitionService {
             }
 
             Collections.sort(timePartitions);
-            return Optional.of(Collections.unmodifiableList(timePartitions));
+            return Collections.unmodifiableList(timePartitions);
         } catch (Exception e) {
             log.warn("Unable to query time partitions for table {}: {}", tableName, e);
-            return Optional.empty();
+            return Collections.emptyList();
         }
     }
 }

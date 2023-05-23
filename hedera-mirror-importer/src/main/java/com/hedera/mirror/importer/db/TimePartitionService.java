@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.db;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TimePartitionService {
     /**
@@ -35,7 +34,7 @@ public interface TimePartitionService {
      * in ascending order.
      *
      * @param tableName The table name
-     * @return The time partitions. If the table is not time partitioned, returns {@link java.util.Optional#empty()}
+     * @return The time partitions. If the table is not time partitioned or doesn't have time partitions, returns an empty list
      */
-    Optional<List<TimePartition>> getTimePartitions(String tableName);
+    List<TimePartition> getTimePartitions(String tableName);
 }

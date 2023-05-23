@@ -23,6 +23,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TopicMessageLookupRepository;
 import jakarta.annotation.Resource;
 import java.time.Duration;
@@ -57,6 +58,9 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Integrat
     @Qualifier(CACHE_MANAGER_TABLE_TIME_PARTITION)
     private CacheManager cacheManager;
 
+    @Resource
+    protected EntityProperties entityProperties;
+
     @Autowired
     @Owner
     protected JdbcTemplate jdbcTemplate;
@@ -70,12 +74,18 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Integrat
     protected List<TimePartition> partitions;
 
     @BeforeEach
-    void createPartitions() {
+    void setup() {
+        entityProperties.getPersist().setTopics(true);
+        entityProperties.getPersist().setTopicMessageLookups(true);
+        createPartitions();
+    }
+
+    private void createPartitions() {
         if (isV1()) {
             jdbcTemplate.execute(CREATE_DDL);
         }
 
-        partitions = timePartitionService.getTimePartitions("topic_message").get();
+        partitions = timePartitionService.getTimePartitions("topic_message");
     }
 
     @AfterEach

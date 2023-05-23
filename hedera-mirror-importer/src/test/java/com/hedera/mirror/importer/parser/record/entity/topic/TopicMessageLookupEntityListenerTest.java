@@ -29,11 +29,9 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -44,15 +42,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 class TopicMessageLookupEntityListenerTest extends AbstractTopicMessageLookupIntegrationTest {
 
     private final EntityListener entityListener;
-    private final EntityProperties entityProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
-
-    @BeforeEach
-    void setup() {
-        entityProperties.getPersist().setTopics(true);
-        entityProperties.getPersist().setTopicMessageLookups(true);
-    }
 
     @ParameterizedTest
     @CsvSource(textBlock = """

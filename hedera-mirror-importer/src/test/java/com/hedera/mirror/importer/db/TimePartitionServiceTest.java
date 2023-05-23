@@ -103,10 +103,7 @@ class TimePartitionServiceTest extends IntegrationTest {
 
     @Test
     void getTimePartitions() {
-        assertThat(timePartitionService.getTimePartitions("event"))
-                .get()
-                .asList()
-                .containsExactlyElementsOf(EVENT_TIME_PARTITIONS);
+        assertThat(timePartitionService.getTimePartitions("event")).containsExactlyElementsOf(EVENT_TIME_PARTITIONS);
     }
 
     @Test
