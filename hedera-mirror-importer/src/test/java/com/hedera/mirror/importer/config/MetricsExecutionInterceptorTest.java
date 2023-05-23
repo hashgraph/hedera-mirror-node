@@ -89,9 +89,12 @@ class MetricsExecutionInterceptorTest {
     @ParameterizedTest(name = "S3 List using pathType {0}")
     @EnumSource(value = PathType.class, mode = Mode.EXCLUDE, names = "AUTO")
     void s3ListExecution(PathType pathType) {
-        var prefix = pathType == PathType.ACCOUNT_ID
-                ? accountIdPrefix(StreamType.RECORD, SHARD, REALM, ACCOUNT_NUM)
-                : nodeIdPrefix(StreamType.RECORD, NETWORK_NAME, SHARD, NODE_ID);
+        var prefix =
+                switch (pathType) {
+                    case ACCOUNT_ID, AUTO -> accountIdPrefix(StreamType.RECORD, SHARD, REALM, ACCOUNT_NUM);
+                    case NODE_ID -> nodeIdPrefix(StreamType.RECORD, NETWORK_NAME, SHARD, NODE_ID);
+                };
+
         var sdkHttpRequest = createListObjectsRequest(prefix, StreamFilename.EPOCH.getFilename());
 
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
@@ -125,12 +128,13 @@ class MetricsExecutionInterceptorTest {
         "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.pb.gz, signed",
         "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.pb_sig.gz, signature"
     })
-    void s3GetObjectExecution(String pathTypeName, String streamTypeName, String fileName, String expectedAction) {
+    void s3GetObjectExecution(PathType pathType, StreamType streamType, String fileName, String expectedAction) {
 
-        var streamType = StreamType.valueOf(streamTypeName);
-        var prefix = "ACCOUNT_ID".equals(pathTypeName)
-                ? accountIdPrefix(streamType, SHARD, REALM, ACCOUNT_NUM)
-                : nodeIdPrefix(streamType, NETWORK_NAME, SHARD, NODE_ID);
+        var prefix =
+                switch (pathType) {
+                    case ACCOUNT_ID, AUTO -> accountIdPrefix(streamType, SHARD, REALM, ACCOUNT_NUM);
+                    case NODE_ID -> nodeIdPrefix(streamType, NETWORK_NAME, SHARD, NODE_ID);
+                };
 
         var objectKey = prefix + fileName;
         var sdkHttpRequest = createGetObjectRequest(objectKey);
