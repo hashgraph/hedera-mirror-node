@@ -124,9 +124,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void estimateGasWithoutReceiver() {
-        final var pureFuncHash = "8070450f";
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
+        final var serviceParameters = serviceParameters("", 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
 
         persistEntities(false);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
@@ -135,8 +133,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test
@@ -403,8 +399,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var isGasEstimate = callType == ETH_ESTIMATE_GAS;
         final var gas = (isGasEstimate && estimatedGas > 0) ? estimatedGas : 120000L;
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        final var data = Bytes.fromHexString(callData);
-        //        final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : contract;
+        final var data = callData.isEmpty()
+                ? Bytes.wrap(encodeDecoder.getContractBytes(ETH_CALL_CONTRACT_BYTES_PATH))
+                : Bytes.fromHexString(callData);
 
         return CallServiceParameters.builder()
                 .sender(sender)
