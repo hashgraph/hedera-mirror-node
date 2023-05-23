@@ -24,6 +24,7 @@ import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
@@ -55,5 +56,34 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             topFrame.commit();
             stackedStateFrames.pop();
         }
+
+        // partially copied from services
+        final var wrapped = wrappedWorldView();
+        for (final var updatedAccount : getUpdatedAccounts().values()) {
+            var mutable = wrapped.getUpdatedAccounts().get(updatedAccount.getAddress());
+            if (mutable == null) {
+                mutable = updatedAccount.getWrappedAccount();
+                if (mutable == null) {
+                    mutable = new UpdateTrackingAccount<>(updatedAccount.getAddress(), null);
+                }
+                wrapped.getUpdatedAccounts().put(mutable.getAddress(), mutable);
+            }
+            mutable.setNonce(updatedAccount.getNonce());
+            if (!updatedAccount.wrappedAccountIsTokenProxy()) {
+                mutable.setBalance(updatedAccount.getBalance());
+            }
+            if (updatedAccount.codeWasUpdated()) {
+                mutable.setCode(updatedAccount.getCode());
+            }
+            if (updatedAccount.getStorageWasCleared()) {
+                mutable.clearStorage();
+            }
+            updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
+        }
+    }
+
+    @Override
+    public WorldUpdater updater() {
+        return wrappedWorldView();
     }
 }

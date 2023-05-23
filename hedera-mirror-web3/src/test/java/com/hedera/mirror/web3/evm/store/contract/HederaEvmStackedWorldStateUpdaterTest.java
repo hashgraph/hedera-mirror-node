@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -58,7 +59,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private HederaEvmEntityAccess entityAccess;
 
-    @Mock
     private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
 
     @Mock
@@ -69,6 +69,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     private StackedStateFrames<Object> stackedStateFrames;
     private HederaEvmStackedWorldStateUpdater subject;
+
+    private static final long aBalance = 1_000L;
+    private static final long aNonce = 1L;
     private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
@@ -76,12 +79,13 @@ class HederaEvmStackedWorldStateUpdaterTest {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         stackedStateFrames = new StackedStateFrames<>(accessors);
+        updater = new MockLedgerWorldUpdater(null, accountAccessor);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
     }
 
     @Test
-    void commitTest() {
+    void commitsNewlyCreatedAccountToStackedStateFrames() {
         assertThat(stackedStateFrames.height()).isEqualTo(1);
         stackedStateFrames.push();
         stackedStateFrames.push();
@@ -110,6 +114,15 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertTrue(accountFromTopFrame.isPresent());
         assertThat(accountFromTopFrame.get().getBalance()).isEqualTo(accountModel.getBalance());
         assertThat(stackedStateFrames.height()).isEqualTo(2);
+    }
+
+    @Test
+    void commitsNewlyCreatedAccountAsExpected() {
+        subject.createAccount(address, aNonce, Wei.of(aBalance));
+        assertNull(subject.updater().getAccount(address));
+        subject.commit();
+        assertThat(subject.getAccount(address).getNonce()).isEqualTo(aNonce);
+        assertThat(subject.updater().getAccount(address).getNonce()).isEqualTo(aNonce);
     }
 
     @Test
