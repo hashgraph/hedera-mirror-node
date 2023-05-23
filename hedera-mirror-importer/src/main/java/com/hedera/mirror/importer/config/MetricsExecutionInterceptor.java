@@ -34,7 +34,6 @@ import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.springframework.beans.factory.annotation.Autowired;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
@@ -45,6 +44,7 @@ import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
  */
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
     static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute<>("size");
@@ -61,28 +61,14 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private static final String START_AFTER = "start-after";
 
     private final MeterRegistry meterRegistry;
-    private final Timer.Builder requestMetric;
-    private final DistributionSummary.Builder responseSizeMetric;
 
-    @Autowired
-    public MetricsExecutionInterceptor(MeterRegistry meterRegistry) {
-        this(
-                meterRegistry,
-                Timer.builder("hedera.mirror.download.request")
-                        .description("The time in seconds it took to receive the response from S3"),
-                DistributionSummary.builder("hedera.mirror.download.response")
-                        .description("The size of the response in bytes returned from S3")
-                        .baseUnit("bytes"));
-    }
+    private final Timer.Builder requestMetric = Timer.builder("hedera.mirror.download.request")
+            .description("The time in seconds it took to receive the response from S3");
 
-    MetricsExecutionInterceptor(
-            MeterRegistry meterRegistry,
-            Timer.Builder timerBuilder,
-            DistributionSummary.Builder distributionSummaryBuilder) {
-        this.meterRegistry = meterRegistry;
-        this.requestMetric = timerBuilder;
-        this.responseSizeMetric = distributionSummaryBuilder;
-    }
+    private final DistributionSummary.Builder responseSizeMetric = DistributionSummary.builder(
+                    "hedera.mirror.download.response")
+            .description("The size of the response in bytes returned from S3")
+            .baseUnit("bytes");
 
     @Override
     public void beforeTransmission(Context.BeforeTransmission context, ExecutionAttributes executionAttributes) {

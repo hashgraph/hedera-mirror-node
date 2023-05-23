@@ -18,24 +18,24 @@ package com.hedera.mirror.importer.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import io.micrometer.core.instrument.DistributionSummary;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.core.interceptor.Context;
@@ -69,7 +69,6 @@ class MetricsExecutionInterceptorTest {
     private static final String BATCH_SIZE = "100";
     private final ExecutionAttributes executionAttributes = new ExecutionAttributes();
 
-    @Mock(lenient = true)
     private MeterRegistry meterRegistry;
 
     @Mock
@@ -77,18 +76,6 @@ class MetricsExecutionInterceptorTest {
 
     @Mock
     private Context.AfterExecution afterExecutionContext;
-
-    @Mock
-    private Timer timer;
-
-    @Mock
-    private Timer.Builder timerBuilder;
-
-    @Mock
-    private DistributionSummary.Builder distributionSummaryBuilder;
-
-    @Captor
-    private ArgumentCaptor<String[]> timerTagsCaptor;
 
     private AutoCloseable openMocksCloseable;
     private MetricsExecutionInterceptor metricsExecutionInterceptor;
@@ -100,14 +87,11 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpResponse()).thenReturn(sdkHttpResponse);
         when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
 
-        when(timerBuilder.tags(any(String[].class))).thenReturn(timerBuilder);
-        when(timerBuilder.register(meterRegistry)).thenReturn(timer);
-
         executionAttributes.putAttribute(
                 MetricsExecutionInterceptor.START_TIME, Instant.now().minusSeconds(60L));
 
-        metricsExecutionInterceptor =
-                new MetricsExecutionInterceptor(meterRegistry, timerBuilder, distributionSummaryBuilder);
+        meterRegistry = new SimpleMeterRegistry();
+        metricsExecutionInterceptor = new MetricsExecutionInterceptor(meterRegistry);
     }
 
     @AfterEach
@@ -115,10 +99,10 @@ class MetricsExecutionInterceptorTest {
         openMocksCloseable.close();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"ACCOUNT_ID", "NODE_ID"})
-    void s3ListExecution(String pathTypeName) {
-        var prefix = "ACCOUNT_ID".equals(pathTypeName)
+    @ParameterizedTest(name = "S3 List using pathType {0}")
+    @EnumSource(value = PathType.class, mode = Mode.EXCLUDE, names = "AUTO")
+    void s3ListExecution(PathType pathType) {
+        var prefix = pathType == PathType.ACCOUNT_ID
                 ? accountIdPrefix(StreamType.RECORD, SHARD, REALM, ACCOUNT_NUM)
                 : nodeIdPrefix(StreamType.RECORD, NETWORK_NAME, SHARD, NODE_ID);
         var sdkHttpRequest = createListObjectsRequest(prefix, StreamFilename.EPOCH.getFilename());
@@ -126,9 +110,10 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
-        verify(timerBuilder, times(1)).tags(timerTagsCaptor.capture());
-        var providedTags = timerTagsCaptor.getValue();
-
+        Collection<Timer> timers =
+                meterRegistry.find("hedera.mirror.download.request").timers();
+        assertEquals(1, timers.size());
+        List<Tag> providedTags = timers.iterator().next().getId().getTags();
         verifyTags(providedTags, "list", NODE_ID, StreamType.RECORD);
     }
 
@@ -166,9 +151,10 @@ class MetricsExecutionInterceptorTest {
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
 
-        verify(timerBuilder, times(1)).tags(timerTagsCaptor.capture());
-        var providedTags = timerTagsCaptor.getValue();
-
+        Collection<Timer> timers =
+                meterRegistry.find("hedera.mirror.download.request").timers();
+        assertEquals(1, timers.size());
+        List<Tag> providedTags = timers.iterator().next().getId().getTags();
         verifyTags(providedTags, expectedAction, NODE_ID, streamType);
     }
 
@@ -180,17 +166,17 @@ class MetricsExecutionInterceptorTest {
         return "%s/%s%d.%d.%d/".formatted(streamType.getPath(), streamType.getNodePrefix(), shard, realm, accountNum);
     }
 
-    private void verifyTags(String[] tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
+    private void verifyTags(List<Tag> tags, String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
         assertNotNull(tags);
-        assertEquals(12, tags.length);
+        assertEquals(6, tags.size());
 
         // The tags are in a defined order, with the tag name followed by its value. All are Strings.
-        assertEquals(expectedAction, tags[1]);
-        assertEquals("GET", tags[3]);
-        assertEquals(expectedNodeId, Long.valueOf(tags[5]));
-        assertEquals("0", tags[7]); // shard
-        assertEquals("200", tags[9]);
-        assertEquals(expectedStreamType.name(), tags[11]);
+        assertEquals(expectedAction, tags.get(0).getValue());
+        assertEquals("GET", tags.get(1).getValue());
+        assertEquals(expectedNodeId, Long.valueOf(tags.get(2).getValue()));
+        assertEquals("0", tags.get(3).getValue());
+        assertEquals("200", tags.get(4).getValue());
+        assertEquals(expectedStreamType.name(), tags.get(5).getValue());
     }
 
     /*
