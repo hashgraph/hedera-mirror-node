@@ -67,6 +67,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
 
+    @Getter
+    @NotNull
+    private long htsDefaultGasCost = 10000;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
@@ -84,10 +88,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
-
-    @Getter
-    @NotNull
-    private long htsDefaultGasCost = 10000;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
