@@ -156,11 +156,16 @@ class EntityIdUtilsTest {
 
     @Test
     void entityIdFromId() {
-        assertThat(EntityIdUtils.entityIdFromId(new Id(1L, 2L, 3L), EntityType.ACCOUNT))
+        assertThat(EntityIdUtils.entityIdFromId(new Id(1L, 2L, 3L)))
                 .returns(1L, EntityId::getShardNum)
                 .returns(2L, EntityId::getRealmNum)
                 .returns(3L, EntityId::getEntityNum)
-                .returns(EntityType.ACCOUNT, EntityId::getType);
+                .returns(EntityType.UNKNOWN, EntityId::getType);
+    }
+
+    @Test
+    void entityIdFromIdNullHandling() {
+        assertThat(EntityIdUtils.entityIdFromId(null)).isNull();
     }
 
     @Test
@@ -169,5 +174,10 @@ class EntityIdUtilsTest {
                 .returns(1L, Id::shard)
                 .returns(2L, Id::realm)
                 .returns(3L, Id::num);
+    }
+
+    @Test
+    void idFromEntityIdNullHandling() {
+        assertThat(EntityIdUtils.idFromEntityId(null)).isNull();
     }
 }

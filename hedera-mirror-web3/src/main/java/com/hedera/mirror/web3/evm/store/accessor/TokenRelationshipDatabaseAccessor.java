@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -67,10 +66,8 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRel
 
     private Optional<TokenAccount> findTokenAccount(Token token, Account account) {
         AbstractTokenAccount.Id id = new AbstractTokenAccount.Id();
-        id.setTokenId(
-                EntityIdUtils.entityIdFromId(token.getId(), EntityType.TOKEN).getId());
-        id.setAccountId(EntityIdUtils.entityIdFromId(account.getId(), EntityType.ACCOUNT)
-                .getId());
+        id.setTokenId(EntityIdUtils.entityIdFromId(token.getId()).getId());
+        id.setAccountId(EntityIdUtils.entityIdFromId(account.getId()).getId());
         return tokenAccountRepository.findById(id);
     }
 }

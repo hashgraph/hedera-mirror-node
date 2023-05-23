@@ -221,8 +221,11 @@ public final class EntityIdUtils {
         return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
     }
 
-    public static EntityId entityIdFromId(Id id, EntityType type) {
-        return new EntityId(id.shard(), id.realm(), id.num(), type);
+    public static EntityId entityIdFromId(Id id) {
+        if (id == null) {
+            return null;
+        }
+        return new EntityId(id.shard(), id.realm(), id.num(), EntityType.UNKNOWN);
     }
 
     public static Id idFromEntityId(EntityId entityId) {
