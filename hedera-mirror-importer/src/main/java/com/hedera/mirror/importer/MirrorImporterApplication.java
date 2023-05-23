@@ -17,12 +17,11 @@
 package com.hedera.mirror.importer;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.autoconfigure.metrics.redis.LettuceMetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @ConfigurationPropertiesScan
-@SpringBootApplication(exclude = LettuceMetricsAutoConfiguration.class)
+@SpringBootApplication
 public class MirrorImporterApplication {
 
     public static void main(String[] args) {

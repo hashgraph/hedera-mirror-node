@@ -18,10 +18,10 @@ package com.hedera.mirror.common.domain.contract;
 
 import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;

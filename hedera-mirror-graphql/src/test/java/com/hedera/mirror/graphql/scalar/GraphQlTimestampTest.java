@@ -19,6 +19,7 @@ package com.hedera.mirror.graphql.scalar;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import graphql.language.BooleanValue;
 import graphql.language.StringValue;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
@@ -31,28 +32,30 @@ class GraphQlTimestampTest {
     void parseLiteral() {
         var graphQlTimestamp = new GraphQlTimestamp();
         var instant = Instant.EPOCH;
-        assertThat(graphQlTimestamp.parseLiteral(
-                        StringValue.newStringValue(instant.toString()).build()))
-                .isEqualTo(instant);
-        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(instant))
+        var value = StringValue.newStringValue(instant.toString()).build();
+        assertThat(graphQlTimestamp.parseLiteral(value, null, null, null)).isEqualTo(instant);
+        var invalidValue = new BooleanValue(true);
+        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(invalidValue, null, null, null))
                 .isInstanceOf(CoercingParseLiteralException.class);
-        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral("")).isInstanceOf(CoercingParseLiteralException.class);
     }
 
     @Test
     void parseValue() {
         var graphQlTimestamp = new GraphQlTimestamp();
         var instant = Instant.EPOCH;
-        assertThat(graphQlTimestamp.parseValue(instant)).isEqualTo(instant);
-        assertThat(graphQlTimestamp.parseValue("1970-01-01T00:00:00Z")).isEqualTo(instant);
-        assertThatThrownBy(() -> graphQlTimestamp.parseValue(5L)).isInstanceOf(CoercingParseValueException.class);
+        assertThat(graphQlTimestamp.parseValue(instant, null, null)).isEqualTo(instant);
+        assertThat(graphQlTimestamp.parseValue("1970-01-01T00:00:00Z", null, null))
+                .isEqualTo(instant);
+        assertThatThrownBy(() -> graphQlTimestamp.parseValue(5L, null, null))
+                .isInstanceOf(CoercingParseValueException.class);
     }
 
     @Test
     void serialize() {
         var graphQlTimestamp = new GraphQlTimestamp();
         var instant = Instant.now();
-        assertThat(graphQlTimestamp.serialize(instant)).isEqualTo(instant.toString());
-        assertThatThrownBy(() -> graphQlTimestamp.serialize("5s")).isInstanceOf(CoercingSerializeException.class);
+        assertThat(graphQlTimestamp.serialize(instant, null, null)).isEqualTo(instant.toString());
+        assertThatThrownBy(() -> graphQlTimestamp.serialize("5s", null, null))
+                .isInstanceOf(CoercingSerializeException.class);
     }
 }

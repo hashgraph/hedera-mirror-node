@@ -34,7 +34,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.context.IntegrationContextUtils;
 import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.dsl.Pollers;
 import org.springframework.messaging.MessageChannel;
@@ -85,23 +84,23 @@ public class MessagingConfiguration {
 
     @Bean
     IntegrationFlow streamFileRouter() {
-        return IntegrationFlows.from(CHANNEL_STREAM)
+        return IntegrationFlow.from(CHANNEL_STREAM)
                 .route(StreamFile.class, s -> channelName(s.getType()))
                 .get();
     }
 
     private MessageChannel channel(ParserProperties properties) {
         if (properties.getQueueCapacity() <= 0) {
-            return MessageChannels.direct().get();
+            return MessageChannels.direct().getObject();
         }
 
-        return MessageChannels.queue(properties.getQueueCapacity()).get();
+        return MessageChannels.queue(properties.getQueueCapacity()).getObject();
     }
 
     private <T extends StreamFile<?>> IntegrationFlow integrationFlow(
             StreamFileParser<T> parser, Class<T> streamFileType) {
         ParserProperties properties = parser.getProperties();
-        return IntegrationFlows.from(channelName(properties.getStreamType()))
+        return IntegrationFlow.from(channelName(properties.getStreamType()))
                 .handle(
                         streamFileType,
                         (s, h) -> {

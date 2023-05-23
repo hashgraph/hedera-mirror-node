@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.reader.balance;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;

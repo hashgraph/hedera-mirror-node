@@ -17,8 +17,8 @@
 package com.hedera.mirror.importer.config;
 
 import java.util.Map;
-import org.hibernate.EmptyInterceptor;
-import org.hibernate.Interceptor;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -26,24 +26,22 @@ import org.springframework.context.annotation.Configuration;
 
 @ConditionalOnProperty(prefix = "hedera.mirror.importer.db", name = "loadBalance", havingValue = "false")
 @Configuration
-public class HibernateConfiguration implements HibernatePropertiesCustomizer {
+class HibernateConfiguration implements HibernatePropertiesCustomizer {
+
+    private static final String NO_LOAD_BALANCE = "/* NO PGPOOL LOAD BALANCE */\n";
+
     @Override
     public void customize(Map<String, Object> hibernateProperties) {
-        hibernateProperties.put("hibernate.session_factory.interceptor", hibernateInterceptor());
+        hibernateProperties.put(AvailableSettings.STATEMENT_INSPECTOR, statementInspector());
     }
 
+    /**
+     * https://www.pgpool.net/docs/latest/en/html/runtime-config-load-balancing.html
+     * pgpool disables load balancing for SQL statements beginning with an arbitrary comment and sends them to the
+     * primary node. This is used to prevent the stale read-after-write issue.
+     */
     @Bean
-    public Interceptor hibernateInterceptor() {
-        // https://www.pgpool.net/docs/latest/en/html/runtime-config-load-balancing.html
-        // pgpool disables load balancing for SQL statements beginning with an arbitrary comment and sends them to the
-        // primary node. This is used to prevent the stale read-after-write issue.
-        return new EmptyInterceptor() {
-            private static final long serialVersionUID = -2584591648084883933L;
-
-            @Override
-            public String onPrepareStatement(String sql) {
-                return "/* NO PGPOOL LOAD BALANCE */\n" + sql;
-            }
-        };
+    StatementInspector statementInspector() {
+        return sql -> NO_LOAD_BALANCE + sql;
     }
 }

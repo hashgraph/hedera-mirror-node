@@ -20,8 +20,8 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
+import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 

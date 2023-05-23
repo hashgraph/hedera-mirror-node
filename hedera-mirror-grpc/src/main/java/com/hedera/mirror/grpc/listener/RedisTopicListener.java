@@ -18,11 +18,12 @@ package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
@@ -32,6 +33,7 @@ import org.springframework.data.redis.listener.ReactiveRedisMessageListenerConta
 import org.springframework.data.redis.listener.Topic;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -48,6 +50,7 @@ public class RedisTopicListener extends SharedTopicListener {
 
     public RedisTopicListener(
             ListenerProperties listenerProperties,
+            ObservationRegistry observationRegistry,
             ReactiveRedisConnectionFactory connectionFactory,
             RedisSerializer<TopicMessage> redisSerializer) {
         super(listenerProperties);
@@ -60,7 +63,7 @@ public class RedisTopicListener extends SharedTopicListener {
         this.container = Mono.defer(() -> Mono.just(new ReactiveRedisMessageListenerContainer(connectionFactory)))
                 .name(METRIC)
                 .tag(METRIC_TAG, "redis")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnError(t -> log.error("Error connecting to Redis: ", t))
                 .doOnSubscribe(s -> log.info("Attempting to connect to Redis"))
                 .doOnSuccess(c -> log.info("Connected to Redis"))

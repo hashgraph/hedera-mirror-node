@@ -17,8 +17,8 @@
 package com.hedera.mirror.grpc.validation;
 
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class EndTimeValidator implements ConstraintValidator<EndTime, TopicMessageFilter> {
 

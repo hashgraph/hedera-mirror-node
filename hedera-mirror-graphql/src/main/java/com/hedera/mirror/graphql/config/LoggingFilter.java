@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.graphql.config;
 
+import jakarta.inject.Named;
 import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;

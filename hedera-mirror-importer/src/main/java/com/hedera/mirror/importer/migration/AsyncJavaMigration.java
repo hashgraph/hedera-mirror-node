@@ -17,13 +17,13 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
+import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;

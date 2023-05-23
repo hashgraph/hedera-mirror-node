@@ -21,10 +21,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,14 +41,14 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class TransactionSignature implements Persistable<TransactionSignature.Id> {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
     @Convert(converter = UnknownIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     @ToString.Exclude
     private byte[] publicKeyPrefix;
 
