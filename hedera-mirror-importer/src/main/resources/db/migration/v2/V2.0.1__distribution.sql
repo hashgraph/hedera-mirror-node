@@ -75,6 +75,8 @@ select create_distributed_table('token_transfer', 'payer_account_id', colocate_w
 
 select create_distributed_table('topic_message', 'topic_id', colocate_with => 'entity');
 
+select create_distributed_table('topic_message_lookup', 'topic_id', colocate_with => 'entity');
+
 select create_distributed_table('transaction', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('transaction_signature', 'entity_id', colocate_with => 'entity');

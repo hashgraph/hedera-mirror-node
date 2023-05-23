@@ -97,6 +97,7 @@ data:
         select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
       -- Partition privileges
       \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
+      create extension if not exists btree_gist;
       create extension if not exists pg_cron;
       create schema if not exists partman authorization ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
       create extension if not exists pg_partman schema partman;

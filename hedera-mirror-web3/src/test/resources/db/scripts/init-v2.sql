@@ -1,3 +1,6 @@
+-- Add extensions
+create extension if not exists btree_gist;
+
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
