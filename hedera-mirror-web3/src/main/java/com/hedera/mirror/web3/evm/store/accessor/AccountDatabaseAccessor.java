@@ -51,7 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
+public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     public static final long DEFAULT_EXPIRY_TIMESTAMP =
             TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
 
@@ -69,8 +69,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Address address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object address) {
+        return entityDatabaseAccessor.get((Address) address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -35,16 +36,20 @@ public class HederaEvmStackedWorldStateUpdater
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
-            final EvmProperties evmProperties) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess);
+            final EvmProperties evmProperties,
+            final StackedStateFrames<Object> stackedStateFrames) {
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
+        this.stackedStateFrames = stackedStateFrames;
+        this.stackedStateFrames.push();
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -28,12 +29,16 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
+    private final StackedStateFrames<Object> stackedStateFrames;
+
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
-            final HederaEvmEntityAccess entityAccess) {
+            final HederaEvmEntityAccess entityAccess,
+            final StackedStateFrames<Object> stackedStateFrames) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
@@ -41,5 +46,14 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
         final var wrapped = wrappedWorldView();
         final A account = wrapped.getForMutation(address);
         return account == null ? null : new UpdateTrackingAccount<>(account, null);
+    }
+
+    @Override
+    public void commit() {
+        final var topFrame = stackedStateFrames.top();
+        if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
+            topFrame.commit();
+            stackedStateFrames.pop();
+        }
     }
 }
