@@ -17,10 +17,10 @@
 package com.hedera.mirror.common.domain.addressbook;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serial;
 import java.io.Serializable;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,7 +36,7 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class NodeStake implements Persistable<NodeStake.Id> {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
     /**
@@ -58,7 +58,7 @@ public class NodeStake implements Persistable<NodeStake.Id> {
      */
     private long minStake;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long nodeId;
 
     /**

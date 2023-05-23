@@ -19,8 +19,8 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 

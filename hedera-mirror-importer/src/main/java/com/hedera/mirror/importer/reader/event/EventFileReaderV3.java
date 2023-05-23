@@ -23,10 +23,10 @@ import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
+import jakarta.inject.Named;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 

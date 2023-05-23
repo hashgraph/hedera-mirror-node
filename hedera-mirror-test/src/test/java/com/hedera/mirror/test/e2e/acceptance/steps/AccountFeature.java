@@ -17,7 +17,8 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -28,7 +29,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.AfterAll;
 import io.cucumber.java.en.Given;
@@ -50,10 +50,9 @@ public class AccountFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
 
-    private AccountId ownerAccountId;
     private AccountId receiverAccountId;
-
     private ExpandedAccountId senderAccountId;
+    private ExpandedAccountId spenderAccountId;
     private long startingBalance;
 
     @AfterAll
@@ -146,18 +145,18 @@ public class AccountFeature extends AbstractFeature {
     }
 
     @Given("I approve {string} to transfer up to {long} tℏ")
-    public void approveCryptoAllowance(String accountName, long amount) {
-        setCryptoAllowance(accountName, amount);
+    public void approveCryptoAllowance(String spender, long amount) {
+        setCryptoAllowance(spender, amount);
     }
 
-    @When("{string} transfers {long} tℏ from their approved balance to {string}")
-    public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
+    @When("{string} transfers {long} tℏ from the approved allowance to {string}")
+    public void transferFromAllowance(String spender, long amount, String receiver) {
+        spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(spender));
         receiverAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName))
+                .getAccount(AccountClient.AccountNameEnum.valueOf(receiver))
                 .getAccountId();
-        networkTransactionResponse =
-                accountClient.sendApprovedCryptoTransfer(senderAccountId, receiverAccountId, Hbar.fromTinybars(amount));
+        networkTransactionResponse = accountClient.sendApprovedCryptoTransfer(
+                spenderAccountId, receiverAccountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -198,14 +197,13 @@ public class AccountFeature extends AbstractFeature {
         assertThat(transferSum).isZero();
     }
 
-    @Then("the mirror node REST API should confirm the approved {long} tℏ crypto transfer allowance")
-    public void verifyMirrorAPIApprovedCryptoTransferResponse(long approvedAmount) {
+    @Then("the mirror node REST API should confirm the approved {long} tℏ crypto allowance")
+    public void verifyMirrorAPIApprovedCryptoAllowanceResponse(long approvedAmount) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
-        String ownerString = ownerAccountId.toString();
-        String spenderString = senderAccountId.getAccountId().toString();
-        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
-                mirrorClient.getAccountCryptoAllowanceBySpender(ownerString, spenderString);
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = spenderAccountId.getAccountId().toString();
+        var mirrorCryptoAllowanceResponse = mirrorClient.getAccountCryptoAllowanceBySpender(owner, spender);
 
         // verify valid set of allowance
         assertThat(mirrorCryptoAllowanceResponse.getAllowances())
@@ -213,32 +211,44 @@ public class AccountFeature extends AbstractFeature {
                 .first()
                 .isNotNull()
                 .returns(approvedAmount, MirrorCryptoAllowance::getAmountGranted)
-                .returns(ownerString, MirrorCryptoAllowance::getOwner)
-                .returns(spenderString, MirrorCryptoAllowance::getSpender)
+                .returns(owner, MirrorCryptoAllowance::getOwner)
+                .returns(spender, MirrorCryptoAllowance::getSpender)
                 .extracting(MirrorCryptoAllowance::getTimestamp)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getFrom()).isNotBlank())
                 .satisfies(t -> assertThat(t.getTo()).isBlank());
     }
 
+    @Then("the mirror node REST API should confirm the approved transfer of {long} tℏ")
+    public void verifyMirrorAPIApprovedCryptoTransferResponse(long transferAmount) {
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+
+        // verify valid set of transactions
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var transactions = mirrorTransactionsResponse.getTransactions();
+        assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTransfers())
+                .contains(MirrorTransfer.builder()
+                        .account(owner)
+                        .amount(-transferAmount)
+                        .isApproval(true)
+                        .build()));
+    }
+
     @When("I delete the crypto allowance for {string}")
-    public void deleteCryptoAllowance(String spenderAccountName) {
-        setCryptoAllowance(spenderAccountName, 0);
+    public void deleteCryptoAllowance(String spender) {
+        setCryptoAllowance(spender, 0);
     }
 
     @Then("the mirror node REST API should confirm the crypto allowance deletion")
     public void verifyCryptoAllowanceDelete() {
-        verifyMirrorAPIApprovedCryptoTransferResponse(0);
+        verifyMirrorAPIApprovedCryptoAllowanceResponse(0);
     }
 
     private void setCryptoAllowance(String accountName, long amount) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setCryptoAllowance(senderAccountId.getAccountId(), amount);
-    }
-
-    private void setCryptoAllowance(AccountId accountId, long amount) {
-        ownerAccountId = accountClient.getClient().getOperatorAccountId();
-        networkTransactionResponse = accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount));
+        spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        networkTransactionResponse =
+                accountClient.approveCryptoAllowance(spenderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }

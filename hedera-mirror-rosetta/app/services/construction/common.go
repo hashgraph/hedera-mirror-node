@@ -56,7 +56,7 @@ func newCommonTransactionConstructor(
 	transaction interfaces.Transaction,
 	operationType string,
 ) commonTransactionConstructor {
-	defaultMaxFee := types.HbarAmount{Value: transaction.GetMaxTransactionFee().AsTinybar()}
+	defaultMaxFee := types.HbarAmount{Value: transaction.GetDefaultMaxTransactionFee().AsTinybar()}
 	transactionType := reflect.TypeOf(transaction).Elem().Name()
 	return commonTransactionConstructor{
 		defaultMaxFee:   defaultMaxFee,

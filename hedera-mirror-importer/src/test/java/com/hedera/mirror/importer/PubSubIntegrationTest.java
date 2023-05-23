@@ -21,9 +21,9 @@ import com.google.cloud.spring.pubsub.PubSubAdmin;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.pubsub.v1.PubsubMessage;
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
+import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 

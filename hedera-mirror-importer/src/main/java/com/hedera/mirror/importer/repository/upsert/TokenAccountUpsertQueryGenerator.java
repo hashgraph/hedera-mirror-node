@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.repository.upsert;
 
+import jakarta.inject.Named;
 import java.text.MessageFormat;
-import javax.inject.Named;
 import lombok.Value;
 
 @Named

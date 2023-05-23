@@ -21,8 +21,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import graphql.ExecutionInput;
 import graphql.execution.preparsed.PreparsedDocumentEntry;
 import graphql.execution.preparsed.PreparsedDocumentProvider;
+import jakarta.inject.Named;
 import java.util.function.Function;
-import javax.inject.Named;
 
 @Named
 final class CachedPreparsedDocumentProvider implements PreparsedDocumentProvider {

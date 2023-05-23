@@ -28,10 +28,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResponseCodeUpToDate(t *testing.T) {
-	// given
-	for code, name := range services.ResponseCodeEnum_name {
-		assert.Equal(t, name, transactionResults[code], "Expected %s for code %d", name, code)
+const maxCode = int32(331)
+
+func TestGetTransactionResult(t *testing.T) {
+	for code, expected := range services.ResponseCodeEnum_name {
+		if code > maxCode {
+			continue
+		}
+
+		actual := GetTransactionResult(code)
+		assert.Equal(t, expected, actual, "Code %d, expect %s, actual %s", code, expected, actual)
+	}
+}
+
+func TestGetTransactionResultGeneralError(t *testing.T) {
+	for code := range services.ResponseCodeEnum_name {
+		if code <= maxCode {
+			continue
+		}
+
+		actual := GetTransactionResult(code)
+		assert.Equal(t, generalErrorStatus, actual, "Code %d, expect general error, actual %s", code, actual)
 	}
 }
 

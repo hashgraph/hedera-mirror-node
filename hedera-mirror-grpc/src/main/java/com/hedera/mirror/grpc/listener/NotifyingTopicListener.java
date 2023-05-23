@@ -21,14 +21,17 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.mirror.grpc.DbProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import io.micrometer.observation.ObservationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.SslMode;
 import io.vertx.pgclient.pubsub.PgChannel;
 import io.vertx.pgclient.pubsub.PgSubscriber;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Objects;
-import javax.inject.Named;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -42,7 +45,8 @@ public class NotifyingTopicListener extends SharedTopicListener {
     private final DbProperties dbProperties;
     private final Flux<TopicMessage> topicMessages;
 
-    public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
+    public NotifyingTopicListener(
+            DbProperties dbProperties, ListenerProperties listenerProperties, ObservationRegistry observationRegistry) {
         super(listenerProperties);
         this.dbProperties = dbProperties;
         objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -53,7 +57,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .filter(Objects::nonNull)
                 .name(METRIC)
                 .tag(METRIC_TAG, "notify")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
                 .share();
@@ -83,7 +87,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .setHost(dbProperties.getHost())
                 .setPassword(dbProperties.getPassword())
                 .setPort(dbProperties.getPort())
-                .setSslMode(dbProperties.getSslMode())
+                .setSslMode(SslMode.DISABLE)
                 .setUser(dbProperties.getUsername());
 
         Duration interval = listenerProperties.getInterval();

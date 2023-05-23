@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 
 import com.hedera.mirror.importer.MirrorProperties;
@@ -46,22 +47,22 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     private static final String REASON_KEY = "reason";
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private LeaderService leaderService;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private Timer streamFileParseDurationTimer;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private Timer streamCloseLatencyDurationTimer;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private Search streamParseDurationSearch;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private Search streamCloseLatencySearch;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private MeterRegistry meterRegistry;
 
     private StreamFileHealthIndicator streamFileHealthIndicator;

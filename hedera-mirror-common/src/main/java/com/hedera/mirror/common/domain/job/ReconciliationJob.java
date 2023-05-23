@@ -16,9 +16,9 @@
 
 package com.hedera.mirror.common.domain.job;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.time.Instant;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

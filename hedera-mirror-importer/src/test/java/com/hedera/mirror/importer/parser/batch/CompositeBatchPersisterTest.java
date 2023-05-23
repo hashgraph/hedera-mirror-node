@@ -29,10 +29,10 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 

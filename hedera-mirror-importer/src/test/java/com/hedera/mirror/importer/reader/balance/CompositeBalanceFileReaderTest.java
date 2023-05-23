@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.reader.balance;
 
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,7 +35,7 @@ class CompositeBalanceFileReaderTest {
 
     private static final String BALANCE_FILENAME_PREFIX = "2021-03-15T14_30_00Z_Balances";
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private BalanceFileReaderImplV1 readerImplV1;
 
     @Mock

@@ -25,8 +25,8 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 /**
  * A specialized fee calculator that throws an exception if any step of the fee calculation

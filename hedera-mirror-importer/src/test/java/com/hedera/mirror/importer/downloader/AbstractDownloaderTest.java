@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -105,7 +106,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     private static final Pattern STREAM_FILENAME_INSTANT_PATTERN =
             Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}(\\.\\d{1,9})?Z");
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     protected ConsensusNodeService consensusNodeService;
 
     @Mock
