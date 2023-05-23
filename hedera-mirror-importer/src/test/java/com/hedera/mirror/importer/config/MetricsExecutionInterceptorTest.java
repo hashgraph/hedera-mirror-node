@@ -16,6 +16,16 @@
 
 package com.hedera.mirror.importer.config;
 
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.ACTION_LIST;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.METRIC_DOWNLOAD_REQUEST;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.QUERY_START_AFTER;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_ACTION;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_METHOD;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_NODE;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_SHARD;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_STATUS;
+import static com.hedera.mirror.importer.config.MetricsExecutionInterceptor.TAG_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -24,12 +34,9 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Instant;
 import java.util.Collection;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,16 +65,19 @@ class MetricsExecutionInterceptorTest {
     private static final String S3_BUCKET = "hedera-bucket";
     private static final String S3_HOST = "https://%s.s3.%s.amazonaws.com/".formatted(S3_BUCKET, S3_REGION);
     private static final String SEPARATOR = "/";
-    private static final long SHARD = 0L;
-    private static final long REALM = 0L;
-    private static final long ACCOUNT_NUM = 4;
+    private static final String SHARD = "0";
+    private static final String REALM = "0";
+    private static final String ACCOUNT_NUM = "4";
+    private static final String NODE_ID = "1";
     private static final String NETWORK_NAME = "network";
-    private static final long NODE_ID = ACCOUNT_NUM - 3L;
     private static final String BATCH_SIZE = "100";
-    private final ExecutionAttributes executionAttributes = new ExecutionAttributes();
+    private ExecutionAttributes executionAttributes;
 
     @Mock
     private SdkHttpResponse sdkHttpResponse;
+
+    @Mock
+    private Context.BeforeTransmission beforeTransmissionContext;
 
     @Mock
     private Context.AfterExecution afterExecutionContext;
@@ -77,11 +87,9 @@ class MetricsExecutionInterceptorTest {
 
     @BeforeEach
     void setup() {
-        executionAttributes.putAttribute(
-                MetricsExecutionInterceptor.START_TIME, Instant.now().minusSeconds(60L));
-
         meterRegistry = new SimpleMeterRegistry();
         metricsExecutionInterceptor = new MetricsExecutionInterceptor(meterRegistry);
+        executionAttributes = new ExecutionAttributes();
     }
 
     @ParameterizedTest(name = "S3 List using pathType {0}")
@@ -99,8 +107,11 @@ class MetricsExecutionInterceptorTest {
         when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
 
+        metricsExecutionInterceptor.beforeTransmission(beforeTransmissionContext, executionAttributes);
+        assertNotNull(executionAttributes.getAttribute(MetricsExecutionInterceptor.START_TIME));
+
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
-        verifyTimerTags("list", NODE_ID, StreamType.RECORD);
+        verifyTimerTags(ACTION_LIST, NODE_ID, StreamType.RECORD);
     }
 
     @ParameterizedTest
@@ -139,6 +150,8 @@ class MetricsExecutionInterceptorTest {
         when(sdkHttpResponse.statusCode()).thenReturn(HTTP_STATUS_SUCCESS);
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
 
+        metricsExecutionInterceptor.beforeTransmission(beforeTransmissionContext, executionAttributes);
+        assertNotNull(executionAttributes.getAttribute(MetricsExecutionInterceptor.START_TIME));
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
         verifyTimerTags(expectedAction, NODE_ID, streamType);
     }
@@ -153,36 +166,33 @@ class MetricsExecutionInterceptorTest {
         var sdkHttpRequest = createGetObjectRequest("uripaththatdoesnotmatchregex");
         when(afterExecutionContext.httpRequest()).thenReturn(sdkHttpRequest);
 
+        metricsExecutionInterceptor.beforeTransmission(beforeTransmissionContext, executionAttributes);
+        assertNotNull(executionAttributes.getAttribute(MetricsExecutionInterceptor.START_TIME));
         metricsExecutionInterceptor.afterExecution(afterExecutionContext, executionAttributes);
-        Collection<Timer> timers =
-                meterRegistry.find("hedera.mirror.download.request").timers();
+        Collection<Timer> timers = meterRegistry.find(METRIC_DOWNLOAD_REQUEST).timers();
         assertEquals(0, timers.size());
     }
 
-    private String nodeIdPrefix(StreamType streamType, String network, long shard, long nodeId) {
-        return "%s/%d/%d/%s/".formatted(network, shard, nodeId, streamType.getNodeIdBasedSuffix());
+    private String nodeIdPrefix(StreamType streamType, String network, String shard, String nodeId) {
+        return "%s/%s/%s/%s/".formatted(network, shard, nodeId, streamType.getNodeIdBasedSuffix());
     }
 
-    private String accountIdPrefix(StreamType streamType, long shard, long realm, long accountNum) {
-        return "%s/%s%d.%d.%d/".formatted(streamType.getPath(), streamType.getNodePrefix(), shard, realm, accountNum);
+    private String accountIdPrefix(StreamType streamType, String shard, String realm, String accountNum) {
+        return "%s/%s%s.%s.%s/".formatted(streamType.getPath(), streamType.getNodePrefix(), shard, realm, accountNum);
     }
 
-    private void verifyTimerTags(String expectedAction, long expectedNodeId, StreamType expectedStreamType) {
-        Collection<Timer> timers =
-                meterRegistry.find("hedera.mirror.download.request").timers();
-        assertEquals(1, timers.size());
+    private void verifyTimerTags(String expectedAction, String expectedNodeId, StreamType expectedStreamType) {
 
-        List<Tag> providedTags = timers.iterator().next().getId().getTags();
-        assertNotNull(providedTags);
-        assertEquals(6, providedTags.size());
-
-        // The tags are in a defined order, with the tag name followed by its value. All are Strings.
-        assertEquals(expectedAction, providedTags.get(0).getValue());
-        assertEquals("GET", providedTags.get(1).getValue());
-        assertEquals(expectedNodeId, Long.valueOf(providedTags.get(2).getValue()));
-        assertEquals("0", providedTags.get(3).getValue());
-        assertEquals("200", providedTags.get(4).getValue());
-        assertEquals(expectedStreamType.name(), providedTags.get(5).getValue());
+        assertThat(meterRegistry.find(METRIC_DOWNLOAD_REQUEST).timers())
+                .hasSize(1)
+                .first()
+                .returns(1L, Timer::count)
+                .returns(expectedAction, t -> t.getId().getTag(TAG_ACTION))
+                .returns("GET", t -> t.getId().getTag(TAG_METHOD))
+                .returns(expectedNodeId, t -> t.getId().getTag(TAG_NODE))
+                .returns("0", t -> t.getId().getTag(TAG_SHARD))
+                .returns("200", t -> t.getId().getTag(TAG_STATUS))
+                .returns(expectedStreamType.name(), t -> t.getId().getTag(TAG_TYPE));
     }
 
     /*
@@ -198,7 +208,7 @@ class MetricsExecutionInterceptorTest {
                 .appendRawQueryParameter("delimiter", SEPARATOR)
                 .appendRawQueryParameter("max-keys", BATCH_SIZE)
                 .appendRawQueryParameter("prefix", prefix)
-                .appendRawQueryParameter("start-after", prefix + startAfter)
+                .appendRawQueryParameter(QUERY_START_AFTER, prefix + startAfter)
                 .build();
     }
 
