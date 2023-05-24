@@ -94,7 +94,6 @@ dependencies {
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.20.69")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
-        api("tech.pegasys:jc-kzg-4844:0.4.0")
     }
 }
 
