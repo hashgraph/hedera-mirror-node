@@ -113,17 +113,6 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         assertThat(nftRepository.findById(nft4.getId())).get().isEqualTo(nft4);
         assertThat(nftRepository.findById(nft5.getId())).get().isEqualTo(nft5);
 
-        /* MYK
-                IterableAssert<NftTransfer> nftTransfers =
-                        assertThat(nftTransferRepository.findAll()).hasSize(3);
-                nftTransfers.extracting(NftTransfer::getReceiverAccountId).containsOnly(newTreasury);
-                nftTransfers.extracting(NftTransfer::getSenderAccountId).containsOnly(previousTreasury);
-                nftTransfers.extracting(n -> n.getId().getTokenId()).containsOnly(tokenId);
-                nftTransfers.extracting(n -> n.getId().getConsensusTimestamp()).containsOnly(consensusTimestamp);
-                nftTransfers.extracting(n -> n.getId().getSerialNumber()).containsExactlyInAnyOrder(1L, 2L, 3L);
-                nftTransfers.extracting(NftTransfer::getIsApproval).containsExactlyInAnyOrder(false, false, false);
-        MYK */
-
         tokenAccountOldTreasury.setBalance(0);
         tokenAccountNewTreasury.setBalance(4);
         assertThat(tokenAccountRepository.findAll())

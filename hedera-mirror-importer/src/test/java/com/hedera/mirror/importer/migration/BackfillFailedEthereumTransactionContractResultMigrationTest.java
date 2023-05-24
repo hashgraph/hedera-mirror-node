@@ -41,7 +41,7 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.79.0")
+@TestPropertySource(properties = "spring.flyway.target=1.81.0")
 class BackfillFailedEthereumTransactionContractResultMigrationTest extends IntegrationTest {
 
     private final ContractResultRepository contractResultRepository;

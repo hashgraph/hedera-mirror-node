@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.NftTransferListToStringSerializer;
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
@@ -73,7 +73,7 @@ public class Transaction implements Persistable<Long> {
 
     @Builder.Default
     @Type(JsonBinaryType.class)
-    @JsonSerialize(using = NftTransferListToStringSerializer.class)
+    @JsonSerialize(using = ObjectToStringSerializer.class)
     private List<NftTransfer> nftTransfer = Collections.emptyList();
 
     @Convert(converter = AccountIdConverter.class)

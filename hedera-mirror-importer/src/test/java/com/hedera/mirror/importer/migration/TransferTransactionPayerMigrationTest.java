@@ -375,11 +375,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 new SharedTransfer(
                         treasuryPaymentAmount, transfer5.getConsensusTimestamp(), PAYER_ID, treasuryId, null));
 
-        List<SharedTransfer> expectedNftTransfers = List.of(
-                // nft transfer
-                new SharedTransfer(1L, transfer3.getConsensusTimestamp(), PAYER_ID, receiverId, senderId),
-                new SharedTransfer(2L, transfer5.getConsensusTimestamp(), PAYER_ID, receiverId, senderId));
-
         List<SharedTransfer> expectedNonFeeTransfers = List.of(
                 // assessed custom fee only transfer
                 new SharedTransfer(senderPaymentAmount, transfer1.getConsensusTimestamp(), PAYER_ID, null, senderId),
@@ -409,8 +404,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(findAssessedCustomFees()).containsExactlyInAnyOrderElementsOf(expectedAssessedCustomFeeTransfers);
 
         assertThat(findCryptoTransfers()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
-
-        assertThat(findNftTransfers()).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
 
         assertThat(findNonFeeTransfersAsSharedTransfers()).containsExactlyInAnyOrderElementsOf(expectedNonFeeTransfers);
 
@@ -458,23 +451,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     cryptoTransfer.getEntityId());
         }
     }
-
-    // MYK == need to revisit!
-    /*
-     private void persistNftTransfers(List<NftTransfer> nftTransfers) {
-         for (NftTransfer nftTransfer : nftTransfers) {
-             jdbcOperations.update(
-                     "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
-                             + "serial_number, token_id)"
-                             + " values (?,?,?,?,?)",
-                     id.getConsensusTimestamp(),
-                     nftTransfer.getReceiverAccountId().getId(),
-                     nftTransfer.getSenderAccountId().getId(),
-                     id.getSerialNumber(),
-                     id.getTokenId().getId());
-         }
-     }
-    */
 
     private void persistNonFeeTransfers(List<NonFeeTransfer> nonFeeTransfers) {
         for (NonFeeTransfer nonFeeTransfer : nonFeeTransfers) {
@@ -529,18 +505,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                     receiver,
                     sender);
-            return sharedTransfer;
-        });
-    }
-
-    private List<SharedTransfer> findNftTransfers() {
-        return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> {
-            SharedTransfer sharedTransfer = new SharedTransfer(
-                    rs.getLong("serial_number"),
-                    rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
             return sharedTransfer;
         });
     }

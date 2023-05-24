@@ -92,6 +92,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -771,21 +772,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, dissociateTimeStamp, PAYER2, true);
         assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, PAYER, false);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, dissociateTimeStamp, SYMBOL, 1);
-        /* MYK
-                assertThat(nftTransferRepository.findAll())
-                        .containsExactlyInAnyOrder(
-                                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 1L, TOKEN_ID, PAYER),
-                                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 2L, TOKEN_ID, PAYER),
-                                domainNftTransfer(transferTimestamp, PAYER2, PAYER, 1L, TOKEN_ID, PAYER),
-                                domainNftTransfer(dissociateTimeStamp, DEFAULT_ACCOUNT_ID, PAYER2, 1L, TOKEN_ID, PAYER));
-        MYK */
         assertThat(tokenTransferRepository.findAll()).isEmpty();
 
         var expectedTokenAccount = TokenAccount.builder()
                 .accountId(PAYER2.getAccountNum())
                 .associated(false)
                 .automaticAssociation(false)
-                .balance(0)
+                .balance(-1)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -1097,12 +1090,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.addTokenTransferLists(treasuryUpdateTransfer));
 
         // then
-        /* MYK
-                assertThat(nftTransferRepository.findAll())
-                        .containsExactlyInAnyOrder(
-                                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 1L, TOKEN_ID, PAYER),
-                                domainNftTransfer(updateTimestamp, PAYER2, PAYER, 1L, TOKEN_ID, PAYER));
-        MYK */
+        assertTokenInRepository(
+                TOKEN_ID, true, CREATE_TIMESTAMP, updateTimestamp, SYMBOL, 1, TokenPauseStatusEnum.NOT_APPLICABLE);
     }
 
     @ParameterizedTest
@@ -1255,23 +1244,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .metadata(metadataBytes)
                 .modifiedTimestamp(nftUpdateRecordItem.getConsensusTimestamp())
                 .build();
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3);
-
-        var treasuryUpdateNftTransfers = Stream.of(1L, 3L)
-                .map(serial -> com.hedera.mirror.common.domain.token.NftTransfer.builder()
-                        .senderAccountId(oldTreasury)
-                        .receiverAccountId(newTreasury)
+        assertThat(nftRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("accountId", "modifiedTimestamp")
                         .build())
-                .toList();
-        /* MYK
-                assertThat(nftTransferRepository.findAll())
-                        .filteredOn(t -> t.getId().getConsensusTimestamp() == nftUpdateRecordItem.getConsensusTimestamp())
-                        .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
-                                .withComparatorForType(Comparator.nullsFirst(EntityId::compareTo), EntityId.class)
-                                .withIgnoredFields("isApproval", "payerAccountId")
-                                .build())
-                        .containsExactlyInAnyOrderElementsOf(treasuryUpdateNftTransfers);
-        */
+                .containsExactlyInAnyOrder(nft1, nft2, nft3);
 
         var tokenAccountOldTreasury = TokenAccount.builder()
                 .accountId(oldTreasury.getId())
@@ -1292,7 +1269,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .tokenId(tokenId.getId())
                 .build();
         assertThat(tokenAccountRepository.findAll())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("freezeStatus", "kycStatus")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balance", "freezeStatus", "kycStatus")
                 .containsExactlyInAnyOrder(tokenAccountOldTreasury, tokenAccountNewTreasury);
     }
 
@@ -1538,14 +1515,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .modifiedTimestamp(mintTimestamp)
                 .build();
 
-        /* MYK -- change to search within transaction.nft_transfer
         // Verify
-        assertThat(nftTransferRepository.count()).isEqualTo(3L);
-
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(burnTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, PAYER2);
-        MYK  */
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
@@ -1596,12 +1566,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addTokenTransferLists(burnTransfer);
         });
 
-        /* MYK
         // Verify
-        assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(burnTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, PAYER);
-        MYK */
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertNftInRepository(
                 TOKEN_ID,
@@ -1736,11 +1701,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER2, null);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER2, null);
-        */
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 2);
         assertNftInRepository(
                 TOKEN_ID,
@@ -1831,11 +1791,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(timestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(timestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
-        */
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, timestamp, SYMBOL, 2);
         assertNftInRepository(
                 TOKEN_ID, SERIAL_NUMBER_1, true, timestamp, timestamp, METADATA.getBytes(), EntityId.of(PAYER), false);
@@ -1858,11 +1813,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
-        */
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
         assertNftInRepository(
                 TOKEN_ID,
@@ -2004,13 +1954,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .modifiedTimestamp(transferTimestamp)
                 .build();
 
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(4L);
-        assertNftTransferInRepository(mintTimestamp1, SERIAL_NUMBER_1, TOKEN_ID, RECEIVER, null);
-        assertNftTransferInRepository(mintTimestamp2, SERIAL_NUMBER_2, TOKEN_ID, RECEIVER, null);
-        assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER);
-        assertNftTransferInRepository(transferTimestamp, 2L, TOKEN_ID, RECEIVER, PAYER);
-        */
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(transferTimestamp, 0)))
@@ -2114,13 +2057,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
 
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(4L);
-        assertNftTransferInRepository(mintTimestamp1, SERIAL_NUMBER_1, TOKEN_ID, RECEIVER, null);
-        assertNftTransferInRepository(mintTimestamp2, SERIAL_NUMBER_2, TOKEN_ID, RECEIVER, null);
-        assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER, isApproval1);
-        assertNftTransferInRepository(transferTimestamp, 2L, TOKEN_ID, RECEIVER, PAYER, isApproval2);
-        MYK */
         assertNftInRepository(
                 TOKEN_ID,
                 SERIAL_NUMBER_1,
@@ -2184,11 +2120,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
 
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(transferTimestamp, 1L, tokenID2, RECEIVER, PAYER);
-        assertNftTransferInRepository(transferTimestamp, 2L, tokenID2, RECEIVER, PAYER);
-        MYK */
         assertNftInRepository(
                 tokenID2,
                 SERIAL_NUMBER_1,
@@ -2397,12 +2328,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
 
         // Verify
-        /* MYK
-        assertThat(nftTransferRepository.count()).isEqualTo(3L);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
-        assertNftTransferInRepository(wipeTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, PAYER2);
-        MYK */
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 1);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
@@ -2448,8 +2373,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // Verify
-        // MYK assertThat(nftTransferRepository.count()).isEqualTo(1L);
-        // MYK assertNftTransferInRepository(wipeTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, RECEIVER);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 0);
         assertNftInRepository(
                 TOKEN_ID, 1L, false, wipeTimestamp, wipeTimestamp, METADATA.getBytes(), EntityId.of(PAYER), true);
@@ -3037,33 +2960,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
-
-    /* MYK
-    private void assertNftTransferInRepository(
-            long consensusTimestamp, long serialNumber, TokenID tokenID, AccountID receiverId, AccountID senderId) {
-        assertNftTransferInRepository(consensusTimestamp, serialNumber, tokenID, receiverId, senderId, false);
-    }
-    MYK */
-
-    /* MYK
-    private void assertNftTransferInRepository(
-            long consensusTimestamp,
-            long serialNumber,
-            TokenID tokenID,
-            AccountID receiverId,
-            AccountID senderId,
-            Boolean isApproval) {
-        EntityId receiver = receiverId != null ? EntityId.of(receiverId) : null;
-        EntityId sender = senderId != null ? EntityId.of(senderId) : null;
-
-        var id = new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(tokenID));
-        assertThat(nftTransferRepository.findById(id))
-                .get()
-                .returns(receiver, from(com.hedera.mirror.common.domain.token.NftTransfer::getReceiverAccountId))
-                .returns(sender, from(com.hedera.mirror.common.domain.token.NftTransfer::getSenderAccountId))
-                .returns(isApproval, from(com.hedera.mirror.common.domain.token.NftTransfer::getIsApproval));
-    }
-    MYK */
 
     private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())

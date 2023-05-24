@@ -16,8 +16,11 @@
 
 package com.hedera.mirror.common.domain.token;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.AccountIdDeserializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Convert;
@@ -34,16 +37,24 @@ import lombok.NoArgsConstructor;
 public class NftTransfer {
     public static final long WILDCARD_SERIAL_NUMBER = -1;
 
+    @JsonProperty("is_approval")
     private Boolean isApproval;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonDeserialize(using = AccountIdDeserializer.class)
+    @JsonProperty("payer_account_id")
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonDeserialize(using = AccountIdDeserializer.class)
+    @JsonProperty("receiver_account_id")
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonDeserialize(using = AccountIdDeserializer.class)
+    @JsonProperty("sender_account_id")
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
 }

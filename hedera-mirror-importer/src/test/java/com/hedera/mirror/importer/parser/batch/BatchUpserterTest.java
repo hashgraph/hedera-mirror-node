@@ -659,14 +659,6 @@ class BatchUpserterTest extends IntegrationTest {
                         nft4,
                         nft5);
 
-        /* MYK
-                NftTransfer serial2Transfer = getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp);
-                serial2Transfer.setPayerAccountId(payerId);
-                NftTransfer serial3Transfer = getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp);
-                serial3Transfer.setPayerAccountId(payerId);
-                assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
-        MYK */
-
         fungibleTokenTransfer.setDeletedTokenDissociate(false);
         assertThat(tokenTransferRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("deletedTokenDissociate")
