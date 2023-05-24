@@ -19,7 +19,7 @@ package com.hedera.mirror.common.converter;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-@javax.persistence.Converter
+@jakarta.persistence.Converter
 @ConfigurationPropertiesBinding
 public class TopicIdConverter extends AbstractEntityIdConverter {
 

@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hederahashgraph.api.proto.java.ContractID;
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Named
 class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {

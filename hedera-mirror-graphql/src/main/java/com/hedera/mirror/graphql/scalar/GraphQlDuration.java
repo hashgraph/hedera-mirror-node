@@ -18,13 +18,17 @@ package com.hedera.mirror.graphql.scalar;
 
 import static graphql.scalars.util.Kit.typeName;
 
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
 import java.time.Duration;
+import java.util.Locale;
 import org.jetbrains.annotations.NotNull;
 
 public class GraphQlDuration implements Coercing<Duration, String> {
@@ -37,7 +41,12 @@ public class GraphQlDuration implements Coercing<Duration, String> {
             .build();
 
     @Override
-    public @NotNull Duration parseLiteral(@NotNull Object input) throws CoercingParseLiteralException {
+    public Duration parseLiteral(
+            @NotNull Value<?> input,
+            @NotNull CoercedVariables variables,
+            @NotNull GraphQLContext graphQLContext,
+            @NotNull Locale locale)
+            throws CoercingParseLiteralException {
         if (input instanceof StringValue str) {
             return Duration.parse(str.getValue());
         }
@@ -45,7 +54,9 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public @NotNull Duration parseValue(@NotNull Object input) throws CoercingParseValueException {
+    public @NotNull Duration parseValue(
+            @NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingParseValueException {
         if (input instanceof Duration duration) {
             return duration;
         } else if (input instanceof String string) {
@@ -55,7 +66,8 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public String serialize(@NotNull Object input) throws CoercingSerializeException {
+    public String serialize(@NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingSerializeException {
         if (input instanceof Duration duration) {
             return duration.toString();
         }

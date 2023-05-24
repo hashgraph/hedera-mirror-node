@@ -33,6 +33,8 @@ public interface StreamFile<T extends StreamItem> {
 
     Long getConsensusEnd();
 
+    default void setConsensusEnd(Long timestamp) {}
+
     Long getCount();
 
     String getFileHash();

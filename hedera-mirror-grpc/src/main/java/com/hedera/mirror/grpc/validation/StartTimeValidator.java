@@ -17,9 +17,9 @@
 package com.hedera.mirror.grpc.validation;
 
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.time.Instant;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 
 public class StartTimeValidator implements ConstraintValidator<StartTime, TopicMessageFilter> {
 

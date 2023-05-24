@@ -30,12 +30,12 @@ import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.*;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 public class PrecompilePricingUtils {
 

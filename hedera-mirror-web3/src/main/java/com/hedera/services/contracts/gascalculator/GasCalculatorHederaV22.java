@@ -18,7 +18,7 @@ package com.hedera.services.contracts.gascalculator;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 
 /**

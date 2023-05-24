@@ -19,7 +19,7 @@ package com.hedera.mirror.web3.config;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionOperations;

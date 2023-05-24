@@ -19,9 +19,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.rest.model.NetworkNode;
 import com.hedera.mirror.rest.model.NetworkNodesResponse;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
@@ -53,8 +53,7 @@ public class RestApiClient {
                 .retrieve()
                 .bodyToMono(responseClass)
                 .onErrorResume(Mono::error) // Needed for some reason to avoid onErrorDropped
-                .name("rest")
-                .metrics();
+                .name("rest");
     }
 
     public Flux<NetworkNode> getNodes() {

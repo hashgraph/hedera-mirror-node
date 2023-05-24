@@ -18,8 +18,8 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
+import jakarta.inject.Named;
 import java.io.IOException;
-import javax.inject.Named;
 import lombok.CustomLog;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;

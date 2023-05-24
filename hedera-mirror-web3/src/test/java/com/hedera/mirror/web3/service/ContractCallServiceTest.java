@@ -124,6 +124,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void estimateGasWithoutReceiver() {
+        final var pureFuncHash = "8070450f";
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
         final var serviceParameters = serviceParameters("", 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
 
         persistEntities(false);

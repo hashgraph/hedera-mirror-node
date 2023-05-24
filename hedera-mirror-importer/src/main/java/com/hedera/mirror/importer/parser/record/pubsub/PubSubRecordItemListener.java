@@ -38,12 +38,11 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import jakarta.inject.Named;
 import java.util.Map;
-import javax.inject.Named;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 
 @Log4j2
 @Named
@@ -138,21 +137,20 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private void setPublishCallback(
-            ListenableFuture<String> publishResult, PubSubMessage message, Map<String, String> header, int retryCount) {
+            CompletableFuture<String> publishResult,
+            PubSubMessage message,
+            Map<String, String> header,
+            int retryCount) {
         int retry = retryCount + 1;
-        publishResult.addCallback(new ListenableFutureCallback<>() {
-            @Override
-            public void onFailure(Throwable ex) {
+        publishResult.whenComplete((result, ex) -> {
+            if (ex != null) {
                 if (retry > pubSubProperties.getMaxSendAttempts()) {
                     log.error("Failed to send message to PubSub after {} attempts: {}", retry - 1, ex);
                 } else {
                     log.warn("Attempt {} to send message to PubSub failed: {}", retry, ex);
                     sendPubSubMessage(message, header, retry);
                 }
-            }
-
-            @Override
-            public void onSuccess(String result) {
+            } else {
                 log.debug("Published transaction : {}", message.getConsensusTimestamp());
             }
         });

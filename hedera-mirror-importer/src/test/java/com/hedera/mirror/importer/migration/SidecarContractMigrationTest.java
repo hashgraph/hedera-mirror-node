@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

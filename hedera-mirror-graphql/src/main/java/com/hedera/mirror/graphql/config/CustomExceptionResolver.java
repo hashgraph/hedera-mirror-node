@@ -20,7 +20,7 @@ import graphql.ErrorType;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.schema.DataFetchingEnvironment;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 
 @Named

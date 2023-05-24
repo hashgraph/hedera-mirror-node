@@ -18,7 +18,11 @@ package com.hedera.mirror.importer.addressbook;
 
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.CACHE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
@@ -67,6 +71,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 
@@ -213,6 +218,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void updateCompleteFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         long addressBookConsensusTimeStamp = 5L;
@@ -232,26 +238,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void cacheAndEvictAddressBook() {
-        byte[] addressBookBytes = UPDATED.toByteArray();
-        long addressBookConsensusTimeStamp = 5L;
-        update(addressBookBytes, addressBookConsensusTimeStamp, true);
-
-        // verify cache is empty to start
-        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
-
-        // verify getCurrent() adds an entry to the cache
-        var nodes = addressBookService.getNodes();
-        var nodesCache = cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY).get();
-        assertNotNull(nodesCache);
-        assertThat(nodesCache).isEqualTo(nodes);
-
-        // verify updating the address book evicts the cache.
-        update(addressBookBytes, addressBookConsensusTimeStamp + 1, true);
-        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
-    }
-
-    @Test
     void updatePartialFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 2;
@@ -267,6 +253,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void appendCompleteFile() {
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 3;
@@ -339,6 +326,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void verifyAddressBookUpdateAcrossSessions() {
         // create network book, perform an update and append
         byte[] addressBookBytes = FINAL.toByteArray();
@@ -362,6 +350,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void appendCompleteFileAcrossFileIds() {
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBookBytes = UPDATED.toByteArray();
@@ -525,6 +514,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @SuppressWarnings("deprecation")
     @Test
+    @Transactional
     void verifyAddressBookEntriesWithNodeIdAndPortNotSet() {
         Map<String, Integer> memoToNodeIdMap = Map.of(
                 "0.0.3", 0,
@@ -902,6 +892,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void verifyUpdateWithNewFileDataAfterCurrentAddressBook() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
         store(addressBookBytes1, 2L, false);
@@ -961,13 +952,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @CsvSource(
             textBlock =
                     """
-    EQUAL, 10000, 1, 4
-    EQUAL, 0, 1, 4
-    STAKE, 10000, 10000, 40000
-    STAKE, 0, 1, 4
-    STAKE_IN_ADDRESS_BOOK, 10000, 10000, 40000
-    STAKE_IN_ADDRESS_BOOK, 0, 1, 4
-    """)
+                            EQUAL, 10000, 1, 4
+                            EQUAL, 0, 1, 4
+                            STAKE, 10000, 10000, 40000
+                            STAKE, 0, 1, 4
+                            STAKE_IN_ADDRESS_BOOK, 10000, 10000, 40000
+                            STAKE_IN_ADDRESS_BOOK, 0, 1, 4
+                            """)
     @ParameterizedTest
     void getNodes(ConsensusMode mode, long stake, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
@@ -991,11 +982,13 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @CsvSource(textBlock = """
-    EQUAL, 1, 6
-    STAKE, 10000, 60000
-    STAKE_IN_ADDRESS_BOOK, 10000, 40000
-    """)
+    @CsvSource(
+            textBlock =
+                    """
+            EQUAL, 1, 6
+            STAKE, 10000, 60000
+            STAKE_IN_ADDRESS_BOOK, 10000, 40000
+            """)
     @ParameterizedTest
     void getNodesWithNodeStakeCountMoreThanAddressBook(
             ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {

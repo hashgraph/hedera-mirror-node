@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.IntegrationTest;
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import org.springframework.jdbc.core.JdbcOperations;
 
 public abstract class AbstractRepositoryTest extends IntegrationTest {
