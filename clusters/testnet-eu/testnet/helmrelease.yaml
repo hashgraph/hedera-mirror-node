@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.80.0'
+      version: '0.81.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -38,7 +38,6 @@ spec:
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
       env:
-        HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "false"
         HEDERA_MIRROR_MONITOR_NETWORK: "TESTNET"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.1187"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.25"
