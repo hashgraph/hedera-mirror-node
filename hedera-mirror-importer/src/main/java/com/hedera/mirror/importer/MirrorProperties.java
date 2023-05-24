@@ -55,7 +55,7 @@ public class MirrorProperties {
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
     @NotNull
-    private String network = HederaNetwork.DEMO.name();
+    private String network = HederaNetwork.DEMO.name().toLowerCase();
 
     @Min(0)
     private long shard = 0L;
@@ -68,6 +68,10 @@ public class MirrorProperties {
 
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
+
+    public void setNetwork(@NonNull String network) {
+        this.network = network.toLowerCase();
+    }
 
     public enum ConsensusMode {
         EQUAL, // all nodes equally weighted
@@ -97,11 +101,8 @@ public class MirrorProperties {
             return this == DEMO;
         }
 
-        // TODO can't be true for instance OTHER if networkName is one of the other enum values
-        // Just OTHER itself and anything else not the other values
         public boolean is(String networkName) {
-            HederaNetwork hederaNetwork = getHederaNetworkByName(networkName);
-            return this == hederaNetwork || this == OTHER;
+            return this == getHederaNetworkByName(networkName);
         }
     }
 }
