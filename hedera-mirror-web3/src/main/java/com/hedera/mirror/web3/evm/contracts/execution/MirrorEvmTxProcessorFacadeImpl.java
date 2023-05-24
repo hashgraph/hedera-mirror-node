@@ -54,6 +54,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final GasCalculatorHederaV22 gasCalculator;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
+    @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
@@ -94,6 +95,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long providedGasLimit,
             final long value,
             final Bytes callData,
+            final Instant consensusTimestamp,
             final boolean isStatic) {
         final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
 
@@ -110,6 +112,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         processor.setOperationTracer(new DefaultHederaTracer());
 
-        return processor.execute(sender, receiver, providedGasLimit, value, callData, Instant.now(), isStatic);
+        return processor.execute(sender, receiver, providedGasLimit, value, callData, consensusTimestamp, isStatic);
     }
 }
