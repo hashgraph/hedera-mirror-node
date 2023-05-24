@@ -54,6 +54,22 @@ import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServiceTest extends Web3IntegrationTest {
+    private static final Address REVERTER_CONTRACT_ADDRESS =
+            Address.fromHexString("0x00000000000000000000000000000000000004e1");
+    private static final Address ETH_CALL_CONTRACT_ADDRESS =
+            Address.fromHexString("0x00000000000000000000000000000000000004e9");
+    private static final Address SENDER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e6");
+    private static final Address RECEIVER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e5");
+    private static final Address TOKEN_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e4");
+    private static final Address STATE_CONTRACT_ADDRESS =
+            Address.fromHexString("0x00000000000000000000000000000000000003e7");
+    private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+    private static final ToLongFunction<String> longValueOf =
+            value -> Bytes.fromHexString(value).toLong();
+    private final MeterRegistry meterRegistry;
+    private final ContractCallService contractCallService;
+    private final FunctionEncodeDecoder encodeDecoder;
+    private final MirrorEvmTxProcessorFacadeImpl processor;
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
     private Path ETH_CALL_CONTRACT_BYTES_PATH;
@@ -63,30 +79,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Value("classpath:contracts/EthCall/State.bin")
     private Path STATE_CONTRACT_BYTES_PATH;
-
-    private static final Address REVERTER_CONTRACT_ADDRESS =
-            Address.fromHexString("0x00000000000000000000000000000000000004e1");
-
-    private static final Address ETH_CALL_CONTRACT_ADDRESS =
-            Address.fromHexString("0x00000000000000000000000000000000000004e9");
-
-    private static final Address SENDER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e6");
-
-    private static final Address RECEIVER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e5");
-
-    private static final Address TOKEN_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000003e4");
-    private static final Address STATE_CONTRACT_ADDRESS =
-            Address.fromHexString("0x00000000000000000000000000000000000003e7");
-
-    private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-
-    private static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
-
-    private final MeterRegistry meterRegistry;
-    private final ContractCallService contractCallService;
-    private final FunctionEncodeDecoder encodeDecoder;
-    private final MirrorEvmTxProcessorFacadeImpl processor;
 
     @Test
     void pureCall() {
@@ -124,9 +116,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void estimateGasWithoutReceiver() {
-        final var pureFuncHash = "8070450f";
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
         final var serviceParameters = serviceParameters("", 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
 
         persistEntities(false);
