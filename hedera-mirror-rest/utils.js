@@ -688,7 +688,7 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
  */
 const extractTimestampRangeConditionFilters = (
   filters,
-  usePositions = false,
+  usePositions = true,
   timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE)
 ) => {
   const conditions = [];

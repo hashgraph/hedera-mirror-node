@@ -682,10 +682,8 @@ class ContractController extends BaseController {
       acceptedContractByIdParameters
     );
 
-    const {conditions: timestampConditions, params: timestampParams} = utils.extractTimestampRangeConditionFilters(
-      filters,
-      true
-    );
+    const {conditions: timestampConditions, params: timestampParams} =
+      utils.extractTimestampRangeConditionFilters(filters);
 
     const {query, params} = getContractByIdOrAddressContractEntityQuery({
       timestampConditions,

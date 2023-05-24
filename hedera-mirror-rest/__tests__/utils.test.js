@@ -20,6 +20,8 @@ import * as utils from '../utils';
 import config from '../config';
 import * as constants from '../constants';
 import {InvalidArgumentError, InvalidClauseError} from '../errors';
+import {Entity} from '../model/index.js';
+import {Range} from 'pg-range';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
@@ -1861,5 +1863,93 @@ describe('Utils formatSlot tests', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const formatedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
     expect(utils.formatSlot(slot)).toEqual(Buffer.from(formatedSlot, 'hex'));
+  });
+});
+
+describe('extractTimestampRangeConditionFilters', () => {
+  const timestampKey = constants.filterKeys.TIMESTAMP;
+  const timestampColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
+  const specs = [
+    {
+      name: 'empty filters',
+      input: [],
+      expected: {
+        conditions: [],
+        params: [],
+      },
+    },
+    {
+      name: 'no timestamp filters',
+      input: [
+        {
+          key: constants.filterKeys.ORDER,
+          operator: utils.opsMap.eq,
+          value: constants.orderFilterValues.ASC,
+        },
+      ],
+      expected: {
+        conditions: [],
+        params: [],
+      },
+    },
+    {
+      name: 'timestamp filters',
+      input: [
+        {
+          key: timestampKey,
+          operator: utils.opsMap.eq, // will be converted to lte
+          value: '200',
+        },
+        {
+          key: timestampKey,
+          operator: utils.opsMap.gt,
+          value: '201',
+        },
+        {
+          key: timestampKey,
+          operator: utils.opsMap.gte,
+          value: '202',
+        },
+        {
+          key: timestampKey,
+          operator: utils.opsMap.lt,
+          value: '203',
+        },
+        {
+          key: timestampKey,
+          operator: utils.opsMap.lte,
+          value: '204',
+        },
+        {
+          key: timestampKey,
+          operator: utils.opsMap.ne,
+          value: '205',
+        },
+      ],
+      expected: {
+        conditions: [
+          `${timestampColumn} && $1`,
+          `${timestampColumn} && $2`,
+          `${timestampColumn} && $3`,
+          `${timestampColumn} && $4`,
+          `${timestampColumn} && $5`,
+          `not ${timestampColumn} @> $6`,
+        ],
+        params: [
+          Range(null, '200', '(]'),
+          Range('201', null, '()'),
+          Range('202', null, '[)'),
+          Range(null, '203', '()'),
+          Range(null, '204', '(]'),
+          Range('205', '205', '[]'),
+        ],
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(utils.extractTimestampRangeConditionFilters(spec.input)).toEqual(spec.expected);
+    });
   });
 });

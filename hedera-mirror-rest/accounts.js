@@ -148,7 +148,7 @@ const getEntityBalanceQuery = (
     tableName,
     balanceSelect = 'balance',
     consensusTimestampSelect = '(select max(consensus_end) from record_file)  as consensus_timestamp',
-    orderBy = `order by id ${order}`,
+    orderBy = `order by e.id ${order}`,
     additionalJoin = ''
   ) => {
     return `
@@ -359,7 +359,10 @@ const getOneAccount = async (req, res) => {
   // Override any equals operators with lte to find the closest balance file
   const balanceFileTsQuery = transactionTsQuery.replace('t.', '').replace(opsMap.eq, opsMap.lte);
   const balanceFileTsParams = transactionTsParams;
-  const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(filters);
+  const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(
+    filters,
+    false
+  );
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParams = [encodedId, encodedId];
