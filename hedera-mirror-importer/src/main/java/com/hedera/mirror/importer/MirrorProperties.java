@@ -18,12 +18,12 @@ package com.hedera.mirror.importer;
 
 import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.importer.validation.Network;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
@@ -38,6 +38,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
+    static final String NETWORK_PREFIX_DELIMITER = "-";
+
     @NotNull
     private ConsensusMode consensusMode = ConsensusMode.STAKE_IN_ADDRESS_BOOK;
 
@@ -54,7 +56,7 @@ public class MirrorProperties {
     @NotNull
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
-    @NotNull
+    @Network
     private String network = HederaNetwork.DEMO.name().toLowerCase();
 
     @Min(0)
@@ -70,6 +72,7 @@ public class MirrorProperties {
     private Instant verifyHashAfter = Instant.EPOCH;
 
     public void setNetwork(@NonNull String network) {
+        HederaNetwork.getHederaNetworkByName(network);
         this.network = network.toLowerCase();
     }
 
@@ -90,11 +93,17 @@ public class MirrorProperties {
 
         private final String bucketName;
 
-        public static HederaNetwork getHederaNetworkByName(@NonNull String networkName) {
-            Optional<HederaNetwork> networkOpt = Arrays.stream(values())
-                    .filter(v -> v.name().equalsIgnoreCase(networkName))
-                    .findFirst();
-            return networkOpt.orElse(OTHER);
+        public static HederaNetwork getHederaNetworkByName(@NonNull String network) {
+            var delimiterIndex = network.indexOf(NETWORK_PREFIX_DELIMITER);
+            var networkName = delimiterIndex < 0 ? network : network.substring(0, delimiterIndex);
+            return valueOf(networkName.toUpperCase());
+        }
+
+        public static Optional<String> getNetworkPrefixByName(@NonNull String network) {
+            var delimiterIndex = network.indexOf(NETWORK_PREFIX_DELIMITER);
+            return delimiterIndex < 0 || delimiterIndex == network.length() - 1
+                    ? Optional.empty()
+                    : Optional.of(network.substring(delimiterIndex + 1));
         }
 
         public boolean isAllowAnonymousAccess() {
@@ -102,7 +111,11 @@ public class MirrorProperties {
         }
 
         public boolean is(String networkName) {
-            return this == getHederaNetworkByName(networkName);
+            try {
+                return this == getHederaNetworkByName(networkName);
+            } catch (IllegalArgumentException ex) {
+                return false;
+            }
         }
     }
 }

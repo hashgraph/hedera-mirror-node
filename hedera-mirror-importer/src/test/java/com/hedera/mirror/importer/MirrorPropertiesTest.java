@@ -16,33 +16,56 @@
 
 package com.hedera.mirror.importer;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class MirrorPropertiesTest {
 
-    @ParameterizedTest(name = "Network name is enum instance: {0}")
-    @EnumSource(value = HederaNetwork.class)
-    void verifyIsness(HederaNetwork hederaNetwork) {
-        assertTrue(hederaNetwork.is(hederaNetwork.name()));
-        assertTrue(hederaNetwork.is(hederaNetwork.name().toUpperCase()));
+    @ParameterizedTest(name = "Network with name/prefix {2} is enum instance {0}")
+    @CsvSource({
+        "TESTNET, , testnet",
+        "TESTNET, , testnet-",
+        "TESTNET, 2023-01, teSTnet-2023-01",
+        "TESTNET, someprefix, testnet-someprefix",
+        "MAINNET, , mainnet",
+        "MAINNET, 2023-01, mainnet-2023-01",
+        "MAINNET, someprefix, maiNNet-someprefix",
+        "PREVIEWNET, , previewnet",
+        "PREVIEWNET, 2025-04, Previewnet-2025-04",
+        "PREVIEWNET, abcdef, previewnet-abcdef",
+        "DEMO, , deMo",
+        "DEMO, 2023-01, demo-2023-01",
+        "DEMO, someprefix, demo-someprefix",
+        "OTHER, , other",
+        "OTHER, 2050-02, other-2050-02",
+        "OTHER, world, othER-world"
+    })
+    void verifyNetworkWithPrefix(HederaNetwork expectedHederaNetwork, String expectedPrefix, String networkName) {
+        assertThat(expectedHederaNetwork.is(networkName)).isTrue();
+        var prefixOpt = HederaNetwork.getNetworkPrefixByName(networkName);
+        if (expectedPrefix == null) {
+            assertThat(prefixOpt).isEmpty();
+        } else {
+            assertThat(prefixOpt).hasValue(expectedPrefix);
+        }
     }
 
-    @ParameterizedTest(name = "OTHER network is names: {0}")
-    @ValueSource(strings = {"Other", "integration", "My-Network-Name"})
-    void verifyOtherIsness(String networkName) {
-        assertTrue(HederaNetwork.OTHER.is(networkName));
-    }
+    @Test
+    void verifySetNetworkPropetyValidation() {
+        var properties = new MirrorProperties();
+        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO.name().toLowerCase());
 
-    @ParameterizedTest(name = "OTHER network is not names: {0}")
-    @EnumSource(value = HederaNetwork.class, mode = Mode.EXCLUDE, names = "OTHER")
-    void verifyOtherIsNotness(HederaNetwork network) {
-        assertFalse(HederaNetwork.OTHER.is(network.name()));
+        properties.setNetwork(HederaNetwork.TESTNET.name());
+        assertThat(properties.getNetwork())
+                .isEqualTo(HederaNetwork.TESTNET.name().toLowerCase());
+
+        assertThrows(IllegalArgumentException.class, () -> properties.setNetwork("bogusnetwork-and-prefix"));
+
+        assertThrows(NullPointerException.class, () -> properties.setNetwork(null));
     }
 }
