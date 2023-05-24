@@ -40,6 +40,7 @@ import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.function.ToLongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -364,13 +365,16 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void ercPrecompileCallRevertsForEstimateGas() {
         final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000003e4";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var expectedGasUsed = 29263L;
         final var serviceParameters =
                 serviceParameters(tokenNameCall, 0, ETH_ESTIMATE_GAS, false, 0L, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -430,6 +434,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                         serviceParameters.getGas(),
                         serviceParameters.getValue(),
                         serviceParameters.getCallData(),
+                        Instant.now(),
                         serviceParameters.isStatic())
                 .getGasUsed();
     }
