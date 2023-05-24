@@ -28,7 +28,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
     return http.get(url);
   })
   .requiredParameters('DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_ID_TIMESTAMP')
-  .check('Accounts Id OK', isSuccess)
+  .check('Accounts Id LTE OK', isSuccess)
   .build();
 
 export {options, run, setup};
