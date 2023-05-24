@@ -139,6 +139,7 @@ const getEntityBalanceQuery = (
   const params = utils.mergeParams(
     [],
     tokenBalanceQuery.params,
+    accountBalanceQuery.params,
     entityBalanceQuery.params,
     entityAccountQuery.params,
     pubKeyQuery.params
@@ -169,11 +170,14 @@ const getEntityBalanceQuery = (
                          ${additionalJoin}
                 where ${whereCondition} ${orderBy})`;
   };
-  const queries = [getEntitySql(Entity.tableName)];
+  const queries = [];
 
   if (accountBalanceQuery.query) {
-    const consensusTimestampSelect = 'ab.consensus_timestamp as consensus_timestamp';
-    const balanceSelect = 'ab.balance as balance';
+    const consensusTimestampSelect =
+      'COALESCE(ab.consensus_timestamp, (select max(consensus_end) from record_file)) as consensus_timestamp';
+    const consensusTimestampSelectUnion =
+      'COALESCE(ab.consensus_timestamp, upper(e.timestamp_range)) as consensus_timestamp';
+    const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
     const additionalJoin = `left join (select account_id, balance, consensus_timestamp
                     from account_balance
                     where ${accountBalanceQuery.query}
@@ -183,8 +187,15 @@ const getEntityBalanceQuery = (
 
     queries.push(
       `
+          ${getEntitySql(Entity.tableName, balanceSelect, consensusTimestampSelect, orderBy, additionalJoin)}
           UNION ALL
-          ${getEntitySql(Entity.historyTableName, balanceSelect, consensusTimestampSelect, orderBy, additionalJoin)} 
+          ${getEntitySql(
+            Entity.historyTableName,
+            balanceSelect,
+            consensusTimestampSelectUnion,
+            orderBy,
+            additionalJoin
+          )} 
           order by ${Entity.TIMESTAMP_RANGE} desc limit 1 `
     );
 
@@ -197,6 +208,7 @@ const getEntityBalanceQuery = (
       pubKeyQuery.params
     );
   } else {
+    queries.push(getEntitySql(Entity.tableName));
     queries.push(limitQuery);
     utils.mergeParams(params, limitParams);
   }
