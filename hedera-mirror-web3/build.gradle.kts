@@ -18,6 +18,8 @@ description = "Hedera Mirror Node Web3"
 
 plugins { id("spring-conventions") }
 
+repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
+
 dependencies {
     implementation("com.hedera.evm:hedera-evm")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
