@@ -93,7 +93,7 @@ public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
                 .findFirst()
                 .map(this::mapStatus)
                 .orElse(DOWN)
-                .doOnNext(health -> log.info("Release status: {}", health));
+                .doOnNext(h -> log.info("Release status: {}", h));
     }
 
     private Mono<Health> mapStatus(Map<String, String> condition) {
