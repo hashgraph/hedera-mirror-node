@@ -109,16 +109,16 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
 
     private static final String UPDATE_CRYPTO_TRANSFER_SQL =
             """
-                update crypto_transfer set is_approval = true where amount = ? and consensus_timestamp = ? and entity_id = ?
-            """;
+        update crypto_transfer set is_approval = true where amount = ? and consensus_timestamp = ? and entity_id = ?
+        """;
     private static final String UPDATE_NFT_TRANSFER_SQL =
             """
-            update nft_transfer set is_approval = true where consensus_timestamp = ? and serial_number = ? and token_id = ?
-            """;
+        update nft_transfer set is_approval = true where consensus_timestamp = ? and serial_number = ? and token_id = ?
+        """;
     private static final String UPDATE_TOKEN_TRANSFER_SQL =
             """
-            update token_transfer set is_approval = true where consensus_timestamp = ? and token_id = ? and account_id = ?
-            """;
+        update token_transfer set is_approval = true where consensus_timestamp = ? and token_id = ? and account_id = ?
+        """;
 
     private enum TRANSFER_TYPE {
         CRYPTO_TRANSFER,
