@@ -31,7 +31,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
 
-    static final Map<HederaNetwork, Long> FIRST_NONZERO_REWARD_RATE_TIMESTAMP = Map.of(
+    static final Map<String, Long> FIRST_NONZERO_REWARD_RATE_TIMESTAMP = Map.of(
             HederaNetwork.MAINNET, 1666310400447390002L,
             HederaNetwork.TESTNET, 1659139200596847383L);
 
@@ -101,7 +101,7 @@ public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getHederaNetwork();
+        var hederaNetwork = mirrorProperties.getNetwork();
         Long consensusTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(hederaNetwork);
         if (consensusTimestamp == null) {
             return;

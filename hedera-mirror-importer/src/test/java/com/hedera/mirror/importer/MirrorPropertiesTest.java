@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import org.junit.jupiter.api.Test;
@@ -26,49 +25,57 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class MirrorPropertiesTest {
 
-    @ParameterizedTest(name = "Network with name/prefix {2} is enum instance {0}")
+    @ParameterizedTest(name = "Network {2} is canonical network {0}, with prefix {1}")
     @CsvSource({
-        "TESTNET, , testnet",
-        "TESTNET, , testnet-",
-        "TESTNET, 2023-01, teSTnet-2023-01",
-        "TESTNET, someprefix, testnet-someprefix",
-        "MAINNET, , mainnet",
-        "MAINNET, 2023-01, mainnet-2023-01",
-        "MAINNET, someprefix, maiNNet-someprefix",
-        "PREVIEWNET, , previewnet",
-        "PREVIEWNET, 2025-04, Previewnet-2025-04",
-        "PREVIEWNET, abcdef, previewnet-abcdef",
-        "DEMO, , deMo",
-        "DEMO, 2023-01, demo-2023-01",
-        "DEMO, someprefix, demo-someprefix",
-        "OTHER, , other",
-        "OTHER, 2050-02, other-2050-02",
-        "OTHER, world, othER-world"
+        "testnet, , testnet",
+        "testnet, , testnet-",
+        "testnet, 2023-01, teSTnet-2023-01",
+        "testnet, someprefix, testnet-someprefix",
+        "mainnet, , mainnet",
+        "mainnet, 2023-01, mainnet-2023-01",
+        "mainnet, someprefix, maiNNet-someprefix",
+        "previewnet, , previewnet",
+        "previewnet, 2025-04, Previewnet-2025-04",
+        "previewnet, abcdef, previewnet-abcdef",
+        "demo, , deMo",
+        "demo, 2023-01, demo-2023-01",
+        "demo, someprefix, demo-someprefix",
+        "other, , other",
+        "other, 2050-02, other-2050-02",
+        "other, world, othER-world"
     })
-    void verifyNetworkWithPrefix(HederaNetwork expectedHederaNetwork, String expectedPrefix, String networkName) {
-        assertThat(expectedHederaNetwork.is(networkName)).isTrue();
+    void verifyCanonicalNetworkWithPrefix(String expectedHederaNetwork, String expectedPrefix, String networkName) {
 
         var properties = new MirrorProperties();
         properties.setNetwork(networkName);
-        var prefixOpt = properties.getNetworkPrefix();
-        if (expectedPrefix == null) {
-            assertThat(prefixOpt).isEmpty();
-        } else {
-            assertThat(prefixOpt).hasValue(expectedPrefix);
-        }
+        assertThat(properties.getNetwork() == HederaNetwork.getCanonicalizedNetwork(expectedHederaNetwork))
+                .isTrue();
+        assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
+    }
+
+    @ParameterizedTest(name = "Network {2} is non-canonical network {0}, with prefix {1}")
+    @CsvSource({
+        "integration, , integration",
+        "integration, 2023-01, integration-2023-01",
+        "dev, , dev",
+        "dev, 2025-02, dev-2025-02"
+    })
+    void verifyNonCanonicalNetworkWithPrefix(String expectedNetwork, String expectedPrefix, String networkName) {
+
+        var properties = new MirrorProperties();
+        properties.setNetwork(networkName);
+        assertThat(properties.getNetwork()).isEqualTo(expectedNetwork);
+        assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
     }
 
     @Test
-    void verifySetNetworkPropetyValidation() {
+    void verifySetNetworkPropertyValidation() {
         var properties = new MirrorProperties();
-        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO.name().toLowerCase()); // Default
+        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO); // Default
+        assertThat(properties.getNetworkPrefix()).isNull();
 
-        properties.setNetwork(HederaNetwork.TESTNET.name());
-        assertThat(properties.getNetwork())
-                .isEqualTo(HederaNetwork.TESTNET.name().toLowerCase());
-
-        assertThrows(IllegalArgumentException.class, () -> properties.setNetwork("bogusnetwork-and-prefix"));
-
-        assertThrows(NullPointerException.class, () -> properties.setNetwork(null));
+        properties.setNetwork(HederaNetwork.TESTNET);
+        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.TESTNET);
+        assertThat(properties.getNetworkPrefix()).isNull();
     }
 }

@@ -131,7 +131,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     void errata() {
         // given
         var network = mirrorProperties.getNetwork();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(BAD_TIMESTAMP1);
         List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
 

@@ -78,13 +78,13 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
     }
 
     @AfterEach
     void teardown() {
         mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         mirrorProperties.setStartDate(Instant.EPOCH);
     }
 
@@ -95,7 +95,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void migrateNotMainnet() throws Exception {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
         domainBuilder
                 .accountBalanceFile()
@@ -219,7 +219,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void onEndNotMainnet() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
         errataMigration.onStart(); // Call to increase test coverage of no-op methods

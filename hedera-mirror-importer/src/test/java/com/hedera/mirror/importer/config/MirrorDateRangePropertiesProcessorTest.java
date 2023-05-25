@@ -59,12 +59,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MirrorDateRangePropertiesProcessorTest {
 
     private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new HashMap<>();
+
     @Mock
     private AccountBalanceFileRepository accountBalanceFileRepository;
+
     @Mock
     private EventFileRepository eventFileRepository;
+
     @Mock
     private RecordFileRepository recordFileRepository;
+
     private MirrorProperties mirrorProperties;
     private List<DownloaderProperties> downloaderPropertiesList;
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -72,7 +76,7 @@ class MirrorDateRangePropertiesProcessorTest {
     @BeforeEach
     void setUp() {
         mirrorProperties = new MirrorProperties();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET.name());
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         var commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         var balanceDownloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
@@ -180,11 +184,11 @@ class MirrorDateRangePropertiesProcessorTest {
             name = "startDate {0} endDate {1} database {2} violates (effective) start date <= " + "end date constraint")
     @CsvSource(
             value = {
-                    "2020-08-18T09:00:05.124Z, 2020-08-18T09:00:05.123Z,",
-                    "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.124Z",
-                    "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:06.123Z",
-                    ", 2020-08-18T09:00:05.123Z, 2020-08-19T09:00:05.111Z",
-                    ", 2020-08-18T09:00:05.123Z,"
+                "2020-08-18T09:00:05.124Z, 2020-08-18T09:00:05.123Z,",
+                "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:05.124Z",
+                "2020-08-18T09:00:04.123Z, 2020-08-18T09:00:05.123Z, 2020-08-18T09:00:06.123Z",
+                ", 2020-08-18T09:00:05.123Z, 2020-08-19T09:00:05.111Z",
+                ", 2020-08-18T09:00:05.123Z,"
             })
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant lastFileDate) {
         mirrorProperties.setStartDate(startDate);
@@ -214,13 +218,13 @@ class MirrorDateRangePropertiesProcessorTest {
     @ParameterizedTest(name = "filter [{0}, {1}], timestamp {2}, pass: {3}")
     @CsvSource(
             value = {
-                    "1, 1, 1, true",
-                    "1, 10, 1, true",
-                    "1, 10, 10, true",
-                    "1, 10, 6, true",
-                    "1, 10, 0, false",
-                    "1, 10, 11, false",
-                    "1, 10, -1, false",
+                "1, 1, 1, true",
+                "1, 10, 1, true",
+                "1, 10, 10, true",
+                "1, 10, 6, true",
+                "1, 10, 0, false",
+                "1, 10, 11, false",
+                "1, 10, -1, false",
             })
     void filter(long start, long end, long timestamp, boolean expected) {
         var filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), Instant.ofEpochSecond(0, end));

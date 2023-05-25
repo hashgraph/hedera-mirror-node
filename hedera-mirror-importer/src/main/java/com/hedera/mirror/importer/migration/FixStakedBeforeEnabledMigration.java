@@ -31,7 +31,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
-    static final Map<MirrorProperties.HederaNetwork, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
+    static final Map<String, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
             MirrorProperties.HederaNetwork.MAINNET, 1658419200981687000L,
             MirrorProperties.HederaNetwork.TESTNET, 1656691197976341207L);
 
@@ -94,7 +94,7 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getHederaNetwork();
+        var hederaNetwork = mirrorProperties.getNetwork();
         Long consensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(hederaNetwork);
         if (consensusEnd == null) {
             return;

@@ -18,18 +18,17 @@ package com.hedera.mirror.importer;
 
 import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.mirror.importer.validation.Network;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
+import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -56,8 +55,11 @@ public class MirrorProperties {
     @NotNull
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
-    @Network
-    private String network = HederaNetwork.DEMO.name().toLowerCase();
+    @NotBlank
+    private String network = HederaNetwork.DEMO;
+
+    @Setter(AccessLevel.NONE) // Not user set-able
+    private String networkPrefix;
 
     @Min(0)
     private long shard = 0L;
@@ -71,21 +73,14 @@ public class MirrorProperties {
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
 
-    public void setNetwork(@NonNull String network) {
-        HederaNetwork.getHederaNetworkByName(network);
-        this.network = network.toLowerCase();
-    }
-
-    public HederaNetwork getHederaNetwork() {
-        return HederaNetwork.getHederaNetworkByName(this.network);
-    }
-
-    public Optional<String> getNetworkPrefix() {
-        var networkAndPrefix = this.network;
+    public void setNetwork(@NonNull String networkAndPrefix) {
         var delimiterIndex = networkAndPrefix.indexOf(NETWORK_PREFIX_DELIMITER);
-        return delimiterIndex < 0 || delimiterIndex == networkAndPrefix.length() - 1
-                ? Optional.empty()
-                : Optional.of(networkAndPrefix.substring(delimiterIndex + 1));
+        var networkName = delimiterIndex < 0 ? networkAndPrefix : networkAndPrefix.substring(0, delimiterIndex);
+        this.network = HederaNetwork.getCanonicalizedNetwork(networkName.toLowerCase());
+
+        this.networkPrefix = delimiterIndex < 0 || delimiterIndex == networkAndPrefix.length() - 1
+                ? null
+                : networkAndPrefix.substring(delimiterIndex + 1);
     }
 
     public enum ConsensusMode {
@@ -94,33 +89,37 @@ public class MirrorProperties {
         STAKE_IN_ADDRESS_BOOK // like STAKE, but only the nodes found in the address book are used in the calculation.
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum HederaNetwork {
-        DEMO("hedera-demo-streams"),
-        MAINNET("hedera-mainnet-streams"),
-        PREVIEWNET("hedera-preview-testnet-streams"),
-        OTHER(""), // Pre-prod or ad hoc environments
-        TESTNET("hedera-testnet-streams-2023-01");
+    public final class HederaNetwork {
+        public static final String DEMO = "demo";
+        public static final String MAINNET = "mainnet";
+        public static final String OTHER = "other";
+        public static final String PREVIEWNET = "previewnet";
+        public static final String TESTNET = "testnet";
 
-        private final String bucketName;
+        private static final Map<String, String> NETWORK_DEFAULT_BUCKETS = Map.of(
+                DEMO, "hedera-demo-streams",
+                MAINNET, "hedera-mainnet-streams",
+                // OTHER has no default bucket
+                PREVIEWNET, "hedera-preview-testnet-streams",
+                TESTNET, "hedera-testnet-streams-2023-01");
 
-        public static HederaNetwork getHederaNetworkByName(@NonNull String network) {
-            var delimiterIndex = network.indexOf(NETWORK_PREFIX_DELIMITER);
-            var networkName = delimiterIndex < 0 ? network : network.substring(0, delimiterIndex);
-            return valueOf(networkName.toUpperCase());
+        private static final Map<String, String> CANONICAL_REFERENCES = Map.of(
+                DEMO, DEMO,
+                MAINNET, MAINNET,
+                OTHER, OTHER,
+                PREVIEWNET, PREVIEWNET,
+                TESTNET, TESTNET);
+
+        public static String getBucketName(@NonNull String network) {
+            return NETWORK_DEFAULT_BUCKETS.getOrDefault(network, "");
         }
 
-        public boolean isAllowAnonymousAccess() {
-            return this == DEMO;
+        public static boolean isAllowAnonymousAccess(@NonNull String network) {
+            return DEMO.equals(network);
         }
 
-        public boolean is(String networkName) {
-            try {
-                return this == getHederaNetworkByName(networkName);
-            } catch (IllegalArgumentException ex) {
-                return false;
-            }
+        public static String getCanonicalizedNetwork(@NonNull String networkName) {
+            return CANONICAL_REFERENCES.getOrDefault(networkName, networkName);
         }
     }
 }

@@ -33,9 +33,7 @@ class CommonDownloaderPropertiesTest {
     void getBucketName() {
         var mirrorProperties = new MirrorProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
-        assertThat(properties.getBucketName())
-                .isEqualTo(HederaNetwork.getHederaNetworkByName(mirrorProperties.getNetwork())
-                        .getBucketName());
+        assertThat(properties.getBucketName()).isEqualTo(HederaNetwork.getBucketName(mirrorProperties.getNetwork()));
 
         var bucketName = "test";
         properties.setBucketName(bucketName);

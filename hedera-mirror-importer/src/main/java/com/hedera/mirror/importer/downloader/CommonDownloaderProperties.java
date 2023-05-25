@@ -113,15 +113,13 @@ public class CommonDownloaderProperties {
     public String getBucketName() {
         return StringUtils.isNotBlank(bucketName)
                 ? bucketName
-                : HederaNetwork.getHederaNetworkByName(mirrorProperties.getNetwork())
-                        .getBucketName();
+                : HederaNetwork.getBucketName(mirrorProperties.getNetwork());
     }
 
     public boolean isAnonymousCredentials() {
         return allowAnonymousAccess != null
                 ? allowAnonymousAccess
-                : HederaNetwork.getHederaNetworkByName(mirrorProperties.getNetwork())
-                        .isAllowAnonymousAccess();
+                : HederaNetwork.isAllowAnonymousAccess(mirrorProperties.getNetwork());
     }
 
     public enum PathType {
