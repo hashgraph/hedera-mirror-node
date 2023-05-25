@@ -49,7 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
+public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
@@ -64,8 +64,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Address address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object address) {
+        return entityDatabaseAccessor.get((Address) address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {
