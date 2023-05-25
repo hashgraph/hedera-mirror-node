@@ -375,8 +375,6 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = async (req) => {
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req, acceptedParameters) => {
-  logger.debug('The req query is ');
-  logger.debug(req.query);
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query, acceptedParameters, contractResultsFilterValidityChecks);
