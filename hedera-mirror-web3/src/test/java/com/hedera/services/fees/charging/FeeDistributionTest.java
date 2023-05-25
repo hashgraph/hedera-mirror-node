@@ -36,7 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class FeeDistributionTest {
-
     private static final long BALANCE = 10L;
     private final GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
     private final HederaAccountNumbers accountNums = new MockAccountNumbers();
@@ -98,21 +97,29 @@ public class FeeDistributionTest {
 
     @Test
     void distributeChargedFee() {
+        // when
         final var accessors = new ArrayList<DatabaseAccessor<Address, ?>>();
         accessors.add(accountAccessor);
         final var sut = new StackedStateFrames<>(accessors);
 
+        // Push 2 RW-frame caches
         sut.push();
         sut.push();
 
         FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
         feeDistribution.distributeChargedFee(10L, sut);
 
+        // then
         final var accessor = sut.top().getAccessor(Account.class);
         final var newFundingAddressBalance = accessor.get(fundingAddress).orElseThrow().getBalance();
         final var newNodeRewardAddressBalance = accessor.get(nodeRewardAddress).orElseThrow().getBalance();
         final var newStakingRewardAddressBalance = accessor.get(nodeRewardAddress).orElseThrow().getBalance();
 
+        // The initial balances of all 3 addresses is 10.
+        // We distribute charged fee of 10.
+        // nodeRewardPercent and stakingRewardPercent are both 10%
+        // so nodeRewardAddress and stakingRewardAddress receive 1 token.
+        // The remaining 8 are sent to the fundingAddress
         assertThat(newFundingAddressBalance).isEqualTo(18L);
         assertThat(newNodeRewardAddressBalance).isEqualTo(11L);
         assertThat(newStakingRewardAddressBalance).isEqualTo(11L);

@@ -17,8 +17,7 @@
 package com.hedera.services.numbers;
 
 /**
- * Represents different types of special accounts used in the ledger. FUTURE : Implementations of these classes will be
- * moved to this module in future PRs
+ * Represents different types of special accounts used in the ledger.
  */
 public interface HederaAccountNumbers {
     /**
