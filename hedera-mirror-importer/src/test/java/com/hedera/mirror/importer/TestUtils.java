@@ -19,9 +19,12 @@ package com.hedera.mirror.importer;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
@@ -43,6 +46,7 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -171,6 +175,10 @@ public class TestUtils {
         jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
     }
 
+    public static long plus(long timestamp, Duration delta) {
+        return timestamp + delta.toNanos();
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder()
@@ -212,6 +220,15 @@ public class TestUtils {
         return Timestamp.newBuilder()
                 .setSeconds(seconds)
                 .setNanos((int) nanoseconds)
+                .build();
+    }
+
+    public TopicMessageLookup toTopicMessageLookup(String partition, TopicMessage first, TopicMessage last) {
+        return TopicMessageLookup.builder()
+                .partition(partition)
+                .sequenceNumberRange(Range.closedOpen(first.getSequenceNumber(), last.getSequenceNumber() + 1))
+                .timestampRange(Range.closedOpen(first.getConsensusTimestamp(), last.getConsensusTimestamp() + 1))
+                .topicId(first.getTopicId().getId())
                 .build();
     }
 
