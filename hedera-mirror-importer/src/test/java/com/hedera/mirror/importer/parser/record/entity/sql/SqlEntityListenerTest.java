@@ -21,7 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -2499,7 +2499,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        RecordFile recordFile = domainBuilder.recordFile().persist();
+        RecordFile recordFile = domainBuilder.recordFile().get();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
 
         assertThat(recordFileRepository.findAll()).contains(recordFile);
