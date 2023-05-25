@@ -138,6 +138,32 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles);
     }
 
+    /**
+     * Creates new instance of {@link Account} with updated balance in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param balance
+     * @return the new instance of {@link Account} with updated {@link #balance} property
+     */
+    private Account createNewAccountWithNewBalance(Account oldAccount, long balance) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -168,6 +194,10 @@ public class Account extends HederaEvmAccount {
 
     public Account setOwnedNfts(long newOwnedNfts) {
         return createNewAccountWithNewOwnedNfts(this, newOwnedNfts);
+    }
+
+    public Account setBalance(long balance) {
+        return createNewAccountWithNewBalance(this, balance);
     }
 
     public long getAutoRenewSecs() {
