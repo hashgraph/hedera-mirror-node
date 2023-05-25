@@ -59,11 +59,11 @@ public class BlockNumberMigration extends RepeatableMigration {
 
     @Override
     protected void doMigrate() {
-        var network = mirrorProperties.getNetwork();
-        var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(network);
+        var hederaNetwork = mirrorProperties.getHederaNetwork();
+        var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(hederaNetwork);
 
         if (consensusEndAndBlockNumber == null) {
-            log.info("No block migration necessary for {} network", network);
+            log.info("No block migration necessary for {} network", hederaNetwork);
             return;
         }
 

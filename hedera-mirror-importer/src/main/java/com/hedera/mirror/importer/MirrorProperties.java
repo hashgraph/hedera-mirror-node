@@ -76,6 +76,18 @@ public class MirrorProperties {
         this.network = network.toLowerCase();
     }
 
+    public HederaNetwork getHederaNetwork() {
+        return HederaNetwork.getHederaNetworkByName(this.network);
+    }
+
+    public Optional<String> getNetworkPrefix() {
+        var networkAndPrefix = this.network;
+        var delimiterIndex = networkAndPrefix.indexOf(NETWORK_PREFIX_DELIMITER);
+        return delimiterIndex < 0 || delimiterIndex == networkAndPrefix.length() - 1
+                ? Optional.empty()
+                : Optional.of(networkAndPrefix.substring(delimiterIndex + 1));
+    }
+
     public enum ConsensusMode {
         EQUAL, // all nodes equally weighted
         STAKE, // all nodes specify their node stake
@@ -97,13 +109,6 @@ public class MirrorProperties {
             var delimiterIndex = network.indexOf(NETWORK_PREFIX_DELIMITER);
             var networkName = delimiterIndex < 0 ? network : network.substring(0, delimiterIndex);
             return valueOf(networkName.toUpperCase());
-        }
-
-        public static Optional<String> getNetworkPrefixByName(@NonNull String network) {
-            var delimiterIndex = network.indexOf(NETWORK_PREFIX_DELIMITER);
-            return delimiterIndex < 0 || delimiterIndex == network.length() - 1
-                    ? Optional.empty()
-                    : Optional.of(network.substring(delimiterIndex + 1));
         }
 
         public boolean isAllowAnonymousAccess() {

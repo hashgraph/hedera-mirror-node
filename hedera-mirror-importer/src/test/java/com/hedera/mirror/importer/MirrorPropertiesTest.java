@@ -47,7 +47,10 @@ class MirrorPropertiesTest {
     })
     void verifyNetworkWithPrefix(HederaNetwork expectedHederaNetwork, String expectedPrefix, String networkName) {
         assertThat(expectedHederaNetwork.is(networkName)).isTrue();
-        var prefixOpt = HederaNetwork.getNetworkPrefixByName(networkName);
+
+        var properties = new MirrorProperties();
+        properties.setNetwork(networkName);
+        var prefixOpt = properties.getNetworkPrefix();
         if (expectedPrefix == null) {
             assertThat(prefixOpt).isEmpty();
         } else {
@@ -58,7 +61,7 @@ class MirrorPropertiesTest {
     @Test
     void verifySetNetworkPropetyValidation() {
         var properties = new MirrorProperties();
-        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO.name().toLowerCase());
+        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO.name().toLowerCase()); // Default
 
         properties.setNetwork(HederaNetwork.TESTNET.name());
         assertThat(properties.getNetwork())
