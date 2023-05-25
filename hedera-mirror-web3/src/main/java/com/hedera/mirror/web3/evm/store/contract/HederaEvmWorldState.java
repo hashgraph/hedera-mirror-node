@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -45,6 +46,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final AccountAccessor accountAccessor;
     private final TokenAccessor tokenAccessor;
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     private final EntityAddressSequencer entityAddressSequencer;
     private final MirrorEvmContractAliases mirrorAliasManager;
@@ -56,13 +58,16 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer,
-            final MirrorEvmContractAliases mirrorAliasManager) {
+            final MirrorEvmContractAliases mirrorAliasManager,
+            final StackedStateFrames<Object> stackedStateFrames) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.stackedStateFrames = stackedStateFrames;
+        stackedStateFrames.push();
         this.mirrorAliasManager = mirrorAliasManager;
     }
 
@@ -104,7 +109,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 tokenAccessor,
                 evmProperties,
                 entityAddressSequencer,
-                mirrorAliasManager);
+                mirrorAliasManager,
+                stackedStateFrames);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
@@ -113,6 +119,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         private final TokenAccessor tokenAccessor;
         private final EvmProperties evmProperties;
         private final EntityAddressSequencer entityAddressSequencer;
+        private final StackedStateFrames<Object> stackedStateFrames;
 
         private final MirrorEvmContractAliases mirrorAliasManager;
 
@@ -123,12 +130,14 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 final TokenAccessor tokenAccessor,
                 final EvmProperties evmProperties,
                 final EntityAddressSequencer contractAddressState,
-                final MirrorEvmContractAliases mirrorAliasManager) {
+                final MirrorEvmContractAliases mirrorAliasManager,
+                final StackedStateFrames<Object> stackedStateFrames) {
             super(world, accountAccessor);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
             this.entityAddressSequencer = contractAddressState;
+            this.stackedStateFrames = stackedStateFrames;
             this.mirrorAliasManager = mirrorAliasManager;
         }
 
@@ -149,9 +158,18 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
+        public void commit() {
+            final var topFrame = stackedStateFrames.top();
+            if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
+                topFrame.commit();
+                stackedStateFrames.pop();
+            }
+        }
+
+        @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, mirrorAliasManager);
+                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, mirrorAliasManager, stackedStateFrames);
         }
     }
 
