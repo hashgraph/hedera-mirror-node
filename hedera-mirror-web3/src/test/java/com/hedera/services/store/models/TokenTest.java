@@ -69,7 +69,8 @@ class TokenTest {
             null,
             numAssociations,
             numPositiveBalances,
-            defaultIntValue);
+            defaultIntValue,
+            0L);
     private Account nonTreasuryAccount = new Account(
             nonTreasuryId,
             defaultLongValue,
@@ -84,7 +85,8 @@ class TokenTest {
             null,
             numAssociations,
             numPositiveBalances,
-            defaultIntValue);
+            defaultIntValue,
+            0L);
 
     private Token subject;
     private TokenRelationship treasuryRel;

@@ -84,7 +84,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 getApproveForAllNfts(entity.getId()),
                 tokenAssociationsCounts.getFirst(),
                 tokenAssociationsCounts.getSecond(),
-                0);
+                0,
+                Optional.ofNullable(entity.getEthereumNonce()).orElse(0L));
     }
 
     private long getOwnedNfts(Long accountId) {
