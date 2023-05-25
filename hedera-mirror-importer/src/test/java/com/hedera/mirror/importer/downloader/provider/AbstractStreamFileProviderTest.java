@@ -16,20 +16,18 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,8 +42,8 @@ abstract class AbstractStreamFileProviderTest {
     @TempDir
     protected Path dataPath;
 
-    protected CommonDownloaderProperties properties;
     protected FileCopier fileCopier;
+    protected CommonDownloaderProperties properties;
     protected StreamFileProvider streamFileProvider;
 
     @BeforeEach
@@ -53,18 +51,85 @@ abstract class AbstractStreamFileProviderTest {
         var mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         properties = new CommonDownloaderProperties(mirrorProperties);
-
-        var path = Path.of("data", "recordstreams", "v6").toString();
-        fileCopier = FileCopier.create(TestUtils.getResource(path).toPath(), dataPath)
-                .to(getDirectory(), StreamType.RECORD.getPath());
+        customizeProperties(properties);
+        fileCopier = createFileCopier(dataPath);
     }
 
-    protected abstract String getDirectory();
+    protected abstract FileCopier createFileCopier(Path dataPath);
+
+    protected FileCopier getFileCopier(ConsensusNode node) {
+        return fileCopier;
+    }
+
+    protected void customizeProperties(CommonDownloaderProperties properties) {
+        // Do nothing by default
+    }
 
     @Test
     void get() {
-        fileCopier.copy();
         var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        get(fileCopier, node);
+    }
+
+    @Test
+    void getSidecar() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getSidecar(fileCopier, node);
+    }
+
+    @Test
+    void getNotFound() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getNotFound(fileCopier, node);
+    }
+
+    @Test
+    void getError() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        getError(fileCopier, node);
+    }
+
+    @Test
+    void list() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        list(fileCopier, node);
+    }
+
+    @Test
+    void listAfter() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listAfter(fileCopier, node);
+    }
+
+    @Test
+    void listNotFound() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listNotFound(fileCopier, node);
+    }
+
+    @Test
+    void listError() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listError(fileCopier, node);
+    }
+
+    @Test
+    void listInvalidFilename() throws Exception {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        listInvalidFilename(fileCopier, node);
+    }
+
+    protected final void get(FileCopier fileCopier, ConsensusNode node) {
+        fileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -73,10 +138,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getSidecar() {
+    protected final void getSidecar(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -85,21 +148,17 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getNotFound() {
+    protected final void getNotFound(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectError(TransientProviderException.class)
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void getError() {
+    protected final void getError(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
         dataPath.toFile().setExecutable(false);
-        var node = node("0.0.3");
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -107,10 +166,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void list() {
+    protected final void list(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
@@ -121,10 +178,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listAfter() {
+    protected final void listAfter(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         var lastFilename = new StreamFilename("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
@@ -134,10 +189,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listNotFound() {
+    protected final void listNotFound(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         var lastFilename = new StreamFilename("2100-01-01T01_01_01.000000001Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -146,10 +199,8 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listError() {
+    protected final void listError(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var node = node("0.0.3");
         dataPath.toFile().setExecutable(false);
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -157,13 +208,11 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    @Test
-    void listInvalidFilename() throws Exception {
-        var node = node("0.0.3");
+    protected final void listInvalidFilename(FileCopier fileCopier, ConsensusNode node) throws Exception {
         fileCopier.copy();
         fileCopier
                 .getTo()
-                .resolve(StreamType.RECORD.getNodePrefix() + node.getNodeAccountId())
+                .resolve(nodePath(node))
                 .resolve("Invalid.file")
                 .toFile()
                 .createNewFile();
@@ -177,20 +226,20 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    protected ConsensusNode node(String nodeAccountId) {
-        var entityId = EntityId.of(nodeAccountId, ACCOUNT);
-        return ConsensusNodeStub.builder()
-                .nodeAccountId(entityId)
-                .nodeId(entityId.getEntityNum() - 3)
-                .build();
+    protected Path nodePath(ConsensusNode node) {
+        return TestUtils.nodePath(node, PathType.ACCOUNT_ID, StreamType.RECORD);
     }
 
-    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
+    protected ConsensusNode node(String nodeAccountId) {
+        return TestUtils.nodeFromAccountId(nodeAccountId);
+    }
+
+    protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
         try {
             var streamFilename = new StreamFilename(filename);
             var filePath = fileCopier
                     .getFrom()
-                    .resolve(StreamType.RECORD.getNodePrefix() + node.getNodeAccountId())
+                    .resolve(nodePath(node))
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
                     .resolve(filename);
             var bytes = FileUtils.readFileToByteArray(filePath.toFile());
@@ -198,5 +247,9 @@ abstract class AbstractStreamFileProviderTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
+        return streamFileData(node, getFileCopier(node), filename);
     }
 }

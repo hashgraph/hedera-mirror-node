@@ -74,7 +74,6 @@ class MonitorConfiguration {
                 .flatMapIterable(Function.identity())
                 .retry()
                 .name("generate")
-                .metrics()
                 .parallel(publishProperties.getClients())
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getClients()))
                 .map(transactionPublisher::publish)
@@ -106,7 +105,6 @@ class MonitorConfiguration {
         return mirrorSubscriber
                 .subscribe()
                 .name("subscribe")
-                .metrics()
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))
                 .doFinally(s -> log.warn("Stopped subscribe after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))

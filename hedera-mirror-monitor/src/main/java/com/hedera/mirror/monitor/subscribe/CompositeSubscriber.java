@@ -17,8 +17,8 @@
 package com.hedera.mirror.monitor.subscribe;
 
 import com.hedera.mirror.monitor.publish.PublishResponse;
+import jakarta.inject.Named;
 import java.util.Collection;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import reactor.core.publisher.Flux;

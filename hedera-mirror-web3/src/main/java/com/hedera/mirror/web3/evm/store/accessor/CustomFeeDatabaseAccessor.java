@@ -18,9 +18,9 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 

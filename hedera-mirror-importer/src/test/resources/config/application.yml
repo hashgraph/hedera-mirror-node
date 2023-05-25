@@ -31,15 +31,16 @@ hedera:
       startDate: 1970-01-01T00:00:00Z
 
 spring:
+  data:
+    redis:
+      host: ${embedded.redis.host}
+      password: ${embedded.redis.password}
+      port: ${embedded.redis.port}
+      username: "" # Redis 5 does not support authentication with a username and will fail if provided
   flyway:
     placeholders:
       partitionStartDate: "'0 days'"
       shardCount: 2
-  redis:
-    host: ${embedded.redis.host}
-    password: ${embedded.redis.password}
-    port: ${embedded.redis.port}
-    username: "" # Redis 5 does not support authentication with a username and will fail if provided
   task:
     scheduling:
       enabled: false

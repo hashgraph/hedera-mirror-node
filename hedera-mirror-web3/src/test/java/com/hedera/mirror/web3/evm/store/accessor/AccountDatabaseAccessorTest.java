@@ -173,7 +173,7 @@ class AccountDatabaseAccessorTest {
         entity.setProxyAccountId(null);
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(AccountDatabaseAccessor.DEFAULT_EXPIRY_TIMESTAMP, Account::getExpiry)
+                .returns(Entity.DEFAULT_EXPIRY_TIMESTAMP, Account::getExpiry)
                 .returns(0L, Account::getBalance)
                 .returns(false, Account::isDeleted)
                 .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)
