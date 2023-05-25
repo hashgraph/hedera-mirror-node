@@ -56,6 +56,7 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hedera.mirror.importer.repository.TopicMessageLookupRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -89,6 +90,7 @@ class BatchUpserterTest extends IntegrationTest {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
+    private final TopicMessageLookupRepository topicMessageLookupRepository;
     private final TransactionOperations transactionOperations;
 
     @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
@@ -422,6 +424,29 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenAccountHistoryRepository.findAll())
                 .extracting(TokenAccountHistory::getCreatedTimestamp)
                 .containsExactlyInAnyOrder(7L, 8L);
+    }
+
+    @Test
+    void topicMessageLookup() {
+        // given
+        var topicMessageLookup1 = domainBuilder.topicMessageLookup().persist();
+        var topicMessageLookup2 = domainBuilder
+                .topicMessageLookup()
+                .customize(
+                        t -> t.partition(topicMessageLookup1.getPartition()).topicId(topicMessageLookup1.getTopicId()))
+                .get();
+        var topicMessageLookup3 = domainBuilder.topicMessageLookup().get();
+
+        // when
+        persist(batchPersister, List.of(topicMessageLookup2, topicMessageLookup3));
+
+        // then
+        var merged = topicMessageLookup2.toBuilder()
+                .sequenceNumberRange(
+                        topicMessageLookup1.getSequenceNumberRange().span(topicMessageLookup2.getSequenceNumberRange()))
+                .timestampRange(topicMessageLookup1.getTimestampRange().span(topicMessageLookup2.getTimestampRange()))
+                .build();
+        assertThat(topicMessageLookupRepository.findAll()).containsExactlyInAnyOrder(merged, topicMessageLookup3);
     }
 
     @Test

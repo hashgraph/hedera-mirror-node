@@ -29,10 +29,9 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.swagger:swagger-annotations")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.apache.commons:commons-lang3")
     implementation("org.apache.commons:commons-math3")
     implementation("org.springdoc:springdoc-openapi-webflux-ui")
@@ -68,6 +67,7 @@ openApiGenerate {
             "openApiNullable" to "false",
             "performBeanValidation" to "true",
             "useBeanValidation" to "true",
+            "useJakartaEe" to "true",
         ))
     generateApiTests.set(false)
     generateModelTests.set(false)

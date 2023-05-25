@@ -28,7 +28,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.apache.commons.lang3.ArrayUtils;
 
 @Named

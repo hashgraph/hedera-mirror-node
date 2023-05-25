@@ -232,6 +232,12 @@ create index if not exists topic_message__topic_id_timestamp
 create index if not exists topic_message__topic_id_seqnum
     on topic_message (topic_id, sequence_number);
 
+-- topic_message_lookup
+alter table if exists topic_message_lookup
+    add constraint topic_message_lookup__pk primary key (topic_id, partition);
+create index if not exists topic_message_lookup__topic_sequence_number_range
+    on topic_message_lookup using gist (topic_id, sequence_number_range);
+
 -- transaction
 alter table if exists transaction
     add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);

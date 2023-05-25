@@ -17,7 +17,7 @@
 package com.hedera.mirror.common.converter;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import javax.persistence.Converter;
+import jakarta.persistence.Converter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 @Converter

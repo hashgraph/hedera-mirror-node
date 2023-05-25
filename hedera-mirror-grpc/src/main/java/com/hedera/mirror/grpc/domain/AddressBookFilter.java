@@ -17,8 +17,8 @@
 package com.hedera.mirror.grpc.domain;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Value;
 

@@ -37,6 +37,23 @@ logging:
     org.springframework.cloud.kubernetes.fabric8.config: error
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
+  elastic:
+    metrics:
+      export:
+        auto-create-index: false
+        enabled: false
+        index: mirror
+        index-date-format: yyyy-MM-dd
+        step: 30s
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, ping, redis
+        startup:
+          include: migration
   endpoints:
     web:
       exposure:
@@ -47,26 +64,12 @@ management:
       # Setting spring.cloud.gcp.pubsub.enabled=false is not enough to disable the pubsub health check.
       enabled: ${spring.cloud.gcp.pubsub.enabled}
   metrics:
-    export:
-      elastic:
-        autoCreateIndex: false
-        enabled: false
-        index: mirror
-        indexDateFormat: yyyy-MM-dd
-        step: 30s
-      prometheus:
-        step: 30s
     tags:
       application: ${spring.application.name}
-  endpoint:
-    health:
-      group:
-        liveness:
-          include: ping
-        readiness:
-          include: db, ping, redis
-        startup:
-          include: migration
+  prometheus:
+    metrics:
+      export:
+        step: 60s
 server:
   shutdown: graceful
 spring:
@@ -121,6 +124,7 @@ spring:
       shardCount: 16
     user: ${hedera.mirror.importer.db.owner}
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         hbm2ddl:

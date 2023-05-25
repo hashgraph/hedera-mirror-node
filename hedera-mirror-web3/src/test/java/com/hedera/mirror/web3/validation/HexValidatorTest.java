@@ -18,8 +18,8 @@ package com.hedera.mirror.web3.validation;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import jakarta.validation.Payload;
 import java.lang.annotation.Annotation;
-import javax.validation.Payload;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 

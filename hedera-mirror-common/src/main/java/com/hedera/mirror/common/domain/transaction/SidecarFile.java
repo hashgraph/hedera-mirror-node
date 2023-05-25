@@ -21,15 +21,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Enumerated;
-import javax.persistence.IdClass;
-import javax.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,7 +57,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     @ToString.Exclude
     private byte[] bytes;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusEnd;
 
     private Integer count;
@@ -68,7 +69,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     private byte[] hash;
 
     @Column(name = "id")
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private int index;
 
     private String name;
@@ -81,7 +82,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     private Integer size;
 
     @Builder.Default
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
+    @Type(ListArrayType.class)
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Integer> types = Collections.emptyList();
 

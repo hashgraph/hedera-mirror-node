@@ -21,54 +21,54 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.List;
-import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
+
     private final MirrorNodeEvmProperties evmProperties;
+    private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
     private final PricesAndFeesImpl pricesAndFees;
     private final AbstractCodeCache codeCache;
-    private final HederaEvmWorldState worldState;
+    private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
-    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
+            final MirrorOperationTracer mirrorOperationTracer,
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
-            final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+            final EntityAddressSequencer entityAddressSequencer) {
         this.evmProperties = evmProperties;
+        this.mirrorOperationTracer = mirrorOperationTracer;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
-        this.databaseAccessors = databaseAccessors;
+
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
@@ -86,8 +86,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-        worldState.setStackedStateFrames(stackedStateFrames);
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,
@@ -99,7 +97,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 aliasManager,
                 codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        processor.setOperationTracer(mirrorOperationTracer);
 
         return processor.execute(sender, receiver, providedGasLimit, value, callData, Instant.now(), isStatic);
     }

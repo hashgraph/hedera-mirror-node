@@ -31,7 +31,7 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("net.java.dev.jna:jna")
     implementation("org.apache.commons:commons-compress")
     implementation("org.apache.commons:commons-collections4")
