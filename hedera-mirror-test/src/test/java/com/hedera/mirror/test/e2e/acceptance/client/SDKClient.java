@@ -28,6 +28,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.SdkProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
@@ -55,6 +56,7 @@ public class SDKClient implements AutoCloseable {
     private final ExpandedAccountId defaultOperator;
     private final Map<String, AccountId> validateNetworkMap;
     private final AcceptanceTestProperties acceptanceTestProperties;
+    private final SdkProperties sdkProperties;
     private final MirrorNodeClient mirrorNodeClient;
 
     @Getter
@@ -63,13 +65,18 @@ public class SDKClient implements AutoCloseable {
     public SDKClient(
             AcceptanceTestProperties acceptanceTestProperties,
             MirrorNodeClient mirrorNodeClient,
+            SdkProperties sdkProperties,
             StartupProbe startupProbe)
             throws InterruptedException, TimeoutException {
         defaultOperator = new ExpandedAccountId(
                 acceptanceTestProperties.getOperatorId(), acceptanceTestProperties.getOperatorKey());
         this.mirrorNodeClient = mirrorNodeClient;
         this.acceptanceTestProperties = acceptanceTestProperties;
+        this.sdkProperties = sdkProperties;
         this.client = createClient();
+        client.setGrpcDeadline(sdkProperties.getGrpcDeadline())
+                .setMaxAttempts(sdkProperties.getMaxAttempts())
+                .setMaxNodesPerTransaction(sdkProperties.getMaxNodesPerTransaction());
         startupProbe.validateEnvironment(client);
         validateClient();
         expandedOperatorAccountId = getOperatorAccount();
@@ -91,8 +98,6 @@ public class SDKClient implements AutoCloseable {
             try {
                 new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
-                        .setGrpcDeadline(
-                                acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                         .setTransferAccountId(operatorId)
                         .execute(client);
                 log.info("Deleted temporary operator account {}", createdAccountId);
@@ -193,7 +198,7 @@ public class SDKClient implements AutoCloseable {
         try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
-                    .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                    .setGrpcDeadline(sdkProperties.getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .setMaxAttempts(3)
                     .setMaxBackoff(Duration.ofSeconds(2))
