@@ -46,6 +46,36 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findByIdReturnsDeleted() {
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
+                .persist();
+
+        assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
+                .returns(nft.getSpender(), Nft::getSpender)
+                .returns(nft.getAccountId(), Nft::getAccountId)
+                .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
+    void findActiveById() {
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()))
+                .persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .hasValueSatisfying(actual -> assertThat(actual)
+                        .returns(nft.getSpender(), Nft::getSpender)
+                        .returns(nft.getAccountId(), Nft::getAccountId)
+                        .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
     void findByIdReturnEmptyIfDeleted() {
         final var nft = domainBuilder.nft().customize(n -> n.deleted(true)).persist();
         domainBuilder
@@ -53,7 +83,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(nft.getId().getTokenId().getId()))
                 .persist();
 
-        assertThat(nftRepository.findById(nft.getId())).isEmpty();
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isEmpty();
     }
 
     @Test
@@ -64,7 +96,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
                 .persist();
 
-        assertThat(nftRepository.findById(nft.getId())).isEmpty();
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isEmpty();
     }
 
     @Test

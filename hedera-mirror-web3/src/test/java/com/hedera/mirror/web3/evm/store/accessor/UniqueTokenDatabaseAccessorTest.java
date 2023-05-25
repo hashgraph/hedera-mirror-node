@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -53,7 +53,9 @@ class UniqueTokenDatabaseAccessorTest {
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
 
-        when(nftRepository.findById(nft.getId())).thenReturn(Optional.of(nft));
+        when(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .thenReturn(Optional.of(nft));
 
         assertThat(uniqueTokenDatabaseAccessor.get(nft.getId())).hasValueSatisfying(uniqueToken -> assertThat(
                         uniqueToken)
@@ -69,7 +71,7 @@ class UniqueTokenDatabaseAccessorTest {
     void missingRichInstantWhenNoCreatedTimestamp() {
         Nft nft = domainBuilder.nft().customize(n -> n.createdTimestamp(null)).get();
 
-        when(nftRepository.findById(any())).thenReturn(Optional.of(nft));
+        when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
 
         assertThat(uniqueTokenDatabaseAccessor.get(nft.getId()))
                 .hasValueSatisfying(uniqueToken ->

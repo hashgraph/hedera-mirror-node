@@ -29,13 +29,15 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
 
     @Override
     @Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
+    Optional<Nft> findById(NftId nftId);
+
     @Query(
             value = "select n.* from Nft n "
                     + "join Entity e on e.id = n.token_id "
-                    + "where n.token_id=:#{#nftId.tokenId.id} and n.serial_number=:#{#nftId.serialNumber} "
+                    + "where n.token_id=:tokenId and n.serial_number=:serialNumber "
                     + "and n.deleted is false and e.deleted is not true",
             nativeQuery = true)
-    Optional<Nft> findById(NftId nftId);
+    Optional<Nft> findActiveById(long tokenId, long serialNumber);
 
     @Query(
             value = "select count(*) from Nft n "

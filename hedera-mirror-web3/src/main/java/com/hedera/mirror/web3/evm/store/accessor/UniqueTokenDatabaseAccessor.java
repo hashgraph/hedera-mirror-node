@@ -37,7 +37,9 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueT
 
     @Override
     public @NonNull Optional<UniqueToken> get(@NonNull NftId nftId) {
-        return nftRepository.findById(nftId).map(this::mapNftToUniqueToken);
+        return nftRepository
+                .findActiveById(nftId.getTokenId().getId(), nftId.getSerialNumber())
+                .map(this::mapNftToUniqueToken);
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
