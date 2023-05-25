@@ -37,6 +37,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContra
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
@@ -81,6 +82,7 @@ public class ContractFeature extends AbstractFeature {
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AcceptanceTestProperties acceptanceTestProperties;
+    private final Web3Properties web3Properties;
     private String create2ChildContractEvmAddress;
     private String create2ChildContractEntityId;
     private AccountId create2ChildContractAccountId;
@@ -170,7 +172,7 @@ public class ContractFeature extends AbstractFeature {
 
     @Then("I call the contract via the mirror node REST API")
     public void restContractCall() {
-        if (!acceptanceTestProperties.isContractTraceability()) {
+        if (!web3Properties.isEnabled()) {
             return;
         }
 
