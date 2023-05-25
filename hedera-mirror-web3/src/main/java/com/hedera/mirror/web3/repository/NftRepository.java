@@ -33,7 +33,7 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
 
     @Query(
             value = "select n.* from Nft n "
-                    + "join Entity e on e.id = n.token_id "
+                    + "left join Entity e on e.id = n.token_id "
                     + "where n.token_id=:tokenId and n.serial_number=:serialNumber "
                     + "and n.deleted is false and e.deleted is not true",
             nativeQuery = true)

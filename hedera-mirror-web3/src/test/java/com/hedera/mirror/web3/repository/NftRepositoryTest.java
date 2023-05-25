@@ -76,7 +76,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByIdReturnEmptyIfDeleted() {
+    void findActiveByIdReturnEmptyIfDeleted() {
         final var nft = domainBuilder.nft().customize(n -> n.deleted(true)).persist();
         domainBuilder
                 .entity()
@@ -89,7 +89,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByIdReturnEmptyIfEntityDeleted() {
+    void findActiveByIdReturnEmptyIfEntityDeleted() {
         final var nft = domainBuilder.nft().persist();
         domainBuilder
                 .entity()
@@ -99,6 +99,15 @@ class NftRepositoryTest extends Web3IntegrationTest {
         assertThat(nftRepository.findActiveById(
                         nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
                 .isEmpty();
+    }
+
+    @Test
+    void findActiveByIdReturnObjectIfEntityMissing() {
+        final var nft = domainBuilder.nft().persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isNotEmpty();
     }
 
     @Test
