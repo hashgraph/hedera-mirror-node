@@ -19,8 +19,8 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.web3.repository.NftRepository;
+import jakarta.inject.Named;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 

@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -64,6 +65,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,8 +74,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 
 @ExtendWith(MockitoExtension.class)
 class PubSubRecordItemListenerTest {
@@ -90,7 +91,7 @@ class PubSubRecordItemListenerTest {
 
     private static final String TOPIC_NAME = "topic-name";
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private AddressBookService addressBookService;
 
     @Mock
@@ -164,7 +165,7 @@ class PubSubRecordItemListenerTest {
         when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
         doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
         when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
-        var responseFuture = mock(ListenableFuture.class);
+        var responseFuture = mock(CompletableFuture.class);
         doReturn(responseFuture).when(pubSubTemplate).publish(any(), any(), any());
         pubSubRecordItemListener = new PubSubRecordItemListener(
                 pubSubProperties,
@@ -189,15 +190,15 @@ class PubSubRecordItemListenerTest {
 
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        var successFuture = mock(ListenableFuture.class);
+        var successFuture = mock(CompletableFuture.class);
         when(pubSubTemplate.publish(any(), any(), any())).thenReturn(successFuture);
         doAnswer(invocationOnMock -> {
-                    ListenableFutureCallback<String> callback = invocationOnMock.getArgument(0);
-                    callback.onSuccess("success");
+                    BiConsumer<String, Throwable> callback = invocationOnMock.getArgument(0);
+                    callback.accept("{}", null);
                     return null;
                 })
                 .when(successFuture)
-                .addCallback(any(ListenableFutureCallback.class));
+                .whenComplete(any());
 
         var recordItem = RecordItem.builder()
                 .transactionRecord(DEFAULT_RECORD)
@@ -206,7 +207,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        verify(successFuture).addCallback(any(ListenableFutureCallback.class));
+        verify(successFuture).whenComplete(any());
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 1);
         assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
@@ -298,15 +299,15 @@ class PubSubRecordItemListenerTest {
         pubSubProperties.setMaxSendAttempts(3);
 
         // when
-        var failFuture = mock(ListenableFuture.class);
+        var failFuture = mock(CompletableFuture.class);
         when(pubSubTemplate.publish(any(), any(), any())).thenReturn(failFuture);
         doAnswer(invocationOnMock -> {
-                    ListenableFutureCallback<String> callback = invocationOnMock.getArgument(0);
-                    callback.onFailure(new RuntimeException("error"));
+                    BiConsumer<String, Throwable> callback = invocationOnMock.getArgument(0);
+                    callback.accept(null, new RuntimeException("error"));
                     return null;
                 })
                 .when(failFuture)
-                .addCallback(any(ListenableFutureCallback.class));
+                .whenComplete(any());
 
         var recordItem = RecordItem.builder()
                 .transactionRecord(DEFAULT_RECORD)

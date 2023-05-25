@@ -21,7 +21,7 @@ import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 /**

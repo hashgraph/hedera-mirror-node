@@ -18,6 +18,8 @@ description = "Hedera Mirror Node Web3"
 
 plugins { id("spring-conventions") }
 
+repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
+
 dependencies {
     implementation("com.hedera.evm:hedera-evm")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
@@ -26,7 +28,8 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("com.github.vladimir-bukhtoyarov:bucket4j-core")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
+    implementation("javax.inject:javax.inject:1")
     implementation("com.esaulpaugh:headlong")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")

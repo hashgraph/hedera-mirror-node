@@ -28,7 +28,7 @@ import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import io.micrometer.core.instrument.MeterRegistry;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 

@@ -30,10 +30,10 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -100,17 +100,16 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse sendApprovedCryptoTransfer(
-            ExpandedAccountId sender, AccountId recipient, Hbar hbarAmount) {
+            ExpandedAccountId spender, AccountId recipient, Hbar hbarAmount) {
         var transferTransaction = new TransferTransaction()
-                .addHbarTransfer(sender.getAccountId(), hbarAmount.negated())
-                .addApprovedHbarTransfer(recipient, hbarAmount)
+                .addApprovedHbarTransfer(getClient().getOperatorAccountId(), hbarAmount.negated())
+                .addHbarTransfer(recipient, hbarAmount)
                 .setTransactionMemo(getMemo("Approved transfer"));
-        var keyList = KeyList.of(sender.getPrivateKey());
-        var response = executeTransactionAndRetrieveReceipt(transferTransaction, keyList);
+        var response = executeTransactionAndRetrieveReceipt(transferTransaction, spender);
         log.info(
                 "Approved transfer {} from {} to {} via {}",
                 hbarAmount,
-                sender,
+                spender,
                 recipient,
                 response.getTransactionId());
         return response;

@@ -19,8 +19,8 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
+import jakarta.inject.Named;
 import java.io.IOException;
-import javax.inject.Named;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 

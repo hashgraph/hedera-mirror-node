@@ -24,13 +24,14 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.annotation.Resource;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
@@ -83,6 +85,10 @@ public abstract class IntegrationTest {
 
     @Resource
     private MirrorProperties mirrorProperties;
+
+    @Getter
+    @Value("#{environment.acceptsProfiles('!v2')}")
+    private boolean v1;
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
         DefaultConversionService defaultConversionService = new DefaultConversionService();

@@ -19,9 +19,9 @@ package com.hedera.mirror.importer.repository;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.CrudRepository;
 
-public interface TransactionRepository extends PagingAndSortingRepository<Transaction, Long>, RetentionRepository {
+public interface TransactionRepository extends CrudRepository<Transaction, Long>, RetentionRepository {
 
     @Modifying
     @Override

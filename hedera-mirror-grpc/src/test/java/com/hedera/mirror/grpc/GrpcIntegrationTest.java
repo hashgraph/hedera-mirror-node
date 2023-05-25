@@ -17,9 +17,9 @@
 package com.hedera.mirror.grpc;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import jakarta.annotation.Resource;
+import jakarta.persistence.EntityManager;
 import java.util.Collection;
-import javax.annotation.Resource;
-import javax.persistence.EntityManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +43,9 @@ public abstract class GrpcIntegrationTest {
 
     @Resource
     private Collection<CacheManager> cacheManagers;
+
+    @Resource
+    protected DomainBuilder domainBuilder;
 
     @BeforeEach
     void logTest(TestInfo testInfo) {

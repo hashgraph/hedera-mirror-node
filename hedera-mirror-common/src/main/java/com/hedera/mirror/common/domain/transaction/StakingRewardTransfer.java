@@ -19,10 +19,10 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,12 +38,12 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class StakingRewardTransfer implements Persistable<StakingRewardTransfer.Id> {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long accountId;
 
     private long amount;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
     @Convert(converter = AccountIdConverter.class)

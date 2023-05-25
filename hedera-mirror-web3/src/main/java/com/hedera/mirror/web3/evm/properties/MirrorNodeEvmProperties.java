@@ -20,12 +20,12 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.Duration;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -50,7 +50,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Positive
-    private long estimateGasIterationThreshold = 1200L;
+    private long estimateGasIterationThreshold = 4200L;
 
     private boolean directTokenCall = true;
 

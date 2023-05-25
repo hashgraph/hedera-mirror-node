@@ -16,9 +16,9 @@
 
 package com.hedera.mirror.web3.validation;
 
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 
 public class HexValidator implements ConstraintValidator<Hex, String> {
 

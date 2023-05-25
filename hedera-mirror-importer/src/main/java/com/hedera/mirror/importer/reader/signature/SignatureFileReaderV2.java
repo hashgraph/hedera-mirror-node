@@ -23,8 +23,8 @@ import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import jakarta.inject.Named;
 import java.io.IOException;
-import javax.inject.Named;
 
 @Named
 public class SignatureFileReaderV2 implements SignatureFileReader {

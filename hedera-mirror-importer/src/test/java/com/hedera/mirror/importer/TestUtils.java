@@ -16,11 +16,20 @@
 
 package com.hedera.mirror.importer;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,7 +44,9 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -164,6 +175,10 @@ public class TestUtils {
         jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
     }
 
+    public static long plus(long timestamp, Duration delta) {
+        return timestamp + delta.toNanos();
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder()
@@ -208,6 +223,15 @@ public class TestUtils {
                 .build();
     }
 
+    public TopicMessageLookup toTopicMessageLookup(String partition, TopicMessage first, TopicMessage last) {
+        return TopicMessageLookup.builder()
+                .partition(partition)
+                .sequenceNumberRange(Range.closedOpen(first.getSequenceNumber(), last.getSequenceNumber() + 1))
+                .timestampRange(Range.closedOpen(first.getConsensusTimestamp(), last.getConsensusTimestamp() + 1))
+                .topicId(first.getTopicId().getId())
+                .build();
+    }
+
     public byte[] toByteArray(Key key) {
         return (null == key) ? null : key.toByteArray();
     }
@@ -216,5 +240,22 @@ public class TestUtils {
         byte[] hashBytes = new byte[size];
         RANDOM.nextBytes(hashBytes);
         return hashBytes;
+    }
+
+    public static ConsensusNode nodeFromAccountId(String nodeAccountId) {
+        var entityId = EntityId.of(nodeAccountId, ACCOUNT);
+        return ConsensusNodeStub.builder()
+                .nodeAccountId(entityId)
+                .nodeId(entityId.getEntityNum() - 3)
+                .build();
+    }
+
+    public static Path nodePath(ConsensusNode node, PathType pathType, StreamType streamType) {
+        return pathType == PathType.ACCOUNT_ID
+                ? Path.of(streamType.getNodePrefix() + node.getNodeAccountId().toString())
+                : Path.of(
+                        node.getNodeAccountId().getShardNum().toString(),
+                        String.valueOf(node.getNodeId()),
+                        streamType.getNodeIdBasedSuffix());
     }
 }

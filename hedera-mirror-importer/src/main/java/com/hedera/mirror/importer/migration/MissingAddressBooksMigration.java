@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.migration;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.context.annotation.Lazy;
 

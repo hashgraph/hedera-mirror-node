@@ -19,7 +19,11 @@ package com.hedera.mirror.importer.downloader.provider;
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
@@ -38,12 +42,11 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     private static final int S3_PROXY_PORT = 8001;
 
     private S3Proxy s3Proxy;
-    private S3AsyncClient s3AsyncClient;
 
     @BeforeEach
     void setup() throws Exception {
         super.setup();
-        s3AsyncClient = S3AsyncClient.builder()
+        var s3AsyncClient = S3AsyncClient.builder()
                 .asyncConfiguration(b -> b.advancedOption(FUTURE_COMPLETION_EXECUTOR, ForkJoinPool.commonPool()))
                 .credentialsProvider(AnonymousCredentialsProvider.create())
                 .endpointOverride(URI.create("http://localhost:" + S3_PROXY_PORT))
@@ -55,8 +58,10 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected String getDirectory() {
-        return properties.getBucketName();
+    protected FileCopier createFileCopier(Path dataPath) {
+        var fromPath = Path.of("data", "recordstreams", "v6");
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 
     private void startS3Proxy() throws Exception {
