@@ -45,12 +45,9 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final AccountAccessor accountAccessor;
     private final TokenAccessor tokenAccessor;
-    private final EntityAddressSequencer entityAddressSequencer;
-    private static StackedStateFrames<Object> stackedStateFrames;
+    private final StackedStateFrames<Object> stackedStateFrames;
 
-    public void setStackedStateFrames(StackedStateFrames<Object> stateFrames) {
-        stackedStateFrames = stateFrames;
-    }
+    private final EntityAddressSequencer entityAddressSequencer;
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -58,13 +55,16 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final AbstractCodeCache abstractCodeCache,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final StackedStateFrames<Object> stackedStateFrames) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.stackedStateFrames = stackedStateFrames;
+        stackedStateFrames.push();
     }
 
     public Account get(final Address address) {
@@ -99,7 +99,13 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     @Override
     public HederaEvmWorldUpdater updater() {
         return new Updater(
-                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, entityAddressSequencer);
+                this,
+                accountAccessor,
+                hederaEvmEntityAccess,
+                tokenAccessor,
+                evmProperties,
+                entityAddressSequencer,
+                stackedStateFrames);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
@@ -108,6 +114,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         private final TokenAccessor tokenAccessor;
         private final EvmProperties evmProperties;
         private final EntityAddressSequencer entityAddressSequencer;
+        private final StackedStateFrames<Object> stackedStateFrames;
 
         protected Updater(
                 final HederaEvmWorldState world,
@@ -115,12 +122,14 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 final HederaEvmEntityAccess hederaEvmEntityAccess,
                 final TokenAccessor tokenAccessor,
                 final EvmProperties evmProperties,
-                final EntityAddressSequencer contractAddressState) {
+                final EntityAddressSequencer contractAddressState,
+                final StackedStateFrames<Object> stackedStateFrames) {
             super(world, accountAccessor);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
             this.entityAddressSequencer = contractAddressState;
+            this.stackedStateFrames = stackedStateFrames;
         }
 
         @Override
@@ -137,6 +146,15 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         public Account getForMutation(final Address address) {
             final HederaEvmWorldState wrapped = (HederaEvmWorldState) wrappedWorldView();
             return wrapped.get(address);
+        }
+
+        @Override
+        public void commit() {
+            final var topFrame = stackedStateFrames.top();
+            if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
+                topFrame.commit();
+                stackedStateFrames.pop();
+            }
         }
 
         @Override

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -27,8 +25,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.store.models.Id;
-import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -39,8 +35,8 @@ public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account> {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
-    private final StackedStateFrames<Object> stackedStateFrames;
     private final EvmProperties evmProperties;
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
@@ -49,16 +45,16 @@ public class HederaEvmStackedWorldStateUpdater
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties,
             final StackedStateFrames<Object> stackedStateFrames) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess);
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
+        this.stackedStateFrames.push();
     }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        persistInStackedStateFrames(address, balance);
         final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
         account.setNonce(nonce);
         account.setBalance(balance);
@@ -86,33 +82,5 @@ public class HederaEvmStackedWorldStateUpdater
 
     private boolean isTokenRedirect(final Address address) {
         return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
-    }
-
-    private void persistInStackedStateFrames(Address address, Wei balance) {
-        // create new RWCachingStateFrame
-        stackedStateFrames.push();
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        final var accountModel = new com.hedera.services.store.models.Account(
-                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
-                0,
-                balance.toLong(),
-                false,
-                0,
-                0,
-                null,
-                0,
-                Collections.emptySortedMap(),
-                Collections.emptySortedMap(),
-                Collections.emptySortedSet(),
-                0,
-                0,
-                0);
-        accountAccessor.set(address, accountModel);
-        // if the current frame's upstream is NOT ROCachingStateFrame - commit and pop
-        if (stackedStateFrames.height() > 1) {
-            topFrame.commit();
-            stackedStateFrames.pop();
-        }
     }
 }
