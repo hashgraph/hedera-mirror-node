@@ -48,8 +48,7 @@ class MirrorPropertiesTest {
 
         var properties = new MirrorProperties();
         properties.setNetwork(networkName);
-        assertThat(properties.getNetwork() == HederaNetwork.getCanonicalizedNetwork(expectedHederaNetwork))
-                .isTrue();
+        assertThat(properties.getNetwork()).isSameAs(HederaNetwork.getCanonicalizedNetwork(expectedHederaNetwork));
         assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
     }
 

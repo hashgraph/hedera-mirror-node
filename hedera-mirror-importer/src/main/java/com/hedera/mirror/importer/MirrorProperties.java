@@ -110,6 +110,8 @@ public class MirrorProperties {
                 PREVIEWNET, PREVIEWNET,
                 TESTNET, TESTNET);
 
+        private HederaNetwork() {}
+
         public static String getBucketName(@NonNull String network) {
             return NETWORK_DEFAULT_BUCKETS.getOrDefault(network, "");
         }
