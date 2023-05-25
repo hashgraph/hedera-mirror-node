@@ -59,6 +59,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private HederaEvmEntityAccess entityAccess;
 
+    @Mock
     private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
 
     @Mock
@@ -79,7 +80,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         stackedStateFrames = new StackedStateFrames<>(accessors);
-        updater = new MockLedgerWorldUpdater(null, accountAccessor);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
     }
@@ -118,11 +118,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void commitsNewlyCreatedAccountAsExpected() {
+        updater = new MockLedgerWorldUpdater(null, accountAccessor);
+        subject = new HederaEvmStackedWorldStateUpdater(
+                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
-        assertNull(subject.updater().getAccount(address));
+        assertNull(updater.getAccount(address));
         subject.commit();
         assertThat(subject.getAccount(address).getNonce()).isEqualTo(aNonce);
-        assertThat(subject.updater().getAccount(address).getNonce()).isEqualTo(aNonce);
+        assertThat(updater.getAccount(address).getNonce()).isEqualTo(aNonce);
     }
 
     @Test
