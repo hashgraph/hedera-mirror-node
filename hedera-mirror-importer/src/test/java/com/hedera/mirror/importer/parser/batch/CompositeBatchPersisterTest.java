@@ -29,26 +29,21 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
-import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CompositeBatchPersisterTest extends IntegrationTest {
 
-    @Resource
-    private CompositeBatchPersister compositeBatchInserter;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private ContractResultRepository contractResultRepository;
+    private final CompositeBatchPersister compositeBatchInserter;
+    private final DomainBuilder domainBuilder;
+    private final ContractRepository contractRepository;
+    private final ContractResultRepository contractResultRepository;
 
     @Test
     @Transactional

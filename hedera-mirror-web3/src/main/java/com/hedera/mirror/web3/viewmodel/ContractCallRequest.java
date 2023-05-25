@@ -31,7 +31,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Data
 public class ContractCallRequest {
 
-    private static final int ADDRESS_LENGTH = 40;
+    public static final int ADDRESS_LENGTH = 40;
 
     @JsonSerialize(using = BlockTypeSerializer.class)
     @JsonDeserialize(using = BlockTypeDeserializer.class)

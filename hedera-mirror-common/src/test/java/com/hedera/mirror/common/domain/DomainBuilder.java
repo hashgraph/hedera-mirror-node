@@ -72,6 +72,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
@@ -827,6 +828,17 @@ public class DomainBuilder {
                 .sequenceNumber(id())
                 .topicId(entityId(TOPIC))
                 .validStartTimestamp(timestamp());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TopicMessageLookup, TopicMessageLookup.TopicMessageLookupBuilder> topicMessageLookup() {
+        long timestamp = timestamp();
+        long sequenceNumber = id();
+        var builder = TopicMessageLookup.builder()
+                .partition(String.format("topic_message_%d", id()))
+                .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 1))
+                .topicId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

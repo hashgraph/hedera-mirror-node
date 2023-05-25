@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
@@ -35,6 +36,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import java.sql.Date;
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -50,6 +53,9 @@ public abstract class AbstractEntity implements History {
 
     public static final long ACCOUNT_ID_CLEARED = 0L;
     public static final long NODE_ID_CLEARED = -1L;
+
+    public static final long DEFAULT_EXPIRY_TIMESTAMP =
+            TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
 
     @Column(updatable = false)
     @ToString.Exclude
@@ -155,6 +161,19 @@ public abstract class AbstractEntity implements History {
 
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
+    }
+
+    @JsonIgnore
+    public long getEffectiveExpiration() {
+        if (expirationTimestamp != null) {
+            return expirationTimestamp;
+        }
+
+        if (createdTimestamp != null && autoRenewPeriod != null) {
+            return createdTimestamp + TimeUnit.SECONDS.toNanos(autoRenewPeriod);
+        }
+
+        return DEFAULT_EXPIRY_TIMESTAMP;
     }
 
     @SuppressWarnings("java:S1610")

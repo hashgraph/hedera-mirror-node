@@ -35,13 +35,11 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
-import java.sql.Date;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -51,10 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
-    public static final long DEFAULT_EXPIRY_TIMESTAMP =
-            TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
-
+public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
@@ -69,15 +64,15 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get((Address) address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Address address) {
+        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                getExpiration(entity),
+                entity.getEffectiveExpiration(),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId()),
@@ -90,18 +85,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 tokenAssociationsCounts.getFirst(),
                 tokenAssociationsCounts.getSecond(),
                 0);
-    }
-
-    private Long getExpiration(Entity entity) {
-        if (entity.getExpirationTimestamp() != null) {
-            return entity.getExpirationTimestamp();
-        }
-
-        if (entity.getCreatedTimestamp() != null && entity.getAutoRenewPeriod() != null) {
-            return entity.getCreatedTimestamp() + TimeUnit.SECONDS.toNanos(entity.getAutoRenewPeriod());
-        }
-
-        return DEFAULT_EXPIRY_TIMESTAMP;
     }
 
     private long getOwnedNfts(Long accountId) {

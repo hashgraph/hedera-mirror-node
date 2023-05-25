@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -30,7 +31,6 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -46,6 +46,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;
+    private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
     private final PricesAndFeesImpl pricesAndFees;
@@ -56,6 +57,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
+            final MirrorOperationTracer mirrorOperationTracer,
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
@@ -65,6 +67,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final EntityAddressSequencer entityAddressSequencer,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
+        this.mirrorOperationTracer = mirrorOperationTracer;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
@@ -105,7 +108,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 aliasManager,
                 codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        processor.setOperationTracer(mirrorOperationTracer);
 
         return processor.execute(sender, receiver, providedGasLimit, value, callData, Instant.now(), isStatic);
     }

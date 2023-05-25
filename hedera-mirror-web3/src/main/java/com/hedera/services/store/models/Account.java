@@ -86,6 +86,14 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
+     * Create a partial account with only ID and balance values.
+     * Used for treasury accounts as those are the only fields we need.
+     */
+    public Account(Id id, long balance) {
+        this(id, 0, balance, false, 0, 0, null, 0, null, null, null, 0, 0, 0);
+    }
+
+    /**
      * Creates new instance of {@link Account} with updated ownedNfts in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
