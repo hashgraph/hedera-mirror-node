@@ -36,89 +36,89 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
 
     private static final String TRANSFER_SQL =
             """
-        with cryptotransfers as (
-          select ct.*, cr.sender_id, e.key
-          from (
-            select cast(null as bigint) account_id,
-            amount, --receiver
-            consensus_timestamp,
-            entity_id,
-            is_approval,
-            cast(null as bigint) as payer_account_id,
-            cast(null as bigint) as receiver_account_id,
-            cast(null as bigint) as serial_number,
-            cast(null as bigint) as token_id,
-            'CRYPTO_TRANSFER' as transfer_type
-            from crypto_transfer
-          ) ct
-          join contract_result cr on cr.consensus_timestamp = ct.consensus_timestamp
-          join entity e on e.id = ct.entity_id
-          where
-            cr.sender_id > 2119900 and --grandfathered number
-            cr.sender_id <> ct.entity_id and --sender does not equal receiver
-            ct.is_approval = false
-          ), nfttransfers as (
-            select nft.*, cr.sender_id, e.key
-            from (
-              select cast(null as bigint) account_id,
-              cast(null as bigint) as amount,
-              consensus_timestamp,
-              cast(null as bigint) as entity_id,
-              is_approval,
-              cast(null as bigint) as payer_account_id,
-              receiver_account_id, --receiver
-              serial_number,
-              token_id,
-              'NFT_TRANSFER' as transfer_type
-              from nft_transfer
-            ) nft
-            join contract_result cr on cr.consensus_timestamp = nft.consensus_timestamp
-            join entity e on e.id = nft.receiver_account_id
-            where
-              cr.sender_id > 2119900 and
-              cr.sender_id <> nft.receiver_account_id and
-              nft.is_approval = false
-        ), tokentransfers as (
-          select t.*, cr.sender_id, e.key
-          from (
-            select account_id, --receiver
-            cast(null as bigint) as amount,
-            consensus_timestamp,
-            cast(null as bigint) as entity_id,
-            is_approval,
-            payer_account_id,
-            cast(null as bigint) as receiver_account_id,
-            cast(null as bigint) as serial_number,
-            token_id,
-            'TOKEN_TRANSFER' as transfer_type
-            from token_transfer
-          ) t
-          join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp
-          join entity e on e.id = t.account_id
-          where
-            cr.sender_id > 2119900 and
-            cr.sender_id <> t.account_id and
-            t.is_approval = false
-        ) select * from cryptotransfers
-          union all
-          select * from nfttransfers
-          union all
-          select * from tokentransfers
-          order by consensus_timestamp asc
-        """;
+            with cryptotransfers as (
+              select ct.*, cr.sender_id, e.key
+              from (
+                select cast(null as bigint) account_id,
+                amount, --receiver
+                consensus_timestamp,
+                entity_id,
+                is_approval,
+                cast(null as bigint) as payer_account_id,
+                cast(null as bigint) as receiver_account_id,
+                cast(null as bigint) as serial_number,
+                cast(null as bigint) as token_id,
+                'CRYPTO_TRANSFER' as transfer_type
+                from crypto_transfer
+              ) ct
+              join contract_result cr on cr.consensus_timestamp = ct.consensus_timestamp
+              join entity e on e.id = ct.entity_id
+              where
+                cr.sender_id > 2119900 and --grandfathered number
+                cr.sender_id <> ct.entity_id and --sender does not equal receiver
+                ct.is_approval = false
+              ), nfttransfers as (
+                select nft.*, cr.sender_id, e.key
+                from (
+                  select cast(null as bigint) account_id,
+                  cast(null as bigint) as amount,
+                  consensus_timestamp,
+                  cast(null as bigint) as entity_id,
+                  is_approval,
+                  cast(null as bigint) as payer_account_id,
+                  receiver_account_id, --receiver
+                  serial_number,
+                  token_id,
+                  'NFT_TRANSFER' as transfer_type
+                  from nft_transfer
+                ) nft
+                join contract_result cr on cr.consensus_timestamp = nft.consensus_timestamp
+                join entity e on e.id = nft.receiver_account_id
+                where
+                  cr.sender_id > 2119900 and
+                  cr.sender_id <> nft.receiver_account_id and
+                  nft.is_approval = false
+            ), tokentransfers as (
+              select t.*, cr.sender_id, e.key
+              from (
+                select account_id, --receiver
+                cast(null as bigint) as amount,
+                consensus_timestamp,
+                cast(null as bigint) as entity_id,
+                is_approval,
+                payer_account_id,
+                cast(null as bigint) as receiver_account_id,
+                cast(null as bigint) as serial_number,
+                token_id,
+                'TOKEN_TRANSFER' as transfer_type
+                from token_transfer
+              ) t
+              join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp
+              join entity e on e.id = t.account_id
+              where
+                cr.sender_id > 2119900 and
+                cr.sender_id <> t.account_id and
+                t.is_approval = false
+            ) select * from cryptotransfers
+              union all
+              select * from nfttransfers
+              union all
+              select * from tokentransfers
+              order by consensus_timestamp asc
+            """;
 
     private static final String UPDATE_CRYPTO_TRANSFER_SQL =
             """
-        update crypto_transfer set is_approval = true where amount = ? and consensus_timestamp = ? and entity_id = ?
-        """;
+            update crypto_transfer set is_approval = true where amount = ? and consensus_timestamp = ? and entity_id = ?
+            """;
     private static final String UPDATE_NFT_TRANSFER_SQL =
             """
-        update nft_transfer set is_approval = true where consensus_timestamp = ? and serial_number = ? and token_id = ?
-        """;
+            update nft_transfer set is_approval = true where consensus_timestamp = ? and serial_number = ? and token_id = ?
+            """;
     private static final String UPDATE_TOKEN_TRANSFER_SQL =
             """
-        update token_transfer set is_approval = true where consensus_timestamp = ? and token_id = ? and account_id = ?
-        """;
+            update token_transfer set is_approval = true where consensus_timestamp = ? and token_id = ? and account_id = ?
+            """;
 
     private enum TRANSFER_TYPE {
         CRYPTO_TRANSFER,
