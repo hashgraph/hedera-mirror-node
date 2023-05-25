@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FeeDistributionTest {
+class FeeDistributionTest {
     private static final long BALANCE = 10L;
     private final GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
     private final HederaAccountNumbers accountNums = new MockAccountNumbers();
