@@ -34,10 +34,10 @@ public class MockPrecompile implements Precompile {
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         // Dummy logic to simulate decoding of invalid input
-        if (10 == input.size()) {
-            return TransactionBody.newBuilder();
-        } else {
+        if (5 == input.size()) {
             return null;
+        } else {
+            return TransactionBody.newBuilder();
         }
     }
 
