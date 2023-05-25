@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.exception.ResourceLimitException;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -61,7 +60,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private Optional<Precompile> precompile;
     private TransactionBody.Builder transactionBody;
     private long gasRequirement = 0;
-    private Address senderAddress;
     private HederaEvmStackedWorldStateUpdater updater;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
@@ -190,10 +188,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             result = resolvedPrecompile.getSuccessResultFor();
 
             stackedStateFrames.top().commit();
-        } catch (final ResourceLimitException e) {
-            // we want to propagate ResourceLimitException, so it is handled
-            // in {@code HederaEvmTxProcessor.execute()} as expected
-            throw e;
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             result = resolvedPrecompile.getFailureResultFor(status);
@@ -229,18 +223,12 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = TransactionBody.newBuilder();
         final var resolvedPrecompile = precompile.orElseThrow();
-        try {
-            this.transactionBody = resolvedPrecompile.body(input, aliasResolver);
-        } catch (final Exception e) {
-            transactionBody = null;
-        }
+        this.transactionBody = resolvedPrecompile.body(input, aliasResolver);
     }
 
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var unaliasedSenderAddress =
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
-        this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
