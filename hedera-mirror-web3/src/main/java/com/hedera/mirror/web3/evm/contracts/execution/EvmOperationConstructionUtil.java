@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
