@@ -23,13 +23,13 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PrecompileFactoryTest {
+class PrecompileMapperTest {
 
-    private PrecompileFactory subject;
+    private PrecompileMapper subject;
 
     @BeforeEach
     void setUp() {
-        subject = new PrecompileFactory(Set.of(new MockPrecompile()));
+        subject = new PrecompileMapper(Set.of(new MockPrecompile()));
     }
 
     @Test

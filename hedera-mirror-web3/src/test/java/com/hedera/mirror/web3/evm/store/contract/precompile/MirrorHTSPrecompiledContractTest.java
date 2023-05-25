@@ -30,6 +30,8 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -72,7 +74,7 @@ class MirrorHTSPrecompiledContractTest {
     private HederaEvmStackedWorldStateUpdater worldUpdater;
 
     private MirrorHTSPrecompiledContract subject;
-    private PrecompileFactory precompileFactory;
+    private PrecompileMapper precompileMapper;
     private StackedStateFrames<Object> stackedStateFrames;
 
     @BeforeEach
@@ -80,14 +82,14 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        precompileFactory = new PrecompileFactory(Set.of(new MockPrecompile()));
+        precompileMapper = new PrecompileMapper(Set.of(new MockPrecompile()));
         stackedStateFrames = new StackedStateFrames<>(accessors);
 
         // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
         stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
         stackedStateFrames.push(); // Create second precompile specific RWCachingStateFrame
         subject = new MirrorHTSPrecompiledContract(
-                evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileFactory);
+                evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper);
     }
 
     @Test
@@ -173,6 +175,63 @@ class MirrorHTSPrecompiledContractTest {
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, SUCCESS_RESULT);
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void unqualifiedDelegateCallFails() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000");
+
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, null);
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void invalidTransactionIsHandledProperly() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000");
+
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ZERO);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(messageFrame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(10L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void nullTransactionBodyIsHandledCorrectly() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000" + "00");
+
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ZERO);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, null);
         assertThat(expectedResult).isEqualTo(precompileResult);
     }
 

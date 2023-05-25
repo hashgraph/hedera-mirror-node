@@ -22,7 +22,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
-import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileFactory;
+import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
@@ -85,7 +85,7 @@ public class EvmOperationConstructionUtil {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
         final var mirrorNodeEvmProperties = new MirrorNodeEvmProperties();
-        final var precompileFactory = new PrecompileFactory(new HashSet<>());
+        final var precompileFactory = new PrecompileMapper(new HashSet<>());
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(

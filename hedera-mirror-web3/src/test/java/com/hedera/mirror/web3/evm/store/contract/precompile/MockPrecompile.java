@@ -18,19 +18,27 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class MockPrecompile implements Precompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        return TransactionBody.newBuilder();
+        // Dummy logic to simulate decoding of invalid input
+        if (10 == input.size()) {
+            return TransactionBody.newBuilder();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -39,7 +47,12 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public void run(MessageFrame frame) {}
+    public void run(MessageFrame frame) {
+        // Dummy logic to mimic invalid behaviour
+        if (Address.ZERO.equals(frame.getSenderAddress())) {
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        }
+    }
 
     @Override
     public long getGasRequirement(long blockTimestamp) {

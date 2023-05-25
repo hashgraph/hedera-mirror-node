@@ -20,14 +20,15 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Named
-public class PrecompileFactory {
+public class PrecompileMapper {
 
     private final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
 
-    public PrecompileFactory(final Set<Precompile> precompiles) {
+    public PrecompileMapper(final Set<Precompile> precompiles) {
         for (Precompile precompile : precompiles) {
             for (Integer selector : precompile.getFunctionSelectors()) {
                 abiConstantToPrecompile.put(selector, precompile);
@@ -35,7 +36,12 @@ public class PrecompileFactory {
         }
     }
 
-    public Precompile lookup(int functionSelector) {
-        return abiConstantToPrecompile.getOrDefault(functionSelector, null);
+    public Optional<Precompile> lookup(int functionSelector) {
+        final var precompile = abiConstantToPrecompile.get(functionSelector);
+        if (precompile != null) {
+            return Optional.of(precompile);
+        } else {
+            return Optional.empty();
+        }
     }
 }

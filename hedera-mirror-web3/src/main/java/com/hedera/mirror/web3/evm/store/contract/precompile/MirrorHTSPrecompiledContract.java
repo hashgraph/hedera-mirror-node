@@ -57,8 +57,8 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final StackedStateFrames<Object> stackedStateFrames;
-    private final PrecompileFactory precompileFactory;
-    private Precompile precompile;
+    private final PrecompileMapper precompileMapper;
+    private Optional<Precompile> precompile;
     private TransactionBody.Builder transactionBody;
     private long gasRequirement = 0;
     private Address senderAddress;
@@ -70,12 +70,12 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final StackedStateFrames<Object> stackedStateFrames,
-            final PrecompileFactory precompileFactory) {
+            final PrecompileMapper precompileMapper) {
         super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
-        this.precompileFactory = precompileFactory;
+        this.precompileMapper = precompileMapper;
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
@@ -144,7 +144,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now);
+        gasRequirement = precompile.orElseThrow().getGasRequirement(now);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -180,13 +180,14 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     protected Bytes computeInternal(final MessageFrame frame) {
         Bytes result;
+        Precompile resolvedPrecompile = precompile.orElseThrow();
         try {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-            precompile.handleSentHbars(frame);
-            precompile.run(frame);
+            resolvedPrecompile.handleSentHbars(frame);
+            resolvedPrecompile.run(frame);
 
-            result = precompile.getSuccessResultFor();
+            result = resolvedPrecompile.getSuccessResultFor();
 
             stackedStateFrames.top().commit();
         } catch (final ResourceLimitException e) {
@@ -195,14 +196,14 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             throw e;
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
-            result = precompile.getFailureResultFor(status);
+            result = resolvedPrecompile.getFailureResultFor(status);
             if (e.isReverting()) {
                 frame.setState(MessageFrame.State.REVERT);
                 frame.setRevertReason(e.getRevertReason());
             }
         } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
-            result = precompile.getFailureResultFor(FAIL_INVALID);
+            result = resolvedPrecompile.getFailureResultFor(FAIL_INVALID);
         }
 
         return result;
@@ -210,15 +211,15 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     @SuppressWarnings({"java:S2583", "java:S1479", "java:S4165"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        this.precompile = null;
+        this.precompile = Optional.empty();
         this.transactionBody = null;
 
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
-        this.precompile = precompileFactory.lookup(functionId);
+        this.precompile = precompileMapper.lookup(functionId);
 
-        if (precompile != null) {
+        if (precompile.isPresent()) {
             decodeInput(input, aliasResolver);
         } else {
             throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
@@ -227,8 +228,9 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = TransactionBody.newBuilder();
+        final var resolvedPrecompile = precompile.orElseThrow();
         try {
-            this.transactionBody = this.precompile.body(input, aliasResolver);
+            this.transactionBody = resolvedPrecompile.body(input, aliasResolver);
         } catch (final Exception e) {
             transactionBody = null;
         }
