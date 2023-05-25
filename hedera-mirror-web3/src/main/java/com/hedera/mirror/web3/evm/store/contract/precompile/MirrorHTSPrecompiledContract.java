@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -55,15 +56,15 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
+    private final StackedStateFrames<Object> stackedStateFrames;
+    private final PrecompileFactory precompileFactory;
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
     private long gasRequirement = 0;
     private Address senderAddress;
     private HederaEvmStackedWorldStateUpdater updater;
-    private final StackedStateFrames<Object> stackedStateFrames;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
-    private final PrecompileFactory precompileFactory;
 
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -75,6 +76,20 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
         this.precompileFactory = precompileFactory;
+    }
+
+    private static boolean isDelegateCall(final MessageFrame frame) {
+        final var contract = frame.getContractAddress();
+        final var recipient = frame.getRecipientAddress();
+        return !contract.equals(recipient);
+    }
+
+    static boolean isToken(final MessageFrame frame, final Address address) {
+        final var account = frame.getWorldUpdater().get(address);
+        if (account != null) {
+            return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
+        }
+        return false;
     }
 
     @Override
@@ -143,17 +158,24 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             return false;
         }
 
-        // make sure we have a parent calling context
-        final var stack = frame.getMessageFrameStack();
-        final var frames = stack.iterator();
-        frames.next();
-        if (!frames.hasNext()) {
-            // Impossible to get here w/o a catastrophic EVM bug
-            log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
-            return false;
+        final var recipient = frame.getRecipientAddress();
+        // but we accept delegates iff the token redirect contract calls us,
+        // so if they are not a token, or on the permitted callers list, then
+        // we are a delegate and we are done.
+        if (isToken(frame, recipient)) {
+            // make sure we have a parent calling context
+            final var stack = frame.getMessageFrameStack();
+            final var frames = stack.iterator();
+            frames.next();
+            if (!frames.hasNext()) {
+                // Impossible to get here w/o a catastrophic EVM bug
+                log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
+                return false;
+            }
+            // If the token redirect contract was called via delegate, then it's a delegate
+            return isDelegateCall(frames.next());
         }
-        // If the token redirect contract was called via delegate, then it's a delegate
-        return isDelegateCall(frames.next());
+        return true;
     }
 
     protected Bytes computeInternal(final MessageFrame frame) {
@@ -214,8 +236,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-        stackedStateFrames.push();
-
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
@@ -235,12 +255,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return resultFromExecutor == null
                 ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
-    }
-
-    private static boolean isDelegateCall(final MessageFrame frame) {
-        final var contract = frame.getContractAddress();
-        final var recipient = frame.getRecipientAddress();
-        return !contract.equals(recipient);
     }
 
     private long defaultGas() {
