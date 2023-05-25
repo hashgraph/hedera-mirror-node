@@ -75,14 +75,6 @@ class MirrorHTSPrecompiledContractTest {
     private PrecompileFactory precompileFactory;
     private StackedStateFrames<Object> stackedStateFrames;
 
-    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
-        @NonNull
-        @Override
-        public Optional<V> get(@NonNull final K key) {
-            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
-        }
-    }
-
     @BeforeEach
     void setUp() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
@@ -90,7 +82,10 @@ class MirrorHTSPrecompiledContractTest {
 
         precompileFactory = new PrecompileFactory(Set.of(new MockPrecompile()));
         stackedStateFrames = new StackedStateFrames<>(accessors);
-        stackedStateFrames.push();
+
+        // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
+        stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
+        stackedStateFrames.push(); // Create second precompile specific RWCachingStateFrame
         subject = new MirrorHTSPrecompiledContract(
                 evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileFactory);
     }
@@ -179,5 +174,13 @@ class MirrorHTSPrecompiledContractTest {
 
         final var expectedResult = Pair.of(0L, SUCCESS_RESULT);
         assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
+        @NonNull
+        @Override
+        public Optional<V> get(@NonNull final K key) {
+            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
+        }
     }
 }
