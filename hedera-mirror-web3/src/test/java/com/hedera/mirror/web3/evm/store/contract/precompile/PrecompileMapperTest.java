@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.services.store.contracts.precompile.Precompile;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,9 +32,9 @@ class PrecompileMapperTest {
     }
 
     @Test
-    void nonExistingAbiReturnsNull() {
+    void nonExistingAbiReturnsEmpty() {
         int functionSelector = 0x11111111;
-        final Precompile result = subject.lookup(functionSelector);
-        assertThat(result).isNull();
+        final var result = subject.lookup(functionSelector);
+        assertThat(result).isEmpty();
     }
 }
