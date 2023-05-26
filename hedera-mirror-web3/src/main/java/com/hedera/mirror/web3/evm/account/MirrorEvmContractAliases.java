@@ -24,6 +24,9 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import jakarta.inject.Named;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -32,6 +35,7 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     private final MirrorEntityAccess mirrorEntityAccess;
+    private final Map<Address, Address> aliases = new HashMap<>();
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
@@ -40,13 +44,12 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        final var entityOptional = mirrorEntityAccess.findEntity(addressOrAlias);
+        final var resolvedAddress =
+                Optional.ofNullable(curAliases().get(addressOrAlias)).orElse(addressOrAlias);
+        final var entity = mirrorEntityAccess
+                .findEntity(resolvedAddress)
+                .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
 
-        if (entityOptional.isEmpty()) {
-            throw new EntityNotFoundException("No such contract or token: " + addressOrAlias);
-        }
-
-        final var entity = entityOptional.get();
         final var entityId = entity.toEntityId();
 
         if (entity.getType() == EntityType.TOKEN) {
@@ -59,5 +62,17 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         } else {
             throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
         }
+    }
+
+    private Map<Address, Address> curAliases() {
+        return aliases;
+    }
+
+    public void link(final Address alias, final Address address) {
+        curAliases().put(alias, address);
+    }
+
+    public void unlink(Address alias) {
+        curAliases().remove(alias);
     }
 }
