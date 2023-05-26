@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -32,11 +31,13 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class SdkProperties {
 
-    @DurationMin(seconds = 5L)
+    @DurationMin(seconds = 1L)
     @NotNull
     private Duration grpcDeadline = Duration.ofSeconds(10L);
 
     @Min(1)
-    @Max(60)
-    private int maxAttempts = 10;
+    private int maxAttempts = 100;
+
+    @Min(1)
+    private int maxNodesPerTransaction = Integer.MAX_VALUE;
 }
