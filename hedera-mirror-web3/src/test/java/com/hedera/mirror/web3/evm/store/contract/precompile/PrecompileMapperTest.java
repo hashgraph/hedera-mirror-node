@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ class PrecompileMapperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new PrecompileMapper(Set.of(new MockPrecompile()));
+        subject = new PrecompileMapper(Set.of(new MockPrecompile()), new HashSet<>());
     }
 
     @Test

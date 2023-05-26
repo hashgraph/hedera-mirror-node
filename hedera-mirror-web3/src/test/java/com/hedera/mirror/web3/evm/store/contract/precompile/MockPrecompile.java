@@ -22,7 +22,6 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -32,14 +31,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class MockPrecompile implements Precompile {
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        // Dummy logic to simulate decoding of invalid input
-        if (5 == input.size()) {
-            return null;
-        } else {
-            return TransactionBody.newBuilder();
-        }
-    }
+    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {}
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {

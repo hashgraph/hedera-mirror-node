@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Set;
@@ -39,7 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public interface Precompile {
 
     // Construct the synthetic transaction
-    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
+    void body(Bytes input, UnaryOperator<byte[]> aliasResolver);
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime);

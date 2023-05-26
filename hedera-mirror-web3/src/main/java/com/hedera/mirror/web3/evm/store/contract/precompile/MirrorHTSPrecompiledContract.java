@@ -33,7 +33,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -52,14 +51,12 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-    private static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final StackedStateFrames<Object> stackedStateFrames;
     private final PrecompileMapper precompileMapper;
-    private Optional<Precompile> precompile;
-    private TransactionBody.Builder transactionBody;
-    private long gasRequirement = 0;
+    private Precompile precompile;
+    private long gasRequirement = 0L;
     private HederaEvmStackedWorldStateUpdater updater;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
@@ -128,14 +125,14 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         prepareFields(frame);
         try {
             prepareComputation(input, updater::unaliased);
-        } catch (final NoSuchElementException | InvalidTransactionException e) {
+        } catch (final NoSuchElementException e) {
             final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.orElseThrow().getGasRequirement(now);
+        gasRequirement = precompile.getGasRequirement(now);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -171,55 +168,36 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     protected Bytes computeInternal(final MessageFrame frame) {
         Bytes result;
-        final var resolvedPrecompile = precompile.orElseThrow();
         try {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-            resolvedPrecompile.handleSentHbars(frame);
-            resolvedPrecompile.run(frame);
+            precompile.handleSentHbars(frame);
+            precompile.run(frame);
 
-            result = resolvedPrecompile.getSuccessResultFor();
+            result = precompile.getSuccessResultFor();
 
             stackedStateFrames.top().commit();
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
-            result = resolvedPrecompile.getFailureResultFor(status);
+            result = precompile.getFailureResultFor(status);
             if (e.isReverting()) {
                 frame.setState(MessageFrame.State.REVERT);
                 frame.setRevertReason(e.getRevertReason());
             }
         } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
-            result = resolvedPrecompile.getFailureResultFor(FAIL_INVALID);
+            result = precompile.getFailureResultFor(FAIL_INVALID);
         }
 
         return result;
     }
 
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        this.precompile = Optional.empty();
-        this.gasRequirement = 0L;
-
         final int functionId = input.getInt(0);
-        this.precompile = precompileMapper.lookup(functionId);
+        this.precompile = precompileMapper.lookup(functionId).orElseThrow();
 
-        if (precompile.isPresent()) {
-            this.transactionBody = decodeInput(input, aliasResolver);
-        } else {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-        }
-    }
-
-    TransactionBody.Builder decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        this.transactionBody = TransactionBody.newBuilder();
-        final var resolvedPrecompile = precompile.orElseThrow();
-        final var constructedBody = resolvedPrecompile.body(input, aliasResolver);
-        if (constructedBody == null) {
-            gasRequirement = defaultGas();
-            throw new InvalidTransactionException(FAIL_INVALID);
-        } else {
-            return constructedBody;
-        }
+        precompile.body(input, aliasResolver);
+        gasRequirement = defaultGas();
     }
 
     void prepareFields(final MessageFrame frame) {

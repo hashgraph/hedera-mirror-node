@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import jakarta.inject.Named;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -26,20 +27,28 @@ import java.util.Set;
 @Named
 public class PrecompileMapper {
 
+    private static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
+    private final Set<Integer> precompileSelectors = new HashSet<>();
 
-    public PrecompileMapper(final Set<Precompile> precompiles) {
+    public PrecompileMapper(final Set<Precompile> precompiles, final Set<Integer> precompileSelectors) {
         for (Precompile precompile : precompiles) {
             for (Integer selector : precompile.getFunctionSelectors()) {
                 abiConstantToPrecompile.put(selector, precompile);
             }
         }
+        this.precompileSelectors.addAll(precompileSelectors);
     }
 
     public Optional<Precompile> lookup(int functionSelector) {
         final var precompile = abiConstantToPrecompile.get(functionSelector);
         if (precompile != null) {
             return Optional.of(precompile);
+        }
+        // TODO If the function selector is not mapped but is from the list of HTS precompiles, throw an exception until
+        // the given precompile is supported
+        else if (precompileSelectors.contains(functionSelector)) {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
         } else {
             return Optional.empty();
         }

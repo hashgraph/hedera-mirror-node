@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.getPrecompileFunctionSelectors;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -82,7 +83,7 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        precompileMapper = new PrecompileMapper(Set.of(new MockPrecompile()));
+        precompileMapper = new PrecompileMapper(Set.of(new MockPrecompile()), getPrecompileFunctionSelectors());
         stackedStateFrames = new StackedStateFrames<>(accessors);
 
         // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
@@ -213,25 +214,6 @@ class MirrorHTSPrecompiledContractTest {
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_ACCOUNT_ID));
-        assertThat(expectedResult).isEqualTo(precompileResult);
-    }
-
-    @Test
-    void nullTransactionBodyIsHandledCorrectly() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000" + "00");
-
-        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
-        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
-        given(messageFrame.getSenderAddress()).willReturn(Address.ZERO);
-        given(messageFrame.isStatic()).willReturn(false);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
-
-        final var expectedResult = Pair.of(0L, null);
         assertThat(expectedResult).isEqualTo(precompileResult);
     }
 
