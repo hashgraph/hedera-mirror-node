@@ -90,6 +90,12 @@ public class CommonDownloaderProperties {
 
     @PostConstruct
     public void init() {
+        if (StringUtils.isBlank(bucketName)
+                && StringUtils.isBlank(HederaNetwork.getBucketName(mirrorProperties.getNetwork()))) {
+            throw new IllegalArgumentException(
+                    "Must define bucketName for network named '%s'".formatted(mirrorProperties.getNetwork()));
+        }
+
         StreamSourceProperties.SourceCredentials credentials = null;
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             credentials = new StreamSourceProperties.SourceCredentials();

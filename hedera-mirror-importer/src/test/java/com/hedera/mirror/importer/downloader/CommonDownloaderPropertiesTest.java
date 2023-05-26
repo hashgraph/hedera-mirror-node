@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.downloader;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.SourceType;
 import static com.hedera.mirror.importer.downloader.StreamSourceProperties.SourceCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
@@ -38,6 +39,18 @@ class CommonDownloaderPropertiesTest {
         var bucketName = "test";
         properties.setBucketName(bucketName);
         assertThat(properties.getBucketName()).isEqualTo(bucketName);
+    }
+
+    @Test
+    void initNoNetworkDefaultBucketName() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
     }
 
     @Test
