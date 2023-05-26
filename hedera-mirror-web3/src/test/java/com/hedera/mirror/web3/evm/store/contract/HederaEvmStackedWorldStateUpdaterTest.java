@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,8 +42,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.store.models.Id;
-import java.util.Collections;
 import java.util.List;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
