@@ -194,7 +194,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -237,7 +237,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -280,7 +280,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -322,8 +322,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                lastUsedSerialNumber,
-                customFees);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -365,8 +365,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                lastUsedSerialNumber,
-                customFees);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -409,7 +409,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -452,7 +452,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -495,7 +495,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
@@ -538,7 +538,7 @@ public class Token {
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
-                customFees);
+                oldToken.customFees);
     }
 
     /**
