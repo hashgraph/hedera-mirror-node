@@ -15,6 +15,7 @@
  */
 
 import {GetObjectCommand, S3} from '@aws-sdk/client-s3';
+import {NodeHttpHandler} from '@aws-sdk/node-http-handler';
 
 import config from './config';
 import {cloudProviders, defaultCloudProviderEndpoints} from './constants';
@@ -65,6 +66,10 @@ const buildS3ConfigFromStreamsConfig = () => {
 
   const endpoint = hasEndpointOverride ? endpointOverride : defaultCloudProviderEndpoints[cloudProvider];
   const forcePathStyle = hasEndpointOverride || isGCP;
+  const requestHandler = new NodeHttpHandler({
+    connectionTimeout: httpOptions.connectTimeout,
+    requestTimeout: httpOptions.timeout,
+  });
 
   const s3Config = {
     credentials: {
@@ -73,9 +78,9 @@ const buildS3ConfigFromStreamsConfig = () => {
     },
     endpoint,
     forcePathStyle,
-    httpOptions,
-    maxRetries,
+    maxAttempts: maxRetries + 1,
     region,
+    requestHandler,
   };
 
   if (!!accessKey && !!secretKey) {

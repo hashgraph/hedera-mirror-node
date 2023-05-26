@@ -20,11 +20,16 @@ import s3client from '../s3client';
 import {jest} from '@jest/globals';
 
 const defaultValidStreamsConfig = {
-  cloudProvider: cloudProviders.S3,
-  region: 'us-east-3',
   accessKey: 'testAccessKey',
-  secretKey: 'testSecretKey',
+  cloudProvider: cloudProviders.S3,
   bucketName: 'testBucket',
+  httpOptions: {
+    connectTimeout: 12,
+    timeout: 15,
+  },
+  maxRetries: 1,
+  region: 'us-east-3',
+  secretKey: 'testSecretKey',
 };
 
 beforeEach(() => {
@@ -57,16 +62,21 @@ describe('createS3Client with valid config', () => {
     }
 
     const expectedRegion = streamsConfig.region ? streamsConfig.region : 'us-east-1';
-    expect(await s3Config.region()).toEqual(expectedRegion);
+    expect(s3Config.region()).resolves.toEqual(expectedRegion);
+
+    expect(s3Config.requestHandler.configProvider).resolves.toMatchObject({
+      connectionTimeout: streamsConfig.httpOptions.connectTimeout,
+      requestTimeout: streamsConfig.httpOptions.timeout,
+    });
 
     if (!streamsConfig.accessKey || !streamsConfig.secretKey) {
       expect(s3Client.getHasCredentials()).toBeFalsy();
     } else {
       expect(s3Client.getHasCredentials()).toBeTruthy();
-      expect(s3Config.credentials).toBeTruthy();
-      const credentials = await s3Config.credentials();
-      expect(credentials.accessKeyId).toEqual(streamsConfig.accessKey);
-      expect(credentials.secretAccessKey).toEqual(streamsConfig.secretKey);
+      expect(s3Config.credentials()).resolves.toMatchObject({
+        accessKeyId: streamsConfig.accessKey,
+        secretAccessKey: streamsConfig.secretKey,
+      });
     }
 
     const abortController = new AbortController();
@@ -135,8 +145,8 @@ describe('createS3Client with valid config', () => {
       override: {secretKey: ''},
     },
     {
-      name: 'valid config with maxRetries 10',
-      override: {maxRetries: 10},
+      name: 'valid config with maxRetries 3',
+      override: {maxRetries: 3},
     },
     {
       name: 'valid config with updated httpOptions',
