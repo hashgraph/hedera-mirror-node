@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
@@ -36,6 +35,7 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import lombok.CustomLog;
@@ -114,9 +114,9 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     @NonNull
     @Override
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
-        // Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
-        // This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
-        // After the Precompile classes are implemented, this workaround won't be needed.
+        /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
+        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
+        After the Precompile classes are implemented, this workaround won't be needed. */
         if (isViewFunction(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
@@ -128,17 +128,10 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         prepareFields(frame);
         try {
             prepareComputation(input, updater::unaliased);
-        } catch (InvalidTransactionException e) {
+        } catch (final NoSuchElementException | InvalidTransactionException e) {
             final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
-        }
-
-        gasRequirement = defaultGas();
-        if (this.transactionBody == null) {
-            final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
-            frame.setExceptionalHaltReason(haltReason);
-            return PrecompileContractResult.halt(null, haltReason);
         }
 
         final var now = frame.getBlockValues().getTimestamp();
@@ -178,7 +171,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     protected Bytes computeInternal(final MessageFrame frame) {
         Bytes result;
-        Precompile resolvedPrecompile = precompile.orElseThrow();
+        final var resolvedPrecompile = precompile.orElseThrow();
         try {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
@@ -203,27 +196,30 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return result;
     }
 
-    @SuppressWarnings({"java:S2583", "java:S1479", "java:S4165"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = Optional.empty();
-        this.transactionBody = null;
-
-        final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
+        final int functionId = input.getInt(0);
         this.precompile = precompileMapper.lookup(functionId);
 
         if (precompile.isPresent()) {
-            decodeInput(input, aliasResolver);
+            this.transactionBody = decodeInput(input, aliasResolver);
         } else {
             throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
         }
     }
 
-    void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    TransactionBody.Builder decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = TransactionBody.newBuilder();
         final var resolvedPrecompile = precompile.orElseThrow();
-        this.transactionBody = resolvedPrecompile.body(input, aliasResolver);
+        final var constructedBody = resolvedPrecompile.body(input, aliasResolver);
+        if (constructedBody == null) {
+            gasRequirement = defaultGas();
+            throw new InvalidTransactionException(FAIL_INVALID);
+        } else {
+            return constructedBody;
+        }
     }
 
     void prepareFields(final MessageFrame frame) {
