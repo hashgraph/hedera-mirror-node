@@ -36,49 +36,43 @@ Tests can be compiled and run by running the following command from the root fol
 
 Configuration properties are set in the `application.yml` file located under `src/test/resources`. This component
 uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application. Available properties
-under `hedera.mirror.test.acceptance` include:
+include:
 
-- `backOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
-- `createOperatorAccount` - Whether to create an operator account to run the acceptance tests
-- `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
-  `environments.
-- `feature`
-  - `maxContractFunctionGas` - The maximum amount of gas an account is willing to pay for a contract function call.
-- `maxRetries` - The number of times client should retry on supported failures.
-- `maxTinyBarTransactionFee` - The maximum transaction fee.
-- `messageTimeout` - The time to wait on messages representing transactions (default is 20 seconds).
-- `mirrorNodeAddress` - The mirror node grpc server endpoint including IP address and port. Refer to
-  public [documentation](https://docs.hedera.com/guides/mirrornet/hedera-mirror-node) for a list of available endpoints.
-- `network` - The desired Hedera network environment to point to. Options currently include `MAINNET`, `PREVIEWNET`,
-  `TESTNET` (default) and `OTHER`. Set to `OTHER` to point to a custom environment.
-- `nodes` - A map of custom nodes to be used by SDK. This is made up of an account ID (e.g. 0.0.1000) and host (e.g.
-  127.0.0.1) key-value pairs.
-- `operatorId` - Account ID on the network in 'x.y.z' format.
-- `operatorKey` - Account private key to be used for signing transaction and client identification. Please do not check
-  in.
-- `rest`
-  - `baseUrl` - The host URL to the mirror node. For example, https://testnet.mirrornode.hedera.com
-  - `delay` - The time to wait in between failed REST API calls.
-  - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.
-  - `maxBackoff` - The maximum backoff duration the mirror grpc subscriber will wait between attempts.
-  - `minBackoff` - The minimum backoff duration the mirror grpc subscriber will wait between attempts.
-  - `retryableExceptions` - List of retryable exception class types
-- `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
-  nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
-- `sdk`
-  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete.
-  - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
-- `startupTimeout` - How long the startup probe should wait for the network as a whole to be healthy before failing the
-  tests
-- `web3`
-  - `baseUrl` - The endpoint associated with the web3 API.
-- `webclient`
-  - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
-  - `readTimeout` - The timeout duration to wait for data to be read.
-  - `wiretap` - Whether a wire logger configuration should be applied to connection calls.
-  - `writeTimeout` - The timeout duration to wait for data to be written.
+| Name                                                           | Default                                      | Description                                                                                               |
+| -------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `hedera.mirror.test.acceptance.backOffPeriod`                  | 5s                                           | The amount of time the client will wait before retrying a retryable failure.                              |
+| `hedera.mirror.test.acceptance.createOperatorAccount`          | false                                        | Whether to create a separate operator account to run the acceptance tests.                                |
+| `hedera.mirror.test.acceptance.emitBackgroundMessages`         | false                                        | Whether background topic messages should be emitted.                                                      |
+| `hedera.mirror.test.acceptance.feature.maxContractFunctionGas` | 3000000                                      | The maximum amount of gas an account is willing to pay for a contract call.                               |
+| `hedera.mirror.test.acceptance.feature.sidecars`               | false                                        | Whether information in sidecars should be used to verify test scenarios.                                  |
+| `hedera.mirror.test.acceptance.maxNodes`                       | 10                                           | The maximum number of nodes to validate from the address book.                                            |
+| `hedera.mirror.test.acceptance.maxRetries`                     | 2                                            | The number of times client should retry mirror node on supported failures.                                |
+| `hedera.mirror.test.acceptance.maxTinyBarTransactionFee`       | 5000000000                                   | The maximum transaction fee the payer is willing to pay in tinybars.                                      |
+| `hedera.mirror.test.acceptance.messageTimeout`                 | 20s                                          | The maximum amount of time to wait to receive topic messages from the mirror node.                        |
+| `hedera.mirror.test.acceptance.mirrorNodeAddress`              | testnet.mirrornode.hedera.com:443            | The mirror node gRPC server endpoint including IP address and port.                                       |
+| `hedera.mirror.test.acceptance.network`                        | TESTNET                                      | Which Hedera network to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`.                 |
+| `hedera.mirror.test.acceptance.nodes`                          | []                                           | A map of custom consensus node with the key being the account ID and the value its endpoint.              |
+| `hedera.mirror.test.acceptance.operatorBalance`                | 26000000000                                  | The amount of tinybars to fund the operator. Applicable only when `createOperatorAccount` is `true`.      |
+| `hedera.mirror.test.acceptance.operatorId`                     | 0.0.2                                        | Operator account ID used to pay for transactions.                                                         |
+| `hedera.mirror.test.acceptance.operatorKey`                    | Genesis key                                  | Operator ED25519 private key used to sign transactions in hex encoded DER format.                         |
+| `hedera.mirror.test.acceptance.rest.baseUrl`                   | https://testnet.mirrornode.hedera.com/api/v1 | The URL to the mirror node REST API.                                                                      |
+| `hedera.mirror.test.acceptance.rest.maxAttempts`               | 20                                           | The maximum number of attempts when calling a REST API endpoint and receiving a 404.                      |
+| `hedera.mirror.test.acceptance.rest.maxBackoff`                | 4s                                           | The maximum amount of time to wait between REST API attempts.                                             |
+| `hedera.mirror.test.acceptance.rest.minBackoff`                | 0.5s                                         | The minimum amount of time to wait between REST API attempts.                                             |
+| `hedera.mirror.test.acceptance.rest.retryableExceptions`       | [java.lang.Exception]                        | A list of exception classes that will be considered for retry.                                            |
+| `hedera.mirror.test.acceptance.retrieveAddressBook`            | true                                         | Whether to download the address book from the mirror node and use those nodes to publish transactions.    |
+| `hedera.mirror.test.acceptance.sdk.grpcDeadline`               | 10s                                          | The maximum amount of time to wait for a grpc call to complete.                                           |
+| `hedera.mirror.test.acceptance.sdk.maxAttempts`                | 100                                          | The maximum number of times the sdk should try to submit a transaction to the network.                    |
+| `hedera.mirror.test.acceptance.sdk.maxNodesPerTransaction`     | 2147483647                                   | The maximum number of nodes that a transaction can be submitted to.                                       |
+| `hedera.mirror.test.acceptance.startupTimeout`                 | 60m                                          | How long the startup probe should wait for the network as a whole to be healthy before failing the tests. |
+| `hedera.mirror.test.acceptance.web3.baseUrl`                   | Inherits `rest.baseUrl`                      | The endpoint associated with the web3 API.                                                                |
+| `hedera.mirror.test.acceptance.web3.enabled`                   | false                                        | Whether to invoke the web3 API.                                                                           |
+| `hedera.mirror.test.acceptance.webclient.connectionTimeout`    | 10s                                          | The timeout duration to wait to establish a connection with the server.                                   |
+| `hedera.mirror.test.acceptance.webclient.readTimeout`          | 10s                                          | The timeout duration to wait for data to be read.                                                         |
+| `hedera.mirror.test.acceptance.webclient.wiretap`              | false                                        | Whether a wire logger configuration should be applied to connection calls.                                |
+| `hedera.mirror.test.acceptance.webclient.writeTimeout`         | 10s                                          | The timeout duration to wait for data to be written.                                                      |
 
-(Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
+Options can be set by creating your own configuration file with the above properties. This allows for
 multiple files per environment. The `spring.config.additional-location` property can be set to the folder containing
 the environment-specific `application.yml`:
 
