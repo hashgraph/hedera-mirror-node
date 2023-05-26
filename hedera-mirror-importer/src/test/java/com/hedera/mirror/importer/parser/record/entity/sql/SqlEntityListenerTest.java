@@ -106,7 +106,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -1305,7 +1304,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
-    @Disabled("because it's only currently working for the false case; balance tracking is broken")
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onNftTransfer(boolean trackBalance) {
@@ -1357,7 +1356,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
     }
 
-    @Disabled("because it's only currently working for the false case; balance tracking is broken")
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onNftTransferBurn(boolean trackBalance) {
@@ -1394,7 +1393,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
-    @Disabled("because it's only currently working for the false case; balance tracking is broken")
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onNftTransferMint(boolean trackBalance) {
@@ -1430,7 +1429,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
-    @Disabled("because we are getting back all 3 transfers, not a merged one")
+    // currently broken as we are getting back all 3 transfers, instead of the merged one
     @Test
     void onNftTransferMultiReceiverSingleTimestamp() {
         var nftTransfer = domainBuilder.nftTransfer();

@@ -97,7 +97,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -727,7 +726,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .isEqualTo(expectedTokenAccount);
     }
 
-    @Disabled("because the balance tracking in token_account is broken (comes back as -1 and not 0)")
+    // currently broken due to balance tracking in token_account being broken (comes back as -1 and not 0)
     @Test
     void tokenDissociateDeletedNonFungibleToken() {
         // given
