@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import org.junit.jupiter.api.Test;
@@ -73,8 +74,9 @@ class MirrorPropertiesTest {
         assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO); // Default
         assertThat(properties.getNetworkPrefix()).isNull();
 
-        properties.setNetwork(HederaNetwork.TESTNET);
-        assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.TESTNET);
-        assertThat(properties.getNetworkPrefix()).isNull();
+        assertThrows(NullPointerException.class, () -> properties.setNetwork(null));
+        assertThrows(NullPointerException.class, () -> HederaNetwork.getBucketName(null));
+        assertThrows(NullPointerException.class, () -> HederaNetwork.isAllowAnonymousAccess(null));
+        assertThrows(NullPointerException.class, () -> HederaNetwork.getCanonicalizedNetwork(null));
     }
 }
