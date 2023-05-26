@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,7 @@ public class Token {
     private final int decimals;
     private final long autoRenewPeriod;
     private final long lastUsedSerialNumber;
+    private final List<CustomFee> customFees;
 
     @SuppressWarnings("java:S107")
     public Token(
@@ -116,7 +119,8 @@ public class Token {
             String symbol,
             int decimals,
             long autoRenewPeriod,
-            long lastUsedSerialNumber) {
+            long lastUsedSerialNumber,
+            List<CustomFee> customFees) {
         this.id = id;
         this.mintedUniqueTokens = mintedUniqueTokens;
         this.removedUniqueTokens = removedUniqueTokens;
@@ -147,6 +151,7 @@ public class Token {
         this.decimals = decimals;
         this.autoRenewPeriod = autoRenewPeriod;
         this.lastUsedSerialNumber = lastUsedSerialNumber;
+        this.customFees = customFees;
     }
 
     /**
@@ -188,7 +193,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -230,7 +236,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -272,7 +279,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                lastUsedSerialNumber);
+                lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -314,7 +322,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -356,7 +365,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -398,7 +408,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -440,7 +451,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -482,7 +494,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -524,7 +537,8 @@ public class Token {
                 oldToken.symbol,
                 oldToken.decimals,
                 oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber);
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -584,7 +598,8 @@ public class Token {
                 op.getSymbol(),
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
-                0);
+                0,
+                Collections.emptyList());
     }
 
     // copied from TokenTypesManager in services
@@ -971,6 +986,10 @@ public class Token {
 
     public long getLastUsedSerialNumber() {
         return lastUsedSerialNumber;
+    }
+
+    public List<CustomFee> getCustomFees() {
+        return customFees;
     }
 
     public boolean hasMintedUniqueTokens() {
