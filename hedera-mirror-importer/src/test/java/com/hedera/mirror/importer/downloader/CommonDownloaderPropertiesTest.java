@@ -54,6 +54,23 @@ class CommonDownloaderPropertiesTest {
     }
 
     @Test
+    void isAnonymousCredentials() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        // Default network is DEMO, which is the only network allowing anonymous access
+        assertThat(properties.isAnonymousCredentials()).isTrue();
+
+        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+        properties.setAllowAnonymousAccess(true);
+        assertThat(properties.isAnonymousCredentials()).isTrue();
+    }
+
+    @Test
     void initNoSources() {
         var properties = new CommonDownloaderProperties(new MirrorProperties());
         properties.setCloudProvider(SourceType.S3);
