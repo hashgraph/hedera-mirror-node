@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,8 +36,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.store.models.Id;
-import java.util.Collections;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -97,33 +94,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         assertThat(stackedStateFrames.height()).isEqualTo(1);
-        stackedStateFrames.push();
-        stackedStateFrames.push();
-        var topFrame = stackedStateFrames.top();
-        var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        final var accountModel = new com.hedera.services.store.models.Account(
-                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
-                0L,
-                123L,
-                false,
-                0L,
-                0L,
-                null,
-                0,
-                Collections.emptySortedMap(),
-                Collections.emptySortedMap(),
-                Collections.emptySortedSet(),
-                0,
-                0,
-                0);
-        accountAccessor.set(address, accountModel);
+        subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
-        topFrame = stackedStateFrames.top();
-        accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
         final var accountFromTopFrame = accountAccessor.get(address);
         assertTrue(accountFromTopFrame.isPresent());
-        assertThat(accountFromTopFrame.get().getBalance()).isEqualTo(accountModel.getBalance());
-        assertThat(stackedStateFrames.height()).isEqualTo(2);
+        assertThat(accountFromTopFrame.get().getAccountAddress()).isEqualTo(address);
+        assertThat(stackedStateFrames.height()).isEqualTo(1);
     }
 
     @Test

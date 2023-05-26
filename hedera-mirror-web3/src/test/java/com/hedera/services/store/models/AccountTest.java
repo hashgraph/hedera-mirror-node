@@ -54,7 +54,8 @@ class AccountTest {
                 null,
                 numAssociations,
                 numPositiveBalances,
-                numTreasuryTitles);
+                numTreasuryTitles,
+                0L);
     }
 
     @Test

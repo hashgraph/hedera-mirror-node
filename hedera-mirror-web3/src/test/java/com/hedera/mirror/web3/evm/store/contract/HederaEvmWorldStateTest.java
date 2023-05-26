@@ -175,14 +175,15 @@ class HederaEvmWorldStateTest {
                 Collections.emptySortedSet(),
                 0,
                 0,
-                0);
+                0,
+                0L);
         accountAccessor.set(address, accountModel);
         actualSubject.commit();
         topFrame = stackedStateFrames.top();
         accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
         final var accountFromTopFrame = accountAccessor.get(address);
         assertTrue(accountFromTopFrame.isPresent());
-        assertThat(accountFromTopFrame.get().getBalance()).isEqualTo(accountModel.getBalance());
+        assertThat(accountFromTopFrame.get()).isEqualTo(accountModel);
         assertThat(stackedStateFrames.height()).isEqualTo(2);
     }
 
