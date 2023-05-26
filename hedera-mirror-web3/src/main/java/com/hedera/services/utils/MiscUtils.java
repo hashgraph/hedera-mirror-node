@@ -16,6 +16,8 @@
 
 package com.hedera.services.utils;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.jproto.JKey;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
@@ -39,6 +41,14 @@ public final class MiscUtils {
         x ^= x >>> 24;
         x += x << 30;
         return x;
+    }
+
+    public static Key asPrimitiveKeyUnchecked(final ByteString alias) {
+        try {
+            return Key.parseFrom(alias);
+        } catch (final InvalidProtocolBufferException internal) {
+            throw new IllegalStateException(internal);
+        }
     }
 
     public static JKey asFcKeyUnchecked(final Key key) {

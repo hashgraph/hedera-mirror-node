@@ -22,6 +22,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -217,5 +218,9 @@ public final class EntityIdUtils {
 
     public static boolean isAlias(final AccountID idOrAlias) {
         return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+    }
+
+    public static boolean isOfEvmAddressSize(final ByteString alias) {
+        return alias.size() == EVM_ADDRESS_SIZE;
     }
 }
