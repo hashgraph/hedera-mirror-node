@@ -807,7 +807,7 @@ class BatchUpserterTest extends IntegrationTest {
             EntityId tokenId, EntityId senderAccountId, long serialNumber, long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setIsApproval(false);
-        nftTransfer.setSenderAccountId(senderAccountId);
+        nftTransfer.setSenderAccountId(senderAccountId.getId());
         return nftTransfer;
     }
 

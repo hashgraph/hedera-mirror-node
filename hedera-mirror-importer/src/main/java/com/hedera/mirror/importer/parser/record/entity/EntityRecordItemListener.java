@@ -176,7 +176,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setInitialBalance(0L);
         transaction.setMaxFee(body.getTransactionFee());
         transaction.setMemo(DomainUtils.toBytes(body.getMemoBytes()));
-        transaction.setNftTransfer(new ArrayList<com.hedera.mirror.common.domain.token.NftTransfer>());
         transaction.setNodeAccountId(nodeAccount);
         transaction.setNonce(transactionId.getNonce());
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
@@ -488,6 +487,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
         var nftTransfers = transaction.getNftTransfer();
+        if (nftTransfers == null) {
+            transaction.setNftTransfer(new ArrayList<>());
+            nftTransfers = transaction.getNftTransfer();
+        }
 
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
@@ -496,9 +499,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             var nftTransferDomain = new com.hedera.mirror.common.domain.token.NftTransfer();
             nftTransferDomain.setIsApproval(false);
-            nftTransferDomain.setReceiverAccountId(receiverId);
-            nftTransferDomain.setSenderAccountId(senderId);
-            nftTransferDomain.setPayerAccountId(payerAccountId);
+            nftTransferDomain.setReceiverAccountId(receiverId.getId());
+            nftTransferDomain.setSenderAccountId(senderId.getId());
+            nftTransferDomain.setSerialNumber(serialNumber);
+            nftTransferDomain.setTokenId(tokenId.getTokenNum());
 
             var nftTransferInsideBody = findNftTransferInsideBody(nftTransfer, tokenId, body);
             if (nftTransferInsideBody != null) {
@@ -506,7 +510,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
             nftTransfers.add(nftTransferDomain);
 
-            entityListener.onNftTransfer(nftTransferDomain);
             if (!EntityId.isEmpty(receiverId)) {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }

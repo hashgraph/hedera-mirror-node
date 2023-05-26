@@ -31,7 +31,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import java.util.Collections;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -74,7 +73,7 @@ public class Transaction implements Persistable<Long> {
     @Builder.Default
     @Type(JsonBinaryType.class)
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    private List<NftTransfer> nftTransfer = Collections.emptyList();
+    private List<NftTransfer> nftTransfer = null;
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)

@@ -43,28 +43,30 @@ class TransactionTest {
 
         NftTransfer nftTransfer1 = new NftTransfer();
         nftTransfer1.setIsApproval(false);
-        nftTransfer1.setPayerAccountId(EntityId.of("0.0.11", EntityType.ACCOUNT));
-        nftTransfer1.setReceiverAccountId(EntityId.of("0.0.12", EntityType.ACCOUNT));
-        nftTransfer1.setSenderAccountId(EntityId.of("0.0.13", EntityType.ACCOUNT));
+        nftTransfer1.setReceiverAccountId(10L);
+        nftTransfer1.setSenderAccountId(11L);
+        nftTransfer1.setSerialNumber(12L);
+        nftTransfer1.setTokenId(13L);
 
         NftTransfer nftTransfer2 = new NftTransfer();
         nftTransfer2.setIsApproval(true);
-        nftTransfer2.setPayerAccountId(EntityId.of("0.0.15", EntityType.ACCOUNT));
-        nftTransfer2.setReceiverAccountId(EntityId.of("0.0.16", EntityType.ACCOUNT));
-        nftTransfer2.setSenderAccountId(EntityId.of("0.0.17", EntityType.ACCOUNT));
+        nftTransfer2.setReceiverAccountId(14L);
+        nftTransfer2.setSenderAccountId(15L);
+        nftTransfer2.setSerialNumber(16L);
+        nftTransfer2.setTokenId(17L);
 
         transaction.setNftTransfer(Arrays.asList(nftTransfer1, nftTransfer2));
-        transaction.setNodeAccountId(EntityId.of(0, 1, 19, EntityType.ACCOUNT));
-        transaction.setNonce(20);
-        transaction.setParentConsensusTimestamp(21L);
-        transaction.setPayerAccountId(EntityId.of("0.0.22", EntityType.ACCOUNT));
-        transaction.setResult(23);
+        transaction.setNodeAccountId(EntityId.of(0, 1, 18, EntityType.ACCOUNT));
+        transaction.setNonce(19);
+        transaction.setParentConsensusTimestamp(20L);
+        transaction.setPayerAccountId(EntityId.of("0.0.21", EntityType.ACCOUNT));
+        transaction.setResult(22);
         transaction.setScheduled(false);
-        transaction.setTransactionBytes(new byte[] {25, 26, 27});
-        transaction.setTransactionHash(new byte[] {28, 29, 30});
-        transaction.setType(31);
-        transaction.setValidDurationSeconds(32L);
-        transaction.setValidStartNs(33L);
+        transaction.setTransactionBytes(new byte[] {23, 24, 25});
+        transaction.setTransactionHash(new byte[] {26, 27, 28});
+        transaction.setType(29);
+        transaction.setValidDurationSeconds(30L);
+        transaction.setValidStartNs(31L);
 
         ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         String json = objectMapper.writeValueAsString(transaction);
@@ -77,25 +79,27 @@ class TransactionTest {
                         + "\"initial_balance\":5,"
                         + "\"memo\":\"BgcI\","
                         + "\"max_fee\":9,"
-                        + "\"nft_transfer\":["
-                        + "{\"is_approval\":false,"
-                        + "\"payer_account_id\":{\"shard_num\":0,\"realm_num\":0,\"entity_num\":11,\"type\":1},"
-                        + "\"receiver_account_id\":12,"
-                        + "\"sender_account_id\":13},"
-                        + "{\"is_approval\":true,"
-                        + "\"payer_account_id\":{\"shard_num\":0,\"realm_num\":0,\"entity_num\":15,\"type\":1},"
-                        + "\"receiver_account_id\":16,"
-                        + "\"sender_account_id\":17}],"
-                        + "\"node_account_id\":4294967315,"
-                        + "\"nonce\":20,"
-                        + "\"parent_consensus_timestamp\":21,"
-                        + "\"payer_account_id\":22,"
-                        + "\"result\":23,"
+                        + "\"nft_transfer\":\"["
+                        + "{\\\"is_approval\\\":false,"
+                        + "\\\"receiver_account_id\\\":10,"
+                        + "\\\"sender_account_id\\\":11,"
+                        + "\\\"serial_number\\\":12,"
+                        + "\\\"token_id\\\":13},"
+                        + "{\\\"is_approval\\\":true,"
+                        + "\\\"receiver_account_id\\\":14,"
+                        + "\\\"sender_account_id\\\":15,"
+                        + "\\\"serial_number\\\":16,"
+                        + "\\\"token_id\\\":17}]\","
+                        + "\"node_account_id\":4294967314,"
+                        + "\"nonce\":19,"
+                        + "\"parent_consensus_timestamp\":20,"
+                        + "\"payer_account_id\":21,"
+                        + "\"result\":22,"
                         + "\"scheduled\":false,"
-                        + "\"transaction_bytes\":\"GRob\","
-                        + "\"transaction_hash\":\"HB0e\","
-                        + "\"type\":31,"
-                        + "\"valid_duration_seconds\":32,"
-                        + "\"valid_start_ns\":33}");
+                        + "\"transaction_bytes\":\"FxgZ\","
+                        + "\"transaction_hash\":\"Ghsc\","
+                        + "\"type\":29,"
+                        + "\"valid_duration_seconds\":30,"
+                        + "\"valid_start_ns\":31}");
     }
 }

@@ -40,7 +40,6 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -68,7 +67,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -77,7 +75,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -94,7 +91,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
-    private final NftRepository nftRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
@@ -151,7 +147,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             EntityIdService entityIdService,
             EntityProperties entityProperties,
             ApplicationEventPublisher eventPublisher,
-            NftRepository nftRepository,
             RecordFileRepository recordFileRepository,
             SidecarFileRepository sidecarFileRepository,
             SqlProperties sqlProperties,
@@ -160,7 +155,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
-        this.nftRepository = nftRepository;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
@@ -340,11 +334,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onNftAllowance(NftAllowance nftAllowance) {
         var merged = nftAllowanceState.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
         nftAllowances.add(merged);
-    }
-
-    @Override
-    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        // now handled inside EntityRecordItemListener
     }
 
     @Override
@@ -560,23 +549,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    private void flushNftState() {
-        try {
-            // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            batchPersister.persist(tokens.values());
-            batchPersister.persist(tokenAccounts);
-            batchPersister.persist(nfts.values());
-        } catch (ParserException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ParserException(e);
-        } finally {
-            tokens.clear();
-            tokenAccounts.clear();
-            nfts.clear();
-        }
-    }
-
     private ContractState mergeContractState(ContractState previous, ContractState current) {
         previous.setValue(current.getValue());
         previous.setModifiedTimestamp(current.getModifiedTimestamp());
@@ -729,15 +701,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setSpender(newNft.getSpender());
 
         return cachedNft;
-    }
-
-    private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
-        // flatten multi receiver transfers
-        if (!Objects.equals(cachedNftTransfer.getReceiverAccountId(), newNftTransfer.getReceiverAccountId())) {
-            cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
-        }
-
-        return cachedNftTransfer;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {

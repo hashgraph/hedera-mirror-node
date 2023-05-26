@@ -575,9 +575,9 @@ public class DomainBuilder {
 
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
         var builder = NftTransfer.builder()
-                .receiverAccountId(entityId(ACCOUNT))
-                .payerAccountId(entityId(ACCOUNT))
-                .senderAccountId(entityId(ACCOUNT));
+                .receiverAccountId(entityId(ACCOUNT).getId())
+                .senderAccountId(entityId(ACCOUNT).getId())
+                .tokenId(entityId(TOKEN).getId());
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -837,7 +837,6 @@ public class DomainBuilder {
                 .initialBalance(10000000L)
                 .maxFee(100000000L)
                 .memo(bytes(10))
-                .nftTransfer(List.of(nftTransfer().get()))
                 .nodeAccountId(entityId(ACCOUNT))
                 .nonce(0)
                 .parentConsensusTimestamp(timestamp())
