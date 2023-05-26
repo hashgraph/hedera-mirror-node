@@ -96,7 +96,8 @@ class TokenRelationshipTest {
                 null,
                 3,
                 defaultIntValue,
-                defaultIntValue);
+                defaultIntValue,
+                0L);
 
         subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
     }

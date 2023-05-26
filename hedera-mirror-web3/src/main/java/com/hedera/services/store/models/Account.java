@@ -50,6 +50,7 @@ public class Account extends HederaEvmAccount {
     private final int numAssociations;
     private final int numPositiveBalances;
     private final int numTreasuryTitles;
+    private final long ethereumNonce;
 
     @SuppressWarnings("java:S107")
     public Account(
@@ -66,7 +67,8 @@ public class Account extends HederaEvmAccount {
             SortedSet<FcTokenAllowanceId> approveForAllNfts,
             int numAssociations,
             int numPositiveBalances,
-            int numTreasuryTitles) {
+            int numTreasuryTitles,
+            long ethereumNonce) {
         super(id.asEvmAddress());
         this.id = id;
         this.expiry = expiry;
@@ -83,6 +85,7 @@ public class Account extends HederaEvmAccount {
         this.numAssociations = numAssociations;
         this.numPositiveBalances = numPositiveBalances;
         this.numTreasuryTitles = numTreasuryTitles;
+        this.ethereumNonce = ethereumNonce;
     }
 
     /**
@@ -90,7 +93,7 @@ public class Account extends HederaEvmAccount {
      * Used for treasury accounts as those are the only fields we need.
      */
     public Account(Id id, long balance) {
-        this(id, 0, balance, false, 0, 0, null, 0, null, null, null, 0, 0, 0);
+        this(id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L);
     }
 
     /**
@@ -116,7 +119,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
-                oldAccount.numTreasuryTitles);
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
     }
 
     /**
@@ -143,7 +147,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
                 newNumPositiveBalances,
-                oldAccount.numTreasuryTitles);
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
     }
 
     public int getMaxAutomaticAssociations() {
