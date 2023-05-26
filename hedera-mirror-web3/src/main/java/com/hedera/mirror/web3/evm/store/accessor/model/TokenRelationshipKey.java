@@ -14,24 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.accessor;
+package com.hedera.mirror.web3.evm.store.accessor.model;
 
-import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.web3.repository.NftRepository;
-import jakarta.inject.Named;
-import java.util.Optional;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import org.hyperledger.besu.datatypes.Address;
 
-@Named
-@RequiredArgsConstructor
-public class NftDatabaseAccessor extends DatabaseAccessor<NftId, Nft> {
-
-    private final NftRepository nftRepository;
-
-    @Override
-    public @NonNull Optional<Nft> get(@NonNull NftId key) {
-        return nftRepository.findById(key);
-    }
-}
+public record TokenRelationshipKey(Address tokenAddress, Address accountAddress) {}
