@@ -65,10 +65,7 @@ public abstract class AbstractNetworkClient {
 
     @SneakyThrows
     public <O, T extends Query<O, T>> O executeQuery(Supplier<Query<O, T>> querySupplier) {
-        var grpcDeadline =
-                sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
-        return retryTemplate.execute(
-                x -> querySupplier.get().setGrpcDeadline(grpcDeadline).execute(client));
+        return retryTemplate.execute(x -> querySupplier.get().execute(client));
     }
 
     @SneakyThrows
@@ -91,11 +88,6 @@ public abstract class AbstractNetworkClient {
             log.debug("{} additional signatures added to transaction", keyList.size());
             numSignatures += keyList.size();
         }
-
-        // Set properties from config
-        var sdkProperties = sdkClient.getAcceptanceTestProperties().getSdkProperties();
-        transaction.setGrpcDeadline(sdkProperties.getGrpcDeadline());
-        transaction.setMaxAttempts(sdkProperties.getMaxAttempts());
 
         var transactionResponse = retryTemplate.execute(x -> transaction.execute(client));
         var transactionId = transactionResponse.transactionId;
@@ -148,22 +140,16 @@ public abstract class AbstractNetworkClient {
 
     @SneakyThrows
     public TransactionRecord getTransactionRecord(TransactionId transactionId) {
-        var grpcDeadline =
-                sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
         return retryTemplate.execute(x -> {
             var receipt = new TransactionReceiptQuery()
                     .setTransactionId(transactionId)
-                    .setGrpcDeadline(grpcDeadline)
                     .execute(client);
             if (receipt.status != Status.SUCCESS) {
                 throw new RuntimeException(
                         String.format("Transaction %s is unsuccessful: %s", transactionId, receipt.status));
             }
 
-            return new TransactionRecordQuery()
-                    .setTransactionId(transactionId)
-                    .setGrpcDeadline(grpcDeadline)
-                    .execute(client);
+            return new TransactionRecordQuery().setTransactionId(transactionId).execute(client);
         });
     }
 

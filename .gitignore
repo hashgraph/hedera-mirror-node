@@ -149,3 +149,5 @@ build
 # Security
 .dccache
 snyk
+
+hedera-mirror-rest/report.html*
