@@ -22,6 +22,8 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -223,5 +225,19 @@ public final class EntityIdUtils {
 
     public static boolean isAlias(final AccountID idOrAlias) {
         return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+    }
+
+    public static EntityId entityIdFromId(Id id) {
+        if (id == null) {
+            return null;
+        }
+        return new EntityId(id.shard(), id.realm(), id.num(), EntityType.UNKNOWN);
+    }
+
+    public static Id idFromEntityId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 }

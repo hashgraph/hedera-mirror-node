@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -45,10 +46,9 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
@@ -90,13 +90,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
 
     private long getOwnedNfts(Long accountId) {
         return nftRepository.countByAccountIdNotDeleted(accountId);
-    }
-
-    private Id idFromEntityId(EntityId entityId) {
-        if (entityId == null) {
-            return null;
-        }
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
