@@ -78,40 +78,44 @@ public class StartupProbe {
             return;
         }
 
-        // step 1: Create a new topic for the subsequent HCS submit message action.
+        log.info("Creating a topic to confirm node connectivity");
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
 
-        // step 2: Query for the receipt of the HCS topic create (until successful or time runs out)
         var topicId = executeQuery(
                         client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionId))
                 .topicId;
 
-        // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
+        log.info("Created topic {} successfully", topicId);
         callRestEndpoint(stopwatch, transactionId);
 
-        // step 4: Query the mirror node gRPC API for a HCS message, until successful or time runs out
-        CountDownLatch messageLatch = new CountDownLatch(1);
+        var messageLatch = new CountDownLatch(1);
         SubscriptionHandle subscription = null;
 
         try {
+            log.info("Subscribing to the topic");
             subscription = retryTemplate.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .setMaxAttempts(Integer.MAX_VALUE)
-                    .setRetryHandler(t -> true)
+                    .setRetryHandler(t -> {
+                        log.info("Retrying exception: {}", t.getMessage());
+                        return true;
+                    })
                     .setStartTime(Instant.EPOCH)
                     .subscribe(client, resp -> messageLatch.countDown()));
 
+            log.info("Submitting a message to the network");
             var transactionIdMessage = executeTransaction(client, stopwatch, () -> new TopicMessageSubmitTransaction()
                             .setTopicId(topicId)
                             .setMessage("Mirror Node acceptance test"))
                     .transactionId;
 
             executeQuery(client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionIdMessage));
+            log.info("Waiting for the mirror node to publish the topic message");
 
             if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
-                log.info("Startup probe successful.");
+                log.info("Startup probe successful");
             } else {
-                throw new TimeoutException("Timer expired while waiting on message latch.");
+                throw new TimeoutException("Timer expired while waiting on message latch");
             }
         } finally {
             if (subscription != null) {
@@ -126,7 +130,6 @@ public class StartupProbe {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         return retryTemplate.execute(r -> transaction
                 .get()
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
     }
@@ -136,7 +139,6 @@ public class StartupProbe {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         return retryTemplate.execute(r -> transaction
                 .get()
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
     }
