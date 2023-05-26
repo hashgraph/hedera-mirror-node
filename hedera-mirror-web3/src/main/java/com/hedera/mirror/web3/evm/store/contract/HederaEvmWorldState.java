@@ -51,6 +51,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final EntityAddressSequencer entityAddressSequencer;
     private final MirrorEvmContractAliases mirrorAliasManager;
 
+    @SuppressWarnings("java:S107")
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
@@ -113,6 +114,11 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 stackedStateFrames);
     }
 
+    @Override
+    public void close() {
+        // default no-op
+    }
+
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
         private final HederaEvmEntityAccess hederaEvmEntityAccess;
@@ -123,6 +129,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
         private final MirrorEvmContractAliases mirrorAliasManager;
 
+        @SuppressWarnings("java:S107")
         protected Updater(
                 final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,
@@ -171,10 +178,5 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             return new HederaEvmStackedWorldStateUpdater(
                     this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, mirrorAliasManager, stackedStateFrames);
         }
-    }
-
-    @Override
-    public void close() {
-        // default no-op
     }
 }
