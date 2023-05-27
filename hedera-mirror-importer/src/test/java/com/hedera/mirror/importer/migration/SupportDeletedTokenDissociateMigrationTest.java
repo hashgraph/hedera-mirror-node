@@ -288,8 +288,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private NftTransfer nftTransfer(
             long consensusTimestamp, EntityId receiver, EntityId sender, long serialNumber, EntityId tokenId) {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setReceiverAccountId(receiver.getId());
-        nftTransfer.setSenderAccountId(sender.getId());
+        nftTransfer.setReceiverAccountId(receiver);
+        nftTransfer.setSenderAccountId(sender);
         return nftTransfer;
     }
 

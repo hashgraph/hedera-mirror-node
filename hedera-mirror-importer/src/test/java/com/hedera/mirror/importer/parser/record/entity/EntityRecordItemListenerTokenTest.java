@@ -726,7 +726,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .isEqualTo(expectedTokenAccount);
     }
 
-    // currently broken due to balance tracking in token_account being broken (comes back as -1 and not 0)
+    // currently broken due to balance tracking in token_account being broken (balance comes back as -1 and not 0)
     @Test
     void tokenDissociateDeletedNonFungibleToken() {
         // given
@@ -2683,13 +2683,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             AccountID receiver, AccountID sender, long serialNumber, TokenID tokenId, boolean isApproval) {
         var nftTransfer = new com.hedera.mirror.common.domain.token.NftTransfer();
         nftTransfer.setSerialNumber(serialNumber);
-        nftTransfer.setTokenId(tokenId.getTokenNum());
+        nftTransfer.setTokenId(EntityId.of(tokenId));
         nftTransfer.setIsApproval(isApproval);
         if (!receiver.equals(DEFAULT_ACCOUNT_ID)) {
-            nftTransfer.setReceiverAccountId(receiver.getAccountNum());
+            nftTransfer.setReceiverAccountId(EntityId.of(receiver));
         }
         if (!sender.equals(DEFAULT_ACCOUNT_ID)) {
-            nftTransfer.setSenderAccountId(sender.getAccountNum());
+            nftTransfer.setSenderAccountId(EntityId.of(sender));
         }
         return nftTransfer;
     }

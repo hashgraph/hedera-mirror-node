@@ -43,17 +43,17 @@ class TransactionTest {
 
         NftTransfer nftTransfer1 = new NftTransfer();
         nftTransfer1.setIsApproval(false);
-        nftTransfer1.setReceiverAccountId(10L);
-        nftTransfer1.setSenderAccountId(11L);
+        nftTransfer1.setReceiverAccountId(EntityId.of("0.0.10", EntityType.ACCOUNT));
+        nftTransfer1.setSenderAccountId(EntityId.of("0.0.11", EntityType.ACCOUNT));
         nftTransfer1.setSerialNumber(12L);
-        nftTransfer1.setTokenId(13L);
+        nftTransfer1.setTokenId(EntityId.of("0.0.13", EntityType.TOKEN));
 
         NftTransfer nftTransfer2 = new NftTransfer();
         nftTransfer2.setIsApproval(true);
-        nftTransfer2.setReceiverAccountId(14L);
-        nftTransfer2.setSenderAccountId(15L);
+        nftTransfer2.setReceiverAccountId(EntityId.of("0.0.14", EntityType.ACCOUNT));
+        nftTransfer2.setSenderAccountId(EntityId.of("0.0.15", EntityType.ACCOUNT));
         nftTransfer2.setSerialNumber(16L);
-        nftTransfer2.setTokenId(17L);
+        nftTransfer2.setTokenId(EntityId.of("0.0.17", EntityType.TOKEN));
 
         transaction.setNftTransfer(Arrays.asList(nftTransfer1, nftTransfer2));
         transaction.setNodeAccountId(EntityId.of(0, 1, 18, EntityType.ACCOUNT));

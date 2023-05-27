@@ -1316,7 +1316,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var expectedTransfers = List.of(nftTransfer1, nftTransfer2, nftTransfer3);
         // token account upsert needs token class in db
         expectedTransfers.forEach(transfer -> {
-            var tokenId = new TokenId(EntityId.of(transfer.getTokenId(), TOKEN));
+            var tokenId = new TokenId(transfer.getTokenId());
             domainBuilder
                     .token()
                     .customize(t -> t.tokenId(tokenId).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
@@ -1324,15 +1324,15 @@ class SqlEntityListenerTest extends IntegrationTest {
         });
         var expectedTokenAccounts = expectedTransfers.stream()
                 .flatMap(transfer -> {
-                    long sender = transfer.getSenderAccountId();
-                    long receiver = transfer.getReceiverAccountId();
+                    EntityId sender = transfer.getSenderAccountId();
+                    EntityId receiver = transfer.getReceiverAccountId();
                     var tokenAccountSender = domainBuilder
                             .tokenAccount()
-                            .customize(ta -> ta.accountId(sender).balance(6))
+                            .customize(ta -> ta.accountId(sender.getId()).balance(6))
                             .persist();
                     var tokenAccountReceiver = domainBuilder
                             .tokenAccount()
-                            .customize(ta -> ta.accountId(receiver).balance(1))
+                            .customize(ta -> ta.accountId(receiver.getId()).balance(1))
                             .persist();
                     if (trackBalance) {
                         tokenAccountSender.setBalance(5);
@@ -1373,7 +1373,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .persist();
         var nftTransfer = domainBuilder
                 .nftTransfer()
-                .customize(t -> t.receiverAccountId(0L).senderAccountId(tokenAccount.getAccountId()))
+                .customize(t -> t.receiverAccountId(EntityId.EMPTY).senderAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT)))
                 .get();
         var transaction = domainBuilder
                 .transaction()
@@ -1385,7 +1385,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        nftTransfer.setReceiverAccountId(0L);
+        nftTransfer.setReceiverAccountId(EntityId.EMPTY);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() - 1);
         }
@@ -1410,7 +1410,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .persist();
         var nftTransfer = domainBuilder
                 .nftTransfer()
-                .customize(t -> t.receiverAccountId(tokenAccount.getAccountId()).senderAccountId(0L))
+                .customize(t -> t.receiverAccountId(EntityId.of(tokenAccount.getAccountId(), TOKEN)).senderAccountId(EntityId.EMPTY))
                 .get();
         // when
         var transaction = domainBuilder
@@ -1421,7 +1421,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        nftTransfer.setSenderAccountId(0L);
+        nftTransfer.setSenderAccountId(EntityId.EMPTY);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() + 1);
         }
@@ -1438,13 +1438,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId entity3 = EntityId.of("0.0.12", ACCOUNT);
         EntityId entity4 = EntityId.of("0.0.13", ACCOUNT);
         var nftTransfer1 = nftTransfer
-                .customize(n -> n.senderAccountId(entity1.getId()).receiverAccountId(entity2.getId()))
+                .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity2))
                 .get();
         var nftTransfer2 = nftTransfer
-                .customize(n -> n.senderAccountId(entity2.getId()).receiverAccountId(entity3.getId()))
+                .customize(n -> n.senderAccountId(entity2).receiverAccountId(entity3))
                 .get();
         var nftTransfer3 = nftTransfer
-                .customize(n -> n.senderAccountId(entity3.getId()).receiverAccountId(entity4.getId()))
+                .customize(n -> n.senderAccountId(entity3).receiverAccountId(entity4))
                 .get();
 
         // when
@@ -1457,7 +1457,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         var mergedNftTransfer = nftTransfer
-                .customize(n -> n.senderAccountId(entity1.getId()).receiverAccountId(entity4.getId()))
+                .customize(n -> n.senderAccountId(entity1).receiverAccountId(entity4))
                 .get();
         assertThat(collectAllNftTransfers()).containsExactly(mergedNftTransfer);
     }

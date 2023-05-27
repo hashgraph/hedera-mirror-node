@@ -575,9 +575,9 @@ public class DomainBuilder {
 
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
         var builder = NftTransfer.builder()
-                .receiverAccountId(entityId(ACCOUNT).getId())
-                .senderAccountId(entityId(ACCOUNT).getId())
-                .tokenId(entityId(TOKEN).getId());
+                .receiverAccountId(entityId(ACCOUNT))
+                .senderAccountId(entityId(ACCOUNT))
+                .tokenId(entityId(TOKEN));
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }

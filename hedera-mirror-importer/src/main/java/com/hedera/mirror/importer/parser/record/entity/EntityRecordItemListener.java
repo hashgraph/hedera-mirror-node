@@ -499,10 +499,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             var nftTransferDomain = new com.hedera.mirror.common.domain.token.NftTransfer();
             nftTransferDomain.setIsApproval(false);
-            nftTransferDomain.setReceiverAccountId(receiverId.getId());
-            nftTransferDomain.setSenderAccountId(senderId.getId());
+            nftTransferDomain.setReceiverAccountId(receiverId);
+            nftTransferDomain.setSenderAccountId(senderId);
             nftTransferDomain.setSerialNumber(serialNumber);
-            nftTransferDomain.setTokenId(tokenId.getTokenNum());
+            nftTransferDomain.setTokenId(EntityId.of(tokenId));
 
             var nftTransferInsideBody = findNftTransferInsideBody(nftTransfer, tokenId, body);
             if (nftTransferInsideBody != null) {
