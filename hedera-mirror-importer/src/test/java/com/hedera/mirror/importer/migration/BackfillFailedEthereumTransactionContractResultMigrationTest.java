@@ -139,27 +139,28 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     }
 
     private void persistTransactions(List<Transaction> transactions) {
-        for (Transaction transaction : transactions) {
-            jdbcTemplate.update(
-                    "insert into transaction (consensus_timestamp, index, node_account_id, nonce, payer_account_id, "
-                            + "result, scheduled, type, valid_start_ns)"
-                            + " values"
-                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    transaction.getConsensusTimestamp(),
-                    transaction.getIndex(),
-                    transaction.getNodeAccountId().getId(),
-                    transaction.getNonce(),
-                    transaction.getPayerAccountId().getId(),
-                    transaction.getResult(),
-                    transaction.isScheduled(),
-                    transaction.getType(),
-                    transaction.getValidStartNs());
-        }
+        jdbcTemplate.batchUpdate(
+                """
+                insert into transaction (consensus_timestamp, index, node_account_id, nonce, payer_account_id, result,
+                        scheduled, type, valid_start_ns) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                transactions,
+                transactions.size(),
+                (ps, transaction) -> {
+                    ps.setLong(1, transaction.getConsensusTimestamp());
+                    ps.setLong(2, transaction.getIndex());
+                    ps.setLong(3, transaction.getNodeAccountId().getId());
+                    ps.setLong(4, transaction.getNonce());
+                    ps.setLong(5, transaction.getPayerAccountId().getId());
+                    ps.setLong(6, transaction.getResult());
+                    ps.setBoolean(7, transaction.isScheduled());
+                    ps.setShort(8, transaction.getType().shortValue());
+                    ps.setLong(9, transaction.getValidStartNs());
+                });
     }
 
     @SneakyThrows
     private void runMigration() {
-        // add nft_transfer column to transaction before running the backfill
         try (var is = sql.getInputStream()) {
             jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
