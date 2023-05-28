@@ -70,10 +70,9 @@ public class Transaction implements Persistable<Long> {
 
     private Long maxFee;
 
-    @Builder.Default
     @Type(JsonBinaryType.class)
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    private List<NftTransfer> nftTransfer = null;
+    private List<NftTransfer> nftTransfer;
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)

@@ -486,11 +486,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
+        transaction.setNftTransfer(new ArrayList<>());
         var nftTransfers = transaction.getNftTransfer();
-        if (nftTransfers == null) {
-            transaction.setNftTransfer(new ArrayList<>());
-            nftTransfers = transaction.getNftTransfer();
-        }
 
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();

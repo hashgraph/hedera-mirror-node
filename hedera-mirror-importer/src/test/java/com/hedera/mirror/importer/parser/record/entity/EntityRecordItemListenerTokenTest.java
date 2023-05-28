@@ -778,10 +778,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, dissociateTimeStamp, PAYER2, true);
         assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, PAYER, false);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, dissociateTimeStamp, SYMBOL, 1);
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(3L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(transferTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER2, PAYER, 1, TOKEN_ID)));
         assertThat(tokenTransferRepository.findAll()).isEmpty();
 
@@ -1101,9 +1104,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.addTokenTransferLists(treasuryUpdateTransfer));
 
         // then
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(2L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(updateTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER2, PAYER, 1, TOKEN_ID)));
         assertTokenInRepository(
                 TOKEN_ID, true, CREATE_TIMESTAMP, updateTimestamp, SYMBOL, 1, TokenPauseStatusEnum.NOT_APPLICABLE);
@@ -1265,13 +1271,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build())
                 .containsExactlyInAnyOrder(nft1, nft2, nft3);
 
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(5L);
-        assertThat(allNftTransfers.contains(domainNftTransfer(protoNewTreasury, protoOldTreasury, 2, protoTokenId)));
-        assertThat(allNftTransfers.contains(domainNftTransfer(protoAccount, protoOldTreasury, -1, protoTokenId)));
+        var allNftTransfers = collectAllNftTransfers(nftMintRecordItem.getConsensusTimestamp());
+        assertThat(allNftTransfers.size()).isEqualTo(3L);
         assertThat(allNftTransfers.contains(domainNftTransfer(protoOldTreasury, DEFAULT_ACCOUNT_ID, 1, protoTokenId)));
         assertThat(allNftTransfers.contains(domainNftTransfer(protoOldTreasury, DEFAULT_ACCOUNT_ID, 2, protoTokenId)));
         assertThat(allNftTransfers.contains(domainNftTransfer(protoOldTreasury, DEFAULT_ACCOUNT_ID, 3, protoTokenId)));
+
+        allNftTransfers = collectAllNftTransfers(nftTransferRecordItem.getConsensusTimestamp());
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
+        assertThat(allNftTransfers.contains(domainNftTransfer(protoNewTreasury, protoOldTreasury, 2, protoTokenId)));
+
+        allNftTransfers = collectAllNftTransfers(nftUpdateRecordItem.getConsensusTimestamp());
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
+        assertThat(allNftTransfers.contains(domainNftTransfer(protoAccount, protoOldTreasury, -1, protoTokenId)));
 
         var tokenAccountOldTreasury = TokenAccount.builder()
                 .accountId(oldTreasury.getId())
@@ -1539,11 +1551,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
 
         // Verify
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(3L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
-        assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(burnTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER2, 1, TOKEN_ID)));
+
         assertThat(tokenTransferRepository.findAll()).isEmpty();
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
@@ -1596,10 +1611,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // Verify
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(2L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(burnTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER, 1, TOKEN_ID)));
+
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertNftInRepository(
                 TOKEN_ID,
@@ -1734,7 +1753,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        var allNftTransfers = collectAllNftTransfers();
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
         assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER2, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER2, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
@@ -1828,7 +1847,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        var allNftTransfers = collectAllNftTransfers();
+        var allNftTransfers = collectAllNftTransfers(timestamp);
         assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
@@ -1854,7 +1873,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // then
-        var allNftTransfers = collectAllNftTransfers();
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
         assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
@@ -1999,11 +2018,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .modifiedTimestamp(transferTimestamp)
                 .build();
 
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(4L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp1);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(mintTimestamp2);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
-        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 1, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(transferTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 2, TOKEN_ID)));
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
@@ -2108,8 +2132,20 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
 
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(4L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp1);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 1, TOKEN_ID, isApproval1)));
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 2, TOKEN_ID, isApproval2)));
+
+        allNftTransfers = collectAllNftTransfers(mintTimestamp2);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 1, TOKEN_ID, isApproval1)));
+        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 2, TOKEN_ID, isApproval2)));
+
+        allNftTransfers = collectAllNftTransfers(transferTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 1, TOKEN_ID, isApproval1)));
@@ -2177,9 +2213,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
 
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(2L);
-        assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 1, tokenID2)));
+        var allNftTransfers = collectAllNftTransfers(transferTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(RECEIVER, PAYER, 2, tokenID2)));
         assertNftInRepository(
                 tokenID2,
@@ -2389,11 +2424,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
 
         // Verify
-        var allNftTransfers = collectAllNftTransfers();
-        assertThat(allNftTransfers.size()).isEqualTo(3L);
+        var allNftTransfers = collectAllNftTransfers(mintTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(2L);
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID)));
         assertThat(allNftTransfers.contains(domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 2, TOKEN_ID)));
+
+        allNftTransfers = collectAllNftTransfers(wipeTimestamp);
+        assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER2, 1, TOKEN_ID)));
+
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 1);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
@@ -2439,7 +2478,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // Verify
-        var allNftTransfers = collectAllNftTransfers();
+        var allNftTransfers = collectAllNftTransfers(wipeTimestamp);
         assertThat(allNftTransfers.size()).isEqualTo(1L);
         assertThat(allNftTransfers.contains(domainNftTransfer(DEFAULT_ACCOUNT_ID, RECEIVER, 1, TOKEN_ID)));
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 0);
@@ -3031,13 +3070,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private List<com.hedera.mirror.common.domain.token.NftTransfer> collectAllNftTransfers() {
+    private List<com.hedera.mirror.common.domain.token.NftTransfer> collectAllNftTransfers(long consensusTimestamp) {
         var results = new HashSet<com.hedera.mirror.common.domain.token.NftTransfer>();
         if (transactionRepository.count() > 0) {
-            for (com.hedera.mirror.common.domain.transaction.Transaction t : transactionRepository.findAll()) {
-                if (t.getNftTransfer() != null) {
-                    results.addAll(t.getNftTransfer());
-                }
+            var transaction = transactionRepository.findById(consensusTimestamp).get();
+            if (transaction.getNftTransfer() != null) {
+                results.addAll(transaction.getNftTransfer());
             }
         }
         return new ArrayList<>(results);

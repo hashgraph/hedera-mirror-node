@@ -40,6 +40,7 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -438,9 +439,38 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionHashes.add(transaction.toTransactionHash());
         }
 
+        if (transaction.getNftTransfer() != null && transaction.getNftTransfer().size() > 0) {
+            for (NftTransfer nftTransfer : transaction.getNftTransfer()) {
+                // TO DO: rewrite NftRepository.updateTreasury() to update transaction.nft_transfer column
+                // instead of nft_transfer table, and call it when nftTransfer.serial number == WILDCARD_SERIAL_NUMBER
+
+                if (entityProperties.getPersist().isTrackBalance()) {
+                    long tokenId = nftTransfer.getTokenId().getId();
+                    if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
+                        var tokenAccount = new TokenAccount();
+                        tokenAccount.setAccountId(nftTransfer.getSenderAccountId() == null ? 0 : nftTransfer.getSenderAccountId().getId());
+                        tokenAccount.setTokenId(tokenId);
+                        tokenAccount.setBalance(-1);
+                        onTokenAccount(tokenAccount);
+                    }
+ 
+                    if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
+                        var tokenAccount = new TokenAccount();
+                        tokenAccount.setAccountId(nftTransfer.getReceiverAccountId() == null ? 0 : nftTransfer.getReceiverAccountId().getId());
+                        tokenAccount.setTokenId(tokenId);
+                        tokenAccount.setBalance(1);
+                        onTokenAccount(tokenAccount);
+                    }
+                }
+
+                // TO DO: rewrite mergeNftTransfer logic to not require nftTransferId (which has been eliminated)
+            }
+        }
+
         if (transactions.size() == sqlProperties.getBatchSize()) {
             flush();
         }
+
     }
 
     @Override

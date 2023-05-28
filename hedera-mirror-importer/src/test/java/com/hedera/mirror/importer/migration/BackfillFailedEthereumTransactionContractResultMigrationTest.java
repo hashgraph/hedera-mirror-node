@@ -77,19 +77,19 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
                 .contractResult()
                 .customize(cr -> cr.consensusTimestamp(ethTx1.getConsensusTimestamp()))
                 .persist();
-        var transaction1 = transaction(ethTx1.getConsensusTimestamp(), 1L, SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
+        var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
         var transaction2 = transaction(
-                ethTx2.getConsensusTimestamp(), 2L, DUPLICATE_TRANSACTION, ethTx2.getPayerAccountId(), 0, 0);
+                ethTx2.getConsensusTimestamp(), DUPLICATE_TRANSACTION, ethTx2.getPayerAccountId(), 0, 0);
         var ethTx3 = domainBuilder.ethereumTransaction(true).persist();
         var transaction3 =
-                transaction(ethTx3.getConsensusTimestamp(), 3L, WRONG_NONCE, ethTx3.getPayerAccountId(), 0, 0);
+                transaction(ethTx3.getConsensusTimestamp(), WRONG_NONCE, ethTx3.getPayerAccountId(), 0, 0);
         var ethTx4 = domainBuilder.ethereumTransaction(false).persist();
         var transaction4 = transaction(
-                ethTx4.getConsensusTimestamp(), 4L, CONSENSUS_GAS_EXHAUSTED, ethTx4.getPayerAccountId(), 4, 3);
+                ethTx4.getConsensusTimestamp(), CONSENSUS_GAS_EXHAUSTED, ethTx4.getPayerAccountId(), 4, 3);
         var ethTx5 = domainBuilder.ethereumTransaction(true).persist();
         var transaction5 =
-                transaction(ethTx5.getConsensusTimestamp(), 5L, INVALID_ACCOUNT_ID, ethTx5.getPayerAccountId(), 5, 0);
+                transaction(ethTx5.getConsensusTimestamp(), INVALID_ACCOUNT_ID, ethTx5.getPayerAccountId(), 5, 0);
         persistTransactions(List.of(transaction1, transaction2, transaction3, transaction4, transaction5));
 
         // when
@@ -122,20 +122,18 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
 
     private Transaction transaction(
             long consensusTimestamp,
-            long entityNum,
             ResponseCodeEnum result,
             EntityId payerAccountId,
             int index,
             int nonce) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusTimestamp);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setIndex(index);
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setNonce(nonce);
         transaction.setPayerAccountId(payerAccountId);
         transaction.setResult(result.getNumber());
-        transaction.setType(TransactionType.CRYPTOUPDATEACCOUNT.getProtoId());
+        transaction.setType(TransactionType.ETHEREUMTRANSACTION.getProtoId());
         transaction.setValidStartNs(consensusTimestamp - 10);
         return transaction;
     }
@@ -143,27 +141,18 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     private void persistTransactions(List<Transaction> transactions) {
         for (Transaction transaction : transactions) {
             jdbcTemplate.update(
-                    "insert into transaction (charged_tx_fee, consensus_timestamp, entity_id, index, initial_balance, max_fee, "
-                            + "memo, node_account_id, nonce, payer_account_id, result, scheduled, transaction_bytes, "
-                            + "transaction_hash, type, valid_duration_seconds, valid_start_ns)"
+                    "insert into transaction (consensus_timestamp, index, node_account_id, nonce, payer_account_id, "
+                            + "result, scheduled, type, valid_start_ns)"
                             + " values"
-                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    transaction.getChargedTxFee(),
+                            + " (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     transaction.getConsensusTimestamp(),
-                    transaction.getEntityId().getId(),
                     transaction.getIndex(),
-                    transaction.getInitialBalance(),
-                    transaction.getMaxFee(),
-                    transaction.getMemo(),
                     transaction.getNodeAccountId().getId(),
                     transaction.getNonce(),
                     transaction.getPayerAccountId().getId(),
                     transaction.getResult(),
                     transaction.isScheduled(),
-                    transaction.getTransactionBytes(),
-                    transaction.getTransactionHash(),
                     transaction.getType(),
-                    transaction.getValidDurationSeconds(),
                     transaction.getValidStartNs());
         }
     }

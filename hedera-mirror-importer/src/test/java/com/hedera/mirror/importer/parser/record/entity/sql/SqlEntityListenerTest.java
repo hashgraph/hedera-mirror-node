@@ -1385,7 +1385,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        nftTransfer.setReceiverAccountId(EntityId.EMPTY);
+        nftTransfer.setReceiverAccountId(null);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() - 1);
         }
@@ -1410,7 +1410,8 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .persist();
         var nftTransfer = domainBuilder
                 .nftTransfer()
-                .customize(t -> t.receiverAccountId(EntityId.of(tokenAccount.getAccountId(), TOKEN)).senderAccountId(EntityId.EMPTY))
+                .customize(t -> t.receiverAccountId(EntityId.of(tokenAccount.getAccountId(), TOKEN))
+                        .senderAccountId(null))
                 .get();
         // when
         var transaction = domainBuilder
@@ -1421,7 +1422,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        nftTransfer.setSenderAccountId(EntityId.EMPTY);
+        nftTransfer.setSenderAccountId(null);
         if (trackBalance) {
             tokenAccount.setBalance(tokenAccount.getBalance() + 1);
         }
