@@ -27,7 +27,7 @@ import java.util.Set;
 @Named
 public class PrecompileMapper {
 
-    private static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
+    public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
     private final Set<Integer> precompileSelectors = new HashSet<>();
 

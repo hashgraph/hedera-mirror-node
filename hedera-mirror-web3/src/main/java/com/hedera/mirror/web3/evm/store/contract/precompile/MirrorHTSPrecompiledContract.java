@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import static com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper.UNSUPPORTED_ERROR;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
@@ -212,6 +213,11 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final var executor =
                     infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
+
+            if (resultFromExecutor.getRight() == null) {
+                throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+            }
+
         } else if (isViewFunction(input)) {
             final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();

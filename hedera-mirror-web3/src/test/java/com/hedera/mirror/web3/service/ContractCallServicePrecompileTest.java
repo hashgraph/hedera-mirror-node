@@ -335,8 +335,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS});
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
 
         private final String name;
         private final Object[] functionParameters;
