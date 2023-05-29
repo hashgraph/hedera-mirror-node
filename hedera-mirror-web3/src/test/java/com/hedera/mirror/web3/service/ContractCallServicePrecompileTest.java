@@ -59,21 +59,8 @@ import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServicePrecompileTest extends Web3IntegrationTest {
-    // The contract source `PrecompileTestContract.sol` is in test/resources
-    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
-    private Path CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
-    private Path ABI_PATH;
-
-    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
-    private Path MODIFICATION_CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
-    private Path MODIFICATION_CONTRACT_ABI_PATH;
-
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
-    private static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
+    private static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
     private static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1252, TOKEN));
@@ -87,6 +74,18 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     private static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder encodeDecoder;
+    // The contract source `PrecompileTestContract.sol` is in test/resources
+    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
+    private Path CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
+    private Path ABI_PATH;
+
+    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
+    private Path MODIFICATION_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
+    private Path MODIFICATION_CONTRACT_ABI_PATH;
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
@@ -267,96 +266,6 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
-    }
-
-    @RequiredArgsConstructor
-    enum ContractReadFunctions {
-        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_FROZEN_ETH_ADDRESS(
-                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
-        IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {false}),
-        IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        IS_TOKEN_PRECOMPILE_NFT("isTokenAddress", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_KYC("getTokenDefaultKyc", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_KYC_NFT("getTokenDefaultKyc", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_TYPE("getType", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {0L}),
-        GET_TOKEN_TYPE_FOR_NFT("getType", new Address[] {NFT_ADDRESS}, new Long[] {1L}),
-        GET_TOKEN_DEFAULT_FREEZE("getTokenDefaultFreeze", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_FREEZE_FOR_NFT("getTokenDefaultFreeze", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_ADMIN_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_FREEZE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 4L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_WIPE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 8L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_SUPPLY_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 16L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_KYC_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 2L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_FEE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 32L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        }),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        });
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
-    }
-
-    @RequiredArgsConstructor
-    enum UnsupportedContractModificationFunctions {
-        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] {
-            new Object[] {EMPTY_ADDRESS, 0L, false},
-            new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
-            new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
-        }),
-        MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createFungibleTokenWithCustomFeesExternal",
-                new Object[] {new Object[] {}, 0L, 0, new Object[] {}, new Object[] {}}),
-        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {new Object[] {}}),
-        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createNonFungibleTokenWithCustomFeesExternal",
-                new Object[] {new Object[] {}, new Object[] {}, new Object[] {}}),
-        APPROVE("approveExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
-        TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
-        TRANSFER_NFT_TOKENS(
-                "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
-        TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS});
-
-        private final String name;
-        private final Object[] functionParameters;
     }
 
     private CallServiceParameters serviceParametersForEthCall(Bytes callData, boolean isStatic) {
@@ -596,5 +505,95 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                             .denominatingTokenId(tokenEntityId))
                     .persist();
         }
+    }
+
+    @RequiredArgsConstructor
+    enum ContractReadFunctions {
+        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
+        IS_FROZEN_ETH_ADDRESS(
+                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
+        IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
+        IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {false}),
+        IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
+        IS_TOKEN_PRECOMPILE_NFT("isTokenAddress", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
+        GET_TOKEN_DEFAULT_KYC("getTokenDefaultKyc", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
+        GET_TOKEN_DEFAULT_KYC_NFT("getTokenDefaultKyc", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
+        GET_TOKEN_TYPE("getType", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {0L}),
+        GET_TOKEN_TYPE_FOR_NFT("getType", new Address[] {NFT_ADDRESS}, new Long[] {1L}),
+        GET_TOKEN_DEFAULT_FREEZE("getTokenDefaultFreeze", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
+        GET_TOKEN_DEFAULT_FREEZE_FOR_NFT("getTokenDefaultFreeze", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
+        GET_TOKEN_ADMIN_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_FREEZE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 4L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_WIPE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 8L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_SUPPLY_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 16L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_KYC_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 2L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_FEE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 32L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
+            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        });
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    enum UnsupportedContractModificationFunctions {
+        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] {
+            new Object[] {EMPTY_ADDRESS, 0L, false},
+            new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
+            new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
+        }),
+        MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
+        BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
+        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createFungibleTokenWithCustomFeesExternal",
+                new Object[] {new Object[] {}, 0L, 0, new Object[] {}, new Object[] {}}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {new Object[] {}}),
+        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createNonFungibleTokenWithCustomFeesExternal",
+                new Object[] {new Object[] {}, new Object[] {}, new Object[] {}}),
+        APPROVE("approveExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
+        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
+        TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
+        TRANSFER_NFT_TOKENS(
+                "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
+        TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
+        REDIRECT_FOR_TOKEN("getBalanceOfWithDirectRedirect", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS});
+
+        private final String name;
+        private final Object[] functionParameters;
     }
 }

@@ -49,13 +49,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
-    // The contract source `ERCTestContract.sol` is in test resources
-    @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
-    private Path CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
-    private Path ABI_PATH;
-
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     private static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
@@ -64,6 +57,12 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder functionEncodeDecoder;
     private final MirrorNodeEvmProperties properties;
+    // The contract source `ERCTestContract.sol` is in test resources
+    @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
+    private Path CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
+    private Path ABI_PATH;
 
     @ParameterizedTest
     @EnumSource(ContractReadOnlyFunctions.class)
@@ -136,39 +135,6 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("isApprovedForAll(address owner, address operator) is not supported.");
-    }
-
-    @RequiredArgsConstructor
-    public enum ContractReadOnlyFunctions {
-        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
-        IS_APPROVE_FOR_ALL(
-                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true
-                }),
-        ALLOWANCE_OF(
-                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Long[] {13L
-                }),
-        GET_APPROVED("getApproved", new Object[] {NFT_ADDRESS, 1L}, new Address[] {RECEIVER_ADDRESS}),
-        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
-        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
-        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"HBAR"}),
-        BALANCE_OF("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Long[] {12L}),
-        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
-        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {SENDER_ADDRESS}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO});
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
-    }
-
-    @RequiredArgsConstructor
-    public enum ContractModificationFunctions {
-        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS, 2L}),
-        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, 2L});
-
-        private final String name;
-        private final Object[] functionParameters;
     }
 
     private CallServiceParameters serviceParametersForEthCall(final Bytes callData) {
@@ -320,5 +286,38 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
                 .tokenAccount()
                 .customize(a -> a.balance(12).accountId(senderEntityId.getId()).tokenId(fungibleTokenEntity.getId()))
                 .persist();
+    }
+
+    @RequiredArgsConstructor
+    public enum ContractReadOnlyFunctions {
+        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
+        IS_APPROVE_FOR_ALL(
+                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Boolean[] {true
+                }),
+        ALLOWANCE_OF(
+                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS}, new Long[] {13L
+                }),
+        GET_APPROVED("getApproved", new Object[] {NFT_ADDRESS, 1L}, new Address[] {RECEIVER_ADDRESS}),
+        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
+        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
+        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"HBAR"}),
+        BALANCE_OF("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Long[] {12L}),
+        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
+        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {SENDER_ADDRESS}),
+        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO});
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    public enum ContractModificationFunctions {
+        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, RECEIVER_ADDRESS, 2L}),
+        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS, 2L}),
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, 2L});
+
+        private final String name;
+        private final Object[] functionParameters;
     }
 }
