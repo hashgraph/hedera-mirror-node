@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
@@ -34,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import jakarta.inject.Named;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     private final EntityRepository entityRepository;
+
+    private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
     public @NonNull Optional<Token> get(@NonNull Address address) {
@@ -95,7 +99,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 databaseToken.getSymbol(),
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
-                0L);
+                0L,
+                getCustomFees(entity.getId()));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -115,5 +120,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 .map(entity ->
                         new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
                 .orElse(null);
+    }
+
+    private List<CustomFee> getCustomFees(Long tokenId) {
+        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
     }
 }

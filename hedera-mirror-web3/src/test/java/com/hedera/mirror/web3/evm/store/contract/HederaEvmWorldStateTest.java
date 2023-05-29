@@ -16,17 +16,27 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
-import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Collections;
+import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
     @Mock
-    private MirrorEntityAccess hederaEvmEntityAccess;
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @Mock
     private EvmProperties evmProperties;
@@ -50,25 +60,34 @@ class HederaEvmWorldStateTest {
     final long balance = 1_234L;
 
     @Mock
-    AccountAccessorImpl accountAccessor;
+    AccountAccessor accountAccessor;
 
     @Mock
-    TokenAccessorImpl tokenAccessor;
+    TokenAccessor tokenAccessor;
 
     @Mock
     EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    private StackedStateFrames<Object> stackedStateFrames;
 
     private HederaEvmWorldState subject;
 
     @BeforeEach
     void setUp() {
+        final List<DatabaseAccessor<Object, ?>> accessors =
+                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
+        stackedStateFrames = new StackedStateFrames<>(accessors);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
                 abstractCodeCache,
                 accountAccessor,
                 tokenAccessor,
-                entityAddressSequencer);
+                entityAddressSequencer,
+                stackedStateFrames);
     }
 
     @Test
@@ -127,6 +146,40 @@ class HederaEvmWorldStateTest {
         when(evmProperties.isRedirectTokenCallsEnabled()).thenReturn(false);
 
         assertThat(subject.get(address)).isNull();
+    }
+
+    @Test
+    void commitsNewlyCreatedAccountToStackedStateFrames() {
+        final var actualSubject = subject.updater();
+        assertThat(stackedStateFrames.height()).isEqualTo(1);
+        stackedStateFrames.push();
+        stackedStateFrames.push();
+        var topFrame = stackedStateFrames.top();
+        var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        final var accountModel = new com.hedera.services.store.models.Account(
+                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
+                0L,
+                123L,
+                false,
+                0L,
+                0L,
+                null,
+                0,
+                Collections.emptySortedMap(),
+                Collections.emptySortedMap(),
+                Collections.emptySortedSet(),
+                0,
+                0,
+                0,
+                0L);
+        accountAccessor.set(address, accountModel);
+        actualSubject.commit();
+        topFrame = stackedStateFrames.top();
+        accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        final var accountFromTopFrame = accountAccessor.get(address);
+        assertTrue(accountFromTopFrame.isPresent());
+        assertThat(accountFromTopFrame.get()).isEqualTo(accountModel);
+        assertThat(stackedStateFrames.height()).isEqualTo(2);
     }
 
     @Test

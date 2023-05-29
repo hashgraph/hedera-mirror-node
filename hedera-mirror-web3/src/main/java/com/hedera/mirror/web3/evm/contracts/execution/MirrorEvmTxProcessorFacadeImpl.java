@@ -24,6 +24,8 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
@@ -35,6 +37,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -61,7 +64,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
         this.mirrorOperationTracer = mirrorOperationTracer;
         this.blockMetaSource = blockMetaSource;
@@ -73,9 +77,16 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
+        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
 
         this.worldState = new HederaEvmWorldState(
-                entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityAddressSequencer);
+                entityAccess,
+                evmProperties,
+                codeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityAddressSequencer,
+                stackedStateFrames);
     }
 
     @Override
