@@ -78,6 +78,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
         final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        tokenAccessor.setStackedStateFrames(stackedStateFrames);
+        accountAccessor.setStackedStateFrames(stackedStateFrames);
+        entityAccess.setStackedStateFrames(stackedStateFrames);
 
         this.worldState = new HederaEvmWorldState(
                 entityAccess,

@@ -284,6 +284,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void fetchCodeIfPresentForNonMirrorEvm() {
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe()))
+                .thenReturn(Optional.of(entity));
         when(entity.getId()).thenReturn(ENTITY_ID);
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
         final var result = mirrorEntityAccess.fetchCodeIfPresent(NON_MIRROR_ADDRESS);
