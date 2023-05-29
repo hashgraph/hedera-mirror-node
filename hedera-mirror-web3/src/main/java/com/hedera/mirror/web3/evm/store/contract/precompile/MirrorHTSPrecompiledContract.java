@@ -114,7 +114,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
         This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
         After the Precompile classes are implemented, this workaround won't be needed. */
-        if (isViewFunction(input)) {
+        if (isTokenProxyRedirect(input) || isViewFunction(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 

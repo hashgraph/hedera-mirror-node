@@ -17,17 +17,23 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.getPrecompileFunctionSelectors;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -72,7 +78,19 @@ class MirrorHTSPrecompiledContractTest {
     private ViewExecutor viewExecutor;
 
     @Mock
+    private RedirectViewExecutor redirectViewExecutor;
+
+    @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private HederaEvmWorldStateTokenAccount account;
+
+    @Mock
+    private Deque<MessageFrame> messageFrameStack;
+
+    @Mock
+    private Iterator<MessageFrame> messageFrameIterator;
 
     private MirrorHTSPrecompiledContract subject;
     private PrecompileMapper precompileMapper;
@@ -143,8 +161,8 @@ class MirrorHTSPrecompiledContractTest {
         // mint signature
         final var functionHash = Bytes.fromHexString("0x278e0b88");
 
-        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
-        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
 
@@ -162,8 +180,8 @@ class MirrorHTSPrecompiledContractTest {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x00000000");
 
-        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
-        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
@@ -184,7 +202,7 @@ class MirrorHTSPrecompiledContractTest {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x00000000");
 
-        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
@@ -196,12 +214,65 @@ class MirrorHTSPrecompiledContractTest {
     }
 
     @Test
+    void invalidFeeSentFails() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000");
+
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
+        given(account.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.iterator()).willReturn(messageFrameIterator);
+        given(messageFrameIterator.hasNext()).willReturn(false);
+        given(messageFrame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(10L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.FAIL_INVALID));
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void delegateCallWithNoParent() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000");
+
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
+        given(account.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.iterator()).willReturn(messageFrameIterator);
+        given(messageFrameIterator.hasNext()).willReturn(false);
+        given(messageFrame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(10L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.SUCCESS));
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
     void invalidTransactionIsHandledProperly() {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x00000000");
 
-        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
-        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ZERO);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
@@ -215,6 +286,31 @@ class MirrorHTSPrecompiledContractTest {
 
         final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_ACCOUNT_ID));
         assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void redirectForErcViewFunctionWorks() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x00000000");
+
+        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME, ALTBN128_ADD);
+
+        given(messageFrame.isStatic()).willReturn(false);
+        given(evmInfrastructureFactory.newRedirectExecutor(any(), any(), any(), any()))
+                .willReturn(redirectViewExecutor);
+        given(redirectViewExecutor.computeCosted()).willReturn(Pair.of(0L, SUCCESS_RESULT));
+
+        final var precompileResult = subject.computeCosted(input, messageFrame, gasCalculator, tokenAccessor);
+
+        final var expectedResult = Pair.of(0L, SUCCESS_RESULT);
+        assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    Bytes prerequisitesForRedirect(final int descriptor, final Address tokenAddress) {
+        return Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+                tokenAddress,
+                Bytes.of(Integers.toBytes(descriptor)));
     }
 
     static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
