@@ -384,6 +384,23 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
+    @Test
+    void callSuccessCors() {
+        final var request = request();
+        request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
+        request.setValue(0);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .header("Origin", "http://example.com")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectHeader()
+                .valueEquals("Access-Control-Allow-Origin", "*");
+    }
+
     private ContractCallRequest request() {
         final var request = new ContractCallRequest();
         request.setFrom("0x00000000000000000000000000000000000004e2");
