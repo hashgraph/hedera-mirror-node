@@ -20,9 +20,11 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 import * as accounts from './accounts.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
+import * as rampUp from './rampUp.js';
 
 // add test modules here
 const tests = {
+  rampUp,
   accounts,
   accountsId,
   accountsIdTimestampLte,
