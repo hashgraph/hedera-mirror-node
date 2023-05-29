@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
@@ -70,6 +70,19 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
+    void resolveForEvmFromAliases() {
+        Address alias = ADDRESS;
+        Address address = ADDRESS2;
+        mirrorEvmContractAliases.aliases.put(alias, address);
+
+        when(mirrorEntityAccess.findEntity(address)).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.CONTRACT);
+        when(entity.getEvmAddress()).thenReturn(ADDRESS3.toArray());
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(alias)).isEqualTo(ADDRESS3);
+    }
+
+    @Test
     void resolveForEvmTokenSuccess() {
         when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOKEN);
@@ -101,5 +114,30 @@ class MirrorEvmContractAliasesTest {
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("No such contract or token: " + HEX2);
+    }
+
+    @Test
+    void initializeWithEmptyAliasesMap() {
+        assertThat(mirrorEvmContractAliases.aliases).isNotNull().isEmpty();
+    }
+
+    @Test
+    void link() {
+        mirrorEvmContractAliases.aliases.clear();
+
+        Address alias = ADDRESS;
+        Address address = ADDRESS2;
+        mirrorEvmContractAliases.link(alias, address);
+
+        assertThat(mirrorEvmContractAliases.aliases).hasSize(1).hasEntrySatisfying(alias, v -> assertThat(v)
+                .isEqualTo(address));
+    }
+
+    @Test
+    void unlink() {
+        mirrorEvmContractAliases.aliases.clear();
+        mirrorEvmContractAliases.aliases.put(ADDRESS, ADDRESS2);
+        mirrorEvmContractAliases.unlink(ADDRESS);
+        assertThat(mirrorEvmContractAliases.aliases).isEmpty();
     }
 }

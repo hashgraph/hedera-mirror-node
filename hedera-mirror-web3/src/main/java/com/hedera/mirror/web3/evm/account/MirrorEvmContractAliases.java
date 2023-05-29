@@ -33,7 +33,8 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     private final MirrorEntityAccess mirrorEntityAccess;
-    private final Map<Address, Address> aliases = new HashMap<>();
+
+    final Map<Address, Address> aliases = new HashMap<>();
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
@@ -43,7 +44,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
 
         final var resolvedAddress =
-                Optional.ofNullable(curAliases().get(addressOrAlias)).orElse(addressOrAlias);
+                Optional.ofNullable(aliases.get(addressOrAlias)).orElse(addressOrAlias);
         final var entity = mirrorEntityAccess
                 .findEntity(resolvedAddress)
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
@@ -62,15 +63,11 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
     }
 
-    private Map<Address, Address> curAliases() {
-        return aliases;
-    }
-
     public void link(final Address alias, final Address address) {
-        curAliases().put(alias, address);
+        aliases.put(alias, address);
     }
 
     public void unlink(Address alias) {
-        curAliases().remove(alias);
+        aliases.remove(alias);
     }
 }
