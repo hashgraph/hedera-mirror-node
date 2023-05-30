@@ -41,7 +41,6 @@ import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -69,7 +68,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -78,7 +76,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -95,7 +92,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
-    private final NftRepository nftRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
@@ -136,7 +132,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
     private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
-    private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
@@ -153,7 +148,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             EntityIdService entityIdService,
             EntityProperties entityProperties,
             ApplicationEventPublisher eventPublisher,
-            NftRepository nftRepository,
             RecordFileRepository recordFileRepository,
             SidecarFileRepository sidecarFileRepository,
             SqlProperties sqlProperties,
@@ -162,7 +156,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
-        this.nftRepository = nftRepository;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
@@ -201,7 +194,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         entityState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
-        nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
@@ -351,50 +343,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    @SuppressWarnings({"java:S2259"})
-    // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
-    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        var nftTransferId = nftTransfer.getId();
-        long tokenId = nftTransferId.getTokenId().getId();
-        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-            flushNftState();
-
-            long payerAccountId = nftTransfer.getPayerAccountId().getId();
-            var newTreasury = nftTransfer.getReceiverAccountId();
-            var previousTreasury = nftTransfer.getSenderAccountId();
-
-            nftRepository.updateTreasury(
-                    tokenId,
-                    previousTreasury.getId(),
-                    newTreasury.getId(),
-                    nftTransferId.getConsensusTimestamp(),
-                    payerAccountId,
-                    nftTransfer.getIsApproval());
-            return;
-        }
-
-        if (entityProperties.getPersist().isTrackBalance()) {
-            if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(-1);
-                onTokenAccount(tokenAccount);
-            }
-
-            if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(1);
-                onTokenAccount(tokenAccount);
-            }
-        }
-
-        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
-    }
-
-    @Override
     public void onNodeStake(NodeStake nodeStake) {
         nodeStakes.add(nodeStake);
     }
@@ -496,9 +444,38 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionHashes.add(transaction.toTransactionHash());
         }
 
+        if (transaction.getNftTransfer() != null && transaction.getNftTransfer().size() > 0) {
+            for (NftTransfer nftTransfer : transaction.getNftTransfer()) {
+                // TO DO: rewrite NftRepository.updateTreasury() to update transaction.nft_transfer column
+                // instead of nft_transfer table, and call it when nftTransfer.serial number == WILDCARD_SERIAL_NUMBER
+
+                if (entityProperties.getPersist().isTrackBalance()) {
+                    long tokenId = nftTransfer.getTokenId().getId();
+                    if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
+                        var tokenAccount = new TokenAccount();
+                        tokenAccount.setAccountId(nftTransfer.getSenderAccountId() == null ? 0 : nftTransfer.getSenderAccountId().getId());
+                        tokenAccount.setTokenId(tokenId);
+                        tokenAccount.setBalance(-1);
+                        onTokenAccount(tokenAccount);
+                    }
+ 
+                    if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
+                        var tokenAccount = new TokenAccount();
+                        tokenAccount.setAccountId(nftTransfer.getReceiverAccountId() == null ? 0 : nftTransfer.getReceiverAccountId().getId());
+                        tokenAccount.setTokenId(tokenId);
+                        tokenAccount.setBalance(1);
+                        onTokenAccount(tokenAccount);
+                    }
+                }
+
+                // TO DO: rewrite mergeNftTransfer logic to not require nftTransferId (which has been eliminated)
+            }
+        }
+
         if (transactions.size() == sqlProperties.getBatchSize()) {
             flush();
         }
+
     }
 
     @Override
@@ -528,7 +505,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
-            nftTransferState.clear();
             nodeStakes.clear();
             nonFeeTransfers.clear();
             prngs.clear();
@@ -592,7 +568,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransferState.values());
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 
@@ -606,23 +581,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
-        }
-    }
-
-    private void flushNftState() {
-        try {
-            // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            batchPersister.persist(tokens.values());
-            batchPersister.persist(tokenAccounts);
-            batchPersister.persist(nfts.values());
-        } catch (ParserException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ParserException(e);
-        } finally {
-            tokens.clear();
-            tokenAccounts.clear();
-            nfts.clear();
         }
     }
 
@@ -778,15 +736,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setSpender(newNft.getSpender());
 
         return cachedNft;
-    }
-
-    private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
-        // flatten multi receiver transfers
-        if (!Objects.equals(cachedNftTransfer.getReceiverAccountId(), newNftTransfer.getReceiverAccountId())) {
-            cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
-        }
-
-        return cachedNftTransfer;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {
