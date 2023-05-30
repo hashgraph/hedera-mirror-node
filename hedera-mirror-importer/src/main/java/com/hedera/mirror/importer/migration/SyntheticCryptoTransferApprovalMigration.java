@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hederahashgraph.api.proto.java.Key;
 import java.sql.ResultSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,29 +35,44 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
 
     private static final String TRANSFER_SQL =
             """
-            with cryptotransfers as (
-              select ct.*, cr.sender_id, e.key
+            with ecr as (
+              select e.*, cr.consensus_timestamp, cr.sender_id
+              from (
+                select key, id, timestamp_range from entity
+                union all
+                select key, id, timestamp_range from entity_history
+              ) e
+              join contract_result cr on cr.sender_id > 2119900 and --lower bound for sender ids where this problem occurred
+              -- TODO upper bound for sender ids where this problem occurred
+              lower(e.timestamp_range) <= cr.consensus_timestamp and
+              (upper(e.timestamp_range) > cr.consensus_timestamp or upper(e.timestamp_range) is null)
+            ),
+            cryptotransfers as (
+              select ct.*, ecr.sender_id, ecr.key, ecr.id
               from (
                 select cast(null as bigint) account_id,
-                amount, --receiver
+                amount,
                 consensus_timestamp,
-                entity_id,
+                entity_id, --receiver
                 is_approval,
                 cast(null as bigint) as payer_account_id,
                 cast(null as bigint) as receiver_account_id,
+                cast(null as bigint) as sender_account_id,
                 cast(null as bigint) as serial_number,
                 cast(null as bigint) as token_id,
                 'CRYPTO_TRANSFER' as transfer_type
                 from crypto_transfer
               ) ct
-              join contract_result cr on cr.consensus_timestamp = ct.consensus_timestamp
-              join entity e on e.id = ct.entity_id
+              join ecr on ecr.consensus_timestamp = ct.consensus_timestamp and
+              ecr.id = ct.entity_id and
+              lower(ecr.timestamp_range) <= ct.consensus_timestamp and
+              (upper(ecr.timestamp_range) > ct.consensus_timestamp or upper(ecr.timestamp_range) is null)
               where
-                cr.sender_id > 2119900 and --grandfathered number
-                cr.sender_id <> ct.entity_id and --sender does not equal receiver
-                ct.is_approval = false
-              ), nfttransfers as (
-                select nft.*, cr.sender_id, e.key
+                ecr.sender_id <> ct.entity_id and --sender does not equal receiver
+                ct.is_approval = false and
+                ct.amount <> 0
+            ), nfttransfers as (
+                select nft.*, ecr.sender_id, ecr.key, ecr.id
                 from (
                   select cast(null as bigint) account_id,
                   cast(null as bigint) as amount,
@@ -67,38 +81,43 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
                   is_approval,
                   cast(null as bigint) as payer_account_id,
                   receiver_account_id, --receiver
+                  sender_account_id,
                   serial_number,
                   token_id,
                   'NFT_TRANSFER' as transfer_type
                   from nft_transfer
                 ) nft
-                join contract_result cr on cr.consensus_timestamp = nft.consensus_timestamp
-                join entity e on e.id = nft.receiver_account_id
-                where
-                  cr.sender_id > 2119900 and
-                  cr.sender_id <> nft.receiver_account_id and
-                  nft.is_approval = false
+                join ecr on ecr.consensus_timestamp = nft.consensus_timestamp and
+                ecr.id = nft.receiver_account_id and
+                lower(ecr.timestamp_range) <= nft.consensus_timestamp and
+                (upper(ecr.timestamp_range) > nft.consensus_timestamp or upper(ecr.timestamp_range) is null)
+              where
+                ecr.sender_id <> nft.sender_account_id and --sender does not equal receiver
+                nft.is_approval = false
             ), tokentransfers as (
-              select t.*, cr.sender_id, e.key
+              select t.*, ecr.sender_id, ecr.key, ecr.id
               from (
                 select account_id, --receiver
-                cast(null as bigint) as amount,
+                amount,
                 consensus_timestamp,
                 cast(null as bigint) as entity_id,
                 is_approval,
                 payer_account_id,
                 cast(null as bigint) as receiver_account_id,
+                cast(null as bigint) as sender_account_id,
                 cast(null as bigint) as serial_number,
                 token_id,
                 'TOKEN_TRANSFER' as transfer_type
                 from token_transfer
               ) t
-              join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp
-              join entity e on e.id = t.account_id
+              join ecr on ecr.consensus_timestamp = t.consensus_timestamp and
+                ecr.id = t.account_id and
+                lower(ecr.timestamp_range) <= t.consensus_timestamp and
+                (upper(ecr.timestamp_range) > t.consensus_timestamp or upper(ecr.timestamp_range) is null)
               where
-                cr.sender_id > 2119900 and
-                cr.sender_id <> t.account_id and
-                t.is_approval = false
+                ecr.sender_id <> t.account_id and
+                t.is_approval = false and
+                t.amount <> 0
             ) select * from cryptotransfers
               union all
               select * from nfttransfers
@@ -129,8 +148,7 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public SyntheticCryptoTransferApprovalMigration(
-            @Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
+    public SyntheticCryptoTransferApprovalMigration(JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -153,7 +171,8 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
         jdbcTemplate.setFetchSize(BATCH_SIZE);
         try {
             jdbcTemplate.query(TRANSFER_SQL, rs -> {
-                if (processTransfer(rs)) {
+                if (!isAuthorizedByContractKey(rs)) {
+                    // set is_approval to true
                     var consensusTimestamp = rs.getLong("consensus_timestamp");
                     switch (TRANSFER_TYPE.valueOf(rs.getString("transfer_type"))) {
                         case CRYPTO_TRANSFER:
@@ -184,32 +203,38 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
     }
 
     @SneakyThrows
-    private Key getKey(byte[] bytes) {
-        try {
-            return Key.parseFrom(bytes);
-        } catch (Exception e) {
-            log.error("Unable to parse protobuf Key", e);
-            throw e;
-        }
-    }
-
-    @SneakyThrows
-    private boolean processTransfer(ResultSet rs) {
-        var senderId = rs.getLong("sender_id");
+    private boolean isAuthorizedByContractKey(ResultSet rs) {
         var keyBytes = rs.getBytes("key");
-        var parsedKey = getKey(keyBytes);
-        return !parsedKey.hasThresholdKey() || processThresholdKey(parsedKey, senderId);
+        if (keyBytes == null) {
+            return false;
+        }
+
+        Key parsedKey;
+        try {
+            parsedKey = Key.parseFrom(keyBytes);
+        } catch (Exception e) {
+            var entityId = rs.getLong("entity_id");
+            var consensusTimestamp = rs.getLong("consensus_timestamp");
+            log.error("Unable to parse protobuf key for entity id {} at {}: ", entityId, consensusTimestamp, e);
+            // TODO get list of failures
+            return true;
+        }
+
+        if (!parsedKey.hasThresholdKey() || parsedKey.getThresholdKey().getThreshold() > 1) {
+            return false;
+        }
+
+        var senderId = rs.getLong("sender_id");
+        return isAuthorizedByThresholdKey(parsedKey, senderId);
     }
 
-    private boolean processThresholdKey(Key parsedKey, long senderId) {
+    private boolean isAuthorizedByThresholdKey(Key parsedKey, long senderId) {
         var keys = parsedKey.getThresholdKey().getKeys().getKeysList();
         for (var key : keys) {
-            if (key.hasContractID() && EntityId.of(key.getContractID()).getId() != senderId) {
-                // Update is_approval to true
+            if (key.hasContractID() && EntityId.of(key.getContractID()).getId() == senderId) {
                 return true;
             }
         }
-
         return false;
     }
 }
