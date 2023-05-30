@@ -92,7 +92,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.2")
         api("org.testcontainers:junit-jupiter:1.18.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.69")
+        api("software.amazon.awssdk:bom:2.20.74")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
