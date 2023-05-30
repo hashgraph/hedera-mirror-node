@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -321,32 +320,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private com.hederahashgraph.api.proto.java.NftTransfer findNftTransferInsideBody(
-            com.hederahashgraph.api.proto.java.NftTransfer nftTransfer, TokenID nftId, TransactionBody body) {
-        if (!body.hasCryptoTransfer()) {
-            return null;
+    private void insertFungibleTokenTransfers(RecordItem recordItem, TokenTransferList tokenTransferList) {
+        if (tokenTransferList.getTransfersList().isEmpty()) {
+            return;
         }
-        List<TokenTransferList> tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
-        for (TokenTransferList transferList : tokenTransfersList) {
-            if (!transferList.getToken().equals(nftId)) {
-                continue;
-            }
-            for (NftTransfer transfer : transferList.getNftTransfersList()) {
-                if (transfer.getSerialNumber() == nftTransfer.getSerialNumber()
-                        && transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID())
-                        && transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())) {
-                    return transfer;
-                }
-            }
-        }
-        return null;
-    }
 
-    private void insertFungibleTokenTransfers(
-            RecordItem recordItem, EntityId tokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
+        var body = recordItem.getTransactionBody();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
+        var payerAccountId = recordItem.getPayerAccountId();
+        var tokenId = EntityId.of(tokenTransferList.getToken());
+        var tokenTransfers = tokenTransferList.getTransfersList();
         int tokenTransferCount = tokenTransfers.size();
 
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
@@ -385,6 +369,29 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             logTokenTransfers(recordItem, tokenId, tokenTransfers, isSingleTransfer, i, accountId, amount);
         }
+    }
+
+    private boolean isApprovalNftTransfer(NftTransfer nftTransfer, TokenID nftId, TransactionBody body) {
+        if (!body.hasCryptoTransfer()) {
+            return false;
+        }
+
+        var tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
+        for (var transferList : tokenTransfersList) {
+            if (!transferList.getToken().equals(nftId)) {
+                continue;
+            }
+
+            for (var transfer : transferList.getNftTransfersList()) {
+                if (transfer.getSerialNumber() == nftTransfer.getSerialNumber()
+                        && transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID())
+                        && transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())) {
+                    return transfer.getIsApproval();
+                }
+            }
+        }
+
+        return false;
     }
 
     private void logTokenEvents(
@@ -453,63 +460,38 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!entityProperties.getPersist().isTokens()) {
             return;
         }
-        for (int i = 0; i < recordItem.getTransactionRecord().getTokenTransferListsCount(); i++) {
-            TokenTransferList tokenTransferList =
-                    recordItem.getTransactionRecord().getTokenTransferLists(i);
-            TokenID tokenId = tokenTransferList.getToken();
-            EntityId entityTokenId = EntityId.of(tokenId);
-            EntityId payerAccountId = recordItem.getPayerAccountId();
 
-            if (tokenTransferList.getTransfersCount() > 0) {
-                insertFungibleTokenTransfers(
-                        recordItem, entityTokenId, payerAccountId, tokenTransferList.getTransfersList());
-            }
-
-            if (tokenTransferList.getNftTransfersCount() > 0) {
-                insertNonFungibleTokenTransfers(
-                        recordItem,
-                        transaction,
-                        tokenId,
-                        entityTokenId,
-                        payerAccountId,
-                        tokenTransferList.getNftTransfersList());
-            }
+        for (var tokenTransferList : recordItem.getTransactionRecord().getTokenTransferListsList()) {
+            insertFungibleTokenTransfers(recordItem, tokenTransferList);
+            insertNonFungibleTokenTransfers(recordItem, transaction, tokenTransferList);
         }
     }
 
     private void insertNonFungibleTokenTransfers(
-            RecordItem recordItem,
-            Transaction transaction, // complete, except for its list of nft transfers
-            TokenID tokenId,
-            EntityId entityTokenId,
-            EntityId payerAccountId,
-            List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        TransactionBody body = recordItem.getTransactionBody();
-        transaction.setNftTransfer(new ArrayList<>());
-        var nftTransfers = transaction.getNftTransfer();
+            RecordItem recordItem, Transaction transaction, TokenTransferList tokenTransferList) {
+        if (tokenTransferList.getNftTransfersList().isEmpty()) {
+            return;
+        }
 
-        for (NftTransfer nftTransfer : nftTransfersList) {
+        var body = recordItem.getTransactionBody();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var tokenId = tokenTransferList.getToken();
+        var entityTokenId = EntityId.of(tokenId);
+
+        for (var nftTransfer : tokenTransferList.getNftTransfersList()) {
             long serialNumber = nftTransfer.getSerialNumber();
-            EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-            EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
+            var receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+            var senderId = EntityId.of(nftTransfer.getSenderAccountID());
 
             var nftTransferDomain = new com.hedera.mirror.common.domain.token.NftTransfer();
-            nftTransferDomain.setIsApproval(false);
+            nftTransferDomain.setIsApproval(isApprovalNftTransfer(nftTransfer, tokenId, body));
             nftTransferDomain.setReceiverAccountId(receiverId);
             nftTransferDomain.setSenderAccountId(senderId);
             nftTransferDomain.setSerialNumber(serialNumber);
-            nftTransferDomain.setTokenId(EntityId.of(tokenId));
+            nftTransferDomain.setTokenId(entityTokenId);
+            transaction.addNftTransfer(nftTransferDomain);
 
-            var nftTransferInsideBody = findNftTransferInsideBody(nftTransfer, tokenId, body);
-            if (nftTransferInsideBody != null) {
-                nftTransferDomain.setIsApproval(nftTransferInsideBody.getIsApproval());
-            }
-            nftTransfers.add(nftTransferDomain);
-
-            if (!EntityId.isEmpty(receiverId)) {
-                transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
-            }
+            transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             syntheticContractLogService.create(
                     new TransferIndexedContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
@@ -546,7 +528,12 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void transferNftOwnership(
             long modifiedTimeStamp, long serialNumber, EntityId tokenId, EntityId receiverId) {
-        Nft nft = new Nft(serialNumber, tokenId);
+        if (EntityId.isEmpty(receiverId)) {
+            // nfts in token burn / wipe transactions are handled in transaction handlers
+            return;
+        }
+
+        var nft = new Nft(serialNumber, tokenId);
         nft.setAccountId(receiverId);
         nft.setModifiedTimestamp(modifiedTimeStamp);
         entityListener.onNft(nft);

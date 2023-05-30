@@ -45,31 +45,20 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
                     """
             with nft_updated as (
               update nft
-                set account_id = ?3,
-                    modified_timestamp = ?4
-              where token_id = ?1 and account_id = ?2
+                set account_id = :newTreasury,
+                    modified_timestamp = :consensusTimestamp
+              where token_id = :tokenId and account_id = :previousTreasury
               returning serial_number
             ), updated_count as (
               select count(*) from nft_updated
-            ), update_balance as (
-              update token_account
-                set balance = case when account_id = ?2 then 0
-                                   else coalesce(balance, 0) + updated_count.count
-                              end
-              from updated_count
-              where account_id in (?2, ?3) and token_id = ?1
             )
-            insert into nft_transfer (token_id, sender_account_id, receiver_account_id, consensus_timestamp,
-             payer_account_id, serial_number, is_approval)
-            select ?1, ?2, ?3, ?4, ?5, nft_updated.serial_number, ?6
-            from nft_updated
+            update token_account
+              set balance = case when account_id = :previousTreasury then 0
+                                 else coalesce(balance, 0) + updated_count.count
+                            end
+            from updated_count
+            where account_id in (:newTreasury, :previousTreasury) and token_id = :tokenId
             """,
             nativeQuery = true)
-    void updateTreasury(
-            long tokenId,
-            long previousTreasury,
-            long newTreasury,
-            long consensusTimestamp,
-            long payerAccountId,
-            boolean isApproval);
+    void updateTreasury(long consensusTimestamp, long newTreasury, long previousTreasury, long tokenId);
 }

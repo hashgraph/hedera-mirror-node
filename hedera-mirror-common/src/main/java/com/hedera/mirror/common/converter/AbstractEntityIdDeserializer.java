@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,19 @@ package com.hedera.mirror.common.converter;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 
-public class StringToObjectDeserializer extends JsonDeserializer<Object> {
-    private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+@RequiredArgsConstructor
+abstract class AbstractEntityIdDeserializer extends JsonDeserializer<EntityId> {
+
+    private final EntityType entityType;
 
     @Override
-    public Object deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-        var jsonObject = OBJECT_MAPPER.readValue(parser, Object.class);
-        return jsonObject;
+    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
+        Long value = jsonParser.readValueAs(Long.class);
+        return value != null ? EntityId.of(value, entityType) : null;
     }
 }

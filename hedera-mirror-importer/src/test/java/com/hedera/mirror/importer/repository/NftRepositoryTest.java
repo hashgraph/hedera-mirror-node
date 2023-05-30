@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import jakarta.annotation.Resource;
 import java.util.List;
-import org.assertj.core.api.AbstractObjectAssert;
 import org.junit.jupiter.api.Test;
 
 class NftRepositoryTest extends AbstractRepositoryTest {
@@ -77,53 +76,43 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void updateTreasury() {
+        // given
         long consensusTimestamp = 6L;
-        EntityId newTreasury = EntityId.of("0.0.2", EntityType.ACCOUNT);
-        Nft nft1 = nft("0.0.100", 1, 1);
-        Nft nft2 = nft("0.0.100", 2, 2);
-        Nft nft3 = nft("0.0.100", 3, 3);
-        Nft nft4 = nft("0.0.101", 1, 4); // Not updated since wrong token
-        Nft nft5 = nft("0.0.100", 4, 5); // Not updated since wrong account
+        var newTreasury = EntityId.of("0.0.2", EntityType.ACCOUNT);
+        var nft1 = nft("0.0.100", 1, 1);
+        var nft2 = nft("0.0.100", 2, 2);
+        var nft3 = nft("0.0.100", 3, 3);
+        var nft4 = nft("0.0.101", 1, 4); // Not updated since wrong token
+        var nft5 = nft("0.0.100", 4, 5); // Not updated since wrong account
         nft5.setAccountId(newTreasury);
         nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
         long nftTokenId = nft1.getId().getTokenId().getId();
+        long oldTreasuryId = nft1.getAccountId().getId();
         var tokenAccountOldTreasury = domainBuilder
                 .tokenAccount()
-                .customize(ta ->
-                        ta.accountId(nft1.getAccountId().getId()).balance(3).tokenId(nftTokenId))
+                .customize(ta -> ta.accountId(oldTreasuryId).balance(3).tokenId(nftTokenId))
                 .persist();
         var tokenAccountNewTreasury = domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.accountId(newTreasury.getId()).balance(1).tokenId(nftTokenId))
                 .persist();
 
-        EntityId tokenId = nft1.getId().getTokenId();
-        EntityId previousTreasury = nft1.getAccountId();
-        nftRepository.updateTreasury(
-                tokenId.getId(),
-                previousTreasury.getId(),
-                newTreasury.getId(),
-                consensusTimestamp,
-                EntityId.of("0.0.200", EntityType.ACCOUNT).getId(),
-                false);
+        // when
+        nftRepository.updateTreasury(consensusTimestamp, newTreasury.getId(), oldTreasuryId, nftTokenId);
 
-        assertAccountUpdated(nft1, newTreasury);
-        assertAccountUpdated(nft2, newTreasury);
-        assertAccountUpdated(nft3, newTreasury);
-        assertThat(nftRepository.findById(nft4.getId())).get().isEqualTo(nft4);
-        assertThat(nftRepository.findById(nft5.getId())).get().isEqualTo(nft5);
+        // then
+        nft1.setAccountId(newTreasury);
+        nft1.setModifiedTimestamp(consensusTimestamp);
+        nft2.setAccountId(newTreasury);
+        nft2.setModifiedTimestamp(consensusTimestamp);
+        nft3.setAccountId(newTreasury);
+        nft3.setModifiedTimestamp(consensusTimestamp);
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4, nft5);
 
         tokenAccountOldTreasury.setBalance(0);
         tokenAccountNewTreasury.setBalance(4);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccountOldTreasury, tokenAccountNewTreasury);
-    }
-
-    private void assertAccountUpdated(Nft nft, EntityId accountId) {
-        AbstractObjectAssert<?, Nft> nftAssert =
-                assertThat(nftRepository.findById(nft.getId())).get();
-        nftAssert.extracting(Nft::getAccountId).isEqualTo(accountId);
-        nftAssert.extracting(Nft::getModifiedTimestamp).isNotEqualTo(nft.getModifiedTimestamp());
     }
 
     private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
