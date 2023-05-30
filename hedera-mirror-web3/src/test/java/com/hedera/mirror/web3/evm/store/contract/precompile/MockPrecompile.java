@@ -30,8 +30,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class MockPrecompile implements Precompile {
 
+    private Bytes input;
+
     @Override
-    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {}
+    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        this.input = input;
+    }
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
@@ -58,6 +62,11 @@ public class MockPrecompile implements Precompile {
 
     @Override
     public Bytes getSuccessResultFor() {
-        return SUCCESS_RESULT;
+        if (Bytes.fromHexString("0x000000000000000000000000000000000000000000000000")
+                .equals(input)) {
+            return null;
+        } else {
+            return SUCCESS_RESULT;
+        }
     }
 }

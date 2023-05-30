@@ -56,6 +56,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
 
+    // mock precompile signature
+    private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
+    private static final Pair<Long, Bytes> FAILURE_RESULT = Pair.of(0L, null);
+
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
 
@@ -64,6 +68,9 @@ class MirrorHTSPrecompiledContractTest {
 
     @Mock
     private MessageFrame messageFrame;
+
+    @Mock
+    private MessageFrame parentMessageFrame;
 
     @Mock
     private BlockValues blockValues;
@@ -93,16 +100,15 @@ class MirrorHTSPrecompiledContractTest {
     private Iterator<MessageFrame> messageFrameIterator;
 
     private MirrorHTSPrecompiledContract subject;
-    private PrecompileMapper precompileMapper;
-    private StackedStateFrames<Object> stackedStateFrames;
 
     @BeforeEach
     void setUp() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        precompileMapper = new PrecompileMapper(Set.of(new MockPrecompile()), getPrecompileFunctionSelectors());
-        stackedStateFrames = new StackedStateFrames<>(accessors);
+        final PrecompileMapper precompileMapper =
+                new PrecompileMapper(Set.of(new MockPrecompile()), getPrecompileFunctionSelectors());
+        final StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
 
         // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
         stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
@@ -152,8 +158,7 @@ class MirrorHTSPrecompiledContractTest {
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
-        final var expectedResult = Pair.of(0L, null);
-        assertThat(expectedResult).isEqualTo(precompileResult);
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
     }
 
     @Test
@@ -177,9 +182,6 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void nonStaticCallToPrecompileWorks() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
-
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
@@ -191,7 +193,8 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, SUCCESS_RESULT);
         assertThat(expectedResult).isEqualTo(precompileResult);
@@ -199,25 +202,19 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void unqualifiedDelegateCallFails() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
-
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
-        final var expectedResult = Pair.of(0L, null);
-        assertThat(expectedResult).isEqualTo(precompileResult);
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
     }
 
     @Test
     void invalidFeeSentFails() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
-
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
@@ -233,17 +230,85 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.FAIL_INVALID));
         assertThat(expectedResult).isEqualTo(precompileResult);
     }
 
     @Test
-    void delegateCallWithNoParent() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
+    void delegateParentCallToTokenRedirectFails() {
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
+        given(account.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.iterator()).willReturn(messageFrameIterator);
+        given(messageFrameIterator.hasNext()).willReturn(true);
+        given(messageFrameIterator.next()).willReturn(parentMessageFrame);
+        given(parentMessageFrame.getContractAddress()).willReturn(Address.BLS12_G2MUL);
+        given(parentMessageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
 
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
+
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void callingNonExistingPrecompileFailsWithNullOutput() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x11111111");
+
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
+        given(account.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.iterator()).willReturn(messageFrameIterator);
+        given(messageFrameIterator.hasNext()).willReturn(false);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void nullPrecompileResponseHalts() {
+        // mock precompile signature
+        final var functionHash = Bytes.fromHexString("0x000000000000000000000000000000000000000000000000");
+
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
+        given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
+        given(account.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.iterator()).willReturn(messageFrameIterator);
+        given(messageFrameIterator.hasNext()).willReturn(false);
+        given(messageFrame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(10L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void delegateCallWithNoParent() {
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
@@ -260,7 +325,8 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.SUCCESS));
         assertThat(expectedResult).isEqualTo(precompileResult);
@@ -268,9 +334,6 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void invalidTransactionIsHandledProperly() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
-
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getSenderAddress()).willReturn(Address.ZERO);
@@ -282,7 +345,8 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
+        final var precompileResult =
+                subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
         final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_ACCOUNT_ID));
         assertThat(expectedResult).isEqualTo(precompileResult);
@@ -290,9 +354,6 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void redirectForErcViewFunctionWorks() {
-        // mock precompile signature
-        final var functionHash = Bytes.fromHexString("0x00000000");
-
         final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME, ALTBN128_ADD);
 
         given(messageFrame.isStatic()).willReturn(false);
