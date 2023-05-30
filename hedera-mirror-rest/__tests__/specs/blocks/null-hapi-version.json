@@ -1,0 +1,57 @@
+{
+  "description": "Get first block with hapi version all nulls",
+  "setup": {
+    "recordFiles": [
+      {
+        "index": 16,
+        "count": 3,
+        "hapi_version_major": null,
+        "hapi_version_minor": null,
+        "hapi_version_patch": null,
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": "1676540001234390000",
+        "consensus_end": "1676540001234490000",
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      },
+      {
+        "index": 17,
+        "count": 5,
+        "hapi_version_major": null,
+        "hapi_version_minor": null,
+        "hapi_version_patch": null,
+        "name": "2022-04-27T12_24_30.768994443Z.rcd",
+        "prev_hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+        "consensus_start": "1676540001234500000",
+        "consensus_end": "1676540001234600000",
+        "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/blocks?order=asc&limit=1"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "blocks": [
+      {
+        "count": 3,
+        "gas_used": 0,
+        "hapi_version": null,
+        "hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+        "logs_bloom": "0x",
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "number": 16,
+        "previous_hash": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "size": 6,
+        "timestamp": {
+          "from": "1676540001.234390000",
+          "to": "1676540001.234490000"
+        }
+      }
+    ],
+    "links": {
+      "next": "/api/v1/blocks?order=asc&limit=1&block.number=gt:16"
+    }
+  }
+}
