@@ -148,9 +148,6 @@ const getEntityBalanceQuery = (
     pubKeyQuery.params
   );
 
-  const getEntitySql2 = (tableName, orderBy = ``, limit = '') => {
-    return `SELECT * from ${tableName} e where ${entityWhereCondition} ${orderBy} ${limit}`;
-  };
   const queries = [
     `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
                                     from token_account
@@ -166,9 +163,7 @@ const getEntityBalanceQuery = (
                               order by token_id ${order}
         limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`,
   ];
-  const joins = ['left join entity_stake es on es.id = e.id'];
 
-  let fromTable;
   if (accountBalanceQuery.query) {
     const consensusTimestampSelect = `(case 
             when upper(e.timestamp_range) is null
@@ -180,29 +175,34 @@ const getEntityBalanceQuery = (
     selectFields.push(consensusTimestampSelect);
     selectFields.push(balanceSelect);
 
-    fromTable = `(${getEntitySql2(Entity.tableName)}
-          UNION ALL
-          ${getEntitySql2(Entity.historyTableName)} 
-          order by ${Entity.TIMESTAMP_RANGE} desc limit 1)`;
-
-    joins.push(`left join account_balance ab on ${accountBalanceQuery.query}`);
+    queries.push(
+      `
+        select ${selectFields.join(',\n')}
+        from (SELECT * from ${Entity.tableName} e where ${entityWhereCondition}
+                UNION ALL
+              SELECT * from ${Entity.historyTableName} e where ${entityWhereCondition}
+              order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
+        left join entity_stake es on es.id = e.id
+        left join account_balance ab on ${accountBalanceQuery.query}
+        ${whereCondition ? 'where' : ''} ${whereCondition}
+      `
+    );
 
     utils.mergeParams(params, entityBalanceQuery.params, entityAccountQuery.params, pubKeyQuery.params);
   } else {
+    const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
     selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
     selectFields.push('e.balance as balance');
-    fromTable = `(${getEntitySql2(Entity.tableName, `order by e.id ${order}`, limitQuery)})`;
+
+    queries.push(` select ${selectFields.join(',\n')}
+            from entity e
+                     left join entity_stake es on es.id = e.id
+            where ${conditions}
+            order by e.id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`);
     utils.mergeParams(params, limitParams);
   }
 
   utils.mergeParams(params, accountBalanceQuery.params, entityStakeQuery.params);
-
-  queries.push(
-    `SELECT ${selectFields.join(',\n')} 
-       from ${fromTable} e
-       ${joins.join('\n')}
-       ${whereCondition ? ' WHERE ' : ''} ${whereCondition}`
-  );
 
   const query = queries.join('\n');
 
