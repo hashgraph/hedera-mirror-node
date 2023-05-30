@@ -145,7 +145,9 @@ const getEntityBalanceQuery = (
     tokenBalanceQuery.params,
     entityBalanceQuery.params,
     entityAccountQuery.params,
-    pubKeyQuery.params
+    pubKeyQuery.params,
+    accountBalanceQuery.params,
+    entityStakeQuery.params
   );
 
   const queries = [
@@ -187,8 +189,6 @@ const getEntityBalanceQuery = (
         ${whereCondition ? 'where' : ''} ${whereCondition}
       `
     );
-
-    utils.mergeParams(params, entityBalanceQuery.params, entityAccountQuery.params, pubKeyQuery.params);
   } else {
     const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
     selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
@@ -198,11 +198,9 @@ const getEntityBalanceQuery = (
             from entity e
                      left join entity_stake es on es.id = e.id
             where ${conditions}
-            order by e.id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`);
+            order by e.id ${order} ${limitQuery}`);
     utils.mergeParams(params, limitParams);
   }
-
-  utils.mergeParams(params, accountBalanceQuery.params, entityStakeQuery.params);
 
   const query = queries.join('\n');
 
@@ -364,35 +362,40 @@ const getOneAccount = async (req, res) => {
     't.consensus_timestamp'
   );
 
+  let paramCount = 0;
+
   // Override any equals operators with lte to find the closest balance file
   const balanceFileTsQuery = transactionTsQuery.replace('t.', '').replace(opsMap.eq, opsMap.lte);
   const balanceFileTsParams = transactionTsParams;
-  const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(
-    filters,
-    false
-  );
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParams = [encodedId];
-  const tokenBalanceParams = [encodedId];
-  const entityAccountQuery = {query: 'e.id = ? ', params: accountIdParams};
-  const entityStakeQuery = {query: '(es.id = ? OR es.id IS NULL)', params: accountIdParams};
   const tokenBalanceQuery = {
-    query: 'account_id = ?',
-    params: tokenBalanceParams,
+    query: `account_id = $${++paramCount}`,
+    params: accountIdParams,
     limit: tokenBalanceResponseLimit.singleAccount,
   };
-  const accountBalanceQuery = {query: '', params: []};
+  const entityAccountQuery = {query: `e.id = $${paramCount}`, params: []};
+  const entityStakeQuery = {query: `(es.id = $${paramCount} OR es.id IS NULL)`, params: []};
 
+  const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    tokenBalanceQuery.query += ` and ${transactionTsQuery.replace('t.consensus_timestamp', 'created_timestamp')} `;
-    tokenBalanceQuery.params = tokenBalanceParams.concat(transactionTsParams);
+    tokenBalanceQuery.query += ` and ${transactionTsQuery
+      .replace('t.consensus_timestamp', 'created_timestamp')
+      .replace('?', `$${++paramCount}`)} `;
+    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(transactionTsParams);
+
+    const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(
+      filters,
+      paramCount
+    );
+    paramCount += entityTsParams.length;
 
     entityAccountQuery.query += ` and ${entityTsQuery.join(' and ')}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
     const accountBalanceTs = await balances.getAccountBalanceTimestamp(balanceFileTsQuery, balanceFileTsParams);
-    accountBalanceQuery.query = 'ab.account_id = e.id and ab.consensus_timestamp = ?';
+    accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
     accountBalanceQuery.params = [accountBalanceTs ?? null];
   }
 

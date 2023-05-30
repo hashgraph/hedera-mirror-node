@@ -683,12 +683,12 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
 /**
  * Extracts the aggregated timestamp range condition from the timestamp filters
  * @param filters
- * @param usePositions
+ * @param offset
  * @param timestampRangeColumn
  */
 const extractTimestampRangeConditionFilters = (
   filters,
-  usePositions = true,
+  offset = 0,
   timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE)
 ) => {
   const conditions = [];
@@ -698,7 +698,7 @@ const extractTimestampRangeConditionFilters = (
     .filter((filter) => filter.key === filterKeys.TIMESTAMP)
     .forEach((filter) => {
       // the first param is the contract id, the param for the current filter will be pushed later, so add 2
-      const position = usePositions ? `$${params.length + 1}` : '?';
+      const position = `$${params.length + offset + 1}`;
       let condition;
       let range;
 
