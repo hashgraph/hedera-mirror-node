@@ -372,11 +372,14 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         sidecarContractMigration.migrate(contractBytecodes);
-        log.info(
-                "{} Sidecar records processed with {} migrations in {}",
-                sidecarRecords.size(),
-                migrationCount,
-                stopwatch);
+        if (migrationCount > 0) {
+            log.info(
+                    "{} Sidecar records processed with {} migrations in {}",
+                    sidecarRecords.size(),
+                    migrationCount,
+                    stopwatch);
+        }
+
         return failedInitcode;
     }
 
