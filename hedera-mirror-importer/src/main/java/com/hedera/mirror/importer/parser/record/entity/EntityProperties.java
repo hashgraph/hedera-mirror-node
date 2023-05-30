@@ -21,9 +21,9 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDU
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
 import java.util.Set;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -62,6 +62,8 @@ public class EntityProperties {
         private boolean tokens = true;
 
         private boolean topics = true;
+
+        private boolean topicMessageLookups = true;
 
         private boolean trackBalance = true;
 

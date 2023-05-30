@@ -17,9 +17,8 @@
 package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -39,7 +38,7 @@ class EntityDatabaseAccessorTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
 
-    private static final Entity entity = mock(Entity.class);
+    private static final Entity mockEntity = mock(Entity.class);
 
     @InjectMocks
     private EntityDatabaseAccessor entityDatabaseAccessor;
@@ -49,17 +48,19 @@ class EntityDatabaseAccessorTest {
 
     @Test
     void getEntityByAddress() {
-        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS)))
+                .thenReturn(Optional.of(mockEntity));
 
-        entityDatabaseAccessor.get(ADDRESS);
-
-        verify(entityRepository).findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS));
+        assertThat(entityDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
     @Test
     void getEntityByAlias() {
-        entityDatabaseAccessor.get(ALIAS_ADDRESS);
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe()))
+                .thenReturn(Optional.of(mockEntity));
 
-        verify(entityRepository).findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe());
+        assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 }

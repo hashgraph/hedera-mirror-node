@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class NftTransferRepositoryTest extends AbstractRepositoryTest {
+class TopicMessageLookupRepositoryTest extends AbstractRepositoryTest {
 
-    private final NftTransferRepository nftTransferRepository;
+    private final TopicMessageLookupRepository repository;
 
     @Test
     void prune() {
-        domainBuilder.nftTransfer().persist();
-        var nftTransfer2 = domainBuilder.nftTransfer().persist();
-        var nftTransfer3 = domainBuilder.nftTransfer().persist();
-
-        nftTransferRepository.prune(nftTransfer2.getId().getConsensusTimestamp());
-
-        assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer3);
+        domainBuilder.topicMessageLookup().persist();
+        var topicMessageLookup2 = domainBuilder.topicMessageLookup().persist();
+        var topicMessageLookup3 = domainBuilder.topicMessageLookup().persist();
+        repository.prune(topicMessageLookup2.getTimestampRange().upperEndpoint());
+        assertThat(repository.findAll()).containsOnly(topicMessageLookup3);
     }
 
     @Test
     void save() {
-        var nftTransfer = domainBuilder.nftTransfer().get();
-        nftTransferRepository.save(nftTransfer);
-        assertThat(nftTransferRepository.findById(nftTransfer.getId())).contains(nftTransfer);
+        var topicMessageLookup = domainBuilder.topicMessageLookup().get();
+        repository.save(topicMessageLookup);
+        assertThat(repository.findById(topicMessageLookup.getId())).get().isEqualTo(topicMessageLookup);
     }
 }

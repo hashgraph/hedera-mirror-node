@@ -20,9 +20,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,7 +35,7 @@ import org.springframework.data.domain.Persistable;
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
 @Data
-@javax.persistence.Entity
+@Entity
 @IdClass(ContractLog.Id.class)
 @NoArgsConstructor
 public class ContractLog implements Persistable<ContractLog.Id> {
@@ -42,7 +43,7 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @ToString.Exclude
     private byte[] bloom;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long consensusTimestamp;
 
     @Convert(converter = ContractIdConverter.class)
@@ -51,7 +52,7 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @ToString.Exclude
     private byte[] data;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private int index;
 
     @Convert(converter = ContractIdConverter.class)

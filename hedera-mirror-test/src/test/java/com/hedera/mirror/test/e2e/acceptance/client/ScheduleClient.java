@@ -27,8 +27,8 @@ import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
 import java.util.List;
-import javax.inject.Named;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named

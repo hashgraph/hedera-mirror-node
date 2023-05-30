@@ -30,7 +30,6 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -46,9 +45,9 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.function.BiConsumer;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
@@ -147,11 +146,6 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNftAllowance(NftAllowance nftAllowance) throws ImporterException {
         onEach(EntityListener::onNftAllowance, nftAllowance);
-    }
-
-    @Override
-    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        onEach(EntityListener::onNftTransfer, nftTransfer);
     }
 
     @Override

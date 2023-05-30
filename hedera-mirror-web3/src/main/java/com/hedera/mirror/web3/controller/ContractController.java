@@ -38,7 +38,7 @@ import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -135,9 +135,9 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
+    private Mono<GenericErrorResponse> invalidJson(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
-        return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage(), StringUtils.EMPTY);
+        return errorResponse(e.getReason(), "Unable to parse JSON", StringUtils.EMPTY);
     }
 
     @ExceptionHandler
@@ -151,7 +151,7 @@ class ContractController {
     @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
     private Mono<GenericErrorResponse> unsupportedMediaTypeError(final UnsupportedMediaTypeStatusException e) {
         log.warn("Unsupported media type error: {}", e.getMessage());
-        return errorResponse(e.getStatus().getReasonPhrase(), e.getReason(), StringUtils.EMPTY);
+        return errorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getReason(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler()

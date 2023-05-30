@@ -16,16 +16,15 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NftTransferRepository extends CrudRepository<NftTransfer, NftTransferId>, RetentionRepository {
-
+public interface TopicMessageLookupRepository
+        extends CrudRepository<TopicMessageLookup, TopicMessageLookup.Id>, RetentionRepository {
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from nft_transfer where consensus_timestamp <= ?1")
+    @Query(value = "delete from topic_message_lookup where upper(timestamp_range) <= ?1", nativeQuery = true)
     int prune(long consensusTimestamp);
 }

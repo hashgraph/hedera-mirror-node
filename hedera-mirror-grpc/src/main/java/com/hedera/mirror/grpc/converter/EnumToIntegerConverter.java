@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.grpc.converter;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.WritingConverter;
 

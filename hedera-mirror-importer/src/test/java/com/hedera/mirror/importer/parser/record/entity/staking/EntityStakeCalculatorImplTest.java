@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -45,7 +46,7 @@ class EntityStakeCalculatorImplTest {
     @Mock
     private EntityRepository entityRepository;
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     private EntityStakeRepository entityStakeRepository;
 
     private EntityStakeCalculatorImpl entityStakeCalculator;

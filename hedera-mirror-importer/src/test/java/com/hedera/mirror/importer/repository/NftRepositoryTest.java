@@ -22,20 +22,15 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.NftTransfer;
+import jakarta.annotation.Resource;
 import java.util.List;
-import javax.annotation.Resource;
 import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.Test;
 
 class NftRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private NftRepository nftRepository;
-
-    @Resource
-    private NftTransferRepository nftTransferRepository;
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
@@ -117,15 +112,6 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         assertAccountUpdated(nft3, newTreasury);
         assertThat(nftRepository.findById(nft4.getId())).get().isEqualTo(nft4);
         assertThat(nftRepository.findById(nft5.getId())).get().isEqualTo(nft5);
-
-        IterableAssert<NftTransfer> nftTransfers =
-                assertThat(nftTransferRepository.findAll()).hasSize(3);
-        nftTransfers.extracting(NftTransfer::getReceiverAccountId).containsOnly(newTreasury);
-        nftTransfers.extracting(NftTransfer::getSenderAccountId).containsOnly(previousTreasury);
-        nftTransfers.extracting(n -> n.getId().getTokenId()).containsOnly(tokenId);
-        nftTransfers.extracting(n -> n.getId().getConsensusTimestamp()).containsOnly(consensusTimestamp);
-        nftTransfers.extracting(n -> n.getId().getSerialNumber()).containsExactlyInAnyOrder(1L, 2L, 3L);
-        nftTransfers.extracting(NftTransfer::getIsApproval).containsExactlyInAnyOrder(false, false, false);
 
         tokenAccountOldTreasury.setBalance(0);
         tokenAccountNewTreasury.setBalance(4);

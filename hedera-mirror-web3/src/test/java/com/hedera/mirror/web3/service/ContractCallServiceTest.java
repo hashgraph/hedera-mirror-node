@@ -32,6 +32,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -39,9 +40,10 @@ import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
-import java.util.function.LongFunction;
+import java.util.function.ToLongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.operation.CallOperation;
 import org.junit.jupiter.api.Test;
@@ -77,12 +79,14 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             Address.fromHexString("0x00000000000000000000000000000000000003e7");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private static final LongFunction<String> hexValueOf =
-            value -> Bytes.ofUnsignedLong(value).toHexString();
+
+    private static final ToLongFunction<String> longValueOf =
+            value -> Bytes.fromHexString(value).toLong();
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder encodeDecoder;
+    private final MirrorEvmTxProcessorFacadeImpl processor;
 
     @Test
     void pureCall() {
@@ -104,13 +108,16 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForPureCall() {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var expectedGasUsed = 22217L;
         final var serviceParameters =
                 serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -119,12 +126,15 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasWithoutReceiver() {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var expectedGasUsed = 21773L;
         final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -151,13 +161,16 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void estimateGasForViewCall() {
         final var viewFuncHash =
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
-        final var expectedGasUsed = 23175L;
         final var serviceParameters =
                 serviceParameters(viewFuncHash, 0, ETH_ESTIMATE_GAS, true, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -191,18 +204,17 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void estimateGasForBalanceCall() {
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
-        final var expectedGasUsed = 22738L;
-        final var params =
+        final var serviceParameters =
                 serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        final var estimatedGas = contractCallService.processCall(params);
-        assertThat(estimatedGas).isEqualTo(hexValueOf.apply(expectedGasUsed));
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -302,11 +314,14 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters =
                 serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
-        final var expectedGasUsed = 29233L;
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(hexValueOf.apply(expectedGasUsed));
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -414,6 +429,18 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         }
 
         return gasUsedBeforeExecution;
+    }
+
+    private long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
+        return processor
+                .execute(
+                        serviceParameters.getSender(),
+                        serviceParameters.getReceiver(),
+                        serviceParameters.getGas(),
+                        serviceParameters.getValue(),
+                        serviceParameters.getCallData(),
+                        serviceParameters.isStatic())
+                .getGasUsed();
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {

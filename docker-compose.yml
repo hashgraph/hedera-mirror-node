@@ -67,7 +67,7 @@ services:
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
-      SPRING_REDIS_HOST: redis
+      SPRING_DATA_REDIS_HOST: redis
     ports:
       - 5600:5600
     volumes:
@@ -80,7 +80,7 @@ services:
     environment:
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
-      SPRING_REDIS_HOST: redis
+      SPRING_DATA_REDIS_HOST: redis
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 

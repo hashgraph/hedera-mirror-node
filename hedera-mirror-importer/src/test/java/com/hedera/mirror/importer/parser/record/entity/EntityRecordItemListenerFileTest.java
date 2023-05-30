@@ -58,6 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
@@ -289,6 +290,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
+    @Transactional
     void fileAppendToAddressBook() throws IOException {
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
@@ -341,6 +343,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
+    @Transactional
     void fileAppendToAddressBookInSingleRecordFile() throws IOException {
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
@@ -660,6 +663,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
+    @Transactional
     void fileUpdateAddressBookComplete() throws IOException {
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         assertThat(addressBook).hasSizeLessThan(6144);

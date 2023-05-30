@@ -33,7 +33,6 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
@@ -49,13 +48,13 @@ import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hedera.mirror.importer.repository.TopicMessageLookupRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -82,13 +81,13 @@ class BatchUpserterTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
-    private final NftTransferRepository nftTransferRepository;
     private final ScheduleRepository scheduleRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
+    private final TopicMessageLookupRepository topicMessageLookupRepository;
     private final TransactionOperations transactionOperations;
 
     @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
@@ -425,6 +424,29 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     @Test
+    void topicMessageLookup() {
+        // given
+        var topicMessageLookup1 = domainBuilder.topicMessageLookup().persist();
+        var topicMessageLookup2 = domainBuilder
+                .topicMessageLookup()
+                .customize(
+                        t -> t.partition(topicMessageLookup1.getPartition()).topicId(topicMessageLookup1.getTopicId()))
+                .get();
+        var topicMessageLookup3 = domainBuilder.topicMessageLookup().get();
+
+        // when
+        persist(batchPersister, List.of(topicMessageLookup2, topicMessageLookup3));
+
+        // then
+        var merged = topicMessageLookup2.toBuilder()
+                .sequenceNumberRange(
+                        topicMessageLookup1.getSequenceNumberRange().span(topicMessageLookup2.getSequenceNumberRange()))
+                .timestampRange(topicMessageLookup1.getTimestampRange().span(topicMessageLookup2.getTimestampRange()))
+                .build();
+        assertThat(topicMessageLookupRepository.findAll()).containsExactlyInAnyOrder(merged, topicMessageLookup3);
+    }
+
+    @Test
     void scheduleInsertOnly() {
         var schedules = new ArrayList<Schedule>();
         schedules.add(getSchedule(1L, "0.0.1001", null));
@@ -662,12 +684,6 @@ class BatchUpserterTest extends IntegrationTest {
                         nft4,
                         nft5);
 
-        NftTransfer serial2Transfer = getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp);
-        serial2Transfer.setPayerAccountId(payerId);
-        NftTransfer serial3Transfer = getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp);
-        serial3Transfer.setPayerAccountId(payerId);
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
-
         fungibleTokenTransfer.setDeletedTokenDissociate(false);
         assertThat(tokenTransferRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("deletedTokenDissociate")
@@ -815,7 +831,6 @@ class BatchUpserterTest extends IntegrationTest {
     private NftTransfer getNftTransfer(
             EntityId tokenId, EntityId senderAccountId, long serialNumber, long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setIsApproval(false);
         nftTransfer.setSenderAccountId(senderAccountId);
         return nftTransfer;

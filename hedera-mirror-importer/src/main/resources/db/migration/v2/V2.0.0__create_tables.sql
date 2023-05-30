@@ -619,6 +619,15 @@ create table if not exists topic_message
 ) partition by range (consensus_timestamp);
 comment on table topic_message is 'Topic entity sequenced messages';
 
+-- topic_message_lookup
+create table if not exists topic_message_lookup (
+    partition             text      not null,
+    sequence_number_range int8range not null,
+    timestamp_range       int8range not null,
+    topic_id              bigint    not null
+);
+comment on table topic_message_lookup is 'Topic message lookup';
+
 -- transaction
 create table if not exists transaction
 (
@@ -630,6 +639,7 @@ create table if not exists transaction
     initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,
+    nft_transfer               jsonb       null,
     node_account_id            bigint,
     nonce                      integer     not null default 0,
     parent_consensus_timestamp bigint      null,

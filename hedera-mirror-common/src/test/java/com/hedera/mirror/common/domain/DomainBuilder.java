@@ -60,7 +60,6 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
@@ -72,6 +71,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
@@ -96,6 +96,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import jakarta.persistence.EntityManager;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -110,7 +111,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -576,10 +576,10 @@ public class DomainBuilder {
 
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
         var builder = NftTransfer.builder()
-                .id(new NftTransferId(timestamp(), 1L, entityId(TOKEN)))
                 .receiverAccountId(entityId(ACCOUNT))
-                .payerAccountId(entityId(ACCOUNT))
-                .senderAccountId(entityId(ACCOUNT));
+                .senderAccountId(entityId(ACCOUNT))
+                .serialNumber(id())
+                .tokenId(entityId(TOKEN));
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -827,6 +827,17 @@ public class DomainBuilder {
                 .sequenceNumber(id())
                 .topicId(entityId(TOPIC))
                 .validStartTimestamp(timestamp());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TopicMessageLookup, TopicMessageLookup.TopicMessageLookupBuilder> topicMessageLookup() {
+        long timestamp = timestamp();
+        long sequenceNumber = id();
+        var builder = TopicMessageLookup.builder()
+                .partition(String.format("topic_message_%d", id()))
+                .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 1))
+                .topicId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

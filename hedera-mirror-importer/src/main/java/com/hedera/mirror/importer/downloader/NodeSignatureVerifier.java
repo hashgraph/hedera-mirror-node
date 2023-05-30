@@ -19,9 +19,9 @@ package com.hedera.mirror.importer.downloader;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import jakarta.inject.Named;
 import java.security.Signature;
 import java.util.Collection;
-import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 

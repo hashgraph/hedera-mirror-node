@@ -95,15 +95,13 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
+                .extracting(AddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454);
     }
 
@@ -124,15 +122,13 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
+                .extracting(AddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451);
     }
 
@@ -153,15 +149,13 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
+                .extracting(AddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
         assertThat(addressBookServiceEndpointRepository.findAll())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .extracting(AddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445);
     }
 
@@ -181,8 +175,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
+                .extracting(AddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
         assertThat(addressBookServiceEndpointRepository.findAll()).isEmpty();
@@ -222,8 +215,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         assertThat(addressBookEntryRepository.findAll())
                 .isNotEmpty()
                 .hasSize(nodeIds.size())
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
+                .extracting(AddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrderElementsOf(nodeIds);
 
         IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(
@@ -235,10 +227,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         allPorts.addAll(ports);
         allPorts.addAll(ports);
         allPorts.addAll(ports);
-        listAssert
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
-                .containsExactlyInAnyOrderElementsOf(allPorts);
+        listAssert.extracting(AddressBookServiceEndpoint::getPort).containsExactlyInAnyOrderElementsOf(allPorts);
 
         // verify address_book counts are updated
         assertThat(addressBookRepository.findById(consensusTimestamp))
@@ -285,10 +274,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         IterableAssert<AddressBookEntry> listAssert =
                 assertThat(addressBookEntryRepository.findAll()).isNotEmpty().hasSize(nodeIds.size());
 
-        listAssert
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
-                .containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(AddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
         listAssert
                 .extracting(AddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
@@ -343,10 +329,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         IterableAssert<AddressBookEntry> listAssert =
                 assertThat(addressBookEntryRepository.findAll()).isNotEmpty().hasSize(nodeIds.size());
 
-        listAssert
-                .extracting(AddressBookEntry::getId)
-                .extracting(AddressBookEntry.Id::getNodeId)
-                .containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(AddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
         listAssert
                 .extracting(AddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
@@ -360,15 +343,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .isNotEmpty()
                 .hasSize(nodeIds.size());
 
-        serviceListAssert
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getNodeId)
-                .containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
+        serviceListAssert.extracting(AddressBookServiceEndpoint::getNodeId).containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
 
-        serviceListAssert
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
-                .containsExactlyInAnyOrder(-1, 0, -1, 50211);
+        serviceListAssert.extracting(AddressBookServiceEndpoint::getPort).containsExactlyInAnyOrder(-1, 0, -1, 50211);
     }
 
     private List<AddressBookEntry> getAndSaveAddressBookEntries(

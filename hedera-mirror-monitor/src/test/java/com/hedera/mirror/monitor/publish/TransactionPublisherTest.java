@@ -234,7 +234,7 @@ class TransactionPublisherTest {
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
                         .hasMessageContaining("exceeded maximum attempts for request with last exception being")
-                        .getRootCause()
+                        .rootCause()
                         .hasMessageContaining(errorResponseCode.toString()))
                 .verify(Duration.ofSeconds(2L));
     }
@@ -254,7 +254,7 @@ class TransactionPublisherTest {
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
                         .hasMessageContaining("exceeded maximum attempts for request with last exception being")
-                        .getRootCause()
+                        .rootCause()
                         .hasMessageContaining(errorResponseCode.toString()))
                 .verify(Duration.ofSeconds(2L));
 

@@ -24,28 +24,27 @@ import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
 import java.io.Serial;
 import java.io.Serializable;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractTokenAccount.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@TypeDef(defaultForType = Range.class, typeClass = PostgreSQLGuavaRangeType.class)
 @Upsertable(history = true)
 public class AbstractTokenAccount implements History {
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long accountId;
 
     private Boolean associated;
@@ -64,9 +63,10 @@ public class AbstractTokenAccount implements History {
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
+    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long tokenId;
 
     @JsonIgnore

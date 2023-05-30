@@ -19,10 +19,10 @@ package com.hedera.mirror.importer.reader.balance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
+import jakarta.inject.Named;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.format.DateTimeParseException;
-import javax.inject.Named;
 import org.apache.commons.lang3.StringUtils;
 
 @Named

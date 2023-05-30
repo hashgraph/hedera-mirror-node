@@ -25,8 +25,8 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
+import jakarta.persistence.Id;
 import java.util.stream.Stream;
-import javax.persistence.Id;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -139,7 +139,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     private static class NonEntity {}
 
     @Data
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @Upsertable
     private static class NonExisting implements Persistable<Integer> {
         @Id

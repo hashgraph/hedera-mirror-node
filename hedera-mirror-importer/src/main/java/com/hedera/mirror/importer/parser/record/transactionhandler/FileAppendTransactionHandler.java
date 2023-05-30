@@ -20,7 +20,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @Named

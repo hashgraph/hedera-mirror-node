@@ -20,14 +20,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,7 +39,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
@@ -43,7 +46,6 @@ import org.springframework.data.domain.Persistable;
 @Data
 @Entity
 @NoArgsConstructor
-@TypeDef(name = "pgsql_enum", typeClass = PostgreSQLEnumType.class)
 public class Transaction implements Persistable<Long> {
 
     @Id
@@ -56,7 +58,7 @@ public class Transaction implements Persistable<Long> {
     private EntityId entityId;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private ErrataType errata;
 
     private Integer index;
@@ -67,6 +69,10 @@ public class Transaction implements Persistable<Long> {
     private byte[] memo;
 
     private Long maxFee;
+
+    @Type(JsonBinaryType.class)
+    @JsonSerialize(using = ObjectToStringSerializer.class)
+    private List<NftTransfer> nftTransfer;
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)

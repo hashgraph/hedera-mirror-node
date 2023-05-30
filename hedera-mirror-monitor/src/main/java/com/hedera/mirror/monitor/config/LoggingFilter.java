@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.monitor.config;
 
+import jakarta.inject.Named;
 import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
