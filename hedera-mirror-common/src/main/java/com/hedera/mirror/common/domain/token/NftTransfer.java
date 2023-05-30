@@ -20,10 +20,15 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.AccountIdDeserializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.converter.TokenIdDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
+
+import jakarta.persistence.Convert;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
