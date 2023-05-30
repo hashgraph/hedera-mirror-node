@@ -386,19 +386,20 @@ class ContractControllerTest {
 
     @Test
     void callSuccessCors() {
-        final var request = request();
-        request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
-        request.setValue(0);
-
         webClient
-                .post()
-                .uri(CALL_URI)
+                .options()
+                /**
+                 * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
+                 * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
+                 */
+                .uri("http://localhost" + CALL_URI)
                 .header("Origin", "http://example.com")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
+                .header("Access-Control-Request-Method", "POST")
                 .exchange()
                 .expectHeader()
-                .valueEquals("Access-Control-Allow-Origin", "*");
+                .valueEquals("Access-Control-Allow-Origin", "*")
+                .expectHeader()
+                .valueEquals("Access-Control-Allow-Methods", "POST");
     }
 
     private ContractCallRequest request() {
