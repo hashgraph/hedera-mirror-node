@@ -17,14 +17,11 @@
 package com.hedera.services.utils;
 
 import static com.hedera.services.utils.BitPackUtils.*;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.MiscUtils.perm64;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in structured data
@@ -65,12 +62,8 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(grpc.getTokenNum());
     }
 
-    public Address toEvmAddress() {
-        return Address.wrap(Bytes.wrap(toRawEvmAddress()));
-    }
-
-    public byte[] toRawEvmAddress() {
-        return asEvmAddress(numFromCode(value));
+    static boolean areValidNums(final long shard, final long realm) {
+        return shard == 0 && realm == 0;
     }
 
     public int intValue() {
@@ -98,10 +91,6 @@ public class EntityNum implements Comparable<EntityNum> {
         final var that = (EntityNum) o;
 
         return this.value == that.value;
-    }
-
-    static boolean areValidNums(final long shard, final long realm) {
-        return shard == 0 && realm == 0;
     }
 
     @Override
