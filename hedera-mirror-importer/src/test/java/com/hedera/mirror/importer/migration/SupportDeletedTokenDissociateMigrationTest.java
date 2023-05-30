@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -161,10 +160,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 nft(account2, 33L, true, 37L, 3L, nftId2),
                 nft(account2, 45L, false, 45L, 2L, nftId3)));
 
-        // nft transfers from nft class treasury update
-        persistNftTransfers(
-                List.of(nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransferId.WILDCARD_SERIAL_NUMBER, nftId3)));
-
         // expected token changes
         ftClass1.setTotalSupply(ftClass1.getTotalSupply() - 10);
         ftClass1.setModifiedTimestamp(account1Ft1DissociateTimestamp);
@@ -190,14 +185,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                         nft(account2, 28L, true, account2Nft1DissociateTimestamp, 4L, nftId1),
                         nft(account2, 33L, true, 37L, 3L, nftId2),
                         nft(account2, 45L, false, 45L, 2L, nftId3));
-        // expect new nft transfers from token dissociate of deleted nft class
         // expect nft transfers for nft treasury update removed
-        assertThat(findAllNftTransfers())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "payerAccountId", "senderAccountId")
-                .containsExactlyInAnyOrder(
-                        nftTransfer(account1Nft1DissociateTimestamp, null, account1, 2L, nftId1),
-                        nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
-                        nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1));
         assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(findAllTokens())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
@@ -300,7 +288,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private NftTransfer nftTransfer(
             long consensusTimestamp, EntityId receiver, EntityId sender, long serialNumber, EntityId tokenId) {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setReceiverAccountId(receiver);
         nftTransfer.setSenderAccountId(sender);
         return nftTransfer;
@@ -474,21 +461,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistNftTransfers(List<NftTransfer> nftTransfers) {
-        for (NftTransfer nftTransfer : nftTransfers) {
-            var id = nftTransfer.getId();
-            jdbcOperations.update(
-                    "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
-                            + "serial_number, token_id)"
-                            + " values (?,?,?,?,?)",
-                    id.getConsensusTimestamp(),
-                    nftTransfer.getReceiverAccountId().getId(),
-                    nftTransfer.getSenderAccountId().getId(),
-                    id.getSerialNumber(),
-                    id.getTokenId().getId());
-        }
-    }
-
     private List<Transaction> findAllTransactions() {
         return jdbcOperations.query("select * from transaction", (rs, rowNum) -> {
             Transaction transaction = new Transaction();
@@ -513,21 +485,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                     EntityIdEndec.decode(rs.getLong("account_id"), ACCOUNT)));
             tokenTransfer.setAmount(rs.getLong("amount"));
             return tokenTransfer;
-        });
-    }
-
-    private List<NftTransfer> findAllNftTransfers() {
-        return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> {
-            var receiver = rs.getLong("receiver_account_id");
-            var sender = rs.getLong("sender_account_id");
-            NftTransfer nftTransfer = new NftTransfer();
-            nftTransfer.setId(new NftTransferId(
-                    rs.getLong("consensus_timestamp"),
-                    rs.getLong("serial_number"),
-                    EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
-            nftTransfer.setReceiverAccountId(receiver == 0 ? null : EntityIdEndec.decode(receiver, ACCOUNT));
-            nftTransfer.setSenderAccountId(sender == 0 ? null : EntityIdEndec.decode(sender, ACCOUNT));
-            return nftTransfer;
         });
     }
 

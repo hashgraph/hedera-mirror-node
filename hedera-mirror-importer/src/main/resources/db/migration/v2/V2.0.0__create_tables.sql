@@ -639,6 +639,7 @@ create table if not exists transaction
     initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,
+    nft_transfer               jsonb       null,
     node_account_id            bigint,
     nonce                      integer     not null default 0,
     parent_consensus_timestamp bigint      null,
