@@ -17,19 +17,24 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class PrecompileMapperTest {
 
+    @InjectMocks
     private PrecompileMapper subject;
 
     @BeforeEach
-    void setUp() {
-        subject = new PrecompileMapper(Set.of(new MockPrecompile()), new HashSet<>());
+    void setup() {
+        subject.setSupportedPrecompiles(Set.of(new MockPrecompile()));
     }
 
     @Test
@@ -37,5 +42,19 @@ class PrecompileMapperTest {
         int functionSelector = 0x11111111;
         final var result = subject.lookup(functionSelector);
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void supportedPrecompileIsFound() {
+        int functionSelector = 0x00000000;
+        final var result = subject.lookup(functionSelector);
+        assertThat(result).isNotEmpty();
+    }
+
+    @Test
+    void unsupportedPrecompileThrowsException() {
+        int functionSelector = 0x189a554c;
+
+        assertThatThrownBy(() -> subject.lookup(functionSelector)).isInstanceOf(UnsupportedOperationException.class);
     }
 }

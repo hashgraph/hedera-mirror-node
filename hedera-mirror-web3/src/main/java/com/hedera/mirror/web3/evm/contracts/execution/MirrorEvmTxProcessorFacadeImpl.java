@@ -32,6 +32,7 @@ import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -57,6 +58,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
+    private final PrecompileMapper precompileMapper;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -70,7 +72,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors,
+            final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
         this.mirrorOperationTracer = mirrorOperationTracer;
         this.blockMetaSource = blockMetaSource;
@@ -78,6 +81,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
         this.databaseAccessors = databaseAccessors;
+        this.precompileMapper = precompileMapper;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
@@ -112,7 +116,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, stackedStateFrames),
+                mcps(gasCalculator, stackedStateFrames, evmProperties, precompileMapper),
                 ccps(gasCalculator),
                 blockMetaSource,
                 mirrorEvmContractAliases,
