@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
-import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;

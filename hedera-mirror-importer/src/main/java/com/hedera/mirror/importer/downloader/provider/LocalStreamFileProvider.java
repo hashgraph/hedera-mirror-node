@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
-import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;

@@ -56,6 +56,7 @@ public class StreamFileData {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             var lastModified = Instant.ofEpochMilli(file.lastModified());
+            // TODO invoke new constructor with name and path
             return new StreamFileData(new StreamFilename(file.getName()), bytes, lastModified);
         } catch (InvalidStreamFileException e) {
             throw e;

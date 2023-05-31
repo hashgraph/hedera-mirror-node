@@ -17,12 +17,14 @@
 package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import java.io.File;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
@@ -46,6 +48,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     public static final Comparator<StreamFilename> EXTENSION_COMPARATOR =
             Comparator.comparing(StreamFilename::getExtension);
     public static final StreamFilename EPOCH;
+    public static final String SIDECAR_FOLDER = "sidecar/";
 
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
@@ -71,6 +74,8 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String compressor;
     private final StreamType.Extension extension;
     private final String filename;
+    private final String path;
+    private final String pathSeparator;
 
     @EqualsAndHashCode.Include
     private final String filenameWithoutCompressor;
@@ -81,9 +86,18 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String sidecarId;
     private final StreamType streamType;
 
-    public StreamFilename(String filename) {
-        Assert.hasText(filename, "'filename' must not be empty");
-        this.filename = filename;
+    public StreamFilename(String filePath) {
+        this(filePath, File.separator);
+    }
+
+    public StreamFilename(String filePath, String pathSeparator) {
+        Assert.hasText(filePath, "'filePath' must not be empty");
+        Assert.hasText(pathSeparator, "'pathSeparator' must not be empty");
+
+        var lastSeparatorIndex = filePath.lastIndexOf(pathSeparator);
+        this.pathSeparator = pathSeparator;
+        this.filename = lastSeparatorIndex < 0 ? filePath : filePath.substring(lastSeparatorIndex + 1);
+        this.path = lastSeparatorIndex < 0 ? null : filePath.substring(0, lastSeparatorIndex);
 
         TypeInfo typeInfo = extractTypeInfo(filename);
         this.compressor = typeInfo.compressor;
@@ -100,15 +114,22 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
     }
 
-    /**
-     * Gets the filename with the specified streamType, fileType, and instant.
-     *
-     * @param streamType
-     * @param fileType
-     * @param instant
-     * @return the filename
-     */
+    public String getFilePath() {
+
+        var builder = new StringBuilder();
+        if (!StringUtils.isEmpty(this.path)) {
+            builder.append(this.path);
+            builder.append(pathSeparator);
+        }
+        if (this.fileType == SIDECAR) {
+            builder.append(SIDECAR_FOLDER);
+        }
+        builder.append(this.filename);
+        return builder.toString();
+    }
+
     public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
+
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
         String suffix = streamType.getSuffix();
         String extension;

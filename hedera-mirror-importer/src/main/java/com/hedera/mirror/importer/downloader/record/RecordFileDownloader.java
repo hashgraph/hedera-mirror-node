@@ -92,7 +92,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
     @Override
     protected void onVerified(StreamFileData streamFileData, RecordFile recordFile, ConsensusNode node) {
-        downloadSidecars(recordFile, node);
+        downloadSidecars(streamFileData.getStreamFilename(), recordFile, node);
         super.onVerified(streamFileData, recordFile, node);
     }
 
@@ -105,7 +105,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
         }
     }
 
-    private void downloadSidecars(RecordFile recordFile, ConsensusNode node) {
+    private void downloadSidecars(StreamFilename recordFilename, RecordFile recordFile, ConsensusNode node) {
         if (!sidecarProperties.isEnabled() || recordFile.getSidecars().isEmpty()) {
             return;
         }
@@ -116,7 +116,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
         var records = Flux.fromIterable(recordFile.getSidecars())
                 .filter(sidecar ->
                         acceptedTypes.isEmpty() || sidecar.getTypes().stream().anyMatch(acceptedTypes::contains))
-                .flatMap(sidecar -> getSidecar(node, sidecar))
+                .flatMap(sidecar -> getSidecar(node, recordFilename, sidecar))
                 .flatMapIterable(SidecarFile::getRecords)
                 .filter(t -> acceptedTypes.isEmpty() || acceptedTypes.contains(getSidecarType(t)))
                 .collect(Multimaps.toMultimap(
@@ -136,8 +136,8 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
                 .blockLast();
     }
 
-    private Mono<SidecarFile> getSidecar(ConsensusNode node, SidecarFile sidecar) {
-        var sidecarFilename = new StreamFilename(sidecar.getName());
+    private Mono<SidecarFile> getSidecar(ConsensusNode node, StreamFilename recordFilename, SidecarFile sidecar) {
+        var sidecarFilename = new StreamFilename(sidecar.getName(), recordFilename.getPath());
         return streamFileProvider.get(node, sidecarFilename).map(streamFileData -> {
             sidecarFileReader.read(sidecar, streamFileData);
 

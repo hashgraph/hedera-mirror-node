@@ -75,7 +75,7 @@ public class StreamFileSignature implements Comparable<StreamFileSignature> {
             dataFilename += COMPRESSED_EXTENSION;
         }
 
-        return new StreamFilename(dataFilename);
+        return new StreamFilename(dataFilename, filename.getPath());
     }
 
     public String getFileHashAsHex() {

@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 
 import com.hedera.mirror.common.domain.StreamType;
@@ -48,7 +47,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 @RequiredArgsConstructor
 public final class S3StreamFileProvider implements StreamFileProvider {
 
-    static final String SIDECAR_FOLDER = "sidecar/";
     private static final String SEPARATOR = "/";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
@@ -57,16 +55,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private final S3AsyncClient s3Client;
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var key = new PathKey(node, streamFilename.getStreamType());
-        var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
-        var prefix = getPrefix(key, pathResult.getPathType());
 
-        if (streamFilename.getFileType() == SIDECAR) {
-            prefix += SIDECAR_FOLDER;
-        }
-
-        var s3Key = prefix + streamFilename.getFilename();
-
+        var s3Key = streamFilename.getFilePath();
         var request = GetObjectRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
                 .key(s3Key)
@@ -86,6 +76,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
+
         var key = new PathKey(node, lastFilename.getStreamType());
         var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
         var prefix = getPrefix(key, pathResult.getPathType());
@@ -107,7 +98,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     log.debug("Returned {} s3 objects", l.contents().size());
                 })
                 .flatMapIterable(ListObjectsV2Response::contents)
-                .map(this::toStreamFilename)
+                .map(S3Object::key)
+                .map(objectKey -> new StreamFilename(objectKey, SEPARATOR))
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
                 .doOnSubscribe(s -> log.debug(
@@ -136,18 +128,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
             case NODE_ID -> getNodeIdPrefix(key);
         };
-    }
-
-    private StreamFilename toStreamFilename(S3Object s3Object) {
-        var key = s3Object.key();
-
-        try {
-            var filename = key.substring(key.lastIndexOf(SEPARATOR) + 1);
-            return new StreamFilename(filename);
-        } catch (Exception e) {
-            log.warn("Unable to parse stream filename for {}", key, e);
-            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
-        }
     }
 
     record PathKey(ConsensusNode node, StreamType type) {}
