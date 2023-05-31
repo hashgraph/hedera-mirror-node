@@ -25,11 +25,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.Setter;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -58,9 +57,6 @@ public class MirrorProperties {
     @NotBlank
     private String network = HederaNetwork.DEMO;
 
-    @Setter(AccessLevel.NONE) // Not user set-able
-    private String networkPrefix;
-
     @Min(0)
     private long shard = 0L;
 
@@ -73,14 +69,14 @@ public class MirrorProperties {
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
 
-    public void setNetwork(@NonNull String networkAndPrefix) {
-        var delimiterIndex = networkAndPrefix.indexOf(NETWORK_PREFIX_DELIMITER);
-        var networkName = delimiterIndex < 0 ? networkAndPrefix : networkAndPrefix.substring(0, delimiterIndex);
-        this.network = HederaNetwork.getCanonicalizedNetwork(networkName.toLowerCase());
+    public String getNetwork() {
+        return StringUtils.substringBefore(this.network, NETWORK_PREFIX_DELIMITER)
+                .toLowerCase();
+    }
 
-        this.networkPrefix = delimiterIndex < 0 || delimiterIndex == networkAndPrefix.length() - 1
-                ? null
-                : networkAndPrefix.substring(delimiterIndex + 1);
+    public String getNetworkPrefix() {
+        var networkPrefix = StringUtils.substringAfter(this.network, NETWORK_PREFIX_DELIMITER);
+        return StringUtils.isEmpty(networkPrefix) ? null : networkPrefix.toLowerCase();
     }
 
     public enum ConsensusMode {
@@ -103,13 +99,6 @@ public class MirrorProperties {
                 PREVIEWNET, "hedera-preview-testnet-streams",
                 TESTNET, "hedera-testnet-streams-2023-01");
 
-        private static final Map<String, String> CANONICAL_REFERENCES = Map.of(
-                DEMO, DEMO,
-                MAINNET, MAINNET,
-                OTHER, OTHER,
-                PREVIEWNET, PREVIEWNET,
-                TESTNET, TESTNET);
-
         private HederaNetwork() {}
 
         public static String getBucketName(@NonNull String network) {
@@ -118,10 +107,6 @@ public class MirrorProperties {
 
         public static boolean isAllowAnonymousAccess(@NonNull String network) {
             return DEMO.equals(network);
-        }
-
-        public static String getCanonicalizedNetwork(@NonNull String networkName) {
-            return CANONICAL_REFERENCES.getOrDefault(networkName, networkName);
         }
     }
 }

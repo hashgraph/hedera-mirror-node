@@ -49,7 +49,7 @@ class MirrorPropertiesTest {
 
         var properties = new MirrorProperties();
         properties.setNetwork(networkName);
-        assertThat(properties.getNetwork()).isSameAs(HederaNetwork.getCanonicalizedNetwork(expectedHederaNetwork));
+        assertThat(properties.getNetwork()).isEqualTo(expectedHederaNetwork);
         assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
     }
 
@@ -74,9 +74,7 @@ class MirrorPropertiesTest {
         assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO); // Default
         assertThat(properties.getNetworkPrefix()).isNull();
 
-        assertThrows(NullPointerException.class, () -> properties.setNetwork(null));
         assertThrows(NullPointerException.class, () -> HederaNetwork.getBucketName(null));
         assertThrows(NullPointerException.class, () -> HederaNetwork.isAllowAnonymousAccess(null));
-        assertThrows(NullPointerException.class, () -> HederaNetwork.getCanonicalizedNetwork(null));
     }
 }
