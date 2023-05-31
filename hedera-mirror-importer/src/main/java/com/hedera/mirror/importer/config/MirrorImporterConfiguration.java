@@ -73,7 +73,7 @@ public class MirrorImporterConfiguration {
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
-                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
+                if (MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
                     timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;

@@ -33,8 +33,7 @@ public class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
 
     @Override
     protected FileCopier createFileCopier(Path dataPath) {
-        String network =
-                properties.getMirrorProperties().getNetwork().toString().toLowerCase();
+        String network = properties.getMirrorProperties().getNetwork();
         var fromPath = Path.of("data", "hip679", "provider-node-id");
 
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
@@ -86,10 +86,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculate(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculate(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -122,10 +120,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateWhenStakeStartPeriodAfterFirst(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateWhenStakeStartPeriodAfterFirst(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -158,10 +154,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateWithStakingRewardPayout(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateWithStakingRewardPayout(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -224,10 +218,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateForDeletedEntity(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateForDeletedEntity(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -258,10 +250,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateWhenDeclineReward(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateWhenDeclineReward(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -292,10 +282,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateWhenNotStakedToNode(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateWhenNotStakedToNode(String network) {
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
@@ -323,10 +311,8 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void recalculateWhenEntityStakeEmpty(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void recalculateWhenEntityStakeEmpty(String network) {
         // given pending reward is disabled, therefore the entity_stake table should be empty
         setupNodeStakeForNetwork(network);
 
@@ -346,7 +332,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 TestUtils.asStartOfEpochDay(epochDay).plusNanos(100L));
     }
 
-    private void setupNodeStakeForNetwork(HederaNetwork network) {
+    private void setupNodeStakeForNetwork(String network) {
         mirrorProperties.setNetwork(network);
 
         long firstNonZeroRewardTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(network);

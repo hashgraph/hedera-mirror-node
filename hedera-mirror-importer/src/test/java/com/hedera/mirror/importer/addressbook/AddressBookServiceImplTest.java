@@ -985,10 +985,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @CsvSource(
             textBlock =
                     """
-            EQUAL, 1, 6
-            STAKE, 10000, 60000
-            STAKE_IN_ADDRESS_BOOK, 10000, 40000
-            """)
+                            EQUAL, 1, 6
+                            STAKE, 10000, 60000
+                            STAKE_IN_ADDRESS_BOOK, 10000, 40000
+                            """)
     @ParameterizedTest
     void getNodesWithNodeStakeCountMoreThanAddressBook(
             ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {
