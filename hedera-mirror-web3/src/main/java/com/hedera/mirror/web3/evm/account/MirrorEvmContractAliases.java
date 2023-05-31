@@ -25,7 +25,6 @@ import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -43,8 +42,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        final var resolvedAddress =
-                Optional.ofNullable(aliases.get(addressOrAlias)).orElse(addressOrAlias);
+        final var resolvedAddress = aliases.getOrDefault(addressOrAlias, addressOrAlias);
         final var entity = mirrorEntityAccess
                 .findEntity(resolvedAddress)
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
