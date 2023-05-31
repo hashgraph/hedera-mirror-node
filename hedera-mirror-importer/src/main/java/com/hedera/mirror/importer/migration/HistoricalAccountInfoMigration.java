@@ -96,7 +96,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
             return;
         }
 
-        if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.MAINNET) {
+        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
             log.info("Skipping migration since it only applies to mainnet");
             return;
         }

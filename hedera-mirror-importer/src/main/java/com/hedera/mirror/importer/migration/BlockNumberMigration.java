@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 
@@ -33,7 +32,7 @@ import org.springframework.context.annotation.Lazy;
 @Named
 public class BlockNumberMigration extends RepeatableMigration {
 
-    static final Map<HederaNetwork, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
+    static final Map<String, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
             MAINNET, Pair.of(1656461547557609267L, 34305852L));
 
@@ -59,11 +58,11 @@ public class BlockNumberMigration extends RepeatableMigration {
 
     @Override
     protected void doMigrate() {
-        var network = mirrorProperties.getNetwork();
-        var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(network);
+        var hederaNetwork = mirrorProperties.getNetwork();
+        var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(hederaNetwork);
 
         if (consensusEndAndBlockNumber == null) {
-            log.info("No block migration necessary for {} network", network);
+            log.info("No block migration necessary for {} network", hederaNetwork);
             return;
         }
 
