@@ -82,6 +82,7 @@ import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
+import org.springframework.util.CollectionUtils;
 
 @Log4j2
 @Named
@@ -856,7 +857,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void onNftTransferList(Transaction transaction) {
         var nftTransferList = transaction.getNftTransfer();
-        if (nftTransferList == null || nftTransferList.isEmpty()) {
+        if (CollectionUtils.isEmpty(nftTransferList)) {
             return;
         }
 

@@ -22,6 +22,7 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -45,7 +46,6 @@ import java.io.File;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -479,14 +479,13 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     }
 
     private void persistNftTransfer(MigrationNftTransfer nftTransfer) {
-        Function<EntityId, Long> converter = (entityId) -> EntityId.isEmpty(entityId) ? null : entityId.getId();
         jdbcOperations.update(
                 "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
                         + "serial_number, token_id)"
                         + " values (?,?,?,?,?)",
                 nftTransfer.getConsensusTimestamp(),
-                converter.apply(nftTransfer.getReceiverAccountId()),
-                converter.apply(nftTransfer.getSenderAccountId()),
+                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getReceiverAccountId()),
+                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getSenderAccountId()),
                 nftTransfer.getSerialNumber(),
                 nftTransfer.getTokenId());
     }
