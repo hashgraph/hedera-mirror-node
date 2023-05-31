@@ -2815,6 +2815,7 @@ components:
           nullable: true
         hapi_version:
           type: string
+          nullable: true
         hash:
           type: string
         logs_bloom:
