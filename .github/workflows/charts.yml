@@ -2,7 +2,7 @@ name: Charts
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [ main, release/**, 4099-nested-nft-transfers ]
   push:
     branches: [ main, release/** ]
     tags: [ v* ]
