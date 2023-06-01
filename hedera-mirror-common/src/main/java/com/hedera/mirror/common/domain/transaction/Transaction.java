@@ -31,12 +31,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
@@ -70,8 +72,9 @@ public class Transaction implements Persistable<Long> {
 
     private Long maxFee;
 
-    @Type(JsonBinaryType.class)
     @JsonSerialize(using = ObjectToStringSerializer.class)
+    @ToString.Exclude
+    @Type(JsonBinaryType.class)
     private List<NftTransfer> nftTransfer;
 
     @Convert(converter = AccountIdConverter.class)
@@ -101,6 +104,14 @@ public class Transaction implements Persistable<Long> {
     private Long validDurationSeconds;
 
     private Long validStartNs;
+
+    public void addNftTransfer(@NonNull NftTransfer nftTransfer) {
+        if (this.nftTransfer == null) {
+            this.nftTransfer = new ArrayList<>();
+        }
+
+        this.nftTransfer.add(nftTransfer);
+    }
 
     @JsonIgnore
     @Override

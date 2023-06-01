@@ -16,18 +16,11 @@
 
 package com.hedera.mirror.common.converter;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import java.io.IOException;
 
-public class TopicIdDeserializer extends JsonDeserializer<EntityId> {
-    @Override
-    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
-        Long value = jsonParser.readValueAs(Long.class);
-        return value != null ? EntityIdEndec.decode(value, EntityType.TOPIC) : null;
+public class TopicIdDeserializer extends AbstractEntityIdDeserializer {
+
+    public TopicIdDeserializer() {
+        super(EntityType.TOPIC);
     }
 }
