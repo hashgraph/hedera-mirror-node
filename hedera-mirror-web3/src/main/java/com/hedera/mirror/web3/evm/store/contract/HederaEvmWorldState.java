@@ -22,7 +22,6 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -64,7 +63,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
         this.stackedStateFrames = stackedStateFrames;
-        stackedStateFrames.push();
     }
 
     public Account get(final Address address) {
@@ -108,7 +106,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 stackedStateFrames);
     }
 
-    public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
+    public static class Updater extends AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
         private final HederaEvmEntityAccess hederaEvmEntityAccess;
         private final TokenAccessor tokenAccessor;
@@ -124,7 +122,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 final EvmProperties evmProperties,
                 final EntityAddressSequencer contractAddressState,
                 final StackedStateFrames<Object> stackedStateFrames) {
-            super(world, accountAccessor);
+            super(world, accountAccessor, stackedStateFrames);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
@@ -146,15 +144,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         public Account getForMutation(final Address address) {
             final HederaEvmWorldState wrapped = (HederaEvmWorldState) wrappedWorldView();
             return wrapped.get(address);
-        }
-
-        @Override
-        public void commit() {
-            final var topFrame = stackedStateFrames.top();
-            if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
-                topFrame.commit();
-                stackedStateFrames.pop();
-            }
         }
 
         @Override

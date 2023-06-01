@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +29,6 @@ import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
@@ -57,7 +57,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private HederaEvmEntityAccess entityAccess;
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
+    private AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> updater;
 
     @Mock
     private EvmProperties properties;
@@ -107,15 +107,39 @@ class HederaEvmStackedWorldStateUpdaterTest {
     }
 
     @Test
+    void commitsDeletedAccountsAsExpected() {
+        updater = new MockLedgerWorldUpdater(null, accountAccessor);
+        subject = new HederaEvmStackedWorldStateUpdater(
+                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+        subject.createAccount(address, aNonce, Wei.of(aBalance));
+        subject.deleteAccount(address);
+        assertThat(updater.getDeletedAccountAddresses().size()).isEqualTo(0);
+        subject.commit();
+        assertThat(subject.getDeletedAccountAddresses().size()).isEqualTo(1);
+        assertThat(updater.getDeletedAccountAddresses().size()).isEqualTo(1);
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        var accountFromTopFrame = accountAccessor.get(address);
+        assertTrue(accountFromTopFrame.isEmpty());
+    }
+
+    @Test
     void accountTests() {
         updatedHederaEvmAccount.setBalance(Wei.of(100));
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();
         assertThat(subject.getDeletedAccountAddresses()).isEmpty();
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        var accountFromTopFrame = accountAccessor.get(address);
+        assertFalse(accountFromTopFrame.isEmpty());
+        assertThat(accountFromTopFrame.get().getAccountAddress()).isEqualTo(address);
         subject.commit();
         subject.revert();
         subject.deleteAccount(address);
+        accountFromTopFrame = accountAccessor.get(address);
+        assertTrue(accountFromTopFrame.isEmpty());
     }
 
     @Test

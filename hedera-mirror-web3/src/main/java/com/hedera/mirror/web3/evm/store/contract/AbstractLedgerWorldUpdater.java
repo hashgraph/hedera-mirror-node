@@ -1,0 +1,156 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.mirror.web3.evm.store.contract;
+
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.models.Id;
+import java.util.Collection;
+import java.util.Collections;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.worldstate.WorldView;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
+
+public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
+        extends AbstractLedgerEvmWorldUpdater<W, A> {
+
+    private final StackedStateFrames<Object> stackedStateFrames;
+
+    protected AbstractLedgerWorldUpdater(
+            W world, AccountAccessor accountAccessor, StackedStateFrames<Object> stackedStateFrames) {
+        super(world, accountAccessor);
+        this.stackedStateFrames = stackedStateFrames;
+    }
+
+    protected AbstractLedgerWorldUpdater(
+            W world,
+            AccountAccessor accountAccessor,
+            TokenAccessor tokenAccessor,
+            HederaEvmEntityAccess hederaEvmEntityAccess,
+            StackedStateFrames<Object> stackedStateFrames) {
+        super(world, accountAccessor, tokenAccessor, hederaEvmEntityAccess);
+        this.stackedStateFrames = stackedStateFrames;
+    }
+
+    @Override
+    public Account get(final Address addressOrAlias) {
+        if (!addressOrAlias.equals(accountAccessor.canonicalAddress(addressOrAlias))) {
+            return null;
+        }
+
+        final var address = addressOrAlias;
+
+        final var extantMutable = this.updatedAccounts.get(address);
+        if (extantMutable != null) {
+            return extantMutable;
+        } else {
+            if (this.deletedAccounts.contains(address)) {
+                return null;
+            }
+            if (this.world.getClass() == HederaEvmWorldState.class) {
+                return this.world.get(address);
+            }
+            return this.world.get(addressOrAlias);
+        }
+    }
+
+    @Override
+    public EvmAccount getAccount(final Address address) {
+        final var extantMutable = updatedAccounts.get(address);
+        if (extantMutable != null) {
+            return new WrappedEvmAccount(extantMutable);
+        } else if (deletedAccounts.contains(address)) {
+            return null;
+        } else {
+            final var origin = getForMutation(address);
+            if (origin == null) {
+                return null;
+            }
+            final var newMutable = new UpdateTrackingAccount<>(origin, null);
+            return new WrappedEvmAccount(track(newMutable));
+        }
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public EvmAccount createAccount(Address address, long nonce, Wei balance) {
+        persistInStackedStateFrames(address, nonce, balance);
+        final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
+        account.setNonce(nonce);
+        account.setBalance(balance);
+        return new WrappedEvmAccount(track(account));
+    }
+
+    @Override
+    public void deleteAccount(Address address) {
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        try {
+            accountAccessor.delete(address);
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
+        deletedAccounts.add(address);
+        updatedAccounts.remove(address);
+    }
+
+    @Override
+    public void revert() {
+        getDeletedAccounts().clear();
+        getUpdatedAccountsCollection().clear();
+    }
+
+    protected Collection<UpdateTrackingAccount<A>> getUpdatedAccountsCollection() {
+        return updatedAccounts.values();
+    }
+
+    private void persistInStackedStateFrames(Address address, long nonce, Wei balance) {
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        final var accountModel = new com.hedera.services.store.models.Account(
+                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
+                0L,
+                balance.toLong(),
+                false,
+                0L,
+                0L,
+                null,
+                0,
+                Collections.emptySortedMap(),
+                Collections.emptySortedMap(),
+                Collections.emptySortedSet(),
+                0,
+                0,
+                0,
+                nonce);
+        accountAccessor.set(address, accountModel);
+    }
+
+    protected Collection<Address> getDeletedAccounts() {
+        return deletedAccounts;
+    }
+}
