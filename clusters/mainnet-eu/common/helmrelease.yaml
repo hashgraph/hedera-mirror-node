@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.80.0'
+      version: '0.81.0'
   install:
     crds: CreateReplace
   interval: 1m
@@ -24,11 +24,6 @@ spec:
     - kind: Secret
       name: mirror
   values:
-    loki:
-      singleBinary:
-        resources:
-          limits:
-            memory: 384Mi
     prometheus:
       prometheus:
         prometheusSpec:
@@ -52,11 +47,6 @@ spec:
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
-      resources:
-        limits:
-          cpu: 1500m
-        requests:
-          cpu: 1000m
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
