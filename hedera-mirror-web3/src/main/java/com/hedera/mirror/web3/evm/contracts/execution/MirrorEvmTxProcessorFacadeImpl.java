@@ -19,20 +19,20 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
-import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -48,11 +48,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases aliasManager;
-    private final PricesAndFeesImpl pricesAndFees;
+    private final PricesAndFeesProvider pricesAndFees;
     private final AbstractCodeCache codeCache;
     private final HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
-
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
@@ -61,9 +60,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorOperationTracer mirrorOperationTracer,
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final PricesAndFeesImpl pricesAndFees,
-            final AccountAccessorImpl accountAccessor,
-            final TokenAccessorImpl tokenAccessor,
+            final PricesAndFeesProvider pricesAndFees,
+            final AccountAccessor accountAccessor,
+            final TokenAccessor tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
@@ -80,7 +79,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
         this.worldState = new HederaEvmWorldState(
-                entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityAddressSequencer);
+                entityAccess,
+                evmProperties,
+                codeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityAddressSequencer,
+                databaseAccessors);
     }
 
     @Override
@@ -91,8 +96,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-        worldState.setStackedStateFrames(stackedStateFrames);
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,

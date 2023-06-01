@@ -29,9 +29,7 @@ import org.apache.commons.codec.DecoderException;
 public abstract class JKey {
 
     static final int MAX_KEY_DEPTH = 15;
-    private static final byte[] MISSING_RSA_3072_KEY = new byte[0];
     private static final byte[] MISSING_ED25519_KEY = new byte[0];
-    private static final byte[] MISSING_ECDSA_384_KEY = new byte[0];
     private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
 
     /**
