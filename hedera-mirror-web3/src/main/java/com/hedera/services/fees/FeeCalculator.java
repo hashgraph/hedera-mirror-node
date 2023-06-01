@@ -19,6 +19,7 @@ package com.hedera.services.fees;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 
 /**
@@ -27,9 +28,9 @@ import com.hederahashgraph.api.proto.java.*;
 public interface FeeCalculator {
 
     FeeObject estimatePayment(
-            Query query, FeeData usagePrices, StackedStateFrames<?> state, Timestamp at, ResponseType type);
+            Query query, FeeData usagePrices, StackedStateFrames<Object> state, Timestamp at, ResponseType type);
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    FeeObject computeFee(JKey payerKey, StackedStateFrames<?> state, Timestamp at);
+    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StackedStateFrames<Object> state, Timestamp at);
 }

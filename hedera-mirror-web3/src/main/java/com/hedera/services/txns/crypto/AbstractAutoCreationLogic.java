@@ -19,12 +19,11 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
@@ -32,8 +31,14 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,19 +52,11 @@ public abstract class AbstractAutoCreationLogic {
     private final StackedStateFrames<Object> stackedStateFrames;
     protected final EntityIdSource ids;
     protected final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
-
-    protected final EvmProperties properties;
     protected FeeCalculator feeCalculator;
 
-    protected AbstractAutoCreationLogic(
-            final EntityIdSource ids,
-            final StackedStateFrames<Object> stackedStateFrames,
-            final EvmProperties properties,
-            final FeeCalculator feeCalculator) {
+    protected AbstractAutoCreationLogic(final EntityIdSource ids, final StackedStateFrames<Object> stackedStateFrames) {
         this.ids = ids;
         this.stackedStateFrames = stackedStateFrames;
-        this.properties = properties;
-        this.feeCalculator = feeCalculator;
     }
 
     public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -72,8 +69,6 @@ public abstract class AbstractAutoCreationLogic {
     public void reset() {
         tokenAliasMap.clear();
     }
-
-    public abstract boolean reclaimPendingAliases();
 
     /**
      * Provisionally auto-creates an account in the given accounts ledger for the triggering balance change.
@@ -90,10 +85,6 @@ public abstract class AbstractAutoCreationLogic {
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change, final List<BalanceChange> changes, final Timestamp timestamp) {
-        if (change.isForToken() && !properties.isLazyCreationEnabled()) {
-            return Pair.of(NOT_SUPPORTED, 0L);
-        }
-
         final var alias = change.getNonEmptyAliasIfPresent();
         if (alias == null) {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
@@ -138,7 +129,18 @@ public abstract class AbstractAutoCreationLogic {
 
     private long autoCreationFeeFor(
             final JKey payerKey, final StackedStateFrames<Object> stackedStateFrames, Timestamp timestamp) {
-        final var fees = feeCalculator.computeFee(payerKey, stackedStateFrames, timestamp);
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
+        final var cryptoCreateTxn = TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody);
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(cryptoCreateTxn.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
+        final var accessor = uncheckedFrom(txn);
+        final var fees = feeCalculator.computeFee(accessor, payerKey, stackedStateFrames, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 

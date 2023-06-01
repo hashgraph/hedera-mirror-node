@@ -25,6 +25,7 @@ import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -63,14 +64,18 @@ class PrecompilePricingUtilsTest {
     private BasicFcfsUsagePrices resourceCosts;
 
     @Mock
-    private StackedStateFrames<?> state;
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private StackedStateFrames<Object> stackedStateFrames;
 
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, state));
+                () -> new PrecompilePricingUtils(
+                        assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, stackedStateFrames));
     }
 
     @Test
@@ -84,8 +89,8 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        final PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, state);
+        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, stackedStateFrames);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

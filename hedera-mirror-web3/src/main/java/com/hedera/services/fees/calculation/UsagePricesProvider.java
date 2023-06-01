@@ -16,6 +16,7 @@
 
 package com.hedera.services.fees.calculation;
 
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -35,6 +36,15 @@ public interface UsagePricesProvider {
      */
     Map<SubType, FeeData> pricesGiven(
             HederaFunctionality function, Timestamp at, CurrentAndNextFeeSchedule feeSchedules);
+
+    /**
+     * Returns the prices in a map SubType keys and FeeData values in 1/1000th of a tinyCent that
+     * must be paid to consume various resources while processing the active transaction.
+     *
+     * @param accessor the active transaction
+     * @return the prices for the active transaction
+     */
+    Map<SubType, FeeData> activePrices(TxnAccessor accessor);
 
     /**
      * Returns the prices in tinyCents that are likely to be required to consume various resources while processing the
