@@ -75,11 +75,7 @@ class MirrorEvmContractAliasesTest {
         Address address = ADDRESS2;
         mirrorEvmContractAliases.aliases.put(alias, address);
 
-        when(mirrorEntityAccess.findEntity(address)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.CONTRACT);
-        when(entity.getEvmAddress()).thenReturn(ADDRESS3.toArray());
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(alias)).isEqualTo(ADDRESS3);
+        assertThat(mirrorEvmContractAliases.resolveForEvm(alias)).isEqualTo(address);
     }
 
     @Test

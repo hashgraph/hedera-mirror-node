@@ -42,9 +42,12 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        final var resolvedAddress = aliases.getOrDefault(addressOrAlias, addressOrAlias);
+        if (aliases.containsKey(addressOrAlias)) {
+            return aliases.get(addressOrAlias);
+        }
+
         final var entity = mirrorEntityAccess
-                .findEntity(resolvedAddress)
+                .findEntity(addressOrAlias)
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
 
         final var entityId = entity.toEntityId();
