@@ -17,9 +17,10 @@
 package com.hedera.mirror.common.converter;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
+import jakarta.persistence.Converter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-@jakarta.persistence.Converter
+@Converter
 @ConfigurationPropertiesBinding
 public class FileIdConverter extends AbstractEntityIdConverter {
 
