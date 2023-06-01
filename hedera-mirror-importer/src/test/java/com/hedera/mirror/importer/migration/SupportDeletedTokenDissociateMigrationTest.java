@@ -197,9 +197,9 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         assertThat(findAllNftTransfers())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "payerAccountId", "senderAccountId")
                 .containsExactlyInAnyOrder(
-                        nftTransfer(account1Nft1DissociateTimestamp, EntityId.EMPTY, account1, 2L, nftId1),
-                        nftTransfer(account1Nft2DissociateTimestamp, EntityId.EMPTY, account1, 2L, nftId2),
-                        nftTransfer(account2Nft1DissociateTimestamp, EntityId.EMPTY, account2, 4L, nftId1));
+                        nftTransfer(account1Nft1DissociateTimestamp, null, account1, 2L, nftId1),
+                        nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
+                        nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1));
         assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(findAllTokens())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
@@ -518,13 +518,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationNftTransfer> findAllNftTransfers() {
-        return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> MigrationNftTransfer.builder()
-                .consensusTimestamp(rs.getLong("consensus_timestamp"))
-                .receiverAccountId(EntityId.of(rs.getLong("receiver_account_id"), ACCOUNT))
-                .senderAccountId(EntityId.of(rs.getLong("sender_account_id"), ACCOUNT))
-                .serialNumber(rs.getLong("serial_number"))
-                .tokenId(rs.getLong("token_id"))
-                .build());
+        return jdbcOperations.query(
+                "select * from nft_transfer", IntegrationTest.rowMapper(MigrationNftTransfer.class));
     }
 
     // Use a custom class for entity table since its columns have changed from the current domain object

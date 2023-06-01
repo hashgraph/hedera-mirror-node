@@ -371,14 +371,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private boolean isApprovalNftTransfer(NftTransfer nftTransfer, TokenID nftId, TransactionBody body) {
+    private boolean isApprovalNftTransfer(NftTransfer nftTransfer, TokenID tokenId, TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return false;
         }
 
         var tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
         for (var transferList : tokenTransfersList) {
-            if (!transferList.getToken().equals(nftId)) {
+            if (!transferList.getToken().equals(tokenId)) {
                 continue;
             }
 

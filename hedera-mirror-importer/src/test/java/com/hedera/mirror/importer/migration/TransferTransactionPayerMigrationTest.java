@@ -558,9 +558,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
             SharedTransfer sharedTransfer = new SharedTransfer(
                     rs.getLong("serial_number"),
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
+                    EntityId.of(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
             return sharedTransfer;
         });
     }
