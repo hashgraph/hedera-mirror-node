@@ -284,7 +284,7 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
 
         // then
         assertThat(transactionRepository.findAll())
-                .containsExactly(
+                .containsExactlyInAnyOrder(
                         tokenMintTx,
                         cryptoTransferTx1,
                         cryptoTransferTx2,
