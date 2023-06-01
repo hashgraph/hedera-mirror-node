@@ -17,11 +17,15 @@
 package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -62,5 +66,42 @@ class EntityDatabaseAccessorTest {
 
         assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void evmAddressFromIdReturnZeroWhenNoEntityFound() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.empty());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+                .isEqualTo(Address.ZERO);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAddressFromEntityEvmAddressWhenPresent() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+                .isEqualTo(ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAliasFromEntityWhenPresentAndNoEvmAddress() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(ALIAS_ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+                .isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnToAddressByDefault() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(null);
+
+        final var entityId = new EntityId(1L, 2L, 3L, EntityType.CONTRACT);
+        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId)).isEqualTo(toAddress(entityId));
     }
 }

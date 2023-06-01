@@ -33,13 +33,81 @@ class NftRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findById() {
-        final var spender = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
-        final var nft = domainBuilder.nft().customize(n -> n.spender(spender)).persist();
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()))
+                .persist();
 
         assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
                 .returns(nft.getSpender(), Nft::getSpender)
                 .returns(nft.getAccountId(), Nft::getAccountId)
                 .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
+    void findByIdReturnsDeleted() {
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
+                .persist();
+
+        assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
+                .returns(nft.getSpender(), Nft::getSpender)
+                .returns(nft.getAccountId(), Nft::getAccountId)
+                .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
+    void findActiveById() {
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()))
+                .persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .hasValueSatisfying(actual -> assertThat(actual)
+                        .returns(nft.getSpender(), Nft::getSpender)
+                        .returns(nft.getAccountId(), Nft::getAccountId)
+                        .returns(nft.getMetadata(), Nft::getMetadata));
+    }
+
+    @Test
+    void findActiveByIdReturnEmptyIfDeleted() {
+        final var nft = domainBuilder.nft().customize(n -> n.deleted(true)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()))
+                .persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isEmpty();
+    }
+
+    @Test
+    void findActiveByIdReturnEmptyIfEntityDeleted() {
+        final var nft = domainBuilder.nft().persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
+                .persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isEmpty();
+    }
+
+    @Test
+    void findActiveByIdReturnObjectIfEntityMissing() {
+        final var nft = domainBuilder.nft().persist();
+
+        assertThat(nftRepository.findActiveById(
+                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+                .isNotEmpty();
     }
 
     @Test

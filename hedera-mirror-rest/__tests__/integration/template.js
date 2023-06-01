@@ -102,7 +102,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   let s3Ops;
 
   const configS3ForStateProof = (endpoint) => {
-    config.stateproof = {
+    config.stateproof = _.merge(config.stateproof, {
       addressBookHistory: false,
       enabled: true,
       streams: {
@@ -112,7 +112,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
         region: 'us-east-1',
         bucketName,
       },
-    };
+    });
   };
 
   const getTests = (spec) => {
