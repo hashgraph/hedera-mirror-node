@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.81.0-rc1'
+      version: '0.82.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -48,7 +48,7 @@ spec:
               url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
               writeRelabelConfigs:
                 - action: keep
-                  regex: .*(grpc|importer|monitor|rest|rosetta|traefik|web3)$
+                  regex: .*(graphql|grpc|importer|monitor|rest|rosetta|traefik|web3)$
                   sourceLabels: [job]
                 - action: drop
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
