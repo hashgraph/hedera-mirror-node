@@ -43,6 +43,7 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -55,6 +56,7 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageLookupRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -88,6 +90,7 @@ class BatchUpserterTest extends IntegrationTest {
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageLookupRepository topicMessageLookupRepository;
+    private final TransactionRepository transactionRepository;
     private final TransactionOperations transactionOperations;
 
     @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
@@ -635,26 +638,27 @@ class BatchUpserterTest extends IntegrationTest {
     @Test
     void tokenDissociateTransfer() {
         // given
-        EntityId accountId = EntityId.of("0.0.215", ACCOUNT);
-        EntityId accountId2 = EntityId.of("0.0.216", ACCOUNT);
-        Token nftClass1 = getDeletedNftClass(10L, 25L, EntityId.of("0.0.100", TOKEN));
-        Token nftClass2 = getDeletedNftClass(11L, 24L, EntityId.of("0.0.101", TOKEN));
+        var accountId = EntityId.of("0.0.215", ACCOUNT);
+        var accountId2 = EntityId.of("0.0.216", ACCOUNT);
+        var nftClass1 = getDeletedNftClass(10L, 25L, EntityId.of("0.0.100", TOKEN));
+        var nftClass2 = getDeletedNftClass(11L, 24L, EntityId.of("0.0.101", TOKEN));
 
-        EntityId tokenId1 = nftClass1.getTokenId().getTokenId();
-        Nft nft1 = getNft(tokenId1, accountId, 1L, 11L, 16L, true); // already deleted, result of wipe
-        Nft nft2 = getNft(tokenId1, accountId, 2L, 11L, 11L, false);
-        Nft nft3 = getNft(tokenId1, accountId, 3L, 12L, 12L, false);
-        Nft nft4 = getNft(tokenId1, accountId2, 4L, 18L, 18L, false); // different account
+        var tokenId1 = nftClass1.getTokenId().getTokenId();
+        var nft1 = getNft(tokenId1, accountId, 1L, 11L, 16L, true); // already deleted, result of wipe
+        var nft2 = getNft(tokenId1, accountId, 2L, 11L, 11L, false);
+        var nft3 = getNft(tokenId1, accountId, 3L, 12L, 12L, false);
+        var nft4 = getNft(tokenId1, accountId2, 4L, 18L, 18L, false); // different account
 
-        Nft nft5 = getNft(nftClass2.getTokenId().getTokenId(), accountId, 1L, 15L, 15L, false);
+        var tokenId2 = nftClass2.getTokenId().getTokenId();
+        var nft5 = getNft(tokenId2, accountId, 1L, 15L, 15L, false);
 
         nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
         tokenRepository.saveAll(List.of(nftClass1, nftClass2));
 
         long consensusTimestamp = 30L;
-        EntityId ftId = EntityId.of("0.0.217", TOKEN);
-        EntityId payerId = EntityId.of("0.0.2002", ACCOUNT);
-        TokenTransfer fungibleTokenTransfer = domainBuilder
+        var ftId = EntityId.of("0.0.217", TOKEN);
+        var payerId = EntityId.of("0.0.2002", ACCOUNT);
+        var fungibleTokenTransfer = domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.amount(-10)
                         .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
@@ -662,7 +666,7 @@ class BatchUpserterTest extends IntegrationTest {
                         .payerAccountId(payerId)
                         .deletedTokenDissociate(true))
                 .get();
-        TokenTransfer nonFungibleTokenTransfer = domainBuilder
+        var nonFungibleTokenTransfer1 = domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.amount(-2)
                         .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
@@ -670,24 +674,52 @@ class BatchUpserterTest extends IntegrationTest {
                         .payerAccountId(payerId)
                         .deletedTokenDissociate(true))
                 .get();
-        List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
+        var nonFungibleTokenTransfer2 = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(-1)
+                        .id(new TokenTransfer.Id(consensusTimestamp, tokenId2, accountId))
+                        .isApproval(false)
+                        .payerAccountId(payerId)
+                        .deletedTokenDissociate(true))
+                .get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(consensusTimestamp).type(TransactionType.TOKENDISSOCIATE.getProtoId()))
+                .persist();
+        var tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer1, nonFungibleTokenTransfer2);
 
         // when
         persist(tokenDissociateTransferBatchUpserter, tokenTransfers);
 
         // then
-        assertThat(nftRepository.findAll())
-                .containsExactlyInAnyOrder(
-                        nft1,
-                        getNft(tokenId1, accountId, 2L, 11L, 30L, true),
-                        getNft(tokenId1, accountId, 3L, 12L, 30L, true),
-                        nft4,
-                        nft5);
+        nft2.setDeleted(true);
+        nft2.setModifiedTimestamp(consensusTimestamp);
+        nft3.setDeleted(true);
+        nft3.setModifiedTimestamp(consensusTimestamp);
+        nft5.setDeleted(true);
+        nft5.setModifiedTimestamp(consensusTimestamp);
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4, nft5);
 
         fungibleTokenTransfer.setDeletedTokenDissociate(false);
-        assertThat(tokenTransferRepository.findAll())
-                .usingRecursiveFieldByFieldElementComparatorOnFields("deletedTokenDissociate")
-                .containsOnly(fungibleTokenTransfer);
+        assertThat(tokenTransferRepository.findAll()).containsExactly(fungibleTokenTransfer);
+
+        transaction.setNftTransfer(List.of(
+                NftTransfer.builder()
+                        .isApproval(false)
+                        .receiverAccountId(null)
+                        .senderAccountId(accountId)
+                        .serialNumber(-2L)
+                        .tokenId(tokenId1)
+                        .build(),
+                NftTransfer.builder()
+                        .isApproval(false)
+                        .receiverAccountId(null)
+                        .senderAccountId(accountId)
+                        .serialNumber(-1L)
+                        .tokenId(tokenId2)
+                        .build()));
+        assertThat(transactionRepository.findAll()).containsExactly(transaction);
     }
 
     private void persist(BatchPersister batchPersister, Collection<?>... items) {
