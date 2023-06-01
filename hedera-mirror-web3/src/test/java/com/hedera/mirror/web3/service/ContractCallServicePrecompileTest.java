@@ -187,7 +187,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
             assertThat(serialNum).isEqualTo(1L);
             assertThat(owner).isEqualTo(convertAddress(SENDER_ADDRESS));
-            assertThat(creationTime).isEqualTo(1475067194949034022L);
+            assertThat(creationTime).isEqualTo(1475067194L);
             assertThat(metadata).isNotEmpty();
             assertThat(spender).isEqualTo(convertAddress(SENDER_ADDRESS));
             assertThat(maxSupply).isEqualTo(1L);

@@ -32,7 +32,6 @@ import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import jakarta.inject.Named;
@@ -51,8 +50,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final MirrorEvmContractAliases aliasManager;
     private final PricesAndFeesImpl pricesAndFees;
     private final AbstractCodeCache codeCache;
-    private final HederaEvmMutableWorldState worldState;
+    private final HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
+
+    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -72,24 +73,14 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
+        this.databaseAccessors = databaseAccessors;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-        tokenAccessor.setStackedStateFrames(stackedStateFrames);
-        accountAccessor.setStackedStateFrames(stackedStateFrames);
-        entityAccess.setStackedStateFrames(stackedStateFrames);
-
         this.worldState = new HederaEvmWorldState(
-                entityAccess,
-                evmProperties,
-                codeCache,
-                accountAccessor,
-                tokenAccessor,
-                entityAddressSequencer,
-                stackedStateFrames);
+                entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor, entityAddressSequencer);
     }
 
     @Override
@@ -100,6 +91,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
+        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        worldState.setStackedStateFrames(stackedStateFrames);
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,

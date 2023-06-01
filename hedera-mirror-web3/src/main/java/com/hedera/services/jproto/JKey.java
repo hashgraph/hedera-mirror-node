@@ -16,7 +16,9 @@
 
 package com.hedera.services.jproto;
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
@@ -27,6 +29,10 @@ import org.apache.commons.codec.DecoderException;
 public abstract class JKey {
 
     static final int MAX_KEY_DEPTH = 15;
+    private static final byte[] MISSING_RSA_3072_KEY = new byte[0];
+    private static final byte[] MISSING_ED25519_KEY = new byte[0];
+    private static final byte[] MISSING_ECDSA_384_KEY = new byte[0];
+    private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
 
     /**
      * Maps a proto Key to Jkey.
@@ -40,8 +46,7 @@ public abstract class JKey {
     }
 
     /**
-     * Converts a key up to a given level of depth. Both the signature and the key may be complex
-     * with multiple levels.
+     * Converts a key up to a given level of depth. Both the signature and the key may be complex with multiple levels.
      *
      * @param key   the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
@@ -88,12 +93,108 @@ public abstract class JKey {
         return rv;
     }
 
-    public abstract boolean isEmpty();
+    /**
+     * Maps a JKey instance to a proto Key instance.
+     *
+     * @param jkey the JKey to be converted
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    public static Key mapJKey(JKey jkey) throws DecoderException {
+        return convertJKey(jkey, 1);
+    }
 
     /**
-     * Expected to return {@code false} if the key is empty
+     * Converts a JKey to proto Key for up to a given level of depth.
      *
-     * @return whether the key is valid
+     * @param jkey  the current JKey to be converted
+     * @param depth current level that is to be verified. The first level has a value of 1.
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
      */
+    public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
+        if (depth > MAX_KEY_DEPTH) {
+            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+        }
+
+        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
+            return convertJKeyBasic(jkey);
+        } else {
+            List<JKey> jKeys = jkey.getKeyList().getKeysList();
+            List<Key> tkeys = new ArrayList<>();
+            for (JKey aKey : jKeys) {
+                Key res = convertJKey(aKey, depth + 1);
+                tkeys.add(res);
+            }
+            KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
+            Key result = Key.newBuilder().setKeyList(keys).build();
+            return (result);
+        }
+    }
+
+    /**
+     * Converts a basic JKey to proto Key.
+     *
+     * @param jkey JKey object to be converted
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    static Key convertJKeyBasic(JKey jkey) throws DecoderException {
+        Key rv;
+        if (jkey.hasEd25519Key()) {
+            rv = Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(jkey.getEd25519()))
+                    .build();
+        } else if (jkey.hasECDSAsecp256k1Key()) {
+            rv = Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key()))
+                    .build();
+        } else {
+            throw new DecoderException("Key type not implemented: key=" + jkey);
+        }
+
+        return rv;
+    }
+
+    public byte[] primitiveKeyIfPresent() {
+        if (hasEd25519Key()) {
+            return getEd25519();
+        } else if (hasECDSAsecp256k1Key()) {
+            return getECDSASecp256k1Key();
+        } else {
+            return MISSING_ECDSA_SECP256K1_KEY;
+        }
+    }
+
+    public abstract boolean isEmpty();
+
     public abstract boolean isValid();
+
+    public boolean hasEd25519Key() {
+        return false;
+    }
+
+    public boolean hasECDSAsecp256k1Key() {
+        return false;
+    }
+
+    public boolean hasKeyList() {
+        return false;
+    }
+
+    public boolean hasThresholdKey() {
+        return false;
+    }
+
+    public JKeyList getKeyList() {
+        return null;
+    }
+
+    public byte[] getEd25519() {
+        return MISSING_ED25519_KEY;
+    }
+
+    public byte[] getECDSASecp256k1Key() {
+        return MISSING_ECDSA_SECP256K1_KEY;
+    }
 }

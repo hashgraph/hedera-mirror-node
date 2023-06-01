@@ -24,15 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
-import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
@@ -48,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
     @Mock
-    private HederaEvmEntityAccess hederaEvmEntityAccess;
+    private MirrorEntityAccess hederaEvmEntityAccess;
 
     @Mock
     private EvmProperties evmProperties;
@@ -60,10 +59,10 @@ class HederaEvmWorldStateTest {
     final long balance = 1_234L;
 
     @Mock
-    AccountAccessor accountAccessor;
+    AccountAccessorImpl accountAccessor;
 
     @Mock
-    TokenAccessor tokenAccessor;
+    TokenAccessorImpl tokenAccessor;
 
     @Mock
     EntityAddressSequencer entityAddressSequencer;
@@ -86,8 +85,7 @@ class HederaEvmWorldStateTest {
                 abstractCodeCache,
                 accountAccessor,
                 tokenAccessor,
-                entityAddressSequencer,
-                stackedStateFrames);
+                entityAddressSequencer);
     }
 
     @Test

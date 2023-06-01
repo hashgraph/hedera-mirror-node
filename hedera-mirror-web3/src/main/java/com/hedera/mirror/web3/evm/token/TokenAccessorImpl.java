@@ -27,8 +27,8 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
@@ -38,12 +38,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
-import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenId;
-import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -54,12 +50,14 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.UniqueToken;
+import jakarta.inject.Named;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -83,7 +81,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
         final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(Nft.class);
+        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
         final var nftOptional = nftAccessor.get(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
         if (nftOptional.isEmpty()) {
             return Optional.empty();
@@ -91,11 +89,15 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var ledgerId = properties.getNetwork().getLedgerId();
         final var nftEntity = nftOptional.get();
-        final var entityAddress = evmAddressFromId(nftEntity.getAccountId());
-        final var creationTime = nftEntity.getCreatedTimestamp();
+        final var entityAddress =
+                evmAddressFromId(EntityId.of(nftEntity.getOwner().asGrpcAccount()));
+        final var creationTime = nftEntity.getCreationTime();
         final var metadata = nftEntity.getMetadata();
-        final var spender = nftEntity.getSpender() != null ? evmAddressFromId(nftEntity.getSpender()) : Address.ZERO;
-        final var nftInfo = new EvmNftInfo(serialNo, entityAddress, creationTime, metadata, spender, ledgerId);
+        final var spender = nftEntity.getSpender() != null
+                ? evmAddressFromId(EntityId.of(nftEntity.getSpender().asGrpcAccount()))
+                : Address.ZERO;
+        final var nftInfo =
+                new EvmNftInfo(serialNo, entityAddress, creationTime.getSeconds(), metadata, spender, ledgerId);
         return Optional.of(nftInfo);
     }
 
@@ -122,18 +124,16 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean defaultFreezeStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getFreezeDefault).orElse(false);
+        return tokenAccessor.get(token).map(Token::hasFreezeKey).orElse(false);
     }
 
     @Override
     public boolean defaultKycStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getKycKey).isPresent();
+        return tokenAccessor.get(token).map(Token::getKycKey).isPresent();
     }
 
     @Override
@@ -156,11 +156,10 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         return tokenAccessor
-                .get(tokenId)
+                .get(token)
                 .map(t -> TokenType.valueOf(t.getType().name()))
                 .orElse(null);
     }
@@ -184,34 +183,30 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String nameOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getName).orElse("");
+        return tokenAccessor.get(token).map(Token::getName).orElse("");
     }
 
     @Override
     public String symbolOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getSymbol).orElse("");
+        return tokenAccessor.get(token).map(Token::getSymbol).orElse("");
     }
 
     @Override
     public long totalSupplyOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getTotalSupply).orElse(0L);
+        return tokenAccessor.get(token).map(Token::getTotalSupply).orElse(0L);
     }
 
     @Override
     public int decimalsOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(tokenId).map(Token::getDecimals).orElse(0);
+        return tokenAccessor.get(token).map(Token::getDecimals).orElse(0);
     }
 
     @Override
@@ -250,14 +245,14 @@ public class TokenAccessorImpl implements TokenAccessor {
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
         final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(Nft.class);
-        final var spenderEntity = nftAccessor.get(nftId).map(Nft::getSpender);
+        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
+        final var spenderEntity = nftAccessor.get(nftId).map(UniqueToken::getSpender);
 
         if (spenderEntity.isEmpty()) {
             return Address.ZERO;
         }
 
-        return evmAddressFromId(spenderEntity.get());
+        return evmAddressFromId(EntityId.of(spenderEntity.get().asGrpcAccount()));
     }
 
     @Override
@@ -285,14 +280,14 @@ public class TokenAccessorImpl implements TokenAccessor {
     public Address ownerOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
         final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(Nft.class);
-        final var ownerEntity = nftAccessor.get(nftId).map(Nft::getAccountId);
+        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
+        final var ownerEntity = nftAccessor.get(nftId).map(UniqueToken::getOwner);
 
         if (ownerEntity.isEmpty()) {
             return Address.ZERO;
         }
 
-        return evmAddressFromId(ownerEntity.get());
+        return evmAddressFromId(EntityId.of(ownerEntity.get().asGrpcAccount()));
     }
 
     @Override
@@ -303,9 +298,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public String metadataOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-
         final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(Nft.class);
+        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
         return nftAccessor
                 .get(nftId)
                 .map(n -> new String(n.getMetadata(), StandardCharsets.UTF_8))
@@ -321,7 +315,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var topFrame = stackedStateFrames.top();
         final var tokenAccessor = topFrame.getAccessor(Token.class);
         final var entityAccessor = topFrame.getAccessor(Entity.class);
-        final var tokenEntityOptional = tokenAccessor.get(new TokenId(fromEvmAddress(token.toArray())));
+        final var tokenEntityOptional = tokenAccessor.get(token);
         final var entityOptional = entityAccessor.get(token);
 
         if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
@@ -332,7 +326,6 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var entity = entityOptional.get();
         final var ledgerId = ledgerId();
         final var expirationTimeInSec = expirationTimeSeconds(entity);
-
         final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                 ledgerId,
                 tokenEntity.getSupplyType().ordinal(),
@@ -340,16 +333,16 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getSymbol(),
                 tokenEntity.getName(),
                 entity.getMemo(),
-                evmAddressFromId(tokenEntity.getTreasuryAccountId()),
+                tokenEntity.getTreasury().getAccountAddress(),
                 tokenEntity.getTotalSupply(),
                 tokenEntity.getMaxSupply(),
                 tokenEntity.getDecimals(),
                 expirationTimeInSec);
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
-        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
+        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.hasFreezeKey());
         evmTokenInfo.setCustomFees(getCustomFees(token));
         setEvmKeys(entity, tokenEntity, evmTokenInfo);
-        final var isPaused = tokenEntity.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED);
+        final var isPaused = tokenEntity.isPaused();
         evmTokenInfo.setIsPaused(isPaused);
 
         if (entity.getAutoRenewAccountId() != null) {
@@ -376,7 +369,6 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @SuppressWarnings("unchecked")
     private List<CustomFee> getCustomFees(final Address token) {
-        final List<CustomFee> customFees = new ArrayList<>();
         final var topFrame = stackedStateFrames.top();
         final var customFeeAccessor = topFrame.getAccessor(List.class);
         return customFeeAccessor.get(entityIdNumFromEvmAddress(token)).orElse(Collections.emptyList());
@@ -384,13 +376,18 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
         try {
+            asKeyUnchecked(tokenEntity.getAdminKey()).toByteArray();
             final var adminKey = evmKey(entity.getKey());
-            final var kycKey = evmKey(tokenEntity.getKycKey());
-            final var supplyKey = evmKey(tokenEntity.getSupplyKey());
-            final var freezeKey = evmKey(tokenEntity.getFreezeKey());
-            final var wipeKey = evmKey(tokenEntity.getWipeKey());
-            final var pauseKey = evmKey(tokenEntity.getPauseKey());
-            final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
+            final var kycKey = evmKey(asKeyUnchecked(tokenEntity.getAdminKey()).toByteArray());
+            final var supplyKey =
+                    evmKey(asKeyUnchecked(tokenEntity.getSupplyKey()).toByteArray());
+            final var freezeKey =
+                    evmKey(asKeyUnchecked(tokenEntity.getFreezeKey()).toByteArray());
+            final var wipeKey = evmKey(asKeyUnchecked(tokenEntity.getWipeKey()).toByteArray());
+            final var pauseKey =
+                    evmKey(asKeyUnchecked(tokenEntity.getPauseKey()).toByteArray());
+            final var feeScheduleKey =
+                    evmKey(asKeyUnchecked(tokenEntity.getFeeScheduleKey()).toByteArray());
 
             evmTokenInfo.setAdminKey(adminKey);
             evmTokenInfo.setKycKey(kycKey);
@@ -399,7 +396,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             evmTokenInfo.setWipeKey(wipeKey);
             evmTokenInfo.setPauseKey(pauseKey);
             evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
-        } catch (final InvalidProtocolBufferException e) {
+        } catch (final IOException e) {
             throw new ParsingException("Error parsing token keys.");
         }
     }

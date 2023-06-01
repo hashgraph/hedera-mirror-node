@@ -36,6 +36,15 @@ public class JKeyList extends JKey {
         this.keys = keys;
     }
 
+    public List<JKey> getKeysList() {
+        return keys;
+    }
+
+    @Override
+    public JKeyList getKeyList() {
+        return this;
+    }
+
     @Override
     public String toString() {
         return "<JKeyList: keys=" + keys.toString() + ">";

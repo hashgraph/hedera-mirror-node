@@ -49,6 +49,14 @@ public final class MiscUtils {
         }
     }
 
+    public static Key asKeyUnchecked(final JKey fcKey) {
+        try {
+            return JKey.mapJKey(fcKey);
+        } catch (final Exception impossible) {
+            return Key.getDefaultInstance();
+        }
+    }
+
     public static Optional<JKey> asUsableFcKey(final Key key) {
         try {
             final var fcKey = JKey.mapKey(key);

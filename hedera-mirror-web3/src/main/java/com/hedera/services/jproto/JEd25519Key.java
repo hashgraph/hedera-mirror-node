@@ -31,6 +31,16 @@ public class JEd25519Key extends JKey {
     }
 
     @Override
+    public byte[] getEd25519() {
+        return ed25519;
+    }
+
+    @Override
+    public boolean hasEd25519Key() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return "<JEd25519Key: ed25519 hex=" + CommonUtils.hex(ed25519) + ">";
     }
