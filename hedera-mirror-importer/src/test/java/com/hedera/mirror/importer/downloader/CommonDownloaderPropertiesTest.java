@@ -19,8 +19,10 @@ package com.hedera.mirror.importer.downloader;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.SourceType;
 import static com.hedera.mirror.importer.downloader.StreamSourceProperties.SourceCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,12 +34,40 @@ class CommonDownloaderPropertiesTest {
     void getBucketName() {
         var mirrorProperties = new MirrorProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
-        assertThat(properties.getBucketName())
-                .isEqualTo(mirrorProperties.getNetwork().getBucketName());
+        assertThat(properties.getBucketName()).isEqualTo(HederaNetwork.getBucketName(mirrorProperties.getNetwork()));
 
         var bucketName = "test";
         properties.setBucketName(bucketName);
         assertThat(properties.getBucketName()).isEqualTo(bucketName);
+    }
+
+    @Test
+    void initNoNetworkDefaultBucketName() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
+    }
+
+    @Test
+    void isAnonymousCredentials() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        // Default network is DEMO, which is the only network allowing anonymous access
+        assertThat(properties.isAnonymousCredentials()).isTrue();
+
+        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+        properties.setAllowAnonymousAccess(true);
+        assertThat(properties.isAnonymousCredentials()).isTrue();
     }
 
     @Test

@@ -18,6 +18,8 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,6 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
@@ -38,6 +41,7 @@ import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +64,9 @@ class TokenDatabaseAccessorTest {
 
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @Mock
+    private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Mock
     private EntityRepository entityRepository;
@@ -102,6 +109,16 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
+    void getCustomFees() {
+        setupToken();
+        List<CustomFee> customFees = singletonList(new CustomFee());
+        when(customFeeDatabaseAccessor.get(entity.getId())).thenReturn(Optional.of(customFees));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(token -> assertThat(token.getCustomFees()).isEqualTo(customFees));
+    }
+
+    @Test
     void getPartialTreasuryAccount() {
         setupToken();
         final var treasuryId = mock(EntityId.class);
@@ -125,8 +142,8 @@ class TokenDatabaseAccessorTest {
         databaseToken.setTreasuryAccountId(null);
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
-                .returns(Collections.emptyList(), Token::mintedUniqueTokens)
-                .returns(Collections.emptyList(), Token::removedUniqueTokens)
+                .returns(emptyList(), Token::mintedUniqueTokens)
+                .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                 .returns(false, Token::hasChangedSupply)
                 .returns(null, Token::getTreasury)
@@ -134,7 +151,8 @@ class TokenDatabaseAccessorTest {
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
                 .returns(null, Token::getTreasury)
-                .returns(0L, Token::getLastUsedSerialNumber));
+                .returns(0L, Token::getLastUsedSerialNumber)
+                .returns(emptyList(), Token::getCustomFees));
     }
 
     @Test
@@ -172,7 +190,7 @@ class TokenDatabaseAccessorTest {
         databaseToken.setKycKey("wrOng".getBytes());
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS))
-                .hasValueSatisfying(token -> assertThat(token).returns(null, Token::getKycKey));
+                .hasValueSatisfying(token -> assertThat(token.getKycKey()).isNull());
     }
 
     private void setupToken() {

@@ -35,6 +35,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,8 @@ class TokenTest {
             null,
             numAssociations,
             numPositiveBalances,
-            defaultIntValue);
+            defaultIntValue,
+            0L);
     private Account nonTreasuryAccount = new Account(
             nonTreasuryId,
             defaultLongValue,
@@ -84,7 +86,8 @@ class TokenTest {
             null,
             numAssociations,
             numPositiveBalances,
-            defaultIntValue);
+            defaultIntValue,
+            0L);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -122,7 +125,8 @@ class TokenTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
 
         treasuryRel = new TokenRelationship(
                 subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, 0);
@@ -242,7 +246,8 @@ class TokenTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
@@ -439,7 +444,8 @@ class TokenTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 11));
 
         // negate account balance
@@ -589,7 +595,8 @@ class TokenTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
         final var ownershipTracker = mock(OwnershipTracker.class);
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
@@ -636,7 +643,8 @@ class TokenTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
 
         assertNotEquals(subject, otherToken);
         assertNotEquals(subject.hashCode(), otherToken.hashCode());

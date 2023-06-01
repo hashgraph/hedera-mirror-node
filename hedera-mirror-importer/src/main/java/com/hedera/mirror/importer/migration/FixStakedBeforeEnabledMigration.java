@@ -31,52 +31,52 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
-    static final Map<MirrorProperties.HederaNetwork, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
+    static final Map<String, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
             MirrorProperties.HederaNetwork.MAINNET, 1658419200981687000L,
             MirrorProperties.HederaNetwork.TESTNET, 1656691197976341207L);
 
     private static final String MIGRATION_SQL =
             """
-            --- The migration fixes the staking settings for accounts started to stake to a node before 0.27.x release.
-            with last_26_file as (
-              select index from record_file where consensus_end = :consensusEnd
-            ), possible as (
-            -- find accounts / contracts whose stake period start is still on or before the day 0.27.0 is deployed
-              select id,decline_reward,staked_node_id,stake_period_start,timestamp_range
-              from entity
-              where stake_period_start <= :epochDay and stake_period_start <> -1 and staked_node_id <> -1 and type in ('ACCOUNT', 'CONTRACT')
-            ), history as (
-            --- if the staking setting first occurs in the history table, find the oldest matching history row
-              select distinct on (h.id) h.id, h.stake_period_start, h.timestamp_range
-              from entity_history h
-              join possible p on p.id = h.id and p.stake_period_start = h.stake_period_start and p.staked_node_id = h.staked_node_id
-              order by h.id, h.timestamp_range
-            ), staked_before_alive as (
-            --- network 0.27.0 upgrade happened during a UTC day, make sure only fix such settings set at or before
-            --- the consensus end of the last HAPI 0.26.0 record file
-              select p.id as entity_id
-              from possible p
-              left join history h on h.id = p.id
-              where coalesce(lower(h.timestamp_range), lower(p.timestamp_range)) <= :consensusEnd
-            ), fix_entity_stake as (
-              update entity_stake
-              set pending_reward = 0,
-                  staked_node_id_start = -1
-              from staked_before_alive, last_26_file
-              where id = entity_id
-            ), fix_entity_history as (
-              update entity_history
-              set staked_node_id = -1,
-                  stake_period_start = -1
-              from staked_before_alive, last_26_file
-              where id = entity_id
-            )
-            update entity
-            set staked_node_id = -1,
-                stake_period_start = -1
-            from staked_before_alive, last_26_file
-            where id = entity_id;
-            """;
+                    --- The migration fixes the staking settings for accounts started to stake to a node before 0.27.x release.
+                    with last_26_file as (
+                      select index from record_file where consensus_end = :consensusEnd
+                    ), possible as (
+                    -- find accounts / contracts whose stake period start is still on or before the day 0.27.0 is deployed
+                      select id,decline_reward,staked_node_id,stake_period_start,timestamp_range
+                      from entity
+                      where stake_period_start <= :epochDay and stake_period_start <> -1 and staked_node_id <> -1 and type in ('ACCOUNT', 'CONTRACT')
+                    ), history as (
+                    --- if the staking setting first occurs in the history table, find the oldest matching history row
+                      select distinct on (h.id) h.id, h.stake_period_start, h.timestamp_range
+                      from entity_history h
+                      join possible p on p.id = h.id and p.stake_period_start = h.stake_period_start and p.staked_node_id = h.staked_node_id
+                      order by h.id, h.timestamp_range
+                    ), staked_before_alive as (
+                    --- network 0.27.0 upgrade happened during a UTC day, make sure only fix such settings set at or before
+                    --- the consensus end of the last HAPI 0.26.0 record file
+                      select p.id as entity_id
+                      from possible p
+                      left join history h on h.id = p.id
+                      where coalesce(lower(h.timestamp_range), lower(p.timestamp_range)) <= :consensusEnd
+                    ), fix_entity_stake as (
+                      update entity_stake
+                      set pending_reward = 0,
+                          staked_node_id_start = -1
+                      from staked_before_alive, last_26_file
+                      where id = entity_id
+                    ), fix_entity_history as (
+                      update entity_history
+                      set staked_node_id = -1,
+                          stake_period_start = -1
+                      from staked_before_alive, last_26_file
+                      where id = entity_id
+                    )
+                    update entity
+                    set staked_node_id = -1,
+                        stake_period_start = -1
+                    from staked_before_alive, last_26_file
+                    where id = entity_id;
+                    """;
     private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.3");
 
     private final NamedParameterJdbcOperations jdbcOperations;
@@ -94,8 +94,8 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var network = mirrorProperties.getNetwork();
-        Long consensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(network);
+        var hederaNetwork = mirrorProperties.getNetwork();
+        Long consensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(hederaNetwork);
         if (consensusEnd == null) {
             return;
         }
@@ -106,6 +106,6 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
                 .addValue("consensusEnd", consensusEnd)
                 .addValue("epochDay", epochDay);
         int count = jdbcOperations.update(MIGRATION_SQL, params);
-        log.info("Fixed staking information for {} {} accounts in {}", count, network, stopwatch);
+        log.info("Fixed staking information for {} {} accounts in {}", count, hederaNetwork, stopwatch);
     }
 }

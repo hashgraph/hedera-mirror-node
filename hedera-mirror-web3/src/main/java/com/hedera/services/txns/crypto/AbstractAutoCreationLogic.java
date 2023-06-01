@@ -111,7 +111,8 @@ public abstract class AbstractAutoCreationLogic {
                 Collections.emptySortedSet(),
                 0,
                 0,
-                0);
+                0,
+                0L);
         accountAccessor.set(Id.fromGrpcAccount(newId).asEvmAddress(), account);
         replaceAliasAndSetBalanceOnChange(change, newId);
         trackAlias(alias, newId);

@@ -53,6 +53,9 @@ jobs:
             ALL_DIGESTS+=(${CHILD_DIGESTS[@]})
           done
           
+          # dedup the digests since images may be shared by list type images
+          ALL_DIGESTS=($(printf '%s\n' "${ALL_DIGESTS[@]}" | sort -u))
+          
           for digest in ${ALL_DIGESTS[@]}; do
             gcloud container images delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
           done

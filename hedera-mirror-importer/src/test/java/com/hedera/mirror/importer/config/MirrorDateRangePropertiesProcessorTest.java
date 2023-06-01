@@ -58,6 +58,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MirrorDateRangePropertiesProcessorTest {
 
+    private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new HashMap<>();
+
     @Mock
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
@@ -70,7 +72,6 @@ class MirrorDateRangePropertiesProcessorTest {
     private MirrorProperties mirrorProperties;
     private List<DownloaderProperties> downloaderPropertiesList;
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
-    private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new HashMap<>();
 
     @BeforeEach
     void setUp() {
