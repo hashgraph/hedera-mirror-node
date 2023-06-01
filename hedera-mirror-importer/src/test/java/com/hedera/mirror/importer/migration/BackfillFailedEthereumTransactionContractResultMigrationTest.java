@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -60,9 +59,6 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     @Value("classpath:db/migration/v1/V1.80.0__backfill_ethereum_transaction_contract_result.sql")
     private final Resource sql;
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
-
     @Test
     void empty() {
         runMigration();
@@ -79,14 +75,13 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
                 .persist();
         var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
-        var transaction2 = transaction(
-                ethTx2.getConsensusTimestamp(), DUPLICATE_TRANSACTION, ethTx2.getPayerAccountId(), 0, 0);
+        var transaction2 =
+                transaction(ethTx2.getConsensusTimestamp(), DUPLICATE_TRANSACTION, ethTx2.getPayerAccountId(), 0, 0);
         var ethTx3 = domainBuilder.ethereumTransaction(true).persist();
-        var transaction3 =
-                transaction(ethTx3.getConsensusTimestamp(), WRONG_NONCE, ethTx3.getPayerAccountId(), 0, 0);
+        var transaction3 = transaction(ethTx3.getConsensusTimestamp(), WRONG_NONCE, ethTx3.getPayerAccountId(), 0, 0);
         var ethTx4 = domainBuilder.ethereumTransaction(false).persist();
-        var transaction4 = transaction(
-                ethTx4.getConsensusTimestamp(), CONSENSUS_GAS_EXHAUSTED, ethTx4.getPayerAccountId(), 4, 3);
+        var transaction4 =
+                transaction(ethTx4.getConsensusTimestamp(), CONSENSUS_GAS_EXHAUSTED, ethTx4.getPayerAccountId(), 4, 3);
         var ethTx5 = domainBuilder.ethereumTransaction(true).persist();
         var transaction5 =
                 transaction(ethTx5.getConsensusTimestamp(), INVALID_ACCOUNT_ID, ethTx5.getPayerAccountId(), 5, 0);
@@ -121,15 +116,10 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     }
 
     private Transaction transaction(
-            long consensusTimestamp,
-            ResponseCodeEnum result,
-            EntityId payerAccountId,
-            int index,
-            int nonce) {
+            long consensusTimestamp, ResponseCodeEnum result, EntityId payerAccountId, int index, int nonce) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusTimestamp);
         transaction.setIndex(index);
-        transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setNonce(nonce);
         transaction.setPayerAccountId(payerAccountId);
         transaction.setResult(result.getNumber());
@@ -141,21 +131,19 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     private void persistTransactions(List<Transaction> transactions) {
         jdbcTemplate.batchUpdate(
                 """
-                insert into transaction (consensus_timestamp, index, node_account_id, nonce, payer_account_id, result,
-                        scheduled, type, valid_start_ns) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                insert into transaction (consensus_timestamp, index, nonce, payer_account_id, result, type,
+                valid_start_ns) values (?, ?, ?, ?, ?, ?, ?)
                 """,
                 transactions,
                 transactions.size(),
                 (ps, transaction) -> {
                     ps.setLong(1, transaction.getConsensusTimestamp());
                     ps.setLong(2, transaction.getIndex());
-                    ps.setLong(3, transaction.getNodeAccountId().getId());
-                    ps.setLong(4, transaction.getNonce());
-                    ps.setLong(5, transaction.getPayerAccountId().getId());
-                    ps.setLong(6, transaction.getResult());
-                    ps.setBoolean(7, transaction.isScheduled());
-                    ps.setShort(8, transaction.getType().shortValue());
-                    ps.setLong(9, transaction.getValidStartNs());
+                    ps.setLong(3, transaction.getNonce());
+                    ps.setLong(4, transaction.getPayerAccountId().getId());
+                    ps.setLong(5, transaction.getResult());
+                    ps.setShort(6, transaction.getType().shortValue());
+                    ps.setLong(7, transaction.getValidStartNs());
                 });
     }
 
