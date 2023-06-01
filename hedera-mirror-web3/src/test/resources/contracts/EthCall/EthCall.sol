@@ -7,7 +7,8 @@ import "./IHederaTokenService.sol";
 
 contract EthCall is HederaTokenService {
 
-    string constant storageData  = "test";
+    uint256 salt = 1234;
+    string constant storageData = "test";
     string public emptyStorageData = "";
 
     // Public pure function without arguments that multiplies two numbers (e.g. return 2*2)
@@ -65,6 +66,12 @@ contract EthCall is HederaTokenService {
         string memory newState = deployedContract.changeState(s);
         deployedContract.changeCallerState(newState);
         return emptyStorageData;
+    }
+
+    function deployViaCreate2() external returns (address) {
+        State newContract = new State{salt: bytes32(salt)}();
+
+        return address(newContract);
     }
 }
 
