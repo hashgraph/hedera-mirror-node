@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.downloader;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -89,6 +90,12 @@ public class CommonDownloaderProperties {
 
     @PostConstruct
     public void init() {
+        if (StringUtils.isBlank(bucketName)
+                && StringUtils.isBlank(HederaNetwork.getBucketName(mirrorProperties.getNetwork()))) {
+            throw new IllegalArgumentException(
+                    "Must define bucketName for network named '%s'".formatted(mirrorProperties.getNetwork()));
+        }
+
         StreamSourceProperties.SourceCredentials credentials = null;
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             credentials = new StreamSourceProperties.SourceCredentials();
@@ -112,13 +119,13 @@ public class CommonDownloaderProperties {
     public String getBucketName() {
         return StringUtils.isNotBlank(bucketName)
                 ? bucketName
-                : mirrorProperties.getNetwork().getBucketName();
+                : HederaNetwork.getBucketName(mirrorProperties.getNetwork());
     }
 
     public boolean isAnonymousCredentials() {
         return allowAnonymousAccess != null
                 ? allowAnonymousAccess
-                : mirrorProperties.getNetwork().isAllowAnonymousAccess();
+                : HederaNetwork.isAllowAnonymousAccess(mirrorProperties.getNetwork());
     }
 
     public enum PathType {

@@ -23,6 +23,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -52,12 +53,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final AbstractCodeCache codeCache;
     private final HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
-    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
-            final MirrorOperationTracer mirrorOperationTracer,
+            final TraceProperties traceProperties,
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesProvider pricesAndFees,
@@ -67,12 +67,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final EntityAddressSequencer entityAddressSequencer,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
-        this.mirrorOperationTracer = mirrorOperationTracer;
         this.blockMetaSource = blockMetaSource;
-        this.aliasManager = aliasManager;
+        this.aliasManager = new MirrorEvmContractAliases(entityAccess);
+        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, aliasManager);
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
-        this.databaseAccessors = databaseAccessors;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();

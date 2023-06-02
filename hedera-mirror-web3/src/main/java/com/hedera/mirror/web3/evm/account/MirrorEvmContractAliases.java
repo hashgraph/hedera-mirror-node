@@ -23,15 +23,17 @@ import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import jakarta.inject.Named;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     private final MirrorEntityAccess mirrorEntityAccess;
+
+    final Map<Address, Address> aliases = new HashMap<>();
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
@@ -40,13 +42,14 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        final var entityOptional = mirrorEntityAccess.findEntity(addressOrAlias);
-
-        if (entityOptional.isEmpty()) {
-            throw new EntityNotFoundException("No such contract or token: " + addressOrAlias);
+        if (aliases.containsKey(addressOrAlias)) {
+            return aliases.get(addressOrAlias);
         }
 
-        final var entity = entityOptional.get();
+        final var entity = mirrorEntityAccess
+                .findEntity(addressOrAlias)
+                .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
+
         final var entityId = entity.toEntityId();
 
         if (entity.getType() == EntityType.TOKEN) {
@@ -59,5 +62,13 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         } else {
             throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
         }
+    }
+
+    public void link(final Address alias, final Address address) {
+        aliases.put(alias, address);
+    }
+
+    public void unlink(Address alias) {
+        aliases.remove(alias);
     }
 }

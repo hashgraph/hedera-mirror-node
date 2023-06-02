@@ -169,7 +169,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             var sigFilesMap = downloadAndParseSigFiles();
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
-            if (sigFilesMap.isEmpty() && mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
+            if (sigFilesMap.isEmpty()
+                    && MirrorProperties.HederaNetwork.DEMO.equalsIgnoreCase(mirrorProperties.getNetwork())) {
                 downloaderProperties.setEnabled(false);
                 log.warn("Disabled polling after downloading all files in demo bucket");
             }

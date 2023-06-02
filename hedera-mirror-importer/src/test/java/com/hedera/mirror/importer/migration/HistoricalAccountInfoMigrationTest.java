@@ -56,7 +56,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final MirrorProperties mirrorProperties;
 
-    private MirrorProperties.HederaNetwork network;
+    private String network;
 
     @BeforeEach
     void before() {

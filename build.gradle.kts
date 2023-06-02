@@ -31,7 +31,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.23.1")
+    set("protobufVersion", "3.23.2")
     set("reactorGrpcVersion", "1.2.4")
     set("testcontainersSpringBootVersion", "3.0.0-RC7")
     set("vertxVersion", "4.4.2")
@@ -48,10 +48,10 @@ dependencies {
 
         api("com.esaulpaugh:headlong:9.2.0")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
-        api("com.github.vertical-blank:sql-formatter:2.0.3")
+        api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.3.1")
-        api("com.google.guava:guava:31.1-jre")
+        api("com.google.guava:guava:32.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.0")
         api("com.graphql-java:graphql-java-extended-scalars:20.2")
@@ -69,7 +69,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.12.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.55.1")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.3.2")
+        api("io.hypersistence:hypersistence-utils-hibernate-62:3.4.1")
         api("io.projectreactor:reactor-core-micrometer:1.0.6")
         api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -89,10 +89,10 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2022.0.2")
+        api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.69")
+        api("software.amazon.awssdk:bom:2.20.74")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

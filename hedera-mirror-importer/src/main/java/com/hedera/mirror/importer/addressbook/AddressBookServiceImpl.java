@@ -533,10 +533,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                 log.info("Loading bootstrap address book from {}", initialAddressBook.toString());
                 addressBookBytes = Files.readAllBytes(initialAddressBook);
             } else {
-                var hederaNetwork = mirrorProperties.getNetwork();
-                var resourcePath =
-                        String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
-
+                var resourcePath = String.format("/addressbook/%s", mirrorProperties.getNetwork());
                 log.info("Loading bootstrap address book from {}", resourcePath);
                 Resource resource = new ClassPathResource(resourcePath, getClass());
                 addressBookBytes = resource.getInputStream().readAllBytes();
