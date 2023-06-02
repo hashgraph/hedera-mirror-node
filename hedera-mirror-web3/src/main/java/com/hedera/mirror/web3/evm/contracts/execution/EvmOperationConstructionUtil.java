@@ -104,16 +104,18 @@ public class EvmOperationConstructionUtil {
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaEvmCreate2Operation(
-                                gasCalculator, mirrorNodeEvmProperties, getCreateOperationExternalizer()))
+                                gasCalculator, mirrorNodeEvmProperties, getDefaultCreateOperationExternalizer()))
                 .forEach(operationRegistry::put);
 
         return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
     }
 
-    private static CreateOperationExternalizer getCreateOperationExternalizer() {
+    private static CreateOperationExternalizer getDefaultCreateOperationExternalizer() {
         return new CreateOperationExternalizer() {
             @Override
-            public void externalize(MessageFrame frame, MessageFrame childFrame) {}
+            public void externalize(MessageFrame frame, MessageFrame childFrame) {
+                // do nothing
+            }
 
             @Override
             public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
