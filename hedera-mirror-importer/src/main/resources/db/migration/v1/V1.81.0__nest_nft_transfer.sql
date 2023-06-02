@@ -1,3 +1,6 @@
+alter table if exists transaction
+    add column if not exists nft_transfer jsonb null;
+
 create temp table nested_nft_transfer (consensus_timestamp bigint not null, transfer jsonb not null) on commit drop;
 
 with special_nft_transfer as (
@@ -12,11 +15,11 @@ with special_nft_transfer as (
   join transaction t on t.consensus_timestamp = nt.consensus_timestamp
   where t.type in (36, 41) -- type 36 - TOKENUPDATE, type 41 - TOKENDISSOCIATE
   group by nt.consensus_timestamp, nt.sender_account_id, nt.receiver_account_id, nt.token_id, t.type
-), aggregate_special_nft_transfer as (
+), aggregated_special_nft_transfer as (
   select consensus_timestamp, jsonb_agg(transfer) as transfer
   from special_nft_transfer
   group by consensus_timestamp
-), nested_normal_transfer as (
+), nested_normal_nft_transfer as (
   select nt.consensus_timestamp, jsonb_agg(jsonb_build_object(
     'is_approval', is_approval,
     'receiver_account_id', receiver_account_id,
@@ -25,16 +28,16 @@ with special_nft_transfer as (
     'token_id', token_id
     )) as transfer
   from nft_transfer nt
-  left join aggregate_special_nft_transfer at on at.consensus_timestamp = nt.consensus_timestamp
+  left join aggregated_special_nft_transfer at on at.consensus_timestamp = nt.consensus_timestamp
   where at.consensus_timestamp is null
   group by nt.consensus_timestamp
 )
 insert into nested_nft_transfer (consensus_timestamp, transfer)
 select consensus_timestamp, transfer
-from aggregate_special_nft_transfer
+from aggregated_special_nft_transfer
 union all
 select consensus_timestamp, transfer
-from nested_normal_transfer
+from nested_normal_nft_transfer
 order by consensus_timestamp;
 
 create unique index on nested_nft_transfer (consensus_timestamp);

@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -50,10 +51,10 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.81.0")
-class MigrateNftTransferMigrationTest extends IntegrationTest {
+@TestPropertySource(properties = "spring.flyway.target=1.80.1")
+class NestNftTransferMigrationTest extends IntegrationTest {
 
-    private static final String RECREATE_NFT_TRANSFER_DDL =
+    private static final String REVERT_DDL =
             """
             create table if not exists nft_transfer (
               consensus_timestamp bigint not null,
@@ -67,31 +68,33 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
             create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
             create index if not exists nft_transfer__token_id_serial_num_timestamp
               on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
+
+            alter table transaction drop column if exists jsonb;
             """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
 
     private final TransactionRepository transactionRepository;
 
-    @Value("classpath:db/migration/v1/V1.81.1__migrate_nft_transfer.sql")
+    @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
     private final Resource sql;
 
     @AfterEach
     void teardown() {
-        jdbcTemplate.execute(RECREATE_NFT_TRANSFER_DDL);
+        jdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
     void empty() {
         runMigration();
-        assertThat(transactionRepository.findAll()).isEmpty();
+        assertTransactions();
     }
 
     @Test
     void emptyNftTransferAndNonEmptyTransaction() {
-        var transaction = domainBuilder.transaction().persist();
+        var transaction = persistTransaction(domainBuilder.transaction().get());
         runMigration();
-        assertThat(transactionRepository.findAll()).containsExactly(transaction);
+        assertTransactions(transaction);
     }
 
     @Test
@@ -105,10 +108,10 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         var token2 = domainBuilder.id();
 
         // mint token1 5 serials
-        var tokenMintTx = domainBuilder
+        var tokenMintTx = persistTransaction(domainBuilder
                 .transaction()
                 .customize(t -> t.type(TransactionType.TOKENMINT.getProtoId()))
-                .persist();
+                .get());
         var tokenMintTransfers = List.of(
                 MigrationNftTransfer.builder()
                         .consensusTimestamp(tokenMintTx.getConsensusTimestamp())
@@ -145,7 +148,7 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         tokenMintTx.setNftTransfer(toDomainNftTransfers(tokenMintTransfers));
 
         // crypto transfer 1 using allowance
-        var cryptoTransferTx1 = domainBuilder.transaction().persist();
+        var cryptoTransferTx1 = persistTransaction(domainBuilder.transaction().get());
         var cryptoTransfer1NftTransfers = List.of(
                 MigrationNftTransfer.builder()
                         .consensusTimestamp(cryptoTransferTx1.getConsensusTimestamp())
@@ -168,7 +171,7 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         cryptoTransferTx1.setNftTransfer(toDomainNftTransfers(cryptoTransfer1NftTransfers));
 
         // crypto transfer 2
-        var cryptoTransferTx2 = domainBuilder.transaction().persist();
+        var cryptoTransferTx2 = persistTransaction(domainBuilder.transaction().get());
         var cryptoTransfer2NftTransfers = List.of(
                 MigrationNftTransfer.builder()
                         .consensusTimestamp(cryptoTransferTx2.getConsensusTimestamp())
@@ -191,10 +194,10 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         cryptoTransferTx2.setNftTransfer(toDomainNftTransfers(cryptoTransfer2NftTransfers));
 
         // wipe token1 serial 2 from bob
-        var tokenWipeTx = domainBuilder
+        var tokenWipeTx = persistTransaction(domainBuilder
                 .transaction()
                 .customize(t -> t.type(TransactionType.TOKENWIPE.getProtoId()))
-                .persist();
+                .get());
         var tokenWipeNftTransfers = List.of(MigrationNftTransfer.builder()
                 .consensusTimestamp(tokenWipeTx.getConsensusTimestamp())
                 .senderAccountId(bob)
@@ -206,10 +209,10 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         tokenWipeTx.setNftTransfer(toDomainNftTransfers(tokenWipeNftTransfers));
 
         // treasury change, new treasury will own serial 4 and serial 5
-        var tokenUpdateTx = domainBuilder
+        var tokenUpdateTx = persistTransaction(domainBuilder
                 .transaction()
                 .customize(t -> t.type(TransactionType.TOKENUPDATE.getProtoId()))
-                .persist();
+                .get());
         // before nft transfers were nested, the importer will create per serial nft transfer for nft treasury change
         var tokenUpdateNftTransfers = List.of(
                 MigrationNftTransfer.builder()
@@ -240,10 +243,10 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         // Note alice owns the following before the dissociation
         //   - token1 serial 1 and serial 3
         //   - token2 serial
-        var tokenDissociateTx = domainBuilder
+        var tokenDissociateTx = persistTransaction(domainBuilder
                 .transaction()
                 .customize(t -> t.type(TransactionType.TOKENDISSOCIATE.getProtoId()))
-                .persist();
+                .get());
         var tokenDissociateNftTransfers = List.of(
                 MigrationNftTransfer.builder()
                         .consensusTimestamp(tokenDissociateTx.getConsensusTimestamp())
@@ -283,17 +286,17 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        assertThat(transactionRepository.findAll())
-                .containsExactlyInAnyOrder(
-                        tokenMintTx,
-                        cryptoTransferTx1,
-                        cryptoTransferTx2,
-                        tokenWipeTx,
-                        tokenUpdateTx,
-                        tokenDissociateTx);
+        assertTransactions(
+                tokenMintTx, cryptoTransferTx1, cryptoTransferTx2, tokenWipeTx, tokenUpdateTx, tokenDissociateTx);
     }
 
-    void persistNftTransfers(List<MigrationNftTransfer> nftTransfers) {
+    private void assertTransactions(Transaction... transactions) {
+        assertThat(transactionRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields("consensus_timestamp", "nft_transfer")
+                .containsExactlyInAnyOrder(transactions);
+    }
+
+    private void persistNftTransfers(List<MigrationNftTransfer> nftTransfers) {
         // hardcode payer account id, the column is "not null" and it's not needed for the migration
         jdbcTemplate.batchUpdate(
                 """
@@ -311,6 +314,20 @@ class MigrateNftTransferMigrationTest extends IntegrationTest {
                     ps.setLong(5, nftTransfer.getSerialNumber());
                     ps.setLong(6, nftTransfer.getTokenId());
                 });
+    }
+
+    private Transaction persistTransaction(Transaction transaction) {
+        jdbcTemplate.update(
+                """
+                        insert into transaction (consensus_timestamp, payer_account_id, result, type, valid_start_ns)
+                        values (?, ?, ?, ?, ?)
+                        """,
+                transaction.getConsensusTimestamp(),
+                transaction.getPayerAccountId().getId(),
+                transaction.getResult(),
+                transaction.getType(),
+                transaction.getValidStartNs());
+        return transaction;
     }
 
     @SneakyThrows
