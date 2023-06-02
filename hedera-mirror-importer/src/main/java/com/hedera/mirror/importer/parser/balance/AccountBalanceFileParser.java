@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,11 @@ package com.hedera.mirror.importer.parser.balance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+package com.hedera.mirror.importer.parser.balance;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.inject.Named;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.transaction.annotation.Transactional;
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
@@ -43,6 +27,17 @@ import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.inject.Named;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Parse an account balances file and load it into the database.
@@ -55,13 +50,14 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final BalanceStreamFileListener streamFileListener;
 
-    public AccountBalanceFileParser(ApplicationEventPublisher applicationEventPublisher,
-                                    BatchPersister batchPersister,
-                                    MeterRegistry meterRegistry,
-                                    BalanceParserProperties parserProperties,
-                                    StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
-                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                                    BalanceStreamFileListener streamFileListener) {
+    public AccountBalanceFileParser(
+            ApplicationEventPublisher applicationEventPublisher,
+            BatchPersister batchPersister,
+            MeterRegistry meterRegistry,
+            BalanceParserProperties parserProperties,
+            StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            BalanceStreamFileListener streamFileListener) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.applicationEventPublisher = applicationEventPublisher;
         this.batchPersister = batchPersister;
@@ -74,10 +70,12 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
      */
     @Override
     @Leader
-    @Retryable(backoff = @Backoff(
-            delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
-            maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
-            multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
+    @Retryable(
+            backoff =
+                    @Backoff(
+                            delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
+                            maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
+                            multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@balanceParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(AccountBalanceFile accountBalanceFile) {
@@ -95,24 +93,28 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
             Map<TokenBalance.Id, TokenBalance> tokenBalances = new HashMap<>(batchSize);
 
-            count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
-                accountBalances.add(accountBalance);
-                for (var tokenBalance : accountBalance.getTokenBalances()) {
-                    if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
-                        log.warn("Skipping duplicate token balance: {}", tokenBalance);
-                    }
-                }
+            count = accountBalanceFile
+                    .getItems()
+                    .doOnNext(accountBalance -> {
+                        accountBalances.add(accountBalance);
+                        for (var tokenBalance : accountBalance.getTokenBalances()) {
+                            if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
+                                log.warn("Skipping duplicate token balance: {}", tokenBalance);
+                            }
+                        }
 
-                if (accountBalances.size() >= batchSize) {
-                    batchPersister.persist(accountBalances);
-                    accountBalances.clear();
-                }
+                        if (accountBalances.size() >= batchSize) {
+                            batchPersister.persist(accountBalances);
+                            accountBalances.clear();
+                        }
 
-                if (tokenBalances.size() >= batchSize) {
-                    batchPersister.persist(tokenBalances.values());
-                    tokenBalances.clear();
-                }
-            }).count().block();
+                        if (tokenBalances.size() >= batchSize) {
+                            batchPersister.persist(tokenBalances.values());
+                            tokenBalances.clear();
+                        }
+                    })
+                    .count()
+                    .block();
 
             batchPersister.persist(accountBalances);
             batchPersister.persist(tokenBalances.values());

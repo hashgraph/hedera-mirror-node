@@ -42,6 +42,66 @@ var (
 	proxyAccountId         = hedera.AccountID{Account: 6000}
 )
 
+type updateOperationsFunc func(types.OperationSlice) types.OperationSlice
+
+func addOperation(operations types.OperationSlice) types.OperationSlice {
+	return append(operations, types.Operation{})
+}
+
+func getEmptyOperations(types.OperationSlice) types.OperationSlice {
+	return make(types.OperationSlice, 0)
+}
+
+func getEmptyOperationMetadata(operations types.OperationSlice) types.OperationSlice {
+	for index := range operations {
+		operation := &operations[index]
+		operation.Metadata = nil
+	}
+	return operations
+}
+
+func deleteOperationMetadata(key string) updateOperationsFunc {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
+			delete(operation.Metadata, key)
+		}
+		return operations
+	}
+}
+
+func negateAmountValue(operations types.OperationSlice) types.OperationSlice {
+	for index := range operations {
+		operation := &operations[index]
+		amount := operation.Amount
+		switch a := amount.(type) {
+		case *types.HbarAmount:
+			a.Value = -a.Value
+		}
+	}
+	return operations
+}
+
+func updateOperationMetadata(key string, value interface{}) updateOperationsFunc {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
+			operation.Metadata[key] = value
+		}
+		return operations
+	}
+}
+
+func updateOperationType(operationType string) updateOperationsFunc {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
+			operation.Type = operationType
+		}
+		return operations
+	}
+}
+
 func TestCryptoCreateTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(cryptoCreateTransactionConstructorSuite))
 }
@@ -57,7 +117,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestNewTransactionConstruc
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
 	h := newCryptoCreateTransactionConstructor()
-	assert.Equal(suite.T(), types.HbarAmount{Value: 3_00000000}, h.GetDefaultMaxTransactionFee())
+	assert.Equal(suite.T(), types.HbarAmount{Value: 5_00000000}, h.GetDefaultMaxTransactionFee())
 }
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetOperationType() {
@@ -207,11 +267,6 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 	}{
 		{name: "Success"},
 		{
-			name:             "InvalidAmount",
-			updateOperations: updateAmount(types.NewTokenAmount(dbTokenA, 1)),
-			expectError:      true,
-		},
-		{
 			name:             "InvalidMetadataKey",
 			updateOperations: updateOperationMetadata("key", "key"),
 			expectError:      true,
@@ -219,11 +274,6 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidMetadataAutoRenewPeriod",
 			updateOperations: updateOperationMetadata("auto_renew_period", "x"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidMetadataMaxAutomaticTokenAssociations",
-			updateOperations: updateOperationMetadata("max_automatic_token_associations", "xyz"),
 			expectError:      true,
 		},
 		{

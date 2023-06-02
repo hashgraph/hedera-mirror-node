@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,16 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.downloader;
+
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -27,21 +29,17 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.PostConstruct;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.MirrorProperties;
-
 @Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
@@ -69,6 +67,13 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
+    @DurationMin(seconds = 1)
+    @NotNull
+    private Duration pathRefreshInterval = Duration.ofSeconds(10L);
+
+    @NotNull
+    private PathType pathType = PathType.ACCOUNT_ID;
+
     private String region = "us-east-1";
 
     private String secretKey;
@@ -85,6 +90,12 @@ public class CommonDownloaderProperties {
 
     @PostConstruct
     public void init() {
+        if (StringUtils.isBlank(bucketName)
+                && StringUtils.isBlank(HederaNetwork.getBucketName(mirrorProperties.getNetwork()))) {
+            throw new IllegalArgumentException(
+                    "Must define bucketName for network named '%s'".formatted(mirrorProperties.getNetwork()));
+        }
+
         StreamSourceProperties.SourceCredentials credentials = null;
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             credentials = new StreamSourceProperties.SourceCredentials();
@@ -106,12 +117,21 @@ public class CommonDownloaderProperties {
     }
 
     public String getBucketName() {
-        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
+        return StringUtils.isNotBlank(bucketName)
+                ? bucketName
+                : HederaNetwork.getBucketName(mirrorProperties.getNetwork());
     }
 
     public boolean isAnonymousCredentials() {
-        return allowAnonymousAccess != null ? allowAnonymousAccess : mirrorProperties.getNetwork()
-                .isAllowAnonymousAccess();
+        return allowAnonymousAccess != null
+                ? allowAnonymousAccess
+                : HederaNetwork.isAllowAnonymousAccess(mirrorProperties.getNetwork());
+    }
+
+    public enum PathType {
+        ACCOUNT_ID,
+        AUTO,
+        NODE_ID
     }
 
     @Getter

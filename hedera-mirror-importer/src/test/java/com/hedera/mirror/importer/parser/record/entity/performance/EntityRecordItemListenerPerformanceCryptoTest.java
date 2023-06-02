@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.entity.performance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,16 @@ package com.hedera.mirror.importer.parser.record.entity.performance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.entity.performance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.AbstractEntityRecordItemListenerTest;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.RealmID;
@@ -39,10 +38,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.parser.record.entity.AbstractEntityRecordItemListenerTest;
-import com.hedera.mirror.importer.util.Utility;
 
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -68,7 +63,9 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
         for (int u = startingAccountNum + updateEntityCount; u < startingAccountNum + initialEntityCount; u++) {
             updateRecordItemList.add(getUpdateAccountRecordItem(u));
         }
-        for (int c = startingAccountNum + initialEntityCount; c < startingAccountNum + initialEntityCount + updateEntityCount; c++) {
+        for (int c = startingAccountNum + initialEntityCount;
+                c < startingAccountNum + initialEntityCount + updateEntityCount;
+                c++) {
             updateRecordItemList.add(getCreateAccountRecordItem(c));
         }
     }
@@ -85,40 +82,50 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
     void insertHighCreateAndUpdateEntityCount() {
         Instant startTime = Instant.now();
         parseRecordItemsAndCommit(insertRecordItemList);
-        log.info("Inserting {} entities took {} ms", insertRecordItemList.size(),
+        log.info(
+                "Inserting {} entities took {} ms",
+                insertRecordItemList.size(),
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
         assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size());
 
         startTime = Instant.now();
         parseRecordItemsAndCommit(updateRecordItemList);
         int updateCount = updateRecordItemList.size() / 2;
-        log.info("Inserting {} entities with {} updates took {} ms", updateRecordItemList.size(), updateCount,
+        log.info(
+                "Inserting {} entities with {} updates took {} ms",
+                updateRecordItemList.size(),
+                updateCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-        assertThat(entityRepository.findAll())
-                .hasSize(insertRecordItemList.size() + updateCount);
+        assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size() + updateCount);
     }
 
     private RecordItem getCreateAccountRecordItem(int accountNum) throws Exception {
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
-        TransactionRecord createRecord = transactionRecord(
-                createTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber(),
-                accountNum);
-        return RecordItem.builder().transactionRecord(createRecord).transaction(createTransaction).build();
+        TransactionRecord createRecord =
+                transactionRecord(createTransactionBody, ResponseCodeEnum.SUCCESS.getNumber(), accountNum);
+        return RecordItem.builder()
+                .transactionRecord(createRecord)
+                .transaction(createTransaction)
+                .build();
     }
 
     private RecordItem getUpdateAccountRecordItem(int accountNum) throws Exception {
-        Transaction updateTransaction = cryptoUpdateTransaction(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setAccountNum(accountNum).build());
+        Transaction updateTransaction = cryptoUpdateTransaction(AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(accountNum)
+                .build());
         TransactionBody updateTransactionBody = getTransactionBody(updateTransaction);
-        TransactionRecord createRecord = transactionRecord(
-                updateTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber(),
-                accountNum);
-        return RecordItem.builder().transactionRecord(createRecord).transaction(updateTransaction).build();
+        TransactionRecord createRecord =
+                transactionRecord(updateTransactionBody, ResponseCodeEnum.SUCCESS.getNumber(), accountNum);
+        return RecordItem.builder()
+                .transactionRecord(createRecord)
+                .transaction(updateTransaction)
+                .build();
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoCreateTransaction() {
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
@@ -134,6 +141,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
                 .setSendRecordThreshold(3000L));
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoUpdateTransaction(AccountID accountNum) {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
                 .setAccountIDToUpdate(accountNum)
@@ -151,7 +159,10 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
         return buildTransactionRecord(
                 recordBuilder -> recordBuilder
                         .getReceiptBuilder()
-                        .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accountNum)),
+                        .setAccountID(AccountID.newBuilder()
+                                .setShardNum(0)
+                                .setRealmNum(0)
+                                .setAccountNum(accountNum)),
                 transactionBody,
                 status);
     }

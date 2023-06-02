@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 description = "Hedera Mirror Node GRPC API"
 
-plugins {
-    id("spring-conventions")
-}
+plugins { id("spring-conventions") }
 
 dependencies {
     implementation(project(":common"))
@@ -38,9 +32,10 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.projectreactor.addons:reactor-extra")
+    implementation("io.projectreactor:reactor-core-micrometer")
     implementation("io.vertx:vertx-pg-client")
     implementation("io.vertx:vertx-codegen")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("net.devh:grpc-spring-boot-starter")
     implementation("org.hibernate.validator:hibernate-validator")
     implementation("org.msgpack:jackson-dataformat-msgpack")
@@ -51,7 +46,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+    runtimeOnly(
+        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.playtika.testcontainers:embedded-postgresql")
@@ -60,6 +56,4 @@ dependencies {
     testImplementation("org.flywaydb:flyway-core")
 }
 
-tasks.assemble {
-    dependsOn("package")
-}
+tasks.assemble { dependsOn("package") }

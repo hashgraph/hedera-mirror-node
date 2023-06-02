@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.expression;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.monitor.expression;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.expression;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,11 +23,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.proto.AccountID;
+import com.hedera.hashgraph.sdk.proto.ScheduleID;
+import com.hedera.hashgraph.sdk.proto.TokenID;
+import com.hedera.hashgraph.sdk.proto.TopicID;
+import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.TransactionRecord;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.exception.ExpressionConversionException;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-
-import com.hedera.mirror.monitor.exception.ExpressionConversionException;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,19 +48,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Mono;
-
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.proto.AccountID;
-import com.hedera.hashgraph.sdk.proto.ScheduleID;
-import com.hedera.hashgraph.sdk.proto.TokenID;
-import com.hedera.hashgraph.sdk.proto.TopicID;
-import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.TransactionRecord;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.publish.TransactionPublisher;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ExpressionConverterImplTest {
@@ -74,7 +67,9 @@ class ExpressionConverterImplTest {
     @BeforeEach
     void setup() {
         monitorProperties.getOperator().setAccountId("0.0.2");
-        monitorProperties.getOperator().setPrivateKey(PrivateKey.generate().toString());
+        monitorProperties
+                .getOperator()
+                .setPrivateKey(PrivateKey.generateED25519().toString());
     }
 
     @Test
@@ -182,8 +177,7 @@ class ExpressionConverterImplTest {
     @Test
     void cached() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
-        when(transactionPublisher.publish(any()))
-                .thenReturn(response(type, 100));
+        when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
 
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
@@ -225,16 +219,12 @@ class ExpressionConverterImplTest {
                 break;
         }
 
-        com.hedera.hashgraph.sdk.TransactionRecord record = com.hedera.hashgraph.sdk.TransactionRecord
-                .fromBytes(TransactionRecord.newBuilder()
-                        .setReceipt(receipt)
-                        .build().toByteArray());
+        com.hedera.hashgraph.sdk.TransactionRecord record = com.hedera.hashgraph.sdk.TransactionRecord.fromBytes(
+                TransactionRecord.newBuilder().setReceipt(receipt).build().toByteArray());
 
-        return Mono.just(
-                PublishResponse.builder()
-                        .transactionRecord(record)
-                        .receipt(record.receipt)
-                        .build()
-        );
+        return Mono.just(PublishResponse.builder()
+                .transactionRecord(record)
+                .receipt(record.receipt)
+                .build());
     }
 }

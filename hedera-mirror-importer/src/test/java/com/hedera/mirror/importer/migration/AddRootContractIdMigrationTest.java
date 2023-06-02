@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,20 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
+import jakarta.annotation.Resource;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
@@ -36,11 +36,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-
-import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
@@ -69,23 +64,19 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     @Test
     void verifyRootContractIdMigration() throws Exception {
 
-        persistContractResult(Arrays.asList(
-                contractResult(1, 1L),
-                contractResult(2, 2L),
-                contractResult(3, null)
-        ));
+        persistContractResult(Arrays.asList(contractResult(1, 1L), contractResult(2, 2L), contractResult(3, null)));
         persistContractLog(Arrays.asList(
                 contractLog(1, 1, 0),
                 contractLog(1, 2, 1),
                 contractLog(1, 3, 2),
                 contractLog(2, 1, 0),
-                contractLog(3, 1, 0)
-        ));
+                contractLog(3, 1, 0)));
         // migration
         migrate();
 
         assertThat(retrieveContractLogs())
-                .hasSize(5).extracting(MigrationContractLog::getRootContractId)
+                .hasSize(5)
+                .extracting(MigrationContractLog::getRootContractId)
                 .containsExactly(1L, 1L, 1L, 2L, null);
     }
 
@@ -109,40 +100,46 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationContractLog> retrieveContractLogs() {
-        return jdbcOperations.query("select consensus_timestamp, contract_id, root_contract_id from contract_log " +
-                        "order by consensus_timestamp asc, index asc",
+        return jdbcOperations.query(
+                "select consensus_timestamp, contract_id, root_contract_id from contract_log "
+                        + "order by consensus_timestamp asc, index asc",
                 new BeanPropertyRowMapper<>(MigrationContractLog.class));
     }
 
     private void persistContractLog(List<MigrationContractLog> contractLogs) {
         for (MigrationContractLog contractLog : contractLogs) {
-            jdbcOperations
-                    .update("insert into contract_log (bloom, consensus_timestamp, contract_id, data, " +
-                                    "index, payer_account_id) " +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?)",
-                            contractLog.getBloom(), contractLog.getConsensusTimestamp(), contractLog.getContractId(),
-                            contractLog.getData(), contractLog.getIndex(), contractLog.getPayerAccountId());
+            jdbcOperations.update(
+                    "insert into contract_log (bloom, consensus_timestamp, contract_id, data, "
+                            + "index, payer_account_id) "
+                            + " values"
+                            + " (?, ?, ?, ?, ?, ?)",
+                    contractLog.getBloom(),
+                    contractLog.getConsensusTimestamp(),
+                    contractLog.getContractId(),
+                    contractLog.getData(),
+                    contractLog.getIndex(),
+                    contractLog.getPayerAccountId());
         }
     }
 
     private void persistContractResult(List<MigrationContractResult> contractResults) {
         for (MigrationContractResult contractResult : contractResults) {
-            jdbcOperations
-                    .update("insert into contract_result (consensus_timestamp, contract_id, function_parameters, " +
-                                    "gas_limit, gas_used, payer_account_id) " +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?)",
-                            contractResult.getConsensusTimestamp(), contractResult.getContractId(),
-                            contractResult.getFunctionParameters(),
-                            contractResult.getGasLimit(), contractResult.getGasUsed(),
-                            contractResult.getPayerAccountId());
+            jdbcOperations.update(
+                    "insert into contract_result (consensus_timestamp, contract_id, function_parameters, "
+                            + "gas_limit, gas_used, payer_account_id) "
+                            + " values"
+                            + " (?, ?, ?, ?, ?, ?)",
+                    contractResult.getConsensusTimestamp(),
+                    contractResult.getContractId(),
+                    contractResult.getFunctionParameters(),
+                    contractResult.getGasLimit(),
+                    contractResult.getGasUsed(),
+                    contractResult.getPayerAccountId());
         }
     }
 
     private void revertMigration() {
-        jdbcOperations
-                .update("alter table contract_log drop column if exists root_contract_id");
+        jdbcOperations.update("alter table contract_log drop column if exists root_contract_id");
     }
 
     @Data

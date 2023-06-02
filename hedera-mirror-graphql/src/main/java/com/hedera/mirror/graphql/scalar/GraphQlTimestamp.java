@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.scalar;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,18 +12,23 @@ package com.hedera.mirror.graphql.scalar;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.scalar;
 
 import static graphql.scalars.util.Kit.typeName;
 
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
 import java.time.Instant;
+import java.util.Locale;
 import org.jetbrains.annotations.NotNull;
 
 public class GraphQlTimestamp implements Coercing<Instant, String> {
@@ -40,15 +40,22 @@ public class GraphQlTimestamp implements Coercing<Instant, String> {
             .build();
 
     @Override
-    public String serialize(@NotNull Object input) throws CoercingSerializeException {
-        if (input instanceof Instant instant) {
-            return instant.toString();
+    public @NotNull Instant parseLiteral(
+            @NotNull Value<?> input,
+            @NotNull CoercedVariables variables,
+            @NotNull GraphQLContext graphQLContext,
+            @NotNull Locale locale)
+            throws CoercingParseLiteralException {
+        if (input instanceof StringValue str) {
+            return Instant.parse(str.getValue());
         }
-        throw new CoercingSerializeException("Unable to serialize timestamp to string: " + input);
+        throw new CoercingParseLiteralException("Expected a 'String' but was '" + typeName(input) + "'.");
     }
 
     @Override
-    public @NotNull Instant parseValue(@NotNull Object input) throws CoercingParseValueException {
+    public @NotNull Instant parseValue(
+            @NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingParseValueException {
         if (input instanceof Instant instant) {
             return instant;
         } else if (input instanceof String string) {
@@ -58,10 +65,11 @@ public class GraphQlTimestamp implements Coercing<Instant, String> {
     }
 
     @Override
-    public @NotNull Instant parseLiteral(@NotNull Object input) throws CoercingParseLiteralException {
-        if (input instanceof StringValue str) {
-            return Instant.parse(str.getValue());
+    public String serialize(@NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingSerializeException {
+        if (input instanceof Instant instant) {
+            return instant.toString();
         }
-        throw new CoercingParseLiteralException("Expected a 'String' but was '" + typeName(input) + "'.");
+        throw new CoercingSerializeException("Unable to serialize timestamp to string: " + input);
     }
 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.validation;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,13 @@ package com.hedera.mirror.web3.validation;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.web3.validation;
+
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 
 public class HexValidator implements ConstraintValidator<Hex, String> {
 
@@ -32,16 +28,18 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
 
     private long maxLength;
     private long minLength;
+    private boolean allowEmpty;
 
     @Override
     public void initialize(Hex hex) {
         maxLength = hex.maxLength();
         minLength = hex.minLength();
+        allowEmpty = hex.allowEmpty();
     }
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null || (minLength == 0 && value.length() == 0)) {
+        if (value == null || ((minLength == 0 || allowEmpty) && value.length() == 0)) {
             return true;
         }
 

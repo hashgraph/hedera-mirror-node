@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reconciliation;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.reconciliation;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reconciliation;
 
 import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_CRYPTO_TRANSFERS;
 import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_FIFTY_BILLION;
@@ -33,7 +29,16 @@ import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.job.ReconciliationJob;
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -43,22 +48,12 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import javax.inject.Named;
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.job.ReconciliationJob;
-import com.hedera.mirror.common.domain.job.ReconciliationStatus;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @CustomLog
 @Named
@@ -68,18 +63,20 @@ class BalanceReconciliationService {
     static final String METRIC = "hedera.mirror.reconciliation";
 
     // Due to the number of rows returned, it's considerably more performant to not use JPA
-    private static final String BALANCE_QUERY = "select account_id, balance from account_balance " +
-            "where consensus_timestamp = ?";
+    private static final String BALANCE_QUERY =
+            "select account_id, balance from account_balance " + "where consensus_timestamp = ?";
 
-    private static final String CRYPTO_TRANSFER_QUERY = """
+    private static final String CRYPTO_TRANSFER_QUERY =
+            """
             select entity_id, sum(amount) balance from crypto_transfer
             where consensus_timestamp > ? and consensus_timestamp <= ? and (errata is null or errata <> 'DELETE')
             group by entity_id""";
 
-    private static final String TOKEN_BALANCE_QUERY = "select account_id, token_id, balance from token_balance " +
-            "where consensus_timestamp = ?";
+    private static final String TOKEN_BALANCE_QUERY =
+            "select account_id, token_id, balance from token_balance " + "where consensus_timestamp = ?";
 
-    private static final String TOKEN_TRANSFER_QUERY = """
+    private static final String TOKEN_TRANSFER_QUERY =
+            """
             select account_id, token_id, sum(amount) as balance
             from token_transfer where consensus_timestamp > ? and consensus_timestamp <= ?
             group by token_id, account_id""";
@@ -92,18 +89,20 @@ class BalanceReconciliationService {
     private final ReconciliationProperties reconciliationProperties;
     private final ReconciliationJobRepository reconciliationJobRepository;
 
-    BalanceReconciliationService(AccountBalanceFileRepository accountBalanceFileRepository,
-                                 JdbcOperations jdbcOperations,
-                                 MeterRegistry meterRegistry,
-                                 RecordFileRepository recordFileRepository,
-                                 ReconciliationProperties reconciliationProperties,
-                                 ReconciliationJobRepository reconciliationJobRepository) {
+    BalanceReconciliationService(
+            AccountBalanceFileRepository accountBalanceFileRepository,
+            JdbcOperations jdbcOperations,
+            MeterRegistry meterRegistry,
+            RecordFileRepository recordFileRepository,
+            ReconciliationProperties reconciliationProperties,
+            ReconciliationJobRepository reconciliationJobRepository) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.jdbcOperations = jdbcOperations;
         this.recordFileRepository = recordFileRepository;
         this.reconciliationProperties = reconciliationProperties;
         this.reconciliationJobRepository = reconciliationJobRepository;
-        this.status = meterRegistry.gauge(METRIC, new AtomicReference<>(UNKNOWN), s -> s.get().ordinal());
+        this.status = meterRegistry.gauge(
+                METRIC, new AtomicReference<>(UNKNOWN), s -> s.get().ordinal());
     }
 
     @Scheduled(cron = "${hedera.mirror.importer.reconciliation.cron:0 0 0 * * *}")
@@ -117,7 +116,8 @@ class BalanceReconciliationService {
         var reconciliationJob = getLatestJob();
 
         try {
-            log.info("Reconciling balance files between {} and {} with {} remediation strategy",
+            log.info(
+                    "Reconciling balance files between {} and {} with {} remediation strategy",
                     Instant.ofEpochSecond(0, reconciliationJob.getConsensusTimestamp()),
                     reconciliationProperties.getEndDate(),
                     reconciliationProperties.getRemediationStrategy());
@@ -136,7 +136,8 @@ class BalanceReconciliationService {
                 reconciliationJob.increment();
 
                 if (!reconciliationJob.hasErrors()) {
-                    var consensusTimestamp = current.get().getAccountBalanceFile().getConsensusTimestamp();
+                    var consensusTimestamp =
+                            current.get().getAccountBalanceFile().getConsensusTimestamp();
                     reconciliationJob.setConsensusTimestamp(consensusTimestamp);
 
                     // Periodically update progress
@@ -146,8 +147,7 @@ class BalanceReconciliationService {
                 }
 
                 if (reconciliationProperties.getRemediationStrategy() == ACCUMULATE) {
-                    previous = Optional.of(current.get()
-                            .toBuilder()
+                    previous = Optional.of(current.get().toBuilder()
                             .balances(previous.get().getBalances())
                             .tokenBalances(previous.get().getTokenBalances())
                             .build());
@@ -168,8 +168,11 @@ class BalanceReconciliationService {
             var errorStatus = e instanceof ReconciliationException re ? re.getStatus() : FAILURE_UNKNOWN;
             reconciliationJob.setError(e.getMessage());
             reconciliationJob.setStatus(errorStatus);
-            log.warn("Reconciliation completed unsuccessfully after {} balance files in {}: {}",
-                    reconciliationJob.getCount(), stopwatch, e.getMessage());
+            log.warn(
+                    "Reconciliation completed unsuccessfully after {} balance files in {}: {}",
+                    reconciliationJob.getCount(),
+                    stopwatch,
+                    e.getMessage());
         } finally {
             reconciliationJob.setTimestampEnd(Instant.now());
             reconciliationJobRepository.save(reconciliationJob);
@@ -179,7 +182,8 @@ class BalanceReconciliationService {
 
     private ReconciliationJob getLatestJob() {
         long startDate = DomainUtils.convertToNanosMax(reconciliationProperties.getStartDate());
-        long consensusTimestamp = reconciliationJobRepository.findLatest()
+        long consensusTimestamp = reconciliationJobRepository
+                .findLatest()
                 .map(ReconciliationJob::getConsensusTimestamp)
                 .orElse(startDate);
         consensusTimestamp = Math.max(startDate, consensusTimestamp);
@@ -202,8 +206,12 @@ class BalanceReconciliationService {
 
         long elapsed = System.currentTimeMillis() - current.getStartTime();
         String name = current.getAccountBalanceFile().getName();
-        log.info("Reconciled balance file {} with {} balances and {} token balances in {} ms",
-                name, current.getBalances().size(), current.getTokenBalances().size(), elapsed);
+        log.info(
+                "Reconciled balance file {} with {} balances and {} token balances in {} ms",
+                name,
+                current.getBalances().size(),
+                current.getTokenBalances().size(),
+                elapsed);
 
         if (Duration.ZERO.compareTo(reconciliationProperties.getDelay()) < 0) {
             Uninterruptibles.sleepUninterruptibly(reconciliationProperties.getDelay());
@@ -213,11 +221,15 @@ class BalanceReconciliationService {
     private void reconcileCryptoTransfers(BalanceSnapshot previous, BalanceSnapshot current) {
         var transfersBalance = previous.getBalances();
 
-        jdbcOperations.query(CRYPTO_TRANSFER_QUERY, rs -> {
-            long accountId = rs.getLong(1);
-            long balance = rs.getLong(2);
-            transfersBalance.merge(accountId, balance, Math::addExact);
-        }, previous.getTimestamp(), current.getTimestamp());
+        jdbcOperations.query(
+                CRYPTO_TRANSFER_QUERY,
+                rs -> {
+                    long accountId = rs.getLong(1);
+                    long balance = rs.getLong(2);
+                    transfersBalance.merge(accountId, balance, Math::addExact);
+                },
+                previous.getTimestamp(),
+                current.getTimestamp());
 
         reconcileTransfers(FAILURE_CRYPTO_TRANSFERS, BalanceSnapshot::getBalances, previous, current);
     }
@@ -229,21 +241,26 @@ class BalanceReconciliationService {
 
         var tokenBalances = previous.getTokenBalances();
 
-        jdbcOperations.query(TOKEN_TRANSFER_QUERY, rs -> {
-            long accountId = rs.getLong(1);
-            long tokenId = rs.getLong(2);
-            long balance = rs.getLong(3);
-            var tokenAccountId = new TokenAccountId(accountId, tokenId);
-            tokenBalances.merge(tokenAccountId, balance, Math::addExact);
-        }, previous.getTimestamp(), current.getTimestamp());
+        jdbcOperations.query(
+                TOKEN_TRANSFER_QUERY,
+                rs -> {
+                    long accountId = rs.getLong(1);
+                    long tokenId = rs.getLong(2);
+                    long balance = rs.getLong(3);
+                    var tokenAccountId = new TokenAccountId(accountId, tokenId);
+                    tokenBalances.merge(tokenAccountId, balance, Math::addExact);
+                },
+                previous.getTimestamp(),
+                current.getTimestamp());
 
         reconcileTransfers(FAILURE_TOKEN_TRANSFERS, BalanceSnapshot::getTokenBalances, previous, current);
     }
 
-    private <K> void reconcileTransfers(ReconciliationStatus failureStatus,
-                                        Function<BalanceSnapshot, Map<K, Long>> mapper,
-                                        BalanceSnapshot previous,
-                                        BalanceSnapshot current) {
+    private <K> void reconcileTransfers(
+            ReconciliationStatus failureStatus,
+            Function<BalanceSnapshot, Map<K, Long>> mapper,
+            BalanceSnapshot previous,
+            BalanceSnapshot current) {
         var transfersBalance = mapper.apply(previous);
         var currentBalances = mapper.apply(current);
 
@@ -281,8 +298,8 @@ class BalanceReconciliationService {
         return true;
     }
 
-    private Optional<BalanceSnapshot> getNextBalanceSnapshot(ReconciliationJob reconciliationJob,
-                                                             Optional<BalanceSnapshot> previous) {
+    private Optional<BalanceSnapshot> getNextBalanceSnapshot(
+            ReconciliationJob reconciliationJob, Optional<BalanceSnapshot> previous) {
 
         long startTime = System.currentTimeMillis();
         long toTimestamp = DomainUtils.convertToNanosMax(reconciliationProperties.getEndDate());
@@ -291,14 +308,15 @@ class BalanceReconciliationService {
                 .map(t -> t + 1L)
                 .orElseGet(reconciliationJob::getConsensusTimestamp);
 
-        return accountBalanceFileRepository.findNextInRange(fromTimestamp, toTimestamp)
+        return accountBalanceFileRepository
+                .findNextInRange(fromTimestamp, toTimestamp)
                 .map(accountBalanceFile -> {
                     var timestamp = accountBalanceFile.getConsensusTimestamp();
                     var balances = getAccountBalances(accountBalanceFile);
                     var recordFile = recordFileRepository.findNextBetween(timestamp - 1L, Long.MAX_VALUE);
                     var tokenBalances = getTokenBalances(accountBalanceFile);
-                    return new BalanceSnapshot(accountBalanceFile, balances, recordFile, reconciliationJob, startTime,
-                            tokenBalances);
+                    return new BalanceSnapshot(
+                            accountBalanceFile, balances, recordFile, reconciliationJob, startTime, tokenBalances);
                 });
     }
 
@@ -307,12 +325,15 @@ class BalanceReconciliationService {
         AtomicLong total = new AtomicLong(0L);
         long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
 
-        jdbcOperations.query(BALANCE_QUERY, rs -> {
-            long accountId = rs.getLong(1);
-            long balance = rs.getLong(2);
-            balances.put(accountId, balance);
-            total.addAndGet(balance);
-        }, consensusTimestamp);
+        jdbcOperations.query(
+                BALANCE_QUERY,
+                rs -> {
+                    long accountId = rs.getLong(1);
+                    long balance = rs.getLong(2);
+                    balances.put(accountId, balance);
+                    total.addAndGet(balance);
+                },
+                consensusTimestamp);
 
         if (total.get() != FIFTY_BILLION_HBARS) {
             String name = accountBalanceFile.getName();
@@ -330,13 +351,16 @@ class BalanceReconciliationService {
         Map<TokenAccountId, Long> balances = new HashMap<>();
         long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
 
-        jdbcOperations.query(TOKEN_BALANCE_QUERY, rs -> {
-            long accountId = rs.getLong(1);
-            long tokenId = rs.getLong(2);
-            long balance = rs.getLong(3);
-            var tokenAccountId = new TokenAccountId(accountId, tokenId);
-            balances.put(tokenAccountId, balance);
-        }, consensusTimestamp);
+        jdbcOperations.query(
+                TOKEN_BALANCE_QUERY,
+                rs -> {
+                    long accountId = rs.getLong(1);
+                    long tokenId = rs.getLong(2);
+                    long balance = rs.getLong(3);
+                    var tokenAccountId = new TokenAccountId(accountId, tokenId);
+                    balances.put(tokenAccountId, balance);
+                },
+                consensusTimestamp);
 
         return balances;
     }

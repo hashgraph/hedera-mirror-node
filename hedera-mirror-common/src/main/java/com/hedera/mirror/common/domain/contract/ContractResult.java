@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.contract;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,21 @@ package com.hedera.mirror.common.domain.contract;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain.contract;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.LongListToStringSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.util.Collections;
 import java.util.List;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,10 +34,6 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
-
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
-import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
 @Entity
@@ -59,7 +55,7 @@ public class ContractResult implements Persistable<Long> {
     private long contractId;
 
     @Builder.Default
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
+    @Type(ListArrayType.class)
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Long> createdContractIds = Collections.emptyList();
 
@@ -86,6 +82,8 @@ public class ContractResult implements Persistable<Long> {
     private byte[] transactionHash;
 
     private Integer transactionIndex;
+
+    private int transactionNonce;
 
     private Integer transactionResult;
 

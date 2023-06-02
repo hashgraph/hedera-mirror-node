@@ -1,4 +1,4 @@
-FROM node:18.14.2-bullseye-slim
+FROM node:18.16.0-bullseye-slim
 LABEL maintainer="mirrornode@hedera.com"
 
 # Setup
@@ -11,11 +11,10 @@ WORKDIR /home/node/app/
 # Install dependencies
 COPY package*.json ./
 RUN apt-get update && \
-    apt-get install -y wget build-essential python3 && \
+    apt-get install -y wget && \
     npm ci --only=production && \
     npm cache clean --force --loglevel=error && \
     chown -R node:node . && \
-    apt-get remove -y build-essential python3 && \
     rm -rf /var/lib/apt/lists/*
 COPY --chown=node:node . ./
 

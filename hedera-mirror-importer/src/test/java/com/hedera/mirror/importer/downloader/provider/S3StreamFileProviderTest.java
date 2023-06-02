@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader.provider;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,18 @@ package com.hedera.mirror.importer.downloader.provider;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader.provider;
 
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
@@ -42,12 +42,11 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     private static final int S3_PROXY_PORT = 8001;
 
     private S3Proxy s3Proxy;
-    private S3AsyncClient s3AsyncClient;
 
     @BeforeEach
     void setup() throws Exception {
         super.setup();
-        s3AsyncClient = S3AsyncClient.builder()
+        var s3AsyncClient = S3AsyncClient.builder()
                 .asyncConfiguration(b -> b.advancedOption(FUTURE_COMPLETION_EXECUTOR, ForkJoinPool.commonPool()))
                 .credentialsProvider(AnonymousCredentialsProvider.create())
                 .endpointOverride(URI.create("http://localhost:" + S3_PROXY_PORT))
@@ -59,18 +58,19 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected String getDirectory() {
-        return properties.getBucketName();
+    protected FileCopier createFileCopier(Path dataPath) {
+        var fromPath = Path.of("data", "recordstreams", "v6");
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 
     private void startS3Proxy() throws Exception {
         Properties properties = new Properties();
-        properties.setProperty("jclouds.filesystem.basedir", dataPath.toAbsolutePath().toString());
+        properties.setProperty(
+                "jclouds.filesystem.basedir", dataPath.toAbsolutePath().toString());
 
-        var context = ContextBuilder
-                .newBuilder("filesystem")
-                .overrides(properties)
-                .build(BlobStoreContext.class);
+        var context =
+                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class);
 
         s3Proxy = S3Proxy.builder()
                 .blobStore(context.getBlobStore())

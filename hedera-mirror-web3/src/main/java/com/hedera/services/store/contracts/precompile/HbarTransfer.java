@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -25,8 +26,7 @@ public class HbarTransfer {
     protected final AccountID receiver;
     protected final boolean isApproval;
 
-    public HbarTransfer(
-            final long amount, final boolean isApproval, final AccountID sender, final AccountID receiver) {
+    public HbarTransfer(final long amount, final boolean isApproval, final AccountID sender, final AccountID receiver) {
         this.amount = amount;
         this.isApproval = isApproval;
         this.sender = sender;

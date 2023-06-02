@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.controller;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,18 @@ package com.hedera.mirror.graphql.controller;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.graphql.GraphqlIntegrationTest;
+import com.hedera.mirror.graphql.mapper.AccountMapper;
+import com.hedera.mirror.graphql.viewmodel.Account;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -31,13 +32,6 @@ import org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureH
 import org.springframework.graphql.ResponseError;
 import org.springframework.graphql.test.tester.HttpGraphQlTester;
 
-import com.hedera.mirror.graphql.GraphqlIntegrationTest;
-import com.hedera.mirror.graphql.mapper.AccountMapper;
-import com.hedera.mirror.graphql.viewmodel.Account;
-
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.binary.Base32;
-
 @AutoConfigureHttpGraphQlTester
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountControllerTest extends GraphqlIntegrationTest {
@@ -45,8 +39,11 @@ class AccountControllerTest extends GraphqlIntegrationTest {
     private final AccountMapper accountMapper;
     private final HttpGraphQlTester tester;
 
-    @CsvSource(delimiter = '|', textBlock = """
-              query { account { id }}                                                                    | Missing field argument input
+    @CsvSource(
+            delimiter = '|',
+            textBlock =
+                    """
+              query { account { id }}                                                                    | Missing field argument 'input'
               query { account(input: {}) { id }}                                                         | Must provide exactly one input value
               query { account(input: {alias: ""}) { id }}                                                | alias must match
               query { account(input: {alias: "abcZ"}) { id }}                                            | alias must match
@@ -63,37 +60,31 @@ class AccountControllerTest extends GraphqlIntegrationTest {
             """)
     @ParameterizedTest
     void invalidInput(String query, String error) {
-        tester.document(query)
-                .execute()
-                .errors()
-                .satisfy(r -> assertThat(r)
-                        .hasSize(1)
-                        .first()
-                        .extracting(ResponseError::getMessage)
-                        .asString()
-                        .contains(error)
-                );
+        tester.document(query).execute().errors().satisfy(r -> assertThat(r)
+                .hasSize(1)
+                .first()
+                .extracting(ResponseError::getMessage)
+                .asString()
+                .contains(error));
     }
 
-    @CsvSource(textBlock = """
+    @CsvSource(
+            textBlock =
+                    """
             query { account(input: {entityId: {num: 999}}) { id }}
             query { account(input: {evmAddress: \"9999999999999999999999999999999999999999\"}) { id }}
             query { account(input: {alias: \"ABCDEFGHIJKLMNOPQABCDEFGHIJKLMNOPQ\"}) { id }}
             """)
     @ParameterizedTest
     void missing(String query) {
-        tester.document(query)
-                .execute()
-                .errors()
-                .verify()
-                .path("account")
-                .valueIsNull();
+        tester.document(query).execute().errors().verify().path("account").valueIsNull();
     }
 
     @Test
     void success() {
         var entity = domainBuilder.entity().persist();
-        tester.document("""
+        tester.document(
+                        """
                         query Account($id: Long!) {
                           account(input: { entityId: { num: $id } }) {
                             alias
@@ -127,7 +118,10 @@ class AccountControllerTest extends GraphqlIntegrationTest {
                 .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(accountMapper.map(entity)));
     }
 
-    @CsvSource(delimiter = '|', textBlock = """
+    @CsvSource(
+            delimiter = '|',
+            textBlock =
+                    """
             false | false
             false | true
             true  | false
@@ -143,7 +137,8 @@ class AccountControllerTest extends GraphqlIntegrationTest {
         if (prefix) {
             evmAddress = "0x" + evmAddress;
         }
-        tester.document("""
+        tester.document(
+                        """
                         query Account($evmAddress: String!) {
                           account(input: { evmAddress: $evmAddress }) {
                             alias
@@ -181,7 +176,8 @@ class AccountControllerTest extends GraphqlIntegrationTest {
     void successByAlias() {
         var entity = domainBuilder.entity().persist();
         var alias = new Base32().encodeAsString(entity.getAlias());
-        tester.document("""
+        tester.document(
+                        """
                         query Account($alias: String!) {
                           account(input: { alias: $alias }) {
                             alias

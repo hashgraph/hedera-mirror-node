@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,19 +12,21 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.SourceType;
 import static com.hedera.mirror.importer.downloader.StreamSourceProperties.SourceCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import com.hedera.mirror.importer.MirrorProperties;
 
 class CommonDownloaderPropertiesTest {
 
@@ -37,11 +34,40 @@ class CommonDownloaderPropertiesTest {
     void getBucketName() {
         var mirrorProperties = new MirrorProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
-        assertThat(properties.getBucketName()).isEqualTo(mirrorProperties.getNetwork().getBucketName());
+        assertThat(properties.getBucketName()).isEqualTo(HederaNetwork.getBucketName(mirrorProperties.getNetwork()));
 
         var bucketName = "test";
         properties.setBucketName(bucketName);
         assertThat(properties.getBucketName()).isEqualTo(bucketName);
+    }
+
+    @Test
+    void initNoNetworkDefaultBucketName() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThrows(IllegalArgumentException.class, () -> properties.init());
+    }
+
+    @Test
+    void isAnonymousCredentials() {
+        var mirrorProperties = new MirrorProperties();
+        var properties = new CommonDownloaderProperties(mirrorProperties);
+
+        // Default network is DEMO, which is the only network allowing anonymous access
+        assertThat(properties.isAnonymousCredentials()).isTrue();
+
+        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+
+        mirrorProperties.setNetwork("mynetwork");
+        assertThat(properties.isAnonymousCredentials()).isFalse();
+        properties.setAllowAnonymousAccess(true);
+        assertThat(properties.isAnonymousCredentials()).isTrue();
     }
 
     @Test
@@ -102,7 +128,8 @@ class CommonDownloaderPropertiesTest {
 
         var listAssert = assertThat(properties.getSources()).hasSize(2);
 
-        listAssert.first()
+        listAssert
+                .first()
                 .returns(properties.getAccessKey(), s -> s.getCredentials().getAccessKey())
                 .returns(properties.getCloudProvider(), StreamSourceProperties::getType)
                 .returns(properties.getGcpProjectId(), StreamSourceProperties::getProjectId)
@@ -110,7 +137,8 @@ class CommonDownloaderPropertiesTest {
                 .returns(properties.getSecretKey(), s -> s.getCredentials().getSecretKey())
                 .returns(URI.create(properties.getEndpointOverride()), StreamSourceProperties::getUri);
 
-        listAssert.element(1)
+        listAssert
+                .element(1)
                 .returns(sourceProperties.getCredentials(), StreamSourceProperties::getCredentials)
                 .returns(sourceProperties.getProjectId(), StreamSourceProperties::getProjectId)
                 .returns(sourceProperties.getRegion(), StreamSourceProperties::getRegion)
@@ -119,10 +147,10 @@ class CommonDownloaderPropertiesTest {
     }
 
     @CsvSource({
-            "GCP, true, true",
-            "GCP, false, true",
-            "S3, true, true",
-            "S3, false, false",
+        "GCP, true, true",
+        "GCP, false, true",
+        "S3, true, true",
+        "S3, false, false",
     })
     @ParameterizedTest
     void isStaticCredentials(SourceType sourceType, boolean credentials, boolean expected) {

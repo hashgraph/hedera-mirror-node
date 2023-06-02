@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,11 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.config;
+
+import com.hedera.mirror.importer.db.DBProperties;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
 import io.micrometer.core.instrument.Gauge;
@@ -40,8 +37,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
-
-import com.hedera.mirror.importer.db.DBProperties;
 
 @Log4j2
 @Configuration
@@ -67,7 +62,10 @@ class MetricsConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "management.metrics.table", name = "enabled", havingValue = "true",
+    @ConditionalOnProperty(
+            prefix = "management.metrics.table",
+            name = "enabled",
+            havingValue = "true",
             matchIfMissing = true)
     MeterBinder tableMetrics(@Lazy JdbcOperations jdbcOperations) {
         return registry -> getTablesNames().forEach(t -> registerTableMetric(jdbcOperations, registry, t));
@@ -76,8 +74,8 @@ class MetricsConfiguration {
     // select count(*) is very slow on large tables, so we use the stats table to provide an estimate
     private void registerTableMetric(JdbcOperations jdbcOperations, MeterRegistry registry, String tableName) {
         final String query = "select n_live_tup from pg_stat_all_tables where schemaname = ? and relname = ?";
-        ToDoubleFunction<DataSource> totalRows = ds -> jdbcOperations.queryForObject(query, Long.class,
-                dbProperties.getSchema(), tableName);
+        ToDoubleFunction<DataSource> totalRows =
+                ds -> jdbcOperations.queryForObject(query, Long.class, dbProperties.getSchema(), tableName);
 
         Gauge.builder("db.table.size", dataSource, totalRows)
                 .tag("db", dbProperties.getName())
@@ -91,7 +89,7 @@ class MetricsConfiguration {
         Collection<String> tableNames = new LinkedHashSet<>();
 
         try (Connection connection = dataSource.getConnection();
-             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
+                ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
 
             while (rs.next()) {
                 tableNames.add(rs.getString("TABLE_NAME"));

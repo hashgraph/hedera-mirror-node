@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 description = "Hedera Mirror Node Monitor"
@@ -33,10 +29,9 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.swagger:swagger-annotations")
-    implementation("javax.inject:javax.inject")
+    implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.apache.commons:commons-lang3")
     implementation("org.apache.commons:commons-math3")
     implementation("org.springdoc:springdoc-openapi-webflux-ui")
@@ -48,7 +43,8 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-kubernetes-fabric8-autoconfig")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+    runtimeOnly(
+        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("com.github.meanbeanlib:meanbean")
     testImplementation("io.fabric8:kubernetes-server-mock")
     testImplementation("io.projectreactor:reactor-test")
@@ -71,24 +67,24 @@ openApiGenerate {
             "openApiNullable" to "false",
             "performBeanValidation" to "true",
             "useBeanValidation" to "true",
-        )
-    )
+            "useJakartaEe" to "true",
+        ))
     generateApiTests.set(false)
     generateModelTests.set(false)
     generatorName.set("java")
     inputSpec.set(
-        rootDir.resolve("hedera-mirror-rest").resolve("api").resolve("v1").resolve("openapi.yml").absolutePath
-    )
+        rootDir
+            .resolve("hedera-mirror-rest")
+            .resolve("api")
+            .resolve("v1")
+            .resolve("openapi.yml")
+            .absolutePath)
     invokerPackage.set("${openApiPackage}.handler")
     library.set("webclient")
     modelPackage.set("${openApiPackage}.model")
     typeMappings.set(mapOf("Timestamp" to "String"))
 }
 
-tasks.withType<JavaCompile> {
-    dependsOn("openApiGenerate")
-}
+tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
 
-java.sourceSets["main"].java {
-    srcDir(openApiGenerate.outputDir)
-}
+java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }

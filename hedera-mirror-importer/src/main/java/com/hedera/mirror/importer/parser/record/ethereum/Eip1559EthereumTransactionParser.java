@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.ethereum;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,14 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.esaulpaugh.headlong.rlp.RLPDecoder;
-import javax.inject.Named;
+package com.hedera.mirror.importer.parser.record.ethereum;
 
+import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
+import jakarta.inject.Named;
 
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
@@ -34,14 +29,13 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
-        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
-                transactionBytes);
+        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
         var legacyRlpItem = decoder.next();
         var legacyRlpItemByte = legacyRlpItem.asByte();
         if (legacyRlpItemByte != EIP1559_TYPE_BYTE) {
-            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, String.format("1st byte was %s but should " +
-                            "be %s",
-                    legacyRlpItemByte, EIP1559_TYPE_BYTE));
+            throw new InvalidEthereumBytesException(
+                    TRANSACTION_TYPE_NAME,
+                    String.format("1st byte was %s but should " + "be %s", legacyRlpItemByte, EIP1559_TYPE_BYTE));
         }
 
         var eip1559RlpItem = decoder.next();
@@ -51,8 +45,11 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
 
         var rlpItems = eip1559RlpItem.asRLPList().elements();
         if (rlpItems.size() != EIP1559_TYPE_RLP_ITEM_COUNT) {
-            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, String.format("2nd RLPItem list size was " +
-                    "%s but should be %s", rlpItems.size(), EIP1559_TYPE_RLP_ITEM_COUNT));
+            throw new InvalidEthereumBytesException(
+                    TRANSACTION_TYPE_NAME,
+                    String.format(
+                            "2nd RLPItem list size was " + "%s but should be %s",
+                            rlpItems.size(), EIP1559_TYPE_RLP_ITEM_COUNT));
         }
 
         var ethereumTransaction = EthereumTransaction.builder()

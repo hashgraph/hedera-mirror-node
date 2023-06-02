@@ -1,26 +1,29 @@
-package com.hedera.mirror.monitor.publish.generator;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.publish.generator;
+
 import com.google.common.util.concurrent.RateLimiter;
+import com.hedera.mirror.monitor.expression.ExpressionConverter;
+import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
+import com.hedera.mirror.monitor.publish.PublishProperties;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,18 +31,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.monitor.expression.ExpressionConverter;
-import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
-import com.hedera.mirror.monitor.publish.PublishProperties;
-import com.hedera.mirror.monitor.publish.PublishRequest;
-import com.hedera.mirror.monitor.publish.PublishScenario;
-import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 @Log4j2
 @Named
@@ -59,16 +54,15 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     final List<ConfigurableTransactionGenerator> transactionGenerators;
     final AtomicInteger batchSize = new AtomicInteger(1);
 
-    public CompositeTransactionGenerator(ExpressionConverter expressionConverter,
-                                         ScenarioPropertiesAggregator scenarioPropertiesAggregator,
-                                         PublishProperties properties) {
+    public CompositeTransactionGenerator(
+            ExpressionConverter expressionConverter,
+            ScenarioPropertiesAggregator scenarioPropertiesAggregator,
+            PublishProperties properties) {
         this.properties = properties;
-        this.transactionGenerators = properties.getScenarios()
-                .values()
-                .stream()
+        this.transactionGenerators = properties.getScenarios().values().stream()
                 .filter(PublishScenarioProperties::isEnabled)
-                .map(scenarioProperties -> new ConfigurableTransactionGenerator(expressionConverter,
-                        scenarioPropertiesAggregator, scenarioProperties))
+                .map(scenarioProperties -> new ConfigurableTransactionGenerator(
+                        expressionConverter, scenarioPropertiesAggregator, scenarioProperties))
                 .collect(Collectors.toList());
         rebuild();
     }

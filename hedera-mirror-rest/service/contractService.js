@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -68,6 +64,7 @@ ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
 ${ContractResult.getFullName(ContractResult.SENDER_ID)},
 ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
 ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_NONCE)},
 ${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
 `;
 
@@ -90,18 +87,6 @@ class ContractService extends BaseService {
       left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.getFullName(Entity.ID)} = ${ContractResult.getFullName(ContractResult.CONTRACT_ID)}
    `;
-
-  static transactionTableCTE = `${Transaction.tableAlias} as (
-      select
-        ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
-      from ${Transaction.tableName}
-      where $where
-    )`;
-
-  static joinTransactionTable = `join ${Transaction.tableAlias}
-  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
-    Transaction.CONSENSUS_TIMESTAMP
-  )}`;
 
   static contractStateChangesQuery = `
     with ${ContractService.entityCTE}
@@ -129,7 +114,7 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
-    static contractStateTimestampQuery = `
+  static contractStateTimestampQuery = `
       with ${ContractService.entityCTE}
       select DISTINCT on (${ContractStateChange.SLOT}) 
             ${ContractStateChange.CONTRACT_ID},
@@ -228,28 +213,12 @@ class ContractService extends BaseService {
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
-    let joinTransactionTable = false;
     const transactionWhereClauses = [];
-    if (whereConditions.length) {
-      for (let condition of whereConditions) {
-        if (
-          condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
-          condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)
-        ) {
-          joinTransactionTable = true;
-          transactionWhereClauses.push(condition.replace(`${Transaction.tableAlias}.`, `${Transaction.tableName}.`));
-        }
-      }
-    }
 
     const query = [
       `with ${ContractService.entityCTE}`,
-      joinTransactionTable
-        ? `, ${ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))} `
-        : '',
       ContractService.contractResultsWithEvmAddressQuery,
       ContractService.joinContractResultWithEvmAddress,
-      joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
@@ -275,7 +244,12 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit, timestamp = false) {
+  async getContractStateByIdAndFilters(
+    whereConditions = [],
+    order = orderFilterValues.ASC,
+    limit = defaultLimit,
+    timestamp = false
+  ) {
     let orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
     const {where, params} = this.buildWhereSqlStatement(whereConditions);
     const limitClause = this.getLimitQuery(params.push(limit));
@@ -287,7 +261,7 @@ class ContractService extends BaseService {
         OrderSpec.from(ContractStateChange.SLOT, order),
         OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)
       );
-      
+
       query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
     }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');

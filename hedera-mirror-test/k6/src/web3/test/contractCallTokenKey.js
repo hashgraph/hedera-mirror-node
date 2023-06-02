@@ -24,7 +24,7 @@ const keyType = __ENV.KEY_TYPE;
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallTokenKey') // use unique scenario name among all tests
   .selector(selector)
-  .args([token,keyType])
+  .args([token, keyType])
   .to(contract)
   .build();
 

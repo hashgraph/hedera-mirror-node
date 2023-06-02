@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractID;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -30,6 +22,9 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hederahashgraph.api.proto.java.ContractID;
+import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
@@ -47,8 +42,10 @@ class ContractCallTransactionHandler implements TransactionHandler {
      */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
-        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
+        ContractID contractIdBody =
+                recordItem.getTransactionBody().getContractCall().getContractID();
+        ContractID contractIdReceipt =
+                recordItem.getTransactionRecord().getReceipt().getContractID();
         return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
     }
 
@@ -62,8 +59,8 @@ class ContractCallTransactionHandler implements TransactionHandler {
         if (recordItem.getTransactionBody().hasContractCall()) {
             var contractCallTransactionBody = recordItem.getTransactionBody().getContractCall();
             contractResult.setAmount(contractCallTransactionBody.getAmount());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(
-                    contractCallTransactionBody.getFunctionParameters()));
+            contractResult.setFunctionParameters(
+                    DomainUtils.toBytes(contractCallTransactionBody.getFunctionParameters()));
             contractResult.setGasLimit(contractCallTransactionBody.getGas());
         }
     }

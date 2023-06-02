@@ -6,9 +6,22 @@ on:
 
 jobs:
   publish:
+    strategy:
+      matrix:
+        module: [ graphql, grpc, importer, monitor, rest, rest-monitor, rosetta, test, web3 ]
+    env:
+      CONTEXT: hedera-mirror-${{ matrix.module }}
+      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Get version
+        run: echo "VERSION=$(grep -oP 'version=\K.+' gradle.properties)" >> $GITHUB_ENV
+
+      - name: Custom monitor path
+        if: matrix.module == 'rest-monitor'
+        run: echo "CONTEXT=hedera-mirror-rest/monitoring" >> $GITHUB_ENV
 
       - name: Install JDK
         uses: actions/setup-java@v3
@@ -27,10 +40,28 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
-      - name: Build and push images
+      - name: Build
         uses: gradle/gradle-build-action@v2
+        if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
         with:
-          arguments: dockerPush -PdockerTag=main,main-${{ github.sha }}
+          arguments: build -x test
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push images
+        uses: docker/build-push-action@v3
+        with:
+          build-args: VERSION=${{env.VERSION}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: ${{env.CONTEXT}}
+          platforms: linux/amd64, linux/arm64
+          push: true
+          tags: ${{env.IMAGE}}:${{env.VERSION}},${{env.IMAGE}}:main,${{env.IMAGE}}:main-${{ github.sha }}
 
   deploy:
     needs: publish

@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,33 +12,33 @@ package com.hedera.mirror.common.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.util;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.exception.ProtobufException;
+import com.hedera.services.stream.proto.HashObject;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
-import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
-import com.hedera.mirror.common.exception.ProtobufException;
-import com.hedera.services.stream.proto.HashObject;
 
 @CustomLog
 @UtilityClass
@@ -307,14 +302,16 @@ public class DomainUtils {
             try {
                 SUPPORTED_CLASS = Class.forName(ByteString.class.getName() + "$LiteralByteString");
             } catch (ClassNotFoundException e) {
-                throw new ProtobufException(String.format("Unable to locate class=%s", ByteString.class.getName() + "$LiteralByteString"));
+                throw new ProtobufException(
+                        String.format("Unable to locate class=%s", ByteString.class.getName() + "$LiteralByteString"));
             }
         }
 
         private byte[] bytes;
 
         private static boolean supports(ByteString byteString) {
-            return byteString.size() > UnsafeByteOutput.SIZE && byteString.getClass() == UnsafeByteOutput.SUPPORTED_CLASS;
+            return byteString.size() > UnsafeByteOutput.SIZE
+                    && byteString.getClass() == UnsafeByteOutput.SUPPORTED_CLASS;
         }
 
         @Override

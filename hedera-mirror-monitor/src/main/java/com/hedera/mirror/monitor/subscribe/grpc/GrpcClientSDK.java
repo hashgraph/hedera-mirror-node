@@ -1,35 +1,20 @@
-package com.hedera.mirror.monitor.subscribe.grpc;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
+package com.hedera.mirror.monitor.subscribe.grpc;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
@@ -39,6 +24,16 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 import com.hedera.mirror.monitor.util.Utility;
+import jakarta.inject.Named;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 @Log4j2
 @Named
@@ -65,8 +60,7 @@ class GrpcClientSDK implements GrpcClient {
     public Flux<SubscribeResponse> subscribe(GrpcSubscription subscription) {
         int clientIndex = secureRandom.nextInt(subscribeProperties.getClients());
         log.info("Starting '{}' scenario to client {}", subscription, clientIndex);
-        return clients.elementAt(clientIndex)
-                .flatMapMany(client -> subscribeToClient(client, subscription));
+        return clients.elementAt(clientIndex).flatMapMany(client -> subscribeToClient(client, subscription));
     }
 
     private Flux<SubscribeResponse> subscribeToClient(Client client, GrpcSubscription subscription) {
@@ -92,7 +86,9 @@ class GrpcClientSDK implements GrpcClient {
         Instant publishedTimestamp = Utility.getTimestamp(topicMessage.contents);
 
         if (publishedTimestamp == null) {
-            log.warn("{} Invalid published timestamp for message with consensus timestamp {}", subscription,
+            log.warn(
+                    "{} Invalid published timestamp for message with consensus timestamp {}",
+                    subscription,
                     topicMessage.consensusTimestamp);
         }
 

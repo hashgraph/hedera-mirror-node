@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,27 @@ package com.hedera.mirror.importer;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer;
+
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
-
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -36,7 +44,9 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -46,9 +56,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
-
-import com.hedera.mirror.importer.util.Utility;
-
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -68,6 +75,7 @@ public class TestUtils {
         }
     };
 
+    @SuppressWarnings("unchecked")
     public static <T> T clone(T object) {
         try {
             return (T) BEAN_UTILS.cloneBean(object);
@@ -83,7 +91,7 @@ public class TestUtils {
     /**
      * Dynamically lookup method references for every getter in object with the given return type
      */
-    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<R> returnType) {
+    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<?> returnType) {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         Class<?> objectClass = object.getClass();
         Collection<Supplier<R>> getters = new ArrayList<>();
@@ -100,8 +108,8 @@ public class TestUtils {
                 }
 
                 MethodType functionType = handle.type();
-                var function = (Function<O, R>) LambdaMetafactory.metafactory(lookup, "apply",
-                                methodType(Function.class), functionType.erase(), handle, functionType)
+                var function = (Function<O, R>) LambdaMetafactory.metafactory(
+                                lookup, "apply", methodType(Function.class), functionType.erase(), handle, functionType)
                         .getTarget()
                         .invokeExact();
                 getters.add(() -> function.apply(object));
@@ -114,9 +122,11 @@ public class TestUtils {
     }
 
     public static File getResource(String path) {
-        ClassLoader[] classLoaders = {Thread
-                .currentThread().getContextClassLoader(), Utility.class.getClassLoader(),
-                ClassLoader.getSystemClassLoader()};
+        ClassLoader[] classLoaders = {
+            Thread.currentThread().getContextClassLoader(),
+            Utility.class.getClassLoader(),
+            ClassLoader.getSystemClassLoader()
+        };
         URL url = null;
 
         for (ClassLoader classLoader : classLoaders) {
@@ -156,7 +166,7 @@ public class TestUtils {
 
     public TransactionHash getTransactionHashFromSqlFunction(JdbcTemplate jdbcTemplate, byte[] hash) {
         var sql = "SELECT * from get_transaction_info_by_hash(?)";
-        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), (Object) hash);
+        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), hash);
         return results.iterator().hasNext() ? results.iterator().next() : null;
     }
 
@@ -165,16 +175,38 @@ public class TestUtils {
         jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
     }
 
+    public static long plus(long timestamp, Duration delta) {
+        return timestamp + delta.toNanos();
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
-        return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
-                .setAccountNum(Long.parseLong(parts[2])).build();
+        return AccountID.newBuilder()
+                .setShardNum(Long.parseLong(parts[0]))
+                .setRealmNum(Long.parseLong(parts[1]))
+                .setAccountNum(Long.parseLong(parts[2]))
+                .build();
+    }
+
+    public static ContractID toContractId(Entity contract) {
+        var contractId =
+                ContractID.newBuilder().setShardNum(contract.getShard()).setRealmNum(contract.getRealm());
+
+        if (contract.getEvmAddress() != null) {
+            contractId.setEvmAddress(DomainUtils.fromBytes(contract.getEvmAddress()));
+        } else {
+            contractId.setContractNum(contract.getNum());
+        }
+
+        return contractId.build();
     }
 
     public TransactionID toTransactionId(String transactionId) {
         var parts = transactionId.split("-");
-        return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))
-                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
+        return TransactionID.newBuilder()
+                .setAccountID(toAccountId(parts[0]))
+                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1])))
+                .build();
     }
 
     public Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
@@ -185,7 +217,19 @@ public class TestUtils {
     }
 
     public Timestamp toTimestamp(long seconds, long nanoseconds) {
-        return Timestamp.newBuilder().setSeconds(seconds).setNanos((int) nanoseconds).build();
+        return Timestamp.newBuilder()
+                .setSeconds(seconds)
+                .setNanos((int) nanoseconds)
+                .build();
+    }
+
+    public TopicMessageLookup toTopicMessageLookup(String partition, TopicMessage first, TopicMessage last) {
+        return TopicMessageLookup.builder()
+                .partition(partition)
+                .sequenceNumberRange(Range.closedOpen(first.getSequenceNumber(), last.getSequenceNumber() + 1))
+                .timestampRange(Range.closedOpen(first.getConsensusTimestamp(), last.getConsensusTimestamp() + 1))
+                .topicId(first.getTopicId().getId())
+                .build();
     }
 
     public byte[] toByteArray(Key key) {
@@ -196,5 +240,22 @@ public class TestUtils {
         byte[] hashBytes = new byte[size];
         RANDOM.nextBytes(hashBytes);
         return hashBytes;
+    }
+
+    public static ConsensusNode nodeFromAccountId(String nodeAccountId) {
+        var entityId = EntityId.of(nodeAccountId, ACCOUNT);
+        return ConsensusNodeStub.builder()
+                .nodeAccountId(entityId)
+                .nodeId(entityId.getEntityNum() - 3)
+                .build();
+    }
+
+    public static Path nodePath(ConsensusNode node, PathType pathType, StreamType streamType) {
+        return pathType == PathType.ACCOUNT_ID
+                ? Path.of(streamType.getNodePrefix() + node.getNodeAccountId().toString())
+                : Path.of(
+                        node.getNodeAccountId().getShardNum().toString(),
+                        String.valueOf(node.getNodeId()),
+                        streamType.getNodeIdBasedSuffix());
     }
 }

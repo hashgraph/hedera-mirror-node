@@ -1,29 +1,23 @@
-package com.hedera.mirror.monitor.publish.transaction.token;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.publish.transaction.token;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
-
-import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -31,6 +25,8 @@ import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import org.junit.jupiter.api.Test;
 
 class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
@@ -64,7 +60,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithCustomFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setAdminKey(key.toString());
@@ -101,7 +97,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithNonFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setTreasuryAccountId(ACCOUNT_ID.toString());
@@ -129,7 +125,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<? extends TransactionSupplier<?>> getSupplierClass() {
         return TokenCreateTransactionSupplier.class;
     }
 }

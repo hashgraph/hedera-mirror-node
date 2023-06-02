@@ -26,7 +26,6 @@
 env.txt
 junit.xml
 node_modules/
-cache/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -150,3 +149,5 @@ build
 # Security
 .dccache
 snyk
+
+hedera-mirror-rest/report.html*

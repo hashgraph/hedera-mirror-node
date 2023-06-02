@@ -29,7 +29,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -57,7 +56,7 @@ func newCommonTransactionConstructor(
 	transaction interfaces.Transaction,
 	operationType string,
 ) commonTransactionConstructor {
-	defaultMaxFee := types.HbarAmount{Value: transaction.GetMaxTransactionFee().AsTinybar()}
+	defaultMaxFee := types.HbarAmount{Value: transaction.GetDefaultMaxTransactionFee().AsTinybar()}
 	transactionType := reflect.TypeOf(transaction).Elem().Name()
 	return commonTransactionConstructor{
 		defaultMaxFee:   defaultMaxFee,
@@ -137,130 +136,6 @@ func parseOperationMetadata(
 	}
 
 	return nil
-}
-
-func parsePayerMetadata(validate *validator.Validate, metadata map[string]interface{}) (
-	*hedera.AccountID,
-	*rTypes.Error,
-) {
-	payerMetadata := payerMetadata{}
-	if err := parseOperationMetadata(validate, &payerMetadata, metadata); err != nil {
-		return nil, err
-	}
-	if isZeroAccountId(*payerMetadata.Payer) {
-		return nil, errors.ErrInvalidAccount
-	}
-
-	return payerMetadata.Payer, nil
-}
-
-func parseTokenFreezeKyc(operationType string, transaction interfaces.Transaction) (
-	types.OperationSlice,
-	[]types.AccountId,
-	*rTypes.Error,
-) {
-	var account hedera.AccountID
-	var payer *hedera.AccountID
-	var tokenId hedera.TokenID
-
-	switch tx := transaction.(type) {
-	case *hedera.TokenFreezeTransaction:
-		if operationType != types.OperationTypeTokenFreeze {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = tx.GetTransactionID().AccountID
-		tokenId = tx.GetTokenID()
-	case *hedera.TokenUnfreezeTransaction:
-		if operationType != types.OperationTypeTokenUnfreeze {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = tx.GetTransactionID().AccountID
-		tokenId = tx.GetTokenID()
-	case *hedera.TokenGrantKycTransaction:
-		if operationType != types.OperationTypeTokenGrantKyc {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = tx.GetTransactionID().AccountID
-		tokenId = tx.GetTokenID()
-	case *hedera.TokenRevokeKycTransaction:
-		if operationType != types.OperationTypeTokenRevokeKyc {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = tx.GetTransactionID().AccountID
-		tokenId = tx.GetTokenID()
-	default:
-		return nil, nil, errors.ErrTransactionInvalidType
-	}
-
-	if isZeroAccountId(account) || isZeroTokenId(tokenId) || payer == nil || isZeroAccountId(*payer) {
-		return nil, nil, errors.ErrInvalidTransaction
-	}
-
-	accountId, err := types.NewAccountIdFromSdkAccountId(account)
-	if err != nil {
-		return nil, nil, errors.ErrInvalidAccount
-	}
-
-	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payer)
-	if err != nil {
-		return nil, nil, errors.ErrInvalidAccount
-	}
-
-	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
-	if err != nil {
-		return nil, nil, errors.ErrInvalidToken
-	}
-
-	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
-	operation := types.Operation{
-		AccountId: accountId,
-		Amount:    types.NewTokenAmount(domainToken, 0),
-		Metadata:  map[string]interface{}{"payer": payer.String()},
-		Type:      operationType,
-	}
-
-	return types.OperationSlice{operation}, []types.AccountId{payerAccountId}, nil
-}
-
-func preprocessTokenFreezeKyc(
-	operations types.OperationSlice,
-	operationType string,
-	validate *validator.Validate,
-) (*types.AccountId, *types.AccountId, *hedera.TokenID, *rTypes.Error) {
-	if rErr := validateOperations(operations, 1, operationType, false); rErr != nil {
-		return nil, nil, nil, rErr
-	}
-
-	operation := operations[0]
-	payer, rErr := parsePayerMetadata(validate, operation.Metadata)
-	if rErr != nil {
-		return nil, nil, nil, rErr
-	}
-	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payer)
-	if err != nil {
-		return nil, nil, nil, errors.ErrInvalidAccount
-	}
-
-	amount := operation.Amount
-	if amount.GetValue() != 0 {
-		return nil, nil, nil, errors.ErrInvalidOperationsAmount
-	}
-
-	tokenAmount, ok := amount.(*types.TokenAmount)
-	if !ok {
-		return nil, nil, nil, errors.ErrInvalidCurrency
-	}
-	tokenId := tokenAmount.GetSdkTokenId()
-
-	return &payerAccountId, &operation.AccountId, &tokenId, nil
 }
 
 func validateOperations(operations types.OperationSlice, size int, opType string, expectNilAmount bool) *rTypes.Error {

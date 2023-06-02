@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,26 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.batch;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.springframework.transaction.support.TransactionSynchronization.STATUS_COMMITTED;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
-
+import java.sql.Connection;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -35,17 +40,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
-import java.sql.Connection;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.transaction.support.TransactionSynchronization.STATUS_COMMITTED;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -135,11 +129,16 @@ class TransactionHashTxManagerTest extends IntegrationTest {
         transactionHashTxManager.getThreadConnections().put(UUID.randomUUID().toString(), threadState3);
         transactionHashTxManager.getThreadConnections().put(UUID.randomUUID().toString(), errorThreadState);
 
-        doThrow(new RuntimeException("Error thread")).when(errorThreadState.getConnection()).commit();
-        doThrow(new RuntimeException("Error thread")).when(errorThreadState.getConnection()).rollback();
+        doThrow(new RuntimeException("Error thread"))
+                .when(errorThreadState.getConnection())
+                .commit();
+        doThrow(new RuntimeException("Error thread"))
+                .when(errorThreadState.getConnection())
+                .rollback();
 
         transactionHashTxManager.afterCompletion(status);
-        Arrays.asList(threadState, threadState2, threadState3).forEach(state -> assertThreadState(state, status, state.getStatus()));
+        Arrays.asList(threadState, threadState2, threadState3)
+                .forEach(state -> assertThreadState(state, status, state.getStatus()));
         assertThreadState(errorThreadState, status, Integer.MAX_VALUE);
     }
 
@@ -149,8 +148,7 @@ class TransactionHashTxManagerTest extends IntegrationTest {
 
         if (triedStatus == STATUS_COMMITTED) {
             verify(threadState.getConnection(), times(1)).commit();
-        }
-        else {
+        } else {
             verify(threadState.getConnection(), times(1)).rollback();
         }
     }

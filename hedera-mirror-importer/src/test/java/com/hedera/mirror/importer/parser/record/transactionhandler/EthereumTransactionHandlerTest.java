@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,30 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -45,31 +50,25 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
-
 class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private static final ByteString ETHEREUM_HASH = DomainUtils.fromBytes(RandomUtils.nextBytes(32));
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     protected EthereumTransactionParser ethereumTransactionParser;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
+        doReturn(domainBuilder.ethereumTransaction(true).get())
+                .when(ethereumTransactionParser)
+                .decode(any());
         return new EthereumTransactionHandler(entityProperties, entityListener, ethereumTransactionParser);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        return TransactionBody.newBuilder().setEthereumTransaction(EthereumTransactionBody.newBuilder().build());
+        return TransactionBody.newBuilder()
+                .setEthereumTransaction(EthereumTransactionBody.newBuilder().build());
     }
 
     @Override
@@ -107,10 +106,12 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
         var expectedValue = new BigInteger(ethereumTransaction.getValue())
-                .divide(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
+                .divide(WEIBARS_TO_TINYBARS_BIGINT)
+                .toByteArray();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder.ethereumTransaction(create)
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
                 .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
                 .build();
@@ -134,8 +135,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
-        verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
-                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        verify(entityListener)
+                .onEntity(argThat(e -> e.getId() == senderId
+                        && e.getTimestampRange() == null
+                        && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test
@@ -144,7 +147,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder.ethereumTransaction(create)
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
                 .record(x -> x.getContractCreateResultBuilder().clearSenderId())
                 .build();
 
@@ -187,7 +191,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder.ethereumTransaction(create)
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
                 .record(x -> x.clearContractCreateResult().clearContractCallResult())
                 .status(ResponseCodeEnum.WRONG_NONCE)
                 .build();
@@ -205,7 +210,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder.ethereumTransaction(create)
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
                 .status(ResponseCodeEnum.INSUFFICIENT_GAS)
                 .build();
@@ -216,8 +222,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
-        verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
-                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        verify(entityListener)
+                .onEntity(argThat(e -> e.getId() == senderId
+                        && e.getTimestampRange() == null
+                        && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test
@@ -249,8 +257,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
     @Override
     @Test
-    void updateTransactionUnsuccessful() {
-    }
+    void updateTransactionUnsuccessful() {}
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {
         return create ? record.getContractCreateResult() : record.getContractCallResult();

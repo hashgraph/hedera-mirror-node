@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record.sidecar;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,24 @@ package com.hedera.mirror.importer.reader.record.sidecar;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import javax.inject.Named;
+package com.hedera.mirror.importer.reader.record.sidecar;
 
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import jakarta.inject.Named;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 
 @Named
 public class SidecarFileReaderImpl implements SidecarFileReader {
 
     @Override
     public void read(SidecarFile sidecarFile, StreamFileData streamFileData) {
-        try (var digestInputStream = new DigestInputStream(streamFileData.getInputStream(),
+        try (var digestInputStream = new DigestInputStream(
+                streamFileData.getInputStream(),
                 MessageDigest.getInstance(sidecarFile.getHashAlgorithm().getName()))) {
             var protoSidecarFile = com.hedera.services.stream.proto.SidecarFile.parseFrom(digestInputStream);
             var bytes = streamFileData.getBytes();

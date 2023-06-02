@@ -53,7 +53,8 @@
           ]
         }
       }
-    },{
+    },
+    {
       "url": "/api/v1/tokens/1500/nfts?nonce=2",
       "responseStatus": 400,
       "responseJson": {
@@ -65,7 +66,8 @@
           ]
         }
       }
-    },{
+    },
+    {
       "url": "/api/v1/tokens/1500/nfts?nonce=2",
       "responseStatus": 400,
       "responseJson": {
@@ -77,7 +79,8 @@
           ]
         }
       }
-    },{
+    },
+    {
       "url": "/api/v1/tokens/1500/nfts/3?account.id=5",
       "responseStatus": 400,
       "responseJson": {

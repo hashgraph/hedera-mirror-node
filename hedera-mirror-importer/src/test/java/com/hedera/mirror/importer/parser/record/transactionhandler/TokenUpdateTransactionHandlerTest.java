@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +25,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -44,17 +46,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.common.util.DomainUtils;
-
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private final static long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
+    private static final long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -87,12 +82,15 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionSuccessful() {
         // Given
         var recordItem = recordItemBuilder.tokenUpdate().build();
-        var tokenId = EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
+        var tokenId =
+                EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
         var transactionBody = recordItem.getTransactionBody().getTokenUpdate();
         var timestamp = recordItem.getConsensusTimestamp();
         var token = ArgumentCaptor.forClass(Token.class);
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         when(entityIdService.lookup(any(AccountID.class)))
                 .thenReturn(Optional.of(EntityIdEndec.decode(10, EntityType.ACCOUNT)));
 
@@ -119,7 +117,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionMinimal() {
         // Given
-        var recordItem = recordItemBuilder.tokenUpdate()
+        var recordItem = recordItemBuilder
+                .tokenUpdate()
                 .transactionBody(b -> b.clearFeeScheduleKey()
                         .clearFreezeKey()
                         .clearKycKey()
@@ -168,13 +167,17 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.tokenUpdate()
+        var recordItem = recordItemBuilder
+                .tokenUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
                 .build();
-        var tokenId = EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
+        var tokenId =
+                EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -185,13 +188,17 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @MethodSource("provideEntities")
     void updateTransactionWithEmptyEntity(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.tokenUpdate()
+        var recordItem = recordItemBuilder
+                .tokenUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
                 .build();
-        var tokenId = EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
+        var tokenId =
+                EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId)).get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.ofNullable(entityId));
         var expectedId = entityId == null ? null : entityId.getId();

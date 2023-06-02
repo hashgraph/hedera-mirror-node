@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import javax.inject.Named;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.FileAppendTransaction;
 import com.hedera.hashgraph.sdk.FileCreateTransaction;
@@ -32,6 +25,8 @@ import com.hedera.hashgraph.sdk.FileInfoQuery;
 import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class FileClient extends AbstractNetworkClient {
@@ -58,10 +53,8 @@ public class FileClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateFile(FileId fileId, byte[] contents) {
         var memo = getMemo("Update file");
-        FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
-                .setFileId(fileId)
-                .setFileMemo(memo)
-                .setTransactionMemo(memo);
+        FileUpdateTransaction fileUpdateTransaction =
+                new FileUpdateTransaction().setFileId(fileId).setFileMemo(memo).setTransactionMemo(memo);
 
         int count = 0;
         if (contents != null) {
@@ -88,9 +81,8 @@ public class FileClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
         var memo = getMemo("Delete file");
-        FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
-                .setFileId(fileId)
-                .setTransactionMemo(memo);
+        FileDeleteTransaction fileUpdateTransaction =
+                new FileDeleteTransaction().setFileId(fileId).setTransactionMemo(memo);
 
         var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
         log.info("Deleted file {} with memo '{}' via {}", fileId, memo, response.getTransactionId());

@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -26,7 +22,7 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
-import {isV2Schema, valueToBuffer} from "./testutils.js";
+import {isV2Schema, valueToBuffer} from './testutils.js';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -1020,6 +1016,7 @@ const contractResultDefaults = {
   payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   transaction_hash: Buffer.from([...Array(32).keys()]),
   transaction_index: 1,
+  transaction_nonce: 0,
   transaction_result: 22,
 };
 

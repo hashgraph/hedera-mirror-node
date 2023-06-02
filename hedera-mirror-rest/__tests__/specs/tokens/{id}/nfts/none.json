@@ -75,7 +75,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/3500/nfts", "/api/v1/tokens/0.3500/nfts", "/api/v1/tokens/0.0.3500/nfts"],
+  "urls": [
+    "/api/v1/tokens/3500/nfts",
+    "/api/v1/tokens/0.3500/nfts",
+    "/api/v1/tokens/0.0.3500/nfts"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [],

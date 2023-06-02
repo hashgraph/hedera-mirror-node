@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.token;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,23 @@ package com.hedera.mirror.common.domain.token;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.common.domain.token;
+
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.UpsertColumn;
+import com.hedera.mirror.common.domain.Upsertable;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,23 +36,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.domain.UpsertColumn;
-import com.hedera.mirror.common.domain.Upsertable;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.util.DomainUtils;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
 @Data
 @Entity
 @NoArgsConstructor
-@TypeDef(
-        name = "pgsql_enum",
-        typeClass = PostgreSQLEnumType.class
-)
 @Upsertable
 public class Token {
     @EmbeddedId
@@ -90,7 +80,7 @@ public class Token {
     private byte[] pauseKey;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private TokenPauseStatusEnum pauseStatus;
 
     @ToString.Exclude
@@ -98,7 +88,7 @@ public class Token {
 
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private TokenSupplyTypeEnum supplyType;
 
     private String symbol;
@@ -111,7 +101,7 @@ public class Token {
 
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private TokenTypeEnum type;
 
     @ToString.Exclude

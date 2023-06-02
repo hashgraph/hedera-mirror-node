@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.mapper;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.graphql.mapper;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.mapper;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static com.hedera.mirror.graphql.mapper.CommonMapper.CONTRACT_ID;
@@ -28,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.graphql.viewmodel.EntityId;
+import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -38,10 +37,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
-
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.graphql.viewmodel.EntityId;
-import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 
 class CommonMapperTest {
 
@@ -58,8 +53,11 @@ class CommonMapperTest {
     @Test
     void mapEntityId() {
         var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3", UNKNOWN);
-        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null)).isNull();
-        assertThat(commonMapper.mapEntityId(entityId)).usingRecursiveComparison().isEqualTo(toEntityId(1L, 2L, 3L));
+        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null))
+                .isNull();
+        assertThat(commonMapper.mapEntityId(entityId))
+                .usingRecursiveComparison()
+                .isEqualTo(toEntityId(1L, 2L, 3L));
     }
 
     @Test
@@ -72,7 +70,9 @@ class CommonMapperTest {
     void mapKey() {
         var bytes = ByteString.copyFromUtf8("public key");
         var encoded = "cHVibGljIGtleQ==";
-        var keyContractId = Key.newBuilder().setContractID(ContractID.newBuilder().setContractNum(100L)).build()
+        var keyContractId = Key.newBuilder()
+                .setContractID(ContractID.newBuilder().setContractNum(100L))
+                .build()
                 .toByteArray();
         var keyDelegatableContractId = Key.newBuilder()
                 .setDelegatableContractId(ContractID.newBuilder().setContractNum(100L))
@@ -103,11 +103,11 @@ class CommonMapperTest {
         assertThat(commonMapper.mapKey(keyDelegatableContractId))
                 .usingRecursiveComparison()
                 .isEqualTo(Map.of("DELEGATABLE_CONTRACT_ID", toEntityId(0L, 0L, 100L)));
-        assertThat(commonMapper.mapKey(keyList)).isEqualTo(Map.of(KEYS, List.of(Map.of("ECDSA_SECP256K1", encoded),
-                Map.of("ED25519", encoded))));
-        assertThat(commonMapper.mapKey(keyThreshold)).isEqualTo(Map.of(
-                THRESHOLD, 1,
-                KEYS, List.of(Map.of("ECDSA_SECP256K1", encoded), Map.of("ED25519", encoded))));
+        assertThat(commonMapper.mapKey(keyList))
+                .isEqualTo(Map.of(KEYS, List.of(Map.of("ECDSA_SECP256K1", encoded), Map.of("ED25519", encoded))));
+        assertThat(commonMapper.mapKey(keyThreshold))
+                .isEqualTo(Map.of(
+                        THRESHOLD, 1, KEYS, List.of(Map.of("ECDSA_SECP256K1", encoded), Map.of("ED25519", encoded))));
     }
 
     @Test

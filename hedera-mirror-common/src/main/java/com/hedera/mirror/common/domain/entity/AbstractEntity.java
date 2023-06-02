@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,27 +12,14 @@ package com.hedera.mirror.common.domain.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.common.domain.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
@@ -46,24 +28,34 @@ import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
+import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import java.sql.Date;
+import java.util.concurrent.TimeUnit;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Type;
 
 @Data
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@TypeDef(
-        defaultForType = Range.class,
-        typeClass = PostgreSQLGuavaRangeType.class
-)
-@TypeDef(
-        name = "pgsql_enum",
-        typeClass = PostgreSQLEnumType.class
-)
 @Upsertable(history = true)
 public abstract class AbstractEntity implements History {
 
     public static final long ACCOUNT_ID_CLEARED = 0L;
     public static final long NODE_ID_CLEARED = -1L;
+
+    public static final long DEFAULT_EXPIRY_TIMESTAMP =
+            TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
 
     @Column(updatable = false)
     @ToString.Exclude
@@ -73,7 +65,9 @@ public abstract class AbstractEntity implements History {
 
     private Long autoRenewPeriod;
 
-    @UpsertColumn(coalesce = """
+    @UpsertColumn(
+            coalesce =
+                    """
             case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
                  else null
             end
@@ -137,10 +131,11 @@ public abstract class AbstractEntity implements History {
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
+    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
+    @Type(PostgreSQLEnumType.class)
     private EntityType type;
 
     public void addBalance(Long balance) {
@@ -168,10 +163,23 @@ public abstract class AbstractEntity implements History {
         return new EntityId(shard, realm, num, type);
     }
 
+    @JsonIgnore
+    public long getEffectiveExpiration() {
+        if (expirationTimestamp != null) {
+            return expirationTimestamp;
+        }
+
+        if (createdTimestamp != null && autoRenewPeriod != null) {
+            return createdTimestamp + TimeUnit.SECONDS.toNanos(autoRenewPeriod);
+        }
+
+        return DEFAULT_EXPIRY_TIMESTAMP;
+    }
+
     @SuppressWarnings("java:S1610")
     // Necessary since Lombok doesn't use our setters for builders
-    public abstract static class AbstractEntityBuilder<C extends AbstractEntity, B extends AbstractEntityBuilder<C,
-            B>> {
+    public abstract static class AbstractEntityBuilder<
+            C extends AbstractEntity, B extends AbstractEntityBuilder<C, B>> {
         public B key(byte[] key) {
             this.key = key;
             this.publicKey = DomainUtils.getPublicKey(key);

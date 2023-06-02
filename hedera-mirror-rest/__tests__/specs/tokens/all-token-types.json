@@ -61,7 +61,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens?type=ALL", "/api/v1/tokens?type=all", "/api/v1/tokens"],
+  "urls": [
+    "/api/v1/tokens?type=ALL",
+    "/api/v1/tokens?type=all",
+    "/api/v1/tokens"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [

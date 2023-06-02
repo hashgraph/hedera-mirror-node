@@ -9,12 +9,15 @@ if [[ "${CI}" == "true" ]]; then
 fi
 
 rootDir=$(pwd)
-#filesStr="$(git diff --name-only --cached --diff-filter=ACMRTUB HEAD)"
-#files=($filesStr)
+filesStr="$(git diff --name-only --cached --diff-filter=ACMRTUB HEAD)"
+files=($filesStr)
+echo "Running Spotless to format ${#files[@]} changed files"
 
-#echo "Running Spotless to format ${#files[@]} changed files"
-#./gradlew spotlessApply
+if [[ ${#files[@]} -gt 0 ]]; then
+  ./gradlew spotlessApply
 
-#for file in ${files[@]}; do
-  #git add "${rootDir}/${file}"
-#done
+  for file in ${files[@]}; do
+    git add "${rootDir}/${file}"
+  done
+fi
+

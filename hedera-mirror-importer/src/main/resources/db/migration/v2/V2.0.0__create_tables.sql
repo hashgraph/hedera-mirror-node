@@ -151,6 +151,7 @@ create table if not exists contract_result
     sender_id            bigint       null,
     transaction_hash     bytea        null,
     transaction_index    integer      null,
+    transaction_nonce    integer      not null,
     transaction_result   smallint     not null
 ) partition by range (consensus_timestamp);
 comment on table contract_result is 'Crypto contract execution results';
@@ -617,6 +618,15 @@ create table if not exists topic_message
     valid_start_timestamp  bigint
 ) partition by range (consensus_timestamp);
 comment on table topic_message is 'Topic entity sequenced messages';
+
+-- topic_message_lookup
+create table if not exists topic_message_lookup (
+    partition             text      not null,
+    sequence_number_range int8range not null,
+    timestamp_range       int8range not null,
+    topic_id              bigint    not null
+);
+comment on table topic_message_lookup is 'Topic message lookup';
 
 -- transaction
 create table if not exists transaction

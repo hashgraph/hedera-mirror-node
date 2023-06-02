@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,42 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Iterables;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
+import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -70,45 +87,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
-import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
-import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
-import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
-import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-
 @CustomLog
 @ExtendWith(MockitoExtension.class)
-public abstract class AbstractDownloaderTest {
+public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
     private static final int S3_PROXY_PORT = 8001;
-    private static final Pattern STREAM_FILENAME_INSTANT_PATTERN = Pattern.compile(
-            "^\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}(\\.\\d{1,9})?Z");
+    private static final Pattern STREAM_FILENAME_INSTANT_PATTERN =
+            Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}(\\.\\d{1,9})?Z");
 
-    @Mock(lenient = true)
+    @Mock(strictness = LENIENT)
     protected ConsensusNodeService consensusNodeService;
 
     @Mock
@@ -126,7 +124,7 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    protected Downloader downloader;
+    protected Downloader<T, ?> downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
@@ -139,6 +137,9 @@ public abstract class AbstractDownloaderTest {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
+
+    @Captor
+    private ArgumentCaptor<T> streamFileCaptor;
 
     @TempDir
     private Path dataPath;
@@ -159,8 +160,7 @@ public abstract class AbstractDownloaderTest {
             File file = p.toFile();
             if (file.isFile()) {
                 try (FileOutputStream fileOutputStream = new FileOutputStream(file, true);
-                     FileChannel channel = fileOutputStream.getChannel()
-                ) {
+                        FileChannel channel = fileOutputStream.getChannel()) {
                     if (channel.size() <= 48) {
                         channel.truncate(channel.size() / 2);
                     } else {
@@ -175,15 +175,19 @@ public abstract class AbstractDownloaderTest {
 
     protected void loadAddressBook(String filename) {
         try {
-            Path path = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename)).toPath();
+            Path path = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename))
+                    .toPath();
             byte[] bytes = Files.readAllBytes(path);
             var addressBook = NodeAddressBook.parseFrom(bytes);
-            nodes = addressBook.getNodeAddressList()
-                    .stream()
+            nodes = addressBook.getNodeAddressList().stream()
                     .map(e -> {
-                        var entry = AddressBookEntry.builder().publicKey(e.getRSAPubKey()).build();
-                        var id = e.hasNodeAccountId() ? EntityId.of(e.getNodeAccountId()) :
-                                EntityId.of(e.getMemo().toStringUtf8(), FILE);
+                        var entry = AddressBookEntry.builder()
+                                .publicKey(e.getRSAPubKey())
+                                .build();
+                        @SuppressWarnings("deprecation")
+                        var id = e.hasNodeAccountId()
+                                ? EntityId.of(e.getNodeAccountId())
+                                : EntityId.of(e.getMemo().toStringUtf8(), FILE);
                         return ConsensusNodeStub.builder()
                                 .nodeAccountId(id)
                                 .nodeId(id.getEntityNum() - 3)
@@ -206,7 +210,7 @@ public abstract class AbstractDownloaderTest {
         return Collections.emptyMap();
     }
 
-    protected abstract Downloader getDownloader();
+    protected abstract Downloader<T, ?> getDownloader();
 
     protected abstract Path getTestDataDir();
 
@@ -239,8 +243,8 @@ public abstract class AbstractDownloaderTest {
                 .region(Region.of(commonDownloaderProperties.getRegion()))
                 .build();
 
-        signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
-                new SignatureFileReaderV5(), new ProtoSignatureFileReader());
+        signatureFileReader = new CompositeSignatureFileReader(
+                new SignatureFileReaderV2(), new SignatureFileReaderV5(), new ProtoSignatureFileReader());
         var consensusValidator = new ConsensusValidatorImpl(commonDownloaderProperties);
         nodeSignatureVerifier = new NodeSignatureVerifier(consensusValidator);
         downloader = getDownloader();
@@ -272,12 +276,11 @@ public abstract class AbstractDownloaderTest {
 
     private void startS3Proxy() throws Exception {
         Properties properties = new Properties();
-        properties.setProperty("jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
+        properties.setProperty(
+                "jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
 
-        BlobStoreContext context = ContextBuilder
-                .newBuilder("filesystem")
-                .overrides(properties)
-                .build(BlobStoreContext.class);
+        BlobStoreContext context =
+                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class);
 
         s3Proxy = S3Proxy.builder()
                 .blobStore(context.getBlobStore())
@@ -286,16 +289,18 @@ public abstract class AbstractDownloaderTest {
                 .build();
         s3Proxy.start();
 
-        await("S3Proxy").dontCatchUncaughtExceptions()
+        await("S3Proxy")
+                .dontCatchUncaughtExceptions()
                 .atMost(Duration.ofMillis(500))
                 .pollDelay(Duration.ofMillis(1))
                 .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
     }
 
-    @Test
-    @DisplayName("Download and verify files")
-    void download() {
+    @ParameterizedTest(name = "Download and verify files with path type: {0}")
+    @EnumSource(value = PathType.class, mode = Mode.EXCLUDE, names = "NODE_ID")
+    void download(PathType pathType) {
         mirrorProperties.setStartBlockNumber(null);
+        commonDownloaderProperties.setPathType(pathType);
 
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
@@ -311,7 +316,8 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setStartBlockNumber(null);
 
         fileCopier.copy();
-        var nodePath = fileCopier.getTo().resolve(downloaderProperties.getStreamType().getNodePrefix() + "0.0.6");
+        var nodePath =
+                fileCopier.getTo().resolve(downloaderProperties.getStreamType().getNodePrefix() + "0.0.6");
         FileUtils.deleteDirectory(nodePath.toFile());
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -353,7 +359,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Missing signatures")
     void missingSignatures() {
-        fileCopier.filterFiles(file -> !isSigFile(file.toPath())).copy();  // only copy data files
+        fileCopier.filterFiles(file -> !isSigFile(file.toPath())).copy(); // only copy data files
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
         verifyUnsuccessful();
@@ -434,26 +440,6 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("overwrite on download")
-    void overwriteOnDownload() throws Exception {
-        downloaderProperties.setWriteSignatures(true);
-        mirrorProperties.setStartBlockNumber(null);
-        fileCopier.copy();
-        expectLastStreamFile(Instant.EPOCH);
-        downloader.download();
-        verifyForSuccess();
-
-        Mockito.reset(dateRangeProcessor);
-        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getStreamPath())
-                .filter(this::isSigFile)
-                .forEach(AbstractDownloaderTest::corruptFile);
-
-        downloader.download();
-        verifyForSuccess();
-    }
-
-    @Test
     @DisplayName("Different filenames, same interval")
     void differentFilenamesSameInterval() {
         differentFilenames(Duration.ofNanos(1L));
@@ -512,18 +498,11 @@ public abstract class AbstractDownloaderTest {
     }
 
     @ParameterizedTest(name = "startDate set to {0}s after {1}")
-    @CsvSource({
-            "-1,file1",
-            "0,file1",
-            "1,file1",
-            "0,file2",
-            "1,file2"
-    })
+    @CsvSource({"-1,file1", "0,file1", "1,file1", "0,file2", "1,file2"})
     void startDate(long seconds, String fileChoice) {
         Instant startDate = chooseFileInstant(fileChoice).plusSeconds(seconds);
         expectLastStreamFile(null, 100L, startDate);
-        List<String> expectedFiles = instantFilenamePairs
-                .stream()
+        List<String> expectedFiles = instantFilenamePairs.stream()
                 .filter(pair -> pair.getLeft().isAfter(startDate))
                 .map(Pair::getRight)
                 .collect(Collectors.toList());
@@ -535,18 +514,17 @@ public abstract class AbstractDownloaderTest {
 
     @ParameterizedTest(name = "endDate set to {0}s after {1}")
     @CsvSource({
-            "-1, file1",
-            "0, file1",
-            "1, file1",
-            "0, file2",
-            "1, file2",
+        "-1, file1",
+        "0, file1",
+        "1, file1",
+        "0, file2",
+        "1, file2",
     })
     void endDate(long seconds, String fileChoice) {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
         mirrorProperties.setStartBlockNumber(null);
         commonDownloaderProperties.setBatchSize(1);
-        List<String> expectedFiles = instantFilenamePairs
-                .stream()
+        List<String> expectedFiles = instantFilenamePairs.stream()
                 .filter(pair -> !pair.getLeft().isAfter(mirrorProperties.getEndDate()))
                 .map(Pair::getRight)
                 .collect(Collectors.toList());
@@ -565,7 +543,8 @@ public abstract class AbstractDownloaderTest {
         corruptedNodeAccountId = nodes.iterator().next().getNodeAccountId();
         mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
-        Files.walk(s3Path).filter(this::isSigFile)
+        Files.walk(s3Path)
+                .filter(this::isSigFile)
                 .filter(p -> p.toString().contains(corruptedNodeAccountId.toString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
         expectLastStreamFile(Instant.EPOCH);
@@ -578,7 +557,8 @@ public abstract class AbstractDownloaderTest {
         corruptedNodeAccountId = nodes.iterator().next().getNodeAccountId();
         mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
-        Files.walk(s3Path).filter(Predicate.not(this::isSigFile))
+        Files.walk(s3Path)
+                .filter(Predicate.not(this::isSigFile))
                 .filter(p -> p.toString().contains(corruptedNodeAccountId.toString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
         expectLastStreamFile(Instant.EPOCH);
@@ -602,7 +582,8 @@ public abstract class AbstractDownloaderTest {
     @Test
     void noDataFiles() throws IOException {
         fileCopier.copy();
-        Files.walk(s3Path).filter(Files::isRegularFile)
+        Files.walk(s3Path)
+                .filter(Files::isRegularFile)
                 .filter(Predicate.not(this::isSigFile))
                 .map(Path::toFile)
                 .forEach(FileUtils::deleteQuietly);
@@ -615,7 +596,8 @@ public abstract class AbstractDownloaderTest {
     @Test
     void noSigFiles() throws IOException {
         fileCopier.copy();
-        Files.walk(s3Path).filter(Files::isRegularFile)
+        Files.walk(s3Path)
+                .filter(Files::isRegularFile)
                 .filter(this::isSigFile)
                 .map(Path::toFile)
                 .forEach(FileUtils::deleteQuietly);
@@ -694,23 +676,22 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void verifyForSuccess(List<String> files, boolean expectEnabled) {
-        verifyStreamFiles(files);
+        verifyStreamFiles(files, s -> {});
         assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
     }
 
     protected void verifyStreamFiles(List<String> files) {
-        verifyStreamFiles(files, s -> {
-        });
+        verifyStreamFiles(files, s -> {});
     }
 
-    @SuppressWarnings("java:S6103")
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
-        var captor = ArgumentCaptor.forClass(StreamFile.class);
+    @SuppressWarnings({"java:S6103"})
+    protected void verifyStreamFiles(List<String> files, Consumer<T> extraAssert) {
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
 
-        verify(streamFileNotifier, times(files.size())).verified(captor.capture());
-        var streamFileAssert = assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
+        verify(streamFileNotifier, times(files.size())).verified(streamFileCaptor.capture());
+        assertThat(streamFileCaptor.getAllValues())
+                .allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> {
                     var expected = expectedFileIndexMap.get(s.getName());
                     if (expected != null) {
@@ -719,15 +700,12 @@ public abstract class AbstractDownloaderTest {
                         return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
                     }
                 })
-                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
-
-        for (var extraAssert : extraAsserts) {
-            streamFileAssert.allSatisfy(extraAssert::accept);
-        }
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
+                .allSatisfy(t -> extraAssert.accept(t));
 
         if (!files.isEmpty()) {
             var lastFilename = files.get(files.size() - 1);
-            var lastStreamFile = (Optional<StreamFile>) downloader.lastStreamFile.get();
+            var lastStreamFile = downloader.lastStreamFile.get();
             assertThat(lastStreamFile)
                     .isNotEmpty()
                     .get()
@@ -754,10 +732,7 @@ public abstract class AbstractDownloaderTest {
 
         file1Instant = new StreamFilename(file1).getInstant();
         file2Instant = new StreamFilename(file2).getInstant();
-        instantFilenamePairs = List.of(
-                Pair.of(file1Instant, file1),
-                Pair.of(file2Instant, file2)
-        );
+        instantFilenamePairs = List.of(Pair.of(file1Instant, file1), Pair.of(file2Instant, file2));
     }
 
     /**
@@ -768,7 +743,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
-        StreamFile streamFile = streamType.newStreamFile();
+        var streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);

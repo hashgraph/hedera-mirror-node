@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.downloader;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,21 @@ package com.hedera.mirror.importer.downloader;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.downloader;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Collection;
-import javax.inject.Named;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import jakarta.inject.Named;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Collection;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
@@ -100,8 +95,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        throw new SignatureVerificationException(String.format("Consensus not reached for file %s with %d/%d stake",
-                filename, debugStake, totalStake));
+        throw new SignatureVerificationException(
+                String.format("Consensus not reached for file %s with %d/%d stake", filename, debugStake, totalStake));
     }
 
     private boolean canReachConsensus(long stake, BigDecimal stakeRequiredForConsensus) {
@@ -110,8 +105,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
 
     private BigDecimal getStakeRequiredForConsensus(long totalStake) {
         if (totalStake == 0) {
-            throw new SignatureVerificationException("Invalid total staking weight. Consensus not " +
-                    "reached");
+            throw new SignatureVerificationException("Invalid total staking weight. Consensus not " + "reached");
         }
 
         return BigDecimal.valueOf(totalStake)

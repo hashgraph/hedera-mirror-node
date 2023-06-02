@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,19 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
+import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,17 +45,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.util.Version;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.SidecarFile;
-import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {
 
-    private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
+    private static final Collection<RecordFile> ALL_RECORD_FILES =
+            TestRecordFiles.getAll().values();
 
     protected RecordFileReader recordFileReader;
     protected Path testPath;
@@ -91,7 +87,8 @@ abstract class RecordFileReaderTest {
                             .map(RecordItem::getHapiVersion)
                             .collectList()
                             .block();
-                    assertThat(hapiVersions).isNotEmpty()
+                    assertThat(hapiVersions)
+                            .isNotEmpty()
                             .allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
 
                     List<Long> timestamps = actual.getItems()
@@ -107,8 +104,10 @@ abstract class RecordFileReaderTest {
                             .collectList()
                             .block();
                     assertThat(transactionIndexes).first().isEqualTo(0);
-                    assertThat(transactionIndexes).isEqualTo(IntStream.range(0, recordFile.getCount()
-                            .intValue()).boxed().collect(Collectors.toList()));
+                    assertThat(transactionIndexes)
+                            .isEqualTo(IntStream.range(0, recordFile.getCount().intValue())
+                                    .boxed()
+                                    .collect(Collectors.toList()));
                     assertThat(transactionIndexes).doesNotHaveDuplicates().isSorted();
                 });
     }
@@ -208,7 +207,9 @@ abstract class RecordFileReaderTest {
     }
 
     protected Path getTestFile(RecordFile recordFile) {
-        return testPath.resolve("v" + recordFile.getVersion()).resolve("record0.0.3").resolve(recordFile.getName());
+        return testPath.resolve("v" + recordFile.getVersion())
+                .resolve("record0.0.3")
+                .resolve(recordFile.getName());
     }
 
     protected abstract RecordFileReader getRecordFileReader();

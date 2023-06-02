@@ -60,14 +60,14 @@ hpa:
   behavior: {}
   enabled: true
   maxReplicas: 15
-  metrics:  # Using a custom metric exposed via the prometheus adapter.
-    - type: Pods
-      pods:
-        metric:
-          name: requests_per_second
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
         target:
-          type: AverageValue
-          averageValue: 300
+          type: Utilization
+          averageUtilization: 80
+
   minReplicas: 1
 
 image:
@@ -136,6 +136,8 @@ monitor:
       pullPolicy: IfNotPresent
       repository: busybox
       tag: latest
+
+nameOverride: ""
 
 nodeSelector: {}
 
@@ -206,7 +208,7 @@ prometheusRules:
 
   RestRequestLatency:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value | humanizeDuration }} to generate a response"
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value }} ms to generate a response"
       summary: "Mirror REST API request latency exceeds 2s"
     enabled: true
     expr: sum(rate(api_request_duration_milliseconds_sum{container="rest"}[5m])) by (namespace, pod) / sum(rate(api_request_duration_milliseconds_count{container="rest"}[5m])) by (namespace, pod) > 2000
@@ -227,10 +229,10 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 750m
+    cpu: 1100m
     memory: 350Mi
   requests:
-    cpu: 300m
+    cpu: 700m
     memory: 64Mi
 
 revisionHistoryLimit: 3
@@ -258,6 +260,9 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   checks:
     accounts: true
     transactions: true

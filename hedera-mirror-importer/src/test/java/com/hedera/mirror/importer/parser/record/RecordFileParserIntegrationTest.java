@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,38 +12,31 @@ package com.hedera.mirror.importer.parser.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+package com.hedera.mirror.importer.parser.record;
 
-import com.google.protobuf.ByteString;
-import java.io.File;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileParserIntegrationTest extends IntegrationTest {
@@ -59,11 +47,12 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     private final RecordFileReader recordFileReader;
     private final RecordFileRepository recordFileRepository;
     private final TransactionRepository transactionRepository;
+
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_00.419072Z.rcd")
     private final Path recordFilePath1;
+
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_05.249678Z.rcd")
     private final Path recordFilePath2;
-    private final RecordItemBuilder recordItemBuilder;
 
     private RecordFileDescriptor recordFileDescriptor1;
     private RecordFileDescriptor recordFileDescriptor2;
@@ -79,13 +68,13 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     @Test
     void parse() {
         // when
-        recordFileParser.parse(recordFileDescriptor1.getRecordFile());
+        recordFileParser.parse(recordFileDescriptor1.recordFile());
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when parse second file
-        recordFileParser.parse(recordFileDescriptor2.getRecordFile());
+        recordFileParser.parse(recordFileDescriptor2.recordFile());
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1, recordFileDescriptor2);
@@ -94,14 +83,14 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     @Test
     void rollback() {
         // when
-        RecordFile recordFile = recordFileDescriptor1.getRecordFile();
+        RecordFile recordFile = recordFileDescriptor1.recordFile();
         recordFileParser.parse(recordFile);
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        RecordFile recordFile2 = recordFileDescriptor2.getRecordFile();
+        RecordFile recordFile2 = recordFileDescriptor2.recordFile();
         recordFile2.setItems(recordFile.getItems()); // Re-processing same transactions should result in duplicate keys
         Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile2));
 
@@ -113,29 +102,26 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     void verifyFinalDatabaseState(RecordFileDescriptor... recordFileDescriptors) {
         int cryptoTransferCount = 0;
         int entityCount = 0;
+        var expectedRecordFiles = new ArrayList<RecordFile>();
         int transactionCount = 0;
-        String lastHash = "";
 
         for (RecordFileDescriptor descriptor : recordFileDescriptors) {
-            cryptoTransferCount += descriptor.getCryptoTransferCount();
-            entityCount += descriptor.getEntityCount();
-            transactionCount += descriptor.getRecordFile().getCount().intValue();
-            lastHash = descriptor.getRecordFile().getHash();
+            cryptoTransferCount += descriptor.cryptoTransferCount();
+            entityCount += descriptor.entityCount();
+            transactionCount += descriptor.recordFile().getCount().intValue();
+            expectedRecordFiles.add(descriptor.recordFile());
         }
         assertEquals(transactionCount, transactionRepository.count());
         assertEquals(cryptoTransferCount, cryptoTransferRepository.count());
         assertEquals(entityCount, entityRepository.count());
 
-        Iterable<RecordFile> recordFiles = recordFileRepository.findAll();
-        assertThat(recordFiles).usingElementComparatorOnFields("name").
-                containsExactlyInAnyOrderElementsOf(
-                        Arrays.stream(recordFileDescriptors).map(RecordFileDescriptor::getRecordFile).collect(
-                                Collectors.toList()))
+        assertThat(recordFileRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedRecordFiles)
                 .allSatisfy(rf -> {
-                    assertThat(rf.getLoadStart()).isGreaterThan(0L);
-                    assertThat(rf.getLoadEnd()).isGreaterThan(0L);
+                    assertThat(rf.getLoadStart()).isPositive();
+                    assertThat(rf.getLoadEnd()).isPositive();
                     assertThat(rf.getLoadEnd()).isGreaterThanOrEqualTo(rf.getLoadStart());
-                }).last().extracting(RecordFile::getHash).isEqualTo(lastHash);
+                });
     }
 
     RecordFile recordFile(File file, long index) {
@@ -145,10 +131,5 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         return recordFile;
     }
 
-    @lombok.Value
-    static class RecordFileDescriptor {
-        int cryptoTransferCount;
-        int entityCount;
-        RecordFile recordFile;
-    }
+    record RecordFileDescriptor(int cryptoTransferCount, int entityCount, RecordFile recordFile) {}
 }

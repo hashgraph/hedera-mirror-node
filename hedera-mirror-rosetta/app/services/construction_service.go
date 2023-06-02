@@ -444,8 +444,8 @@ func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operatio
 		}
 
 		var amount types.Amount
+		var rErr *rTypes.Error
 		if operation.Amount != nil {
-			var rErr *rTypes.Error
 			if amount, rErr = types.NewAmount(operation.Amount); rErr != nil {
 				return nil, rErr
 			}
@@ -558,6 +558,11 @@ func NewConstructionAPIService(
 		hederaClient = hedera.ClientForNetwork(nodes)
 	} else if hederaClient, err = hedera.ClientForName(network); err != nil {
 		return nil, err
+	}
+
+	if !baseService.IsOnline() {
+		// cancel network update for the offline mode server
+		hederaClient.CancelScheduledNetworkUpdate()
 	}
 
 	// disable SDK auto retry

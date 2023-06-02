@@ -11,7 +11,8 @@
         "sender_id": 8001,
         "transaction_result": 33,
         "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-        "transaction_index": 1
+        "transaction_index": 1,
+        "transaction_nonce": 0
       }
     ],
     "recordFiles": [
@@ -62,7 +63,7 @@
     "chain_id": "0x",
     "contract_id": "0.0.5001",
     "created_contract_ids": [],
-    "error_message": null,
+    "error_message": "CONTRACT_REVERT_EXECUTED",
     "address": "0x0000000000000000000000000000000000001389",
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",

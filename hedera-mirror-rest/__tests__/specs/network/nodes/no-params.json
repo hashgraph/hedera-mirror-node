@@ -58,7 +58,7 @@
         "memo": "0.0.4",
         "node_id": 1,
         "node_account_id": 4,
-        "stake": 9223372036854775807
+        "stake": 10
       }
     ],
     "addressbookserviceendpoints": [
@@ -173,7 +173,7 @@
             "port": 50216
           }
         ],
-        "stake": 9223372036854775807,
+        "stake": null,
         "stake_not_rewarded": null,
         "stake_rewarded": null,
         "staking_period": null,

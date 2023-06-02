@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,18 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.config;
 
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.persistence.EntityManager;
 import java.io.IOException;
 import java.util.stream.Collectors;
-import javax.persistence.EntityManager;
 import kotlin.text.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -35,11 +32,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.RetryListener;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.ResourceUtils;
-
-import com.hedera.mirror.common.domain.DomainBuilder;
 
 @TestConfiguration
 public class IntegrationTestConfiguration {
@@ -64,14 +59,16 @@ public class IntegrationTestConfiguration {
     @Bean("cleanupSql")
     @Profile("v2")
     String getV2CleanupSql(JdbcOperations jdbcOperations) {
-        var tables = jdbcOperations.query("""
-                select table_name
-                from information_schema.tables
-                left join time_partitions on partition::text = table_name::text
-                where table_schema = 'public' and table_type <> 'VIEW'
-                  and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
-                order by table_name
-                """, (rs, rowNum) -> rs.getString(1));
+        var tables = jdbcOperations.query(
+                """
+                        select table_name
+                        from information_schema.tables
+                        left join time_partitions on partition::text = table_name::text
+                        where table_schema = 'public' and table_type <> 'VIEW'
+                          and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
+                        order by table_name
+                        """,
+                (rs, rowNum) -> rs.getString(1));
         return tables.stream().map((t) -> String.format("delete from %s;", t)).collect(Collectors.joining("\n"));
     }
 
@@ -81,7 +78,7 @@ public class IntegrationTestConfiguration {
     }
 
     // Records retry attempts made via Spring @Retryable or RetryTemplate for verification in tests
-    public class RetryRecorder extends RetryListenerSupport {
+    public class RetryRecorder implements RetryListener {
 
         private final Multiset<Class<? extends Throwable>> retries = ConcurrentHashMultiset.create();
 
@@ -97,6 +94,5 @@ public class IntegrationTestConfiguration {
         public void reset() {
             retries.clear();
         }
-
     }
 }

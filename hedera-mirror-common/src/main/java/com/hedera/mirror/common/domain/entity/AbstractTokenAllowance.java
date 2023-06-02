@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain.entity;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,57 +12,54 @@ package com.hedera.mirror.common.domain.entity;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.TypeDef;
-
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.Convert;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
+import java.io.Serializable;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractTokenAllowance.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder
-@TypeDef(
-        defaultForType = Range.class,
-        typeClass = PostgreSQLGuavaRangeType.class
-)
 @Upsertable(history = true)
 public abstract class AbstractTokenAllowance implements History {
 
     private long amount;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long owner;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long spender;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
+    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     private long tokenId;
 
     @JsonIgnore

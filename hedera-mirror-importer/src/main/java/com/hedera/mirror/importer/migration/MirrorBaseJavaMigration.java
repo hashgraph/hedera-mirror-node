@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
@@ -33,10 +29,6 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
 
     protected final Logger log = LogManager.getLogger(getClass());
 
-    public boolean isBaselineMigration() {
-        return false;
-    }
-
     protected MigrationVersion getMinimumVersion() {
         return null;
     }
@@ -48,8 +40,11 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
         if (skipMigration(configuration)) {
             var version = getVersion();
             if (version != null) {
-                log.info("Skip migration {} as it does not fall between the baseline: {} and target: {} range",
-                        version, configuration.getBaselineVersion(), configuration.getTarget().getVersion());
+                log.info(
+                        "Skip migration {} as it does not fall between the baseline: {} and target: {} range",
+                        version,
+                        configuration.getBaselineVersion(),
+                        configuration.getTarget().getVersion());
             }
 
             return;
@@ -115,10 +110,5 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
     @Override
     public Integer getChecksum() {
         return null;
-    }
-
-    @Override
-    public boolean isUndo() {
-        return false;
     }
 }

@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.service;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,27 +12,11 @@ package com.hedera.mirror.grpc.service;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.common.base.Stopwatch;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.PostConstruct;
-import javax.inject.Named;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.validation.annotation.Validated;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
-import reactor.retry.Repeat;
+package com.hedera.mirror.grpc.service;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcProperties;
@@ -48,6 +27,22 @@ import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Named;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.validation.annotation.Validated;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
+import reactor.retry.Repeat;
 
 @Named
 @Log4j2
@@ -75,7 +70,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
 
-        Flux<TopicMessage> flux = topicMessageRetriever.retrieve(filter, true)
+        Flux<TopicMessage> flux = topicMessageRetriever
+                .retrieve(filter, true)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLast()) > 0); // Ignore duplicates
 
@@ -87,17 +83,21 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             flux = flux.take(filter.getLimit());
         }
 
-        return topicExists(filter).thenMany(flux.doOnNext(topicContext::onNext)
-                .doOnSubscribe(s -> subscriberCount.incrementAndGet())
-                .doFinally(s -> subscriberCount.decrementAndGet())
-                .doFinally(topicContext::finished));
+        return topicExists(filter)
+                .thenMany(flux.doOnNext(topicContext::onNext)
+                        .doOnSubscribe(s -> subscriberCount.incrementAndGet())
+                        .doFinally(s -> subscriberCount.decrementAndGet())
+                        .doFinally(topicContext::finished));
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
         var topicId = filter.getTopicId();
         return Mono.justOrEmpty(entityRepository.findById(topicId.getId()))
-                .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new EntityNotFoundException(topicId)) :
-                        Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
+                .switchIfEmpty(
+                        grpcProperties.isCheckTopicExists()
+                                ? Mono.error(new EntityNotFoundException(topicId))
+                                : Mono.just(
+                                        Entity.builder().type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
@@ -109,15 +109,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLast();
-        long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
+        long limit =
+                filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
         Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
 
-        TopicMessageFilter newFilter = filter.toBuilder()
-                .limit(limit)
-                .startTime(startTime)
-                .build();
+        TopicMessageFilter newFilter =
+                filter.toBuilder().limit(limit).startTime(startTime).build();
 
-        return topicListener.listen(newFilter)
+        return topicListener
+                .listen(newFilter)
                 .takeUntilOther(pastEndTime(topicContext))
                 .concatMap(t -> missingMessages(topicContext, t));
     }
@@ -127,8 +127,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             return Flux.never();
         }
 
-        return Flux.empty().repeatWhen(Repeat.create(r -> !topicContext.isComplete(), Long.MAX_VALUE)
-                .fixedBackoff(grpcProperties.getEndTimeInterval()));
+        return Flux.empty()
+                .repeatWhen(Repeat.create(r -> !topicContext.isComplete(), Long.MAX_VALUE)
+                        .fixedBackoff(grpcProperties.getEndTimeInterval()));
     }
 
     /**
@@ -146,8 +147,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         // fail fast on out of order messages
         if (numMissingMessages < -1) {
-            throw new IllegalStateException(String
-                    .format("Encountered out of order missing messages, last: %s, current: %s", last, current));
+            throw new IllegalStateException(
+                    String.format("Encountered out of order missing messages, last: %s, current: %s", last, current));
         }
 
         // ignore duplicate message already processed by larger subscribe context
@@ -162,12 +163,14 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
-        log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
-                newFilter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
+        log.info(
+                "[{}] Querying topic {} for missing messages between sequence {} and {}",
+                newFilter.getSubscriberId(),
+                topicContext.getTopicId(),
+                last.getSequenceNumber(),
                 current.getSequenceNumber());
 
-        return topicMessageRetriever.retrieve(newFilter, false)
-                .concatWithValues(current);
+        return topicMessageRetriever.retrieve(newFilter, false).concatWithValues(current);
     }
 
     @Data
@@ -206,7 +209,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         boolean isNext(TopicMessage topicMessage) {
-            return getLast() == null || topicMessage.getSequenceNumber() == getLast().getSequenceNumber() + 1;
+            return getLast() == null
+                    || topicMessage.getSequenceNumber() == getLast().getSequenceNumber() + 1;
         }
 
         private int rate() {
@@ -215,20 +219,30 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void finished(SignalType signalType) {
-            log.info("[{}] Topic {} {} with {} messages in {} ({}/s)",
-                    filter.getSubscriberId(), signalType, topicId, count, stopwatch, rate());
+            log.info(
+                    "[{}] Topic {} {} with {} messages in {} ({}/s)",
+                    filter.getSubscriberId(),
+                    signalType,
+                    topicId,
+                    count,
+                    stopwatch,
+                    rate());
         }
 
         void onNext(TopicMessage topicMessage) {
             if (!isNext(topicMessage)) {
-                throw new IllegalStateException(String
-                        .format("Encountered out of order messages, last: %s, current: %s", last, topicMessage));
+                throw new IllegalStateException(
+                        String.format("Encountered out of order messages, last: %s, current: %s", last, topicMessage));
             }
 
             last.set(topicMessage);
             count.incrementAndGet();
             if (log.isTraceEnabled()) {
-                log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count,
+                log.trace(
+                        "[{}] Topic {} received message #{}: {}",
+                        filter.getSubscriberId(),
+                        topicId,
+                        count,
                         topicMessage);
             }
         }

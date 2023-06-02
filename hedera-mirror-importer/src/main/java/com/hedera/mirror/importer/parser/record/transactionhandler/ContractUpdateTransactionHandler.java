@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
-
-import com.hederahashgraph.api.proto.java.ContractID;
-import javax.inject.Named;
-import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -36,6 +28,9 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.ContractID;
+import jakarta.inject.Named;
+import lombok.CustomLog;
 
 @CustomLog
 @Named
@@ -56,8 +51,10 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
      */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
-        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
+        ContractID contractIdBody =
+                recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
+        ContractID contractIdReceipt =
+                recordItem.getTransactionRecord().getReceipt().getContractID();
         return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
     }
 
@@ -73,10 +70,13 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         if (transactionBody.hasAutoRenewAccountId()) {
             // Allow clearing of the autoRenewAccount by allowing it to be set to 0
-            entityIdService.lookup(transactionBody.getAutoRenewAccountId())
+            entityIdService
+                    .lookup(transactionBody.getAutoRenewAccountId())
                     .map(EntityId::getId)
-                    .ifPresentOrElse(entity::setAutoRenewAccountId,
-                            () -> log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                    .ifPresentOrElse(
+                            entity::setAutoRenewAccountId,
+                            () -> log.error(
+                                    RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
                                     recordItem.getConsensusTimestamp()));
         }
 
@@ -89,7 +89,8 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasMaxAutomaticTokenAssociations()) {
-            entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations().getValue());
+            entity.setMaxAutomaticTokenAssociations(
+                    transactionBody.getMaxAutomaticTokenAssociations().getValue());
         }
 
         switch (transactionBody.getMemoFieldCase()) {

@@ -64,7 +64,7 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/8", 
+      "url": "/api/v1/accounts/8",
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],

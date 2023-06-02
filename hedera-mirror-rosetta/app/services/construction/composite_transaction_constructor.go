@@ -130,18 +130,6 @@ func NewTransactionConstructor() TransactionConstructor {
 
 	c.addConstructor(newCryptoCreateTransactionConstructor())
 	c.addConstructor(newCryptoTransferTransactionConstructor())
-	c.addConstructor(newTokenAssociateTransactionConstructor())
-	c.addConstructor(newTokenBurnTransactionConstructor())
-	c.addConstructor(newTokenCreateTransactionConstructor())
-	c.addConstructor(newTokenDeleteTransactionConstructor())
-	c.addConstructor(newTokenDissociateTransactionConstructor())
-	c.addConstructor(newTokenFreezeTransactionConstructor())
-	c.addConstructor(newTokenGrantKycTransactionConstructor())
-	c.addConstructor(newTokenRevokeKycTransactionConstructor())
-	c.addConstructor(newTokenMintTransactionConstructor())
-	c.addConstructor(newTokenUnfreezeTransactionConstructor())
-	c.addConstructor(newTokenUpdateTransactionConstructor())
-	c.addConstructor(newTokenWipeTransactionConstructor())
 
 	return c
 }

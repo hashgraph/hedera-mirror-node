@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,17 @@ package com.hedera.mirror.importer.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import jakarta.annotation.Resource;
 import java.util.List;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
-
-import com.hedera.mirror.common.domain.entity.NftAllowance;
 
 class NftAllowanceRepositoryTest extends AbstractRepositoryTest {
 
@@ -50,8 +45,8 @@ class NftAllowanceRepositoryTest extends AbstractRepositoryTest {
         NftAllowance nftAllowance = domainBuilder.nftAllowance().persist();
 
         jdbcOperations.update("insert into nft_allowance_history select * from nft_allowance");
-        List<NftAllowance> nftAllowanceHistory = jdbcOperations.query("select * from nft_allowance_history",
-                ROW_MAPPER);
+        List<NftAllowance> nftAllowanceHistory =
+                jdbcOperations.query("select * from nft_allowance_history", ROW_MAPPER);
 
         assertThat(nftAllowanceRepository.findAll()).containsExactly(nftAllowance);
         assertThat(nftAllowanceHistory).containsExactly(nftAllowance);

@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish.transaction.consensus;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,23 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.nio.charset.StandardCharsets;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
+package com.hedera.mirror.monitor.publish.transaction.consensus;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import com.hedera.mirror.monitor.util.Utility;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.nio.charset.StandardCharsets;
+import lombok.Data;
+import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<TopicMessageSubmitTransaction> {
@@ -59,8 +54,10 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     public TopicMessageSubmitTransaction get() {
         return new TopicMessageSubmitTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setMessage(!message.isEmpty() ? message.getBytes(StandardCharsets.UTF_8) : Utility
-                        .generateMessage(messageSize))
+                .setMessage(
+                        !message.isEmpty()
+                                ? message.getBytes(StandardCharsets.UTF_8)
+                                : Utility.generateMessage(messageSize))
                 .setTopicId(getConsensusTopicId());
     }
 }

@@ -8,7 +8,12 @@
   "setup": {
     "sql": {
       "pathprefix": "data/db/stateproof",
-      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file.sql", "transaction.sql"]
+      "scripts": [
+        "address_book.sql",
+        "address_book_entry.sql",
+        "record_file.sql",
+        "transaction.sql"
+      ]
     }
   },
   "url": "/api/v1/transactions/0.0.111152-1570800932-629451400/stateproof",

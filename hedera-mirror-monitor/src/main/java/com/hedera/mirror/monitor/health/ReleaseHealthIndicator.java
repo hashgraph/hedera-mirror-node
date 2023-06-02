@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.health;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,16 @@ package com.hedera.mirror.monitor.health;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.monitor.health;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.inject.Named;
 import lombok.AccessLevel;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -44,10 +40,10 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
 
+    static final String DEPENDENCY_NOT_READY = "DependencyNotReady";
     private static final Mono<Health> DOWN = Mono.just(Health.down().build());
     private static final Mono<Health> UNKNOWN = Mono.just(Health.unknown().build());
     private static final Mono<Health> UP = Mono.just(Health.up().build());
-
     private static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     private static final ResourceDefinitionContext RESOURCE_DEFINITION_CONTEXT = new ResourceDefinitionContext.Builder()
             .withGroup("helm.toolkit.fluxcd.io")
@@ -56,7 +52,6 @@ public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
             .withPlural("helmreleases")
             .withVersion("v2beta1")
             .build();
-
     private final KubernetesClient client;
     private final ReleaseHealthProperties properties;
 
@@ -88,14 +83,30 @@ public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
 
     @SuppressWarnings("unchecked")
     private Mono<Health> getHelmReleaseReadyStatus(String release) {
-        var resource = client.genericKubernetesResources(RESOURCE_DEFINITION_CONTEXT).withName(release).get();
+        var resource = client.genericKubernetesResources(RESOURCE_DEFINITION_CONTEXT)
+                .withName(release)
+                .get();
         var status = (Map<String, Object>) resource.getAdditionalProperties().get("status");
         var conditions = (List<Map<String, String>>) status.get("conditions");
         return conditions.stream()
-                .filter(condition -> StringUtils.equals(condition.get("type"), "Ready") &&
-                        StringUtils.equals(condition.get("status"), "True"))
+                .filter(condition -> StringUtils.equals(condition.get("type"), "Ready"))
                 .findFirst()
-                .map(condition -> UP)
-                .orElse(DOWN);
+                .map(this::mapStatus)
+                .orElse(DOWN)
+                .doOnNext(h -> log.info("Release status: {}", h));
+    }
+
+    private Mono<Health> mapStatus(Map<String, String> condition) {
+        var status = condition.get("status");
+        if ("True".equals(status)) {
+            return UP;
+        }
+
+        var reason = condition.get("reason");
+        if (DEPENDENCY_NOT_READY.equals(reason)) {
+            return UNKNOWN;
+        }
+
+        return DOWN;
     }
 }

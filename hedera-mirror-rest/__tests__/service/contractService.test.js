@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
@@ -56,6 +52,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
             cr.sender_id,
             cr.transaction_hash,
             cr.transaction_index,
+            cr.transaction_nonce,
             cr.transaction_result,
             coalesce(e.evm_address,'') as evm_address
         from contract_result cr
@@ -93,6 +90,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
         cr.sender_id,
         cr.transaction_hash,
         cr.transaction_index,
+        cr.transaction_nonce,
         cr.transaction_result,
         coalesce(e.evm_address,'') as evm_address
     from contract_result cr
@@ -105,7 +103,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 
   test('Verify transaction.nonce condition', async () => {
-    const additionalConditions = ['cr.contract_id = $1', 't.nonce = $2'];
+    const additionalConditions = ['cr.contract_id = $1', 'cr.transaction_nonce = $2'];
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       additionalConditions,
       [2, 10],
@@ -113,8 +111,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-    with entity as (select evm_address,id from entity),
-        t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
+    with entity as (select evm_address,id from entity)
     select
         cr.amount,
         cr.bloom,
@@ -131,12 +128,12 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
         cr.sender_id,
         cr.transaction_hash,
         cr.transaction_index,
+        cr.transaction_nonce,
         cr.transaction_result,
         coalesce(e.evm_address,'') as evm_address
     from contract_result cr
     left join entity e on e.id = cr.contract_id
-    join t on cr.consensus_timestamp = t.consensus_timestamp
-    where cr.contract_id = $1 and t.nonce = $2
+    where cr.contract_id = $1 and cr.transaction_nonce = $2
     order by cr.consensus_timestamp asc
     limit $3
     `;
@@ -145,7 +142,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 
   test('Verify transaction.index condition', async () => {
-    const additionalConditions = ['cr.contract_id = $1', 't.index = $2'];
+    const additionalConditions = ['cr.contract_id = $1', 'cr.transaction_index = $2'];
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       additionalConditions,
       [2, 10],
@@ -153,8 +150,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-    with  entity as (select evm_address,id from entity),
-        t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
+    with  entity as (select evm_address,id from entity)
     select
         cr.amount,
         cr.bloom,
@@ -171,12 +167,12 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
         cr.sender_id,
         cr.transaction_hash,
         cr.transaction_index,
+        cr.transaction_nonce,
         cr.transaction_result,
         coalesce(e.evm_address,'') as evm_address
     from contract_result cr
     left join entity e on e.id = cr.contract_id
-    join t on cr.consensus_timestamp = t.consensus_timestamp
-    where cr.contract_id = $1 and t.index = $2
+    where cr.contract_id = $1 and cr.transaction_index = $2
     order by cr.consensus_timestamp asc
     limit $3
     `;
@@ -476,6 +472,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         consensus_timestamp: 1,
         function_parameters: '0x0D',
         amount: 10,
+        transaction_nonce: 1,
       },
     ]);
 
@@ -486,6 +483,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         consensusTimestamp: 1,
         gasLimit: 1000,
         gasUsed: null,
+        transactionNonce: 1,
       },
     ];
 
@@ -501,6 +499,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
+        transaction_nonce: 2,
       },
       {
         contract_id: 2,
@@ -508,6 +507,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
+        transaction_nonce: 3,
       },
     ]);
 
@@ -519,6 +519,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         gasLimit: 1000,
         gasUsed: null,
         payerAccountId: 123,
+        transactionNonce: 3,
       },
     ];
 
@@ -534,6 +535,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
+        transaction_nonce: 4,
       },
       {
         contract_id: 2,
@@ -541,6 +543,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
+        transaction_nonce: 5,
       },
       {
         contract_id: 3,
@@ -548,6 +551,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
+        transaction_nonce: 6,
       },
       {
         contract_id: 3,
@@ -555,6 +559,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
+        transaction_nonce: 7,
       },
       {
         contract_id: 3,
@@ -562,6 +567,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
+        transaction_nonce: 8,
       },
     ]);
 
@@ -570,11 +576,13 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         contractId: 3,
         consensusTimestamp: 3,
         payerAccountId: 124,
+        transactionNonce: 6,
       },
       {
         contractId: 3,
         consensusTimestamp: 4,
         payerAccountId: 124,
+        transactionNonce: 7,
       },
     ];
 
@@ -687,6 +695,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       function_parameters: '0x0D',
       amount: 10,
       payer_account_id: '5',
+      transaction_nonce: 9,
     },
     {
       contract_id: 3,
@@ -694,6 +703,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       function_parameters: '0x0D',
       amount: 15,
       payer_account_id: '5',
+      transaction_nonce: 10,
     },
   ];
   const expected = [
@@ -707,6 +717,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       gasLimit: 1000,
       gasUsed: null,
       payerAccountId: 5,
+      transactionNonce: 9,
     },
     {
       amount: 15,
@@ -718,6 +729,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       gasLimit: 1000,
       gasUsed: null,
       payerAccountId: 5,
+      transactionNonce: 10,
     },
   ];
 
@@ -733,6 +745,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
         'gasLimit',
         'gasUsed',
         'payerAccountId',
+        'transactionNonce',
       ])
     );
   };
@@ -1185,6 +1198,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: successTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      transaction_nonce: 11,
       gasLimit: 1000,
     },
     {
@@ -1194,6 +1208,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: duplicateTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      transaction_nonce: 12,
       gasLimit: 1000,
     },
     {
@@ -1203,6 +1218,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: wrongNonceTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      transaction_nonce: 13,
       gasLimit: 1000,
     },
     {
@@ -1212,6 +1228,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: successTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      transaction_nonce: 14,
       gasLimit: 1000,
     },
     {
@@ -1219,6 +1236,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       payerAccountId: 10,
       type: contractCreateType,
       transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
+      transaction_nonce: 15,
       gasLimit: 1000,
     },
   ];
@@ -1405,23 +1423,31 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
 
   test('Multiple rows match with timestamp', async () => {
     await integrationDomainOps.loadContractStateChanges(contractStateChanges);
-    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 4},
-      {query: 'consensus_timestamp <= ', param: 5}],
+    const res = await ContractService.getContractStateByIdAndFilters(
+      [
+        {query: 'contract_id =', param: 4},
+        {query: 'consensus_timestamp <= ', param: 5},
+      ],
       orderFilterValues.ASC,
       100,
-      true);
+      true
+    );
 
     expect(res.length).toEqual(3);
   });
 
   test('Multiple rows match with timestamp and slot', async () => {
     await integrationDomainOps.loadContractStateChanges(contractStateChanges);
-    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 4},
-      {query: 'consensus_timestamp <= ', param: 5},
-      {query: 'slot =', param: Buffer.from('03','hex')}],
+    const res = await ContractService.getContractStateByIdAndFilters(
+      [
+        {query: 'contract_id =', param: 4},
+        {query: 'consensus_timestamp <= ', param: 5},
+        {query: 'slot =', param: Buffer.from('03', 'hex')},
+      ],
       orderFilterValues.ASC,
       100,
-      true);
+      true
+    );
 
     expect(res.length).toEqual(1);
   });

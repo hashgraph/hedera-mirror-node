@@ -24,7 +24,7 @@ const serialNumber = __ENV.SERIAL_NUMBER;
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallTokenURI') // use unique scenario name among all tests
   .selector(selector)
-  .args([token,serialNumber])
+  .args([token, serialNumber])
   .to(contract)
   .build();
 

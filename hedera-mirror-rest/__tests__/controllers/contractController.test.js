@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {Range} from 'pg-range';
@@ -271,7 +267,6 @@ describe('formatContractRow', () => {
 });
 
 describe('getContractByIdOrAddressContractEntityQuery', () => {
-
   const queryForTable = ({table, extraConditions, columnName}) => {
     return `select ${contracts.contractWithBytecodeSelectFields}
             from ${table} e
@@ -434,7 +429,7 @@ describe('getLastNonceParamValue', () => {
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [primaryContractFilter, 't.nonce = $2'],
+    conditions: [primaryContractFilter, 'cr.transaction_nonce = $2'],
     params: [defaultContractId, 0],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
@@ -507,7 +502,7 @@ describe('extractContractResultsByIdQuery', () => {
         conditions: [
           primaryContractFilter,
           'cr.payer_account_id > $2',
-          't.nonce = $3',
+          'cr.transaction_nonce = $3',
           'cr.payer_account_id in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],
@@ -540,7 +535,7 @@ describe('extractContractResultsByIdQuery', () => {
         conditions: [
           primaryContractFilter,
           'cr.consensus_timestamp > $2',
-          't.nonce = $3',
+          'cr.transaction_nonce = $3',
           'cr.consensus_timestamp in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],

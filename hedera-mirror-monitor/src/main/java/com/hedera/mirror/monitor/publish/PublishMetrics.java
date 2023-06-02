@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.publish;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,25 +12,25 @@ package com.hedera.mirror.monitor.publish;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.publish;
+
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
+import jakarta.inject.Named;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 
 @Log4j2
 @Named
@@ -92,7 +87,8 @@ public class PublishMetrics {
 
     private TimeGauge newDurationMetric(Tags tags) {
         TimeUnit unit = TimeUnit.NANOSECONDS;
-        return TimeGauge.builder(METRIC_DURATION, tags.getScenario(), unit, s -> s.getElapsed().toNanos())
+        return TimeGauge.builder(METRIC_DURATION, tags.getScenario(), unit, s -> s.getElapsed()
+                        .toNanos())
                 .description("The amount of time this scenario has been publishing transactions")
                 .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
@@ -124,8 +120,7 @@ public class PublishMetrics {
     public void status() {
         if (publishProperties.isEnabled()) {
             var running = new AtomicBoolean(false);
-            durationGauges.keySet()
-                    .stream()
+            durationGauges.keySet().stream()
                     .map(Tags::getScenario)
                     .distinct()
                     .filter(PublishScenario::isRunning)
@@ -140,8 +135,13 @@ public class PublishMetrics {
 
     private void status(PublishScenario scenario) {
         String elapsed = DurationToStringSerializer.convert(scenario.getElapsed());
-        log.info("Scenario {} published {} transactions in {} at {}/s. Errors: {}",
-                scenario, scenario.getCount(), elapsed, scenario.getRate(), scenario.getErrors());
+        log.info(
+                "Scenario {} published {} transactions in {} at {}/s. Errors: {}",
+                scenario,
+                scenario.getCount(),
+                elapsed,
+                scenario.getRate(),
+                scenario.getErrors());
     }
 
     @Value

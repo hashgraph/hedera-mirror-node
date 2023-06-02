@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.listener;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,29 +12,31 @@ package com.hedera.mirror.grpc.listener;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.grpc.listener;
+
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.repository.TopicMessageRepository;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Named;
 import lombok.Data;
 import org.reactivestreams.Subscription;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.retry.Repeat;
 import reactor.util.retry.Retry;
-
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
 public class SharedPollingTopicListener extends SharedTopicListener {
@@ -48,9 +45,11 @@ public class SharedPollingTopicListener extends SharedTopicListener {
     private final TopicMessageRepository topicMessageRepository;
     private final Flux<TopicMessage> topicMessages;
 
-    public SharedPollingTopicListener(ListenerProperties listenerProperties,
-                                      TopicMessageRepository topicMessageRepository,
-                                      InstantToLongConverter instantToLongConverter) {
+    public SharedPollingTopicListener(
+            ListenerProperties listenerProperties,
+            ObservationRegistry observationRegistry,
+            TopicMessageRepository topicMessageRepository,
+            InstantToLongConverter instantToLongConverter) {
         super(listenerProperties);
         this.topicMessageRepository = topicMessageRepository;
         this.instantToLongConverter = instantToLongConverter;
@@ -60,12 +59,10 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         PollingContext context = new PollingContext();
 
         topicMessages = Flux.defer(() -> poll(context).subscribeOn(scheduler))
-                .repeatWhen(Repeat.times(Long.MAX_VALUE)
-                        .fixedBackoff(interval)
-                        .withBackoffScheduler(scheduler))
+                .repeatWhen(Repeat.times(Long.MAX_VALUE).fixedBackoff(interval).withBackoffScheduler(scheduler))
                 .name(METRIC)
                 .tag(METRIC_TAG, "shared poll")
-                .metrics()
+                .tap(Micrometer.observation(observationRegistry))
                 .doOnCancel(() -> log.info("Cancelled polling"))
                 .doOnError(t -> log.error("Error polling the database", t))
                 .doOnSubscribe(context::onStart)
@@ -84,7 +81,8 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         }
 
         Pageable pageable = PageRequest.of(0, listenerProperties.getMaxPageSize());
-        return Flux.fromIterable(topicMessageRepository.findLatest(context.getLastConsensusTimestamp().get(), pageable))
+        return Flux.fromIterable(topicMessageRepository.findLatest(
+                        context.getLastConsensusTimestamp().get(), pageable))
                 .doOnNext(context::onNext)
                 .doOnCancel(context::onPollEnd)
                 .doOnComplete(context::onPollEnd)
@@ -121,7 +119,9 @@ public class SharedPollingTopicListener extends SharedTopicListener {
 
         void onStart(Subscription subscription) {
             lastConsensusTimestamp.set(instantToLongConverter.convert(Instant.now()));
-            log.info("Starting to poll every {}ms", listenerProperties.getInterval().toMillis());
+            log.info(
+                    "Starting to poll every {}ms",
+                    listenerProperties.getInterval().toMillis());
         }
     }
 }

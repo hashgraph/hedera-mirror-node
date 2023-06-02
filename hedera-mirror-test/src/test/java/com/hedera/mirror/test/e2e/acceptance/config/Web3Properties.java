@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,13 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.config;
 
 import static com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties.URL_SUFFIX;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -34,6 +30,8 @@ import org.springframework.validation.annotation.Validated;
 public class Web3Properties {
 
     private String baseUrl;
+
+    private boolean enabled = false;
 
     public String getBaseUrl() {
         if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {

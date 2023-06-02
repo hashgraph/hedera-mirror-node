@@ -1,35 +1,30 @@
-package com.hedera.mirror.importer.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.annotation.Resource;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class FileDataRepositoryTest extends AbstractRepositoryTest {
 
@@ -51,9 +46,8 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(7, 123, TransactionType.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository
-                        .findFilesInRange(
-                                2, 7, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()))
+        Assertions.assertThat(fileDataRepository.findFilesInRange(
+                        2, 7, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()))
                 .isNotNull()
                 .hasSize(3)
                 .extracting(FileData::getConsensusTimestamp)
@@ -73,11 +67,10 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(7, 123, TransactionType.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        List<Integer> transactionTypes = List
-                .of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId());
-        Assertions.assertThat(fileDataRepository
-                        .findLatestMatchingFile(
-                                5, ADDRESS_BOOK_102.getId(), transactionTypes)).get()
+        List<Integer> transactionTypes =
+                List.of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId());
+        Assertions.assertThat(fileDataRepository.findLatestMatchingFile(5, ADDRESS_BOOK_102.getId(), transactionTypes))
+                .get()
                 .isNotNull()
                 .isEqualTo(fileData);
     }
@@ -95,9 +88,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository
-                        .findAddressBooksBetween(
-                                2, 5, 10))
+        Assertions.assertThat(fileDataRepository.findAddressBooksBetween(2, 5, 10))
                 .isNotNull()
                 .hasSize(2)
                 .extracting(FileData::getConsensusTimestamp)
@@ -117,9 +108,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository
-                        .findAddressBooksBetween(
-                                2, 10, 5))
+        Assertions.assertThat(fileDataRepository.findAddressBooksBetween(2, 10, 5))
                 .isNotNull()
                 .hasSize(5)
                 .extracting(FileData::getConsensusTimestamp)

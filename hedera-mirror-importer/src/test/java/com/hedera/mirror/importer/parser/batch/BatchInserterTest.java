@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.batch;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,22 +24,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.IOException;
-import java.io.Reader;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.List;
-import javax.annotation.Resource;
-import javax.sql.DataSource;
-import org.apache.commons.lang3.RandomUtils;
-import org.bouncycastle.util.Strings;
-import org.junit.jupiter.api.Test;
-import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -61,6 +41,21 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.List;
+import javax.sql.DataSource;
+import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.Strings;
+import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 class BatchInserterTest extends IntegrationTest {
 
@@ -109,7 +104,7 @@ class BatchInserterTest extends IntegrationTest {
         var transactions = new HashSet<Transaction>();
         transactions.add(transaction(1));
         transactions.add(transaction(2));
-        transactions.add(transaction(2));// duplicate transaction to be ignored with no error on attempted copy
+        transactions.add(transaction(2)); // duplicate transaction to be ignored with no error on attempted copy
         transactions.add(transaction(3));
 
         batchInserter.persist(transactions);
@@ -128,9 +123,8 @@ class BatchInserterTest extends IntegrationTest {
         Connection conn = mock(Connection.class);
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferBatchInserter2 = new BatchInserter(CryptoTransfer.class, dataSource,
-                new SimpleMeterRegistry(),
-                new CommonParserProperties());
+        var cryptoTransferBatchInserter2 = new BatchInserter(
+                CryptoTransfer.class, dataSource, new SimpleMeterRegistry(), new CommonParserProperties());
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
 
@@ -188,18 +182,15 @@ class BatchInserterTest extends IntegrationTest {
         assessedCustomFee3.setId(new AssessedCustomFee.Id(collectorId2, consensusTimestamp));
         assessedCustomFee3.setPayerAccountId(payerId2);
 
-        List<AssessedCustomFee> assessedCustomFees = List.of(
-                assessedCustomFee1,
-                assessedCustomFee2,
-                assessedCustomFee3
-        );
+        List<AssessedCustomFee> assessedCustomFees =
+                List.of(assessedCustomFee1, assessedCustomFee2, assessedCustomFee3);
 
         // when
         batchInserter.persist(assessedCustomFees);
 
         // then
-        List<AssessedCustomFeeWrapper> actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY,
-                AssessedCustomFeeWrapper.ROW_MAPPER);
+        List<AssessedCustomFeeWrapper> actual =
+                jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
         assertThat(actual)
                 .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
                 .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
@@ -215,12 +206,16 @@ class BatchInserterTest extends IntegrationTest {
     }
 
     private TokenTransfer tokenTransfer(long consensusTimestamp) {
-        return domainBuilder.tokenTransfer().customize(t -> t
-                .amount(1L)
-                .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(0L, 1L, 4L, EntityType.TOKEN), EntityId
-                        .of(0L, 1L, 2L, EntityType.ACCOUNT)))
-                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
-                .deletedTokenDissociate(false)).get();
+        return domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(1L)
+                        .id(new TokenTransfer.Id(
+                                consensusTimestamp,
+                                EntityId.of(0L, 1L, 4L, EntityType.TOKEN),
+                                EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT)))
+                        .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
+                        .deletedTokenDissociate(false))
+                .get();
     }
 
     private Transaction transaction(long consensusNs) {

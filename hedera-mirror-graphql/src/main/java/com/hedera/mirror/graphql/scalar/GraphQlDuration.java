@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.scalar;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,31 +12,41 @@ package com.hedera.mirror.graphql.scalar;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.graphql.scalar;
 
 import static graphql.scalars.util.Kit.typeName;
 
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
 import java.time.Duration;
+import java.util.Locale;
 import org.jetbrains.annotations.NotNull;
 
 public class GraphQlDuration implements Coercing<Duration, String> {
 
     public static final GraphQLScalarType INSTANCE = GraphQLScalarType.newScalar()
             .name("Duration")
-            .description("An ISO 8601 compatible duration with support for nanoseconds granularity in the format " +
-                    "P[n]Y[n]M[n]DT[n]H[n]M[n]S.")
+            .description("An ISO 8601 compatible duration with support for nanoseconds granularity in the format "
+                    + "P[n]Y[n]M[n]DT[n]H[n]M[n]S.")
             .coercing(new GraphQlDuration())
             .build();
 
     @Override
-    public @NotNull Duration parseLiteral(@NotNull Object input) throws CoercingParseLiteralException {
+    public Duration parseLiteral(
+            @NotNull Value<?> input,
+            @NotNull CoercedVariables variables,
+            @NotNull GraphQLContext graphQLContext,
+            @NotNull Locale locale)
+            throws CoercingParseLiteralException {
         if (input instanceof StringValue str) {
             return Duration.parse(str.getValue());
         }
@@ -49,7 +54,9 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public @NotNull Duration parseValue(@NotNull Object input) throws CoercingParseValueException {
+    public @NotNull Duration parseValue(
+            @NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingParseValueException {
         if (input instanceof Duration duration) {
             return duration;
         } else if (input instanceof String string) {
@@ -59,7 +66,8 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public String serialize(@NotNull Object input) throws CoercingSerializeException {
+    public String serialize(@NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+            throws CoercingSerializeException {
         if (input instanceof Duration duration) {
             return duration.toString();
         }

@@ -42,61 +42,63 @@ const jsonPost = (url, payload) =>
     },
   });
 
-
 function ContractCallTestScenarioBuilder() {
-    this._name = null;
-    this._selector = null;
-    this._args = null;
-    this._to = null;
-    this._scenario = null;
-    this._tags = {};
-    this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
+  this._name = null;
+  this._selector = null;
+  this._args = null;
+  this._to = null;
+  this._scenario = null;
+  this._tags = {};
+  this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
 
-    this.build = function () {
-      const that = this;
-      return {
-        options: utils.getOptionsWithScenario(that._name, that._scenario, that._tags),
-        run: function (testParameters) {
-          const response = jsonPost(that._url, JSON.stringify({
-                                           to: that._to,
-                                           data: that._selector + that._args,
-                                         }));
-          check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
-        },
-      };
+  this.build = function () {
+    const that = this;
+    return {
+      options: utils.getOptionsWithScenario(that._name, that._scenario, that._tags),
+      run: function (testParameters) {
+        const response = jsonPost(
+          that._url,
+          JSON.stringify({
+            to: that._to,
+            data: that._selector + that._args,
+          })
+        );
+        check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
+      },
     };
+  };
 
-    this.name = function (name) {
-      this._name = name;
-      return this;
-    };
-
-    this.selector = function (selector) {
-          this._selector = selector;
-          return this;
-    };
-
-     this.args = function (args) {
-           this._args = args.join('');
-           return this;
-     };
-
-     this.to = function (to) {
-                this._to = to;
-                return this;
-     };
-
-    this.scenario = function (scenario) {
-      this._scenario = scenario;
-      return this;
-    };
-
-    this.tags = function (tags) {
-      this._tags = tags;
-      return this;
-    };
-
+  this.name = function (name) {
+    this._name = name;
     return this;
-  }
+  };
+
+  this.selector = function (selector) {
+    this._selector = selector;
+    return this;
+  };
+
+  this.args = function (args) {
+    this._args = args.join('');
+    return this;
+  };
+
+  this.to = function (to) {
+    this._to = to;
+    return this;
+  };
+
+  this.scenario = function (scenario) {
+    this._scenario = scenario;
+    return this;
+  };
+
+  this.tags = function (tags) {
+    this._tags = tags;
+    return this;
+  };
+
+  return this;
+}
 
 export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder};

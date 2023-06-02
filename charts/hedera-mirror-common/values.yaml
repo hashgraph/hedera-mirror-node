@@ -87,29 +87,16 @@ loki:
           for: 5m
           labels:
             severity: critical
-        - alert: ImporterRequiresRestart
-          annotations:
-            description: "{{ $labels.namespace }}/{{ $labels.pod }} requires a restart after logging {{ $value }} messages per second in a 1m period with the unrecoverable error '{{ $labels.message }}'"
-            summary: Importer received an error that indicates a restart is required
-          expr: >
-            sum(rate({component="importer"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
-              | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
-            [1m])) by (namespace, pod, message) > 0.01
-          for: 1m
-          labels:
-            severity: critical
         - alert: ImporterRecoverableErrors
           annotations:
             description: "Recoverable Error Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
             summary: Recoverable Error found in logs
           expr: >
-            sum(rate({component="importer"}
+            sum(count_over_time({component="importer"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | level = "ERROR"
               | message =~ ".*Recoverable error.*"
             [1m])) by (namespace, pod) > 0
-          for: 1m
           labels:
             severity: critical
     - name: hedera-mirror-rest
@@ -155,7 +142,7 @@ loki:
     resources:
       limits:
         cpu: 200m
-        memory: 256Mi
+        memory: 384Mi
       requests:
         cpu: 50m
         memory: 64Mi
@@ -413,11 +400,39 @@ traefik:
   priorityClassName: critical
   resources:
     limits:
-      cpu: 850m
-      memory: 1250Mi
+      cpu: 1500m
+      memory: 2000Mi
     requests:
-      cpu: 250m
-      memory: 150Mi
+      cpu: 1000m
+      memory: 500Mi
   service:
     spec: {}
     type: ClusterIP
+
+zfs:
+  coordinator:
+    diskSize: 128GB
+  enabled: false
+  parameters:
+    compression: zstd-6
+    fstype: zfs
+    poolname: zfspv-pool
+    recordsize: 32k
+  worker:
+    diskSize: 256GB
+  zfsController:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"
+  zfsNode:
+    nodeSelector:
+      csi-type: zfs
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"

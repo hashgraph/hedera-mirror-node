@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.time.Duration;
-import java.util.List;
-import javax.inject.Named;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -54,6 +44,11 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
+import java.time.Duration;
+import java.util.List;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class TokenClient extends AbstractNetworkClient {
@@ -62,26 +57,52 @@ public class TokenClient extends AbstractNetworkClient {
         super(sdkClient, retryTemplate);
     }
 
-    public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
-                                                  int kycStatus, ExpandedAccountId treasuryAccount,
-                                                  int initialSupply, TokenSupplyType tokenSupplyType, long maxSupply,
-                                                  TokenType tokenType,
-                                                  List<CustomFee> customFees) {
+    public NetworkTransactionResponse createToken(
+            ExpandedAccountId expandedAccountId,
+            String symbol,
+            int freezeStatus,
+            int kycStatus,
+            ExpandedAccountId treasuryAccount,
+            int initialSupply,
+            TokenSupplyType tokenSupplyType,
+            long maxSupply,
+            TokenType tokenType,
+            List<CustomFee> customFees) {
 
         if (tokenType == TokenType.FUNGIBLE_COMMON) {
-            return createFungibleToken(expandedAccountId, symbol, freezeStatus, kycStatus, treasuryAccount,
-                    initialSupply, tokenSupplyType, maxSupply, customFees);
+            return createFungibleToken(
+                    expandedAccountId,
+                    symbol,
+                    freezeStatus,
+                    kycStatus,
+                    treasuryAccount,
+                    initialSupply,
+                    tokenSupplyType,
+                    maxSupply,
+                    customFees);
         } else {
-            return createNonFungibleToken(expandedAccountId, symbol, freezeStatus, kycStatus, treasuryAccount,
-                    tokenSupplyType, maxSupply, customFees);
+            return createNonFungibleToken(
+                    expandedAccountId,
+                    symbol,
+                    freezeStatus,
+                    kycStatus,
+                    treasuryAccount,
+                    tokenSupplyType,
+                    maxSupply,
+                    customFees);
         }
     }
 
-    private TokenCreateTransaction getTokenCreateTransaction(ExpandedAccountId expandedAccountId, String symbol,
-                                                             int freezeStatus, int kycStatus,
-                                                             ExpandedAccountId treasuryAccount, TokenType tokenType,
-                                                             TokenSupplyType tokenSupplyType, long maxSupply,
-                                                             List<CustomFee> customFees) {
+    private TokenCreateTransaction getTokenCreateTransaction(
+            ExpandedAccountId expandedAccountId,
+            String symbol,
+            int freezeStatus,
+            int kycStatus,
+            ExpandedAccountId treasuryAccount,
+            TokenType tokenType,
+            TokenSupplyType tokenSupplyType,
+            long maxSupply,
+            List<CustomFee> customFees) {
         String memo = getMemo("Create token");
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction transaction = new TokenCreateTransaction()
@@ -118,21 +139,31 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         if (customFees != null && adminKey != null) {
-            transaction
-                    .setCustomFees(customFees)
-                    .setFeeScheduleKey(adminKey);
+            transaction.setCustomFees(customFees).setFeeScheduleKey(adminKey);
         }
         return transaction;
     }
 
-    public NetworkTransactionResponse createFungibleToken(ExpandedAccountId expandedAccountId, String symbol,
-                                                          int freezeStatus,
-                                                          int kycStatus, ExpandedAccountId treasuryAccount,
-                                                          int initialSupply, TokenSupplyType tokenSupplyType,
-                                                          long maxSupply, List<CustomFee> customFees) {
-        TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(expandedAccountId, symbol,
-                freezeStatus, kycStatus, treasuryAccount, TokenType.FUNGIBLE_COMMON, tokenSupplyType, maxSupply,
-                customFees)
+    public NetworkTransactionResponse createFungibleToken(
+            ExpandedAccountId expandedAccountId,
+            String symbol,
+            int freezeStatus,
+            int kycStatus,
+            ExpandedAccountId treasuryAccount,
+            int initialSupply,
+            TokenSupplyType tokenSupplyType,
+            long maxSupply,
+            List<CustomFee> customFees) {
+        TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
+                        expandedAccountId,
+                        symbol,
+                        freezeStatus,
+                        kycStatus,
+                        treasuryAccount,
+                        TokenType.FUNGIBLE_COMMON,
+                        tokenSupplyType,
+                        maxSupply,
+                        customFees)
                 .setDecimals(10)
                 .setInitialSupply(initialSupply);
 
@@ -143,14 +174,25 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse createNonFungibleToken(ExpandedAccountId expandedAccountId, String symbol,
-                                                             int freezeStatus,
-                                                             int kycStatus, ExpandedAccountId treasuryAccount,
-                                                             TokenSupplyType tokenSupplyType, long maxSupply,
-                                                             List<CustomFee> customFees) {
+    public NetworkTransactionResponse createNonFungibleToken(
+            ExpandedAccountId expandedAccountId,
+            String symbol,
+            int freezeStatus,
+            int kycStatus,
+            ExpandedAccountId treasuryAccount,
+            TokenSupplyType tokenSupplyType,
+            long maxSupply,
+            List<CustomFee> customFees) {
         log.debug("Create new non-fungible token {}", symbol);
-        TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(expandedAccountId, symbol,
-                freezeStatus, kycStatus, treasuryAccount, TokenType.NON_FUNGIBLE_UNIQUE, tokenSupplyType, maxSupply,
+        TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
+                expandedAccountId,
+                symbol,
+                freezeStatus,
+                kycStatus,
+                treasuryAccount,
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                tokenSupplyType,
+                maxSupply,
                 customFees);
 
         var keyList = KeyList.of(treasuryAccount.getPrivateKey());
@@ -181,9 +223,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private NetworkTransactionResponse mint(TokenId tokenId, long amount, byte[] metadata) {
-        TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
-                .setTokenId(tokenId)
-                .setTransactionMemo(getMemo("Mint token"));
+        TokenMintTransaction tokenMintTransaction =
+                new TokenMintTransaction().setTokenId(tokenId).setTransactionMemo(getMemo("Mint token"));
 
         if (metadata != null) {
             tokenMintTransaction.addMetadata(metadata);
@@ -241,9 +282,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse pause(TokenId tokenId) {
-        TokenPauseTransaction tokenPauseTransaction = new TokenPauseTransaction()
-                .setTokenId(tokenId)
-                .setTransactionMemo(getMemo("Pause token"));
+        TokenPauseTransaction tokenPauseTransaction =
+                new TokenPauseTransaction().setTokenId(tokenId).setTransactionMemo(getMemo("Pause token"));
 
         var response = executeTransactionAndRetrieveReceipt(tokenPauseTransaction);
         log.info("Paused token {} via {}", tokenId, response.getTransactionId());
@@ -251,24 +291,23 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse unpause(TokenId tokenId) {
-        TokenUnpauseTransaction tokenUnpauseTransaction = new TokenUnpauseTransaction()
-                .setTokenId(tokenId)
-                .setTransactionMemo(getMemo("Unpause token"));
+        TokenUnpauseTransaction tokenUnpauseTransaction =
+                new TokenUnpauseTransaction().setTokenId(tokenId).setTransactionMemo(getMemo("Unpause token"));
 
         var response = executeTransactionAndRetrieveReceipt(tokenUnpauseTransaction);
         log.info("Un-paused token {} via {}", tokenId, response.getTransactionId());
         return response;
     }
 
-    public TransferTransaction getFungibleTokenTransferTransaction(TokenId tokenId, AccountId sender,
-                                                                   AccountId recipient, long amount) {
+    public TransferTransaction getFungibleTokenTransferTransaction(
+            TokenId tokenId, AccountId sender, AccountId recipient, long amount) {
         return getTransferTransaction()
                 .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
                 .addTokenTransfer(tokenId, recipient, amount);
     }
 
-    public TransferTransaction getNonFungibleTokenTransferTransaction(TokenId tokenId, AccountId sender,
-                                                                      AccountId recipient, List<Long> serialNumbers) {
+    public TransferTransaction getNonFungibleTokenTransferTransaction(
+            TokenId tokenId, AccountId sender, AccountId recipient, List<Long> serialNumbers) {
         TransferTransaction transaction = getTransferTransaction();
         for (Long serialNumber : serialNumbers) {
             transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
@@ -277,26 +316,35 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TransferTransaction getTransferTransaction() {
-        return new TransferTransaction()
-                .setTransactionMemo(getMemo("Transfer token"));
+        return new TransferTransaction().setTransactionMemo(getMemo("Transfer token"));
     }
 
-    public NetworkTransactionResponse transferFungibleToken(TokenId tokenId, ExpandedAccountId sender,
-                                                            AccountId recipient, long amount) {
+    public NetworkTransactionResponse transferFungibleToken(
+            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount) {
         var transaction = getFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, amount);
         var response = executeTransactionAndRetrieveReceipt(transaction, sender);
-        log.info("Transferred {} tokens of {} from {} to {} via {}",
-                amount, tokenId, sender, recipient, response.getTransactionId());
+        log.info(
+                "Transferred {} tokens of {} from {} to {} via {}",
+                amount,
+                tokenId,
+                sender,
+                recipient,
+                response.getTransactionId());
         return response;
     }
 
-    public NetworkTransactionResponse transferNonFungibleToken(TokenId tokenId, ExpandedAccountId sender,
-                                                               AccountId recipient, List<Long> serialNumbers) {
-        var transaction = getNonFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient,
-                serialNumbers);
+    public NetworkTransactionResponse transferNonFungibleToken(
+            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, List<Long> serialNumbers) {
+        var transaction =
+                getNonFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, serialNumbers);
         var response = executeTransactionAndRetrieveReceipt(transaction, sender);
-        log.info("Transferred serial numbers {} of token {} from {} to {} via {}",
-                serialNumbers, tokenId, sender, recipient, response.getTransactionId());
+        log.info(
+                "Transferred serial numbers {} of token {} from {} to {} via {}",
+                serialNumbers,
+                tokenId,
+                sender,
+                recipient,
+                response.getTransactionId());
         return response;
     }
 
@@ -333,21 +381,18 @@ public class TokenClient extends AbstractNetworkClient {
 
         KeyList keyList = KeyList.of(newTreasuryId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
-        log.info("Updated token {} treasury account {} via {}", tokenId, treasuryAccountId,
-                response.getTransactionId());
+        log.info(
+                "Updated token {} treasury account {} via {}", tokenId, treasuryAccountId, response.getTransactionId());
         return response;
     }
 
     private TokenBurnTransaction getTokenBurnTransaction(TokenId tokenId) {
-        return new TokenBurnTransaction()
-                .setTokenId(tokenId)
-                .setTransactionMemo(getMemo("Burn token"));
+        return new TokenBurnTransaction().setTokenId(tokenId).setTransactionMemo(getMemo("Burn token"));
     }
 
     public NetworkTransactionResponse burnFungible(TokenId tokenId, long amount) {
-        TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
-                .setAmount(amount)
-                .setTransactionMemo(getMemo("Token burn"));
+        TokenBurnTransaction tokenBurnTransaction =
+                getTokenBurnTransaction(tokenId).setAmount(amount).setTransactionMemo(getMemo("Token burn"));
 
         var response = executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
         log.info("Burned amount {} from token {} via {}", amount, tokenId, response.getTransactionId());
@@ -355,9 +400,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse burnNonFungible(TokenId tokenId, long serialNumber) {
-        TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
-                .addSerial(serialNumber)
-                .setTransactionMemo(getMemo("Token burn"));
+        TokenBurnTransaction tokenBurnTransaction =
+                getTokenBurnTransaction(tokenId).addSerial(serialNumber).setTransactionMemo(getMemo("Token burn"));
 
         var response = executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
         log.info("Burned serial number {} from token {} via {}", serialNumber, tokenId, response.getTransactionId());
@@ -372,22 +416,26 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse wipeFungible(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) {
-        TokenWipeTransaction transaction = getTokenWipeTransaction(tokenId, expandedAccountId)
-                .setAmount(amount);
+        TokenWipeTransaction transaction =
+                getTokenWipeTransaction(tokenId, expandedAccountId).setAmount(amount);
 
         var response = executeTransactionAndRetrieveReceipt(transaction);
         log.info("Wiped {} tokens from account {} via {}", amount, expandedAccountId, response.getTransactionId());
         return response;
     }
 
-    public NetworkTransactionResponse wipeNonFungible(TokenId tokenId, long serialNumber,
-                                                      ExpandedAccountId expandedAccountId) {
-        TokenWipeTransaction transaction = getTokenWipeTransaction(tokenId, expandedAccountId)
-                .addSerial(serialNumber);
+    public NetworkTransactionResponse wipeNonFungible(
+            TokenId tokenId, long serialNumber, ExpandedAccountId expandedAccountId) {
+        TokenWipeTransaction transaction =
+                getTokenWipeTransaction(tokenId, expandedAccountId).addSerial(serialNumber);
 
         var response = executeTransactionAndRetrieveReceipt(transaction);
-        log.info("Wiped serial {} from token {} account {} via {}",
-                serialNumber, tokenId, expandedAccountId, response.getTransactionId());
+        log.info(
+                "Wiped serial {} from token {} account {} via {}",
+                serialNumber,
+                tokenId,
+                expandedAccountId,
+                response.getTransactionId());
         return response;
     }
 
@@ -404,9 +452,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) {
-        TokenDeleteTransaction tokenDissociateTransaction = new TokenDeleteTransaction()
-                .setTokenId(token)
-                .setTransactionMemo(getMemo("Delete token"));
+        TokenDeleteTransaction tokenDissociateTransaction =
+                new TokenDeleteTransaction().setTokenId(token).setTransactionMemo(getMemo("Delete token"));
 
         var keyList = KeyList.of(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
@@ -414,8 +461,8 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse updateTokenFeeSchedule(TokenId tokenId, ExpandedAccountId expandedAccountId,
-                                                             List<CustomFee> customFees) {
+    public NetworkTransactionResponse updateTokenFeeSchedule(
+            TokenId tokenId, ExpandedAccountId expandedAccountId, List<CustomFee> customFees) {
         TokenFeeScheduleUpdateTransaction transaction = new TokenFeeScheduleUpdateTransaction()
                 .setCustomFees(customFees)
                 .setTokenId(tokenId)

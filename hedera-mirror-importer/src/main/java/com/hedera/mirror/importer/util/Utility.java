@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.util;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.util;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.util;
 
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
@@ -28,6 +24,7 @@ import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
@@ -48,8 +45,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
-import com.hedera.mirror.common.util.DomainUtils;
-
 @Log4j2
 @UtilityClass
 public class Utility {
@@ -69,8 +64,8 @@ public class Utility {
      */
     @SuppressWarnings("java:S1168")
     public static byte[] aliasToEvmAddress(byte[] alias) {
-        if (alias == null ||
-                alias.length != DomainUtils.EVM_ADDRESS_LENGTH
+        if (alias == null
+                || alias.length != DomainUtils.EVM_ADDRESS_LENGTH
                         && alias.length < ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
             return null;
         }
@@ -82,8 +77,8 @@ public class Utility {
         byte[] evmAddress = null;
         try {
             var key = Key.parseFrom(alias);
-            if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1 &&
-                    key.getECDSASecp256K1().size() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+            if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1
+                    && key.getECDSASecp256K1().size() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 byte[] rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
                 evmAddress = recoverAddressFromPubKey(rawCompressedKey);
                 if (evmAddress == null) {
@@ -102,7 +97,10 @@ public class Utility {
      * @return Timestamp from an instant
      */
     public static Timestamp instantToTimestamp(Instant instant) {
-        return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
+        return Timestamp.newBuilder()
+                .setSeconds(instant.getEpochSecond())
+                .setNanos(instant.getNano())
+                .build();
     }
 
     public static Instant convertToInstant(Timestamp timestamp) {
@@ -179,7 +177,10 @@ public class Utility {
      */
     public static TransactionID getTransactionId(AccountID payerAccountId) {
         Timestamp validStart = Utility.instantToTimestamp(Instant.now());
-        return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        return TransactionID.newBuilder()
+                .setAccountID(payerAccountId)
+                .setTransactionValidStart(validStart)
+                .build();
     }
 
     public static String toSnakeCase(String text) {
@@ -207,8 +208,8 @@ public class Utility {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
         int value = recoveredFullKey.limit();
         final com.sun.jna.ptr.LongByReference fullKeySize = new com.sun.jna.ptr.LongByReference(value);
-        LibSecp256k1.secp256k1_ec_pubkey_serialize(CONTEXT, recoveredFullKey, fullKeySize, pubKey,
-                SECP256K1_EC_UNCOMPRESSED);
+        LibSecp256k1.secp256k1_ec_pubkey_serialize(
+                CONTEXT, recoveredFullKey, fullKeySize, pubKey, SECP256K1_EC_UNCOMPRESSED);
 
         recoveredFullKey.get(); // read and discard - recoveryId is not part of the account hash
         var preHash = new byte[64];

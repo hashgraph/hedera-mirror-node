@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,22 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.common.base.Stopwatch;
-import java.io.DataInputStream;
-import java.io.IOException;
-import javax.inject.Named;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Primary;
+package com.hedera.mirror.importer.reader.record;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
+import jakarta.inject.Named;
+import java.io.DataInputStream;
+import java.io.IOException;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Primary;
 
 @Log4j2
 @Named
@@ -70,8 +65,8 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     reader = version6Reader;
                     break;
                 default:
-                    throw new InvalidStreamFileException(String.format("Unsupported record file version %d in file %s",
-                            version, filename));
+                    throw new InvalidStreamFileException(
+                            String.format("Unsupported record file version %d in file %s", version, filename));
             }
 
             RecordFile recordFile = reader.read(streamFileData);
@@ -80,8 +75,13 @@ public class CompositeRecordFileReader implements RecordFileReader {
         } catch (IOException e) {
             throw new StreamFileReaderException("Error reading record file " + filename, e);
         } finally {
-            log.info("Read {} items {}successfully from v{} record file {} in {}",
-                    count, count != 0 ? "" : "un", version, filename, stopwatch);
+            log.info(
+                    "Read {} items {}successfully from v{} record file {} in {}",
+                    count,
+                    count != 0 ? "" : "un",
+                    version,
+                    filename,
+                    stopwatch);
         }
     }
 }

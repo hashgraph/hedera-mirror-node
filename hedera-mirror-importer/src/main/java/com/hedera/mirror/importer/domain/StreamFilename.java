@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,20 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -40,41 +39,42 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Value
 public class StreamFilename implements Comparable<StreamFilename> {
 
-    public static final Comparator<StreamFilename> EXTENSION_COMPARATOR = Comparator
-            .comparing(StreamFilename::getExtension);
+    public static final Comparator<StreamFilename> EXTENSION_COMPARATOR =
+            Comparator.comparing(StreamFilename::getExtension);
     public static final StreamFilename EPOCH;
 
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
     private static final char STANDARD_TIME_SEPARATOR = ':';
-    private static final Splitter FILENAME_SPLITTER = Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
+    private static final Splitter FILENAME_SPLITTER =
+            Splitter.on(FilenameUtils.EXTENSION_SEPARATOR).omitEmptyStrings();
     private static final Pattern SIDECAR_PATTERN;
     private static final Map<StreamType, Map<String, StreamType.Extension>> STREAM_TYPE_EXTENSION_MAP;
 
     static {
         SIDECAR_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T(\\d{2}_){2}\\d{2}(\\.\\d{1,9})?Z_(\\d{2})\\.");
-        STREAM_TYPE_EXTENSION_MAP = new EnumMap<>(StreamType.class);
+        Map<StreamType, Map<String, StreamType.Extension>> streamTypeExtensionMap = new EnumMap<>(StreamType.class);
         for (StreamType type : StreamType.values()) {
             Map<String, StreamType.Extension> extensions = new HashMap<>();
             type.getDataExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
             type.getSignatureExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
-            STREAM_TYPE_EXTENSION_MAP.put(type, extensions);
+            streamTypeExtensionMap.put(type, Collections.unmodifiableMap(extensions));
         }
+        STREAM_TYPE_EXTENSION_MAP = Collections.unmodifiableMap(streamTypeExtensionMap);
         EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
     }
 
     private final String compressor;
     private final StreamType.Extension extension;
     private final String filename;
+
     @EqualsAndHashCode.Include
     private final String filenameWithoutCompressor;
+
     private final FileType fileType;
     private final String fullExtension;
     private final Instant instant;
@@ -91,8 +91,9 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.fileType = typeInfo.fileType;
         this.sidecarId = typeInfo.sidecarId;
         this.streamType = typeInfo.streamType;
-        this.fullExtension = this.compressor == null ? this.extension.getName() : StringUtils
-                .joinWith(".", this.extension.getName(), this.compressor);
+        this.fullExtension = this.compressor == null
+                ? this.extension.getName()
+                : StringUtils.joinWith(".", this.extension.getName(), this.compressor);
 
         // A compressed and uncompressed file can exist simultaneously, so we need uniqueness to not include .gz
         this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
@@ -202,8 +203,9 @@ public class StreamFilename implements Comparable<StreamFilename> {
                     String.format("%s %s stream doesn't support sidecars", streamType, fileType));
         }
 
-        String end = StringUtils.isEmpty(sidecarId) ? "." + fullExtension :
-                StringUtils.join(COMPATIBLE_TIME_SEPARATOR, sidecarId, ".", fullExtension);
+        String end = StringUtils.isEmpty(sidecarId)
+                ? "." + fullExtension
+                : StringUtils.join(COMPATIBLE_TIME_SEPARATOR, sidecarId, ".", fullExtension);
         return String.format("%s_%02d.%s", StringUtils.removeEnd(filename, end), id, fullExtension);
     }
 

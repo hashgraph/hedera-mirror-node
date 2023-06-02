@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import org.springframework.retry.support.RetryTemplate;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
@@ -41,6 +30,12 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import jakarta.inject.Named;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class AccountClient extends AbstractNetworkClient {
@@ -75,15 +70,14 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
         // retrieve account, setting if it doesn't exist
-        ExpandedAccountId accountId = accountMap
-                .computeIfAbsent(accountNameEnum, x -> {
-                    try {
-                        return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
-                    } catch (Exception e) {
-                        log.warn("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
-                        return null;
-                    }
-                });
+        ExpandedAccountId accountId = accountMap.computeIfAbsent(accountNameEnum, x -> {
+            try {
+                return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
+            } catch (Exception e) {
+                log.warn("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
+                return null;
+            }
+        });
 
         if (accountId == null) {
             throw new NetworkException("Null accountId retrieved from receipt");
@@ -97,42 +91,44 @@ public class AccountClient extends AbstractNetworkClient {
         return accountId;
     }
 
-    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount,
-                                                            boolean isApproval) {
+    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount) {
         TransferTransaction transferTransaction = new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
-                .setTransactionMemo(getMemo("Crypto transfer"))
-                .setHbarTransferApproval(
-                        sdkClient.getExpandedOperatorAccountId().getAccountId(),
-                        isApproval);
-
+                .setTransactionMemo(getMemo("Crypto transfer"));
         return transferTransaction;
     }
 
-    public NetworkTransactionResponse sendApprovedCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
-                                                                 Hbar hbarAmount) {
-        return sendCryptoTransfer(sender, recipient, hbarAmount, true);
+    public NetworkTransactionResponse sendApprovedCryptoTransfer(
+            ExpandedAccountId spender, AccountId recipient, Hbar hbarAmount) {
+        var transferTransaction = new TransferTransaction()
+                .addApprovedHbarTransfer(getClient().getOperatorAccountId(), hbarAmount.negated())
+                .addHbarTransfer(recipient, hbarAmount)
+                .setTransactionMemo(getMemo("Approved transfer"));
+        var response = executeTransactionAndRetrieveReceipt(transferTransaction, spender);
+        log.info(
+                "Approved transfer {} from {} to {} via {}",
+                hbarAmount,
+                spender,
+                recipient,
+                response.getTransactionId());
+        return response;
     }
 
     public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
-        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount, false);
+        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount);
     }
 
-    private NetworkTransactionResponse sendCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
-                                                          Hbar hbarAmount,
-                                                          boolean isApproval) {
-        TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sender
-                .getAccountId(), recipient, hbarAmount, isApproval);
-
-        var keyList = isApproval ? KeyList.of(sender.getPrivateKey()) : null;
-        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, keyList);
+    private NetworkTransactionResponse sendCryptoTransfer(
+            ExpandedAccountId sender, AccountId recipient, Hbar hbarAmount) {
+        var cryptoTransferTransaction = getCryptoTransferTransaction(sender.getAccountId(), recipient, hbarAmount);
+        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction);
         log.info("Transferred {} from {} to {} via {}", hbarAmount, sender, recipient, response.getTransactionId());
         return response;
     }
 
-    public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
-                                                                boolean receiverSigRequired, String customMemo) {
+    public AccountCreateTransaction getAccountCreateTransaction(
+            Hbar initialBalance, KeyList publicKeys, boolean receiverSigRequired, String customMemo) {
         String memo = getMemo(String.format("%s %s ", "Create Crypto Account", customMemo));
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
@@ -157,15 +153,11 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
-        return createCryptoAccount(
-                Hbar.fromTinybars(initialBalance),
-                accountNameEnum.receiverSigRequired,
-                null,
-                null);
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null);
     }
 
-    public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,
-                                                 String memo) {
+    public ExpandedAccountId createCryptoAccount(
+            Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo) {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generateED25519();
         PublicKey publicKey = privateKey.getPublicKey();
@@ -179,21 +171,17 @@ public class AccountClient extends AbstractNetworkClient {
         }
 
         AccountCreateTransaction accountCreateTransaction = getAccountCreateTransaction(
-                initialBalance,
-                publicKeyList,
-                receiverSigRequired,
-                memo == null ? "" : memo);
+                initialBalance, publicKeyList, receiverSigRequired, memo == null ? "" : memo);
 
-        var response = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
-                receiverSigRequired ? KeyList.of(privateKey) : null);
+        var response = executeTransactionAndRetrieveReceipt(
+                accountCreateTransaction, receiverSigRequired ? KeyList.of(privateKey) : null);
         TransactionReceipt receipt = response.getReceipt();
         AccountId newAccountId = receipt.accountId;
 
         // verify accountId
         if (receipt.accountId == null) {
-            throw new NetworkException(String.format("Receipt for %s returned no accountId, receipt: %s",
-                    response.getTransactionId(),
-                    receipt));
+            throw new NetworkException(String.format(
+                    "Receipt for %s returned no accountId, receipt: %s", response.getTransactionId(), receipt));
         }
 
         log.info("Created new account {} with {} via {}", newAccountId, initialBalance, response.getTransactionId());
@@ -209,12 +197,16 @@ public class AccountClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse approveNft(NftId nftId, AccountId spender) {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-        var transaction = new AccountAllowanceApproveTransaction()
-                .approveTokenNftAllowance(nftId, ownerAccountId, spender);
+        var transaction =
+                new AccountAllowanceApproveTransaction().approveTokenNftAllowance(nftId, ownerAccountId, spender);
 
         var response = executeTransactionAndRetrieveReceipt(transaction);
-        log.info("Approved spender {} a NFT allowance on {} and serial {} via {}",
-                spender, nftId.tokenId, nftId.serial, response.getTransactionId());
+        log.info(
+                "Approved spender {} a NFT allowance on {} and serial {} via {}",
+                spender,
+                nftId.tokenId,
+                nftId.serial,
+                response.getTransactionId());
         return response;
     }
 
@@ -224,8 +216,12 @@ public class AccountClient extends AbstractNetworkClient {
                 .approveTokenAllowance(tokenId, ownerAccountId, spender, amount);
 
         var response = executeTransactionAndRetrieveReceipt(transaction);
-        log.info("Approved spender {} a token allowance on {} of {} via {}",
-                spender, tokenId, amount, response.getTransactionId());
+        log.info(
+                "Approved spender {} a token allowance on {} of {} via {}",
+                spender,
+                tokenId,
+                amount,
+                response.getTransactionId());
         return response;
     }
 
@@ -235,8 +231,11 @@ public class AccountClient extends AbstractNetworkClient {
                 .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, spender);
 
         var response = executeTransactionAndRetrieveReceipt(transaction);
-        log.info("Approved spender {} an allowance for all serial numbers on {} via {}",
-                spender, tokenId, response.getTransactionId());
+        log.info(
+                "Approved spender {} an allowance for all serial numbers on {} via {}",
+                spender,
+                tokenId,
+                response.getTransactionId());
         return response;
     }
 

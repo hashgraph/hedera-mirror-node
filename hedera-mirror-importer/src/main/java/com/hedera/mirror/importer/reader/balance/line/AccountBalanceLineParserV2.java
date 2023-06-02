@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.balance.line;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,26 @@ package com.hedera.mirror.importer.reader.balance.line;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.balance.line;
 
 import com.google.common.base.Splitter;
 import com.google.protobuf.InvalidProtocolBufferException;
-
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
-
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
 @RequiredArgsConstructor
@@ -84,16 +77,16 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
             }
 
             if (shardNum != mirrorProperties.getShard()) {
-                throw new InvalidDatasetException(String.format("Invalid account balance line: %s. Expect " +
-                        "shard (%d), got shard (%d)", line, mirrorProperties.getShard(), shardNum));
+                throw new InvalidDatasetException(String.format(
+                        "Invalid account balance line: %s. Expect " + "shard (%d), got shard (%d)",
+                        line, mirrorProperties.getShard(), shardNum));
             }
 
-            EntityId accountId = EntityId
-                    .of(shardNum, realmNum, accountNum, EntityType.ACCOUNT);
+            EntityId accountId = EntityId.of(shardNum, realmNum, accountNum, EntityType.ACCOUNT);
 
-            List<TokenBalance> tokenBalances = hasTokenBalance ? parseTokenBalanceList(parts.get(4), consensusTimestamp,
-                    accountId) : Collections
-                    .emptyList();
+            List<TokenBalance> tokenBalances = hasTokenBalance
+                    ? parseTokenBalanceList(parts.get(4), consensusTimestamp, accountId)
+                    : Collections.emptyList();
 
             return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
         } catch (NumberFormatException | InvalidProtocolBufferException ex) {
@@ -101,16 +94,18 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
         }
     }
 
-    private List<TokenBalance> parseTokenBalanceList(String tokenBalancesProtoString, long consensusTimestamp,
-                                                     EntityId accountId) throws InvalidProtocolBufferException {
-        List<com.hederahashgraph.api.proto.java.TokenBalance> tokenBalanceProtoList =
-                TokenBalances.parseFrom(Base64.decodeBase64(tokenBalancesProtoString)).getTokenBalancesList();
+    private List<TokenBalance> parseTokenBalanceList(
+            String tokenBalancesProtoString, long consensusTimestamp, EntityId accountId)
+            throws InvalidProtocolBufferException {
+        List<com.hederahashgraph.api.proto.java.TokenBalance> tokenBalanceProtoList = TokenBalances.parseFrom(
+                        Base64.decodeBase64(tokenBalancesProtoString))
+                .getTokenBalancesList();
         List<TokenBalance> tokenBalances = new ArrayList<>();
         for (com.hederahashgraph.api.proto.java.TokenBalance tokenBalanceProto : tokenBalanceProtoList) {
             TokenID tokenId = tokenBalanceProto.getTokenId();
-            TokenBalance tokenBalance = new TokenBalance(tokenBalanceProto
-                    .getBalance(), new TokenBalance.Id(consensusTimestamp, accountId,
-                    EntityId.of(tokenId)));
+            TokenBalance tokenBalance = new TokenBalance(
+                    tokenBalanceProto.getBalance(),
+                    new TokenBalance.Id(consensusTimestamp, accountId, EntityId.of(tokenId)));
             tokenBalances.add(tokenBalance);
         }
         return tokenBalances;

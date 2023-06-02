@@ -1,11 +1,6 @@
-package com.hedera.mirror.grpc.repository;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,26 +12,24 @@ package com.hedera.mirror.grpc.repository;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.grpc.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Instant;
-import javax.annotation.Resource;
-
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import jakarta.annotation.Resource;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
@@ -72,9 +65,12 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithTopicId() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage(t -> t.topicId(1)).block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage(t -> t.topicId(2)).block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage(t -> t.topicId(3)).block();
+        TopicMessage topicMessage1 =
+                domainBuilder.topicMessage(t -> t.topicId(1)).block();
+        TopicMessage topicMessage2 =
+                domainBuilder.topicMessage(t -> t.topicId(2)).block();
+        TopicMessage topicMessage3 =
+                domainBuilder.topicMessage(t -> t.topicId(3)).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicId(EntityId.of(2L, EntityType.TOPIC))
@@ -136,8 +132,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
         Pageable pageable = PageRequest.of(0, 2);
 
-        assertThat(topicMessageRepository
-                .findLatest(topicMessage1.getConsensusTimestamp(), pageable))
+        assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp(), pageable))
                 .containsExactly(topicMessage2, topicMessage3);
     }
 }

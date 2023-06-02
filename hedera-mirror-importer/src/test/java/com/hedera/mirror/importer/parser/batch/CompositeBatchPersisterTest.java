@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.batch;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.batch;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,33 +23,27 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import javax.annotation.Resource;
-import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CompositeBatchPersisterTest extends IntegrationTest {
 
-    @Resource
-    private CompositeBatchPersister compositeBatchInserter;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private ContractResultRepository contractResultRepository;
+    private final CompositeBatchPersister compositeBatchInserter;
+    private final DomainBuilder domainBuilder;
+    private final ContractRepository contractRepository;
+    private final ContractResultRepository contractResultRepository;
 
     @Test
     @Transactional
@@ -72,7 +62,8 @@ class CompositeBatchPersisterTest extends IntegrationTest {
     void persistEmpty() {
         compositeBatchInserter.persist(null);
 
-        var items = spy(Collection.class);
+        Collection<Integer> itemCollection = new ArrayList<Integer>();
+        var items = spy(itemCollection);
         when(items.isEmpty()).thenReturn(true);
         compositeBatchInserter.persist(items);
         var it = verify(items, never()).iterator();

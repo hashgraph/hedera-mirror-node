@@ -1,11 +1,6 @@
-package com.hedera.mirror.monitor.subscribe.rest;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,23 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.monitor.subscribe.rest;
+
 import com.google.common.collect.Iterables;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import jakarta.inject.Named;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -38,13 +40,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
-import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.rest.model.TransactionByIdResponse;
-
 @Log4j2
 @Named
 @RequiredArgsConstructor
@@ -55,11 +50,13 @@ class RestSubscriber implements MirrorSubscriber {
 
     private final RestApiClient restApiClient;
     private final SubscribeProperties subscribeProperties;
-    private final Flux<RestSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
+    private final Flux<RestSubscription> subscriptions =
+            Flux.defer(this::createSubscriptions).cache();
 
     @Override
     public void onPublish(PublishResponse response) {
-        subscriptions.filter(s -> shouldSample(s, response))
+        subscriptions
+                .filter(s -> shouldSample(s, response))
                 .map(RestSubscription::getSink)
                 .subscribe(s -> s.tryEmitNext(response));
     }
@@ -72,7 +69,8 @@ class RestSubscriber implements MirrorSubscriber {
         RestSubscriberProperties properties = subscription.getProperties();
         Set<String> publishers = properties.getPublishers();
 
-        if (!publishers.isEmpty() && !publishers.contains(response.getRequest().getScenario().getName())) {
+        if (!publishers.isEmpty()
+                && !publishers.contains(response.getRequest().getScenario().getName())) {
             return false;
         }
 
@@ -106,20 +104,27 @@ class RestSubscriber implements MirrorSubscriber {
     private Flux<SubscribeResponse> clientSubscribe(RestSubscription subscription) {
         RestSubscriberProperties properties = subscription.getProperties();
 
-        RetryBackoffSpec retrySpec = Retry
-                .backoff(properties.getRetry().getMaxAttempts(), properties.getRetry().getMinBackoff())
+        RetryBackoffSpec retrySpec = Retry.backoff(
+                        properties.getRetry().getMaxAttempts(),
+                        properties.getRetry().getMinBackoff())
                 .maxBackoff(properties.getRetry().getMaxBackoff())
                 .filter(this::shouldRetry)
-                .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
-                        r.totalRetries() + 1, r.failure().getMessage()));
+                .doBeforeRetry(r -> log.debug(
+                        "Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1,
+                        r.failure().getMessage()));
 
-        return subscription.getSink()
+        return subscription
+                .getSink()
                 .asFlux()
                 .publishOn(Schedulers.parallel())
                 .doFinally(s -> subscription.onComplete())
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
-                .flatMap(publishResponse -> restApiClient.retrieve(TransactionByIdResponse.class,
-                                "/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
+                .flatMap(publishResponse -> restApiClient
+                        .retrieve(
+                                TransactionByIdResponse.class,
+                                "/transactions/{transactionId}",
+                                toString(publishResponse.getTransactionId()))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
                         .doOnError(t -> subscription.onError(t))
@@ -130,8 +135,8 @@ class RestSubscriber implements MirrorSubscriber {
                 .take(properties.getDuration());
     }
 
-    private SubscribeResponse toResponse(RestSubscription subscription, PublishResponse publishResponse,
-                                         TransactionByIdResponse response) {
+    private SubscribeResponse toResponse(
+            RestSubscription subscription, PublishResponse publishResponse, TransactionByIdResponse response) {
         Instant receivedTimestamp = Instant.now();
         var transaction = Iterables.getFirst(response.getTransactions(), null);
         Instant consensusTimestamp = null;
@@ -153,8 +158,8 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     protected boolean shouldRetry(Throwable t) {
-        return t instanceof WebClientResponseException webClientResponseException &&
-                webClientResponseException.getStatusCode() == HttpStatus.NOT_FOUND;
+        return t instanceof WebClientResponseException webClientResponseException
+                && webClientResponseException.getStatusCode() == HttpStatus.NOT_FOUND;
     }
 
     private String toString(TransactionId tid) {

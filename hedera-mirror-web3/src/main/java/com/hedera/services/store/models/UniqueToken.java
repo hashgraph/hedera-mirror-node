@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
-import org.hyperledger.besu.datatypes.Address;
-
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -39,8 +39,7 @@ public class UniqueToken {
     private final byte[] metadata;
     private final NftId nftId;
 
-    public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, Id spender
-            , byte[] metadata) {
+    public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, Id spender, byte[] metadata) {
         this.tokenId = tokenId;
         this.address = tokenId.asEvmAddress();
         this.serialNumber = serialNumber;

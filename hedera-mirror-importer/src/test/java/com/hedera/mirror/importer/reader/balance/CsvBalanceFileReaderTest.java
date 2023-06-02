@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.balance;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,25 @@ package com.hedera.mirror.importer.reader.balance;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.balance;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.collect.Collections2;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,17 +50,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.StringUtils;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
-
 abstract class CsvBalanceFileReaderTest {
 
     protected final MirrorProperties mirrorProperties;
@@ -65,26 +60,31 @@ abstract class CsvBalanceFileReaderTest {
     protected final long expectedCount;
     protected File testFile;
     protected long consensusTimestamp;
+
     @TempDir
     Path tempDir;
 
-    CsvBalanceFileReaderTest(Class<? extends CsvBalanceFileReader> balanceFileReaderClass,
-                             Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
-                             String balanceFilePath, long expectedCount) {
+    CsvBalanceFileReaderTest(
+            Class<? extends CsvBalanceFileReader> balanceFileReaderClass,
+            Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
+            String balanceFilePath,
+            long expectedCount) {
         mirrorProperties = new MirrorProperties();
         balanceParserProperties = new BalanceParserProperties();
         balanceFile = TestUtils.getResource(balanceFilePath);
-        parser = (AccountBalanceLineParser) ReflectUtils.newInstance(accountBalanceLineParserClass,
-                new Class[] {MirrorProperties.class},
-                new Object[] {mirrorProperties});
-        balanceFileReader = (CsvBalanceFileReader) ReflectUtils.newInstance(balanceFileReaderClass,
-                new Class[] {BalanceParserProperties.class, accountBalanceLineParserClass},
+        parser = (AccountBalanceLineParser) ReflectUtils.newInstance(
+                accountBalanceLineParserClass, new Class<?>[] {MirrorProperties.class}, new Object[] {mirrorProperties
+                });
+        balanceFileReader = (CsvBalanceFileReader) ReflectUtils.newInstance(
+                balanceFileReaderClass,
+                new Class<?>[] {BalanceParserProperties.class, accountBalanceLineParserClass},
                 new Object[] {balanceParserProperties, parser});
         this.expectedCount = expectedCount;
     }
 
     protected static String getTestFilename(String version, String filename) {
-        return Path.of("data", "accountBalances", version, "balance0.0.3", filename).toString();
+        return Path.of("data", "accountBalances", version, "balance0.0.3", filename)
+                .toString();
     }
 
     @BeforeEach
@@ -140,8 +140,8 @@ abstract class CsvBalanceFileReaderTest {
     @Test
     void readInvalidWhenFileHasNoColumnHeader() throws IOException {
         Collection<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
-        Collection<String> filtered = Collections2
-                .filter(lines, line -> !line.contains(CsvBalanceFileReader.COLUMN_HEADER_PREFIX));
+        Collection<String> filtered =
+                Collections2.filter(lines, line -> !line.contains(CsvBalanceFileReader.COLUMN_HEADER_PREFIX));
         FileUtils.writeLines(testFile, filtered);
 
         StreamFileData streamFileData = StreamFileData.from(testFile);
@@ -164,8 +164,8 @@ abstract class CsvBalanceFileReaderTest {
     void readInvalidWhenFileHasMalformedTimestamp() throws IOException {
         String prefix = balanceFileReader.getTimestampHeaderPrefix();
         Collection<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
-        Collection<String> filtered = Collections2.transform(lines,
-                line -> StringUtils.startsWithIgnoreCase(line, prefix) ? prefix : line);
+        Collection<String> filtered =
+                Collections2.transform(lines, line -> StringUtils.startsWithIgnoreCase(line, prefix) ? prefix : line);
         FileUtils.writeLines(testFile, filtered);
 
         StreamFileData streamFileData = StreamFileData.from(testFile);
@@ -201,8 +201,10 @@ abstract class CsvBalanceFileReaderTest {
         List<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
         FileUtils.writeLines(testFile, lines);
         long otherShard = mirrorProperties.getShard() + 1;
-        FileUtils.writeStringToFile(testFile,
-                String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), CsvBalanceFileReader.CHARSET,
+        FileUtils.writeStringToFile(
+                testFile,
+                String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard),
+                CsvBalanceFileReader.CHARSET,
                 true);
 
         StreamFileData streamFileData = StreamFileData.from(testFile);
@@ -267,15 +269,16 @@ abstract class CsvBalanceFileReaderTest {
     }
 
     protected void verifySuccess(File file, AccountBalanceFile accountBalanceFile, int skipLines) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file),
-                CsvBalanceFileReader.CHARSET))) {
+        try (BufferedReader reader =
+                new BufferedReader(new InputStreamReader(new FileInputStream(file), CsvBalanceFileReader.CHARSET))) {
 
             while (skipLines > 0) {
                 reader.readLine();
                 skipLines--;
             }
 
-            List<AccountBalance> accountBalances = accountBalanceFile.getItems().collectList().block();
+            List<AccountBalance> accountBalances =
+                    accountBalanceFile.getItems().collectList().block();
             var lineIter = reader.lines().iterator();
             var accountBalanceIter = accountBalances.iterator();
 

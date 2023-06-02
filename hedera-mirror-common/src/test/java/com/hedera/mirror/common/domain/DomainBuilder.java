@@ -1,11 +1,6 @@
-package com.hedera.mirror.common.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.common.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.common.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
@@ -30,37 +26,6 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import javax.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionOperations;
-
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
@@ -107,6 +72,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
@@ -125,6 +91,36 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import jakarta.persistence.EntityManager;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionOperations;
 
 @Component
 @Log4j2
@@ -148,9 +144,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<AccountBalance, AccountBalance.AccountBalanceBuilder> accountBalance() {
-        var builder = AccountBalance.builder()
-                .balance(10L)
-                .id(new AccountBalance.Id(timestamp(), entityId(ACCOUNT)));
+        var builder = AccountBalance.builder().balance(10L).id(new AccountBalance.Id(timestamp(), entityId(ACCOUNT)));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -210,7 +204,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<AddressBookServiceEndpoint, AddressBookServiceEndpoint.AddressBookServiceEndpointBuilder> addressBookServiceEndpoint() {
+    public DomainWrapper<AddressBookServiceEndpoint, AddressBookServiceEndpoint.AddressBookServiceEndpointBuilder>
+            addressBookServiceEndpoint() {
         String ipAddress = "";
         try {
             ipAddress = InetAddress.getByAddress(bytes(4)).getHostAddress();
@@ -239,7 +234,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Contract, Contract.ContractBuilder> contract() {
+    public DomainWrapper<Contract, Contract.ContractBuilder<?, ?>> contract() {
         var builder = Contract.builder()
                 .fileId(entityId(FILE))
                 .id(id())
@@ -285,7 +280,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder> contractResult() {
+    public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder<?, ?>> contractResult() {
         var builder = ContractResult.builder()
                 .amount(1000L)
                 .bloom(bytes(256))
@@ -302,6 +297,7 @@ public class DomainBuilder {
                 .senderId(entityId(ACCOUNT))
                 .transactionHash(bytes(32))
                 .transactionIndex(1)
+                .transactionNonce(0)
                 .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -328,7 +324,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder> cryptoAllowance() {
+    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
         var builder = CryptoAllowance.builder()
                 .amount(10)
                 .owner(entityId(ACCOUNT).getId())
@@ -338,7 +334,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder> cryptoAllowanceHistory() {
+    public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
+            cryptoAllowanceHistory() {
         var builder = CryptoAllowanceHistory.builder()
                 .amount(10)
                 .owner(entityId(ACCOUNT).getId())
@@ -377,7 +374,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Entity, Entity.EntityBuilder> entity() {
+    public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity() {
         long id = id();
         long timestamp = timestamp();
 
@@ -412,7 +409,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder> entityHistory() {
+    public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder<?, ?>> entityHistory() {
         long id = id();
         long timestamp = timestamp();
 
@@ -520,9 +517,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
-        var builder = LiveHash.builder()
-                .consensusTimestamp(timestamp())
-                .livehash(bytes(64));
+        var builder = LiveHash.builder().consensusTimestamp(timestamp()).livehash(bytes(64));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -557,7 +552,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
+    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder<?, ?>> nftAllowance() {
         var builder = NftAllowance.builder()
                 .approvedForAll(false)
                 .owner(entityId(ACCOUNT).getId())
@@ -568,7 +563,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder> nftAllowanceHistory() {
+    public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?, ?>>
+            nftAllowanceHistory() {
         var builder = NftAllowanceHistory.builder()
                 .approvedForAll(false)
                 .owner(entityId(ACCOUNT).getId())
@@ -699,7 +695,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> stakingRewardTransfer() {
+    public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder>
+            stakingRewardTransfer() {
         var accountId = entityId(ACCOUNT);
         var builder = StakingRewardTransfer.builder()
                 .accountId(accountId.getId())
@@ -734,7 +731,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder> tokenAccount() {
+    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> tokenAccount() {
         long timestamp = timestamp();
         var builder = TokenAccount.builder()
                 .accountId(id())
@@ -748,7 +745,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder> tokenAccountHistory() {
+    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder<?, ?>>
+            tokenAccountHistory() {
         long timestamp = timestamp();
         var builder = TokenAccountHistory.builder()
                 .accountId(id())
@@ -762,7 +760,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
+    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
         var builder = TokenAllowance.builder()
                 .amount(10L)
                 .owner(entityId(ACCOUNT).getId())
@@ -773,7 +771,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder> tokenAllowanceHistory() {
+    public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
+            tokenAllowanceHistory() {
         var builder = TokenAllowanceHistory.builder()
                 .amount(10L)
                 .owner(entityId(ACCOUNT).getId())
@@ -801,7 +800,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Entity, Entity.EntityBuilder> topic() {
+    public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> topic() {
         return entity().customize(e -> e.alias(null)
                 .receiverSigRequired(null)
                 .ethereumNonce(null)
@@ -829,6 +828,17 @@ public class DomainBuilder {
                 .sequenceNumber(id())
                 .topicId(entityId(TOPIC))
                 .validStartTimestamp(timestamp());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TopicMessageLookup, TopicMessageLookup.TopicMessageLookupBuilder> topicMessageLookup() {
+        long timestamp = timestamp();
+        long sequenceNumber = id();
+        var builder = TopicMessageLookup.builder()
+                .partition(String.format("topic_message_%d", id()))
+                .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 1))
+                .topicId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -860,7 +870,8 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder> transactionSignature() {
+    public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder>
+            transactionSignature() {
         var builder = TransactionSignature.builder()
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
@@ -921,8 +932,10 @@ public class DomainBuilder {
     }
 
     private long getEpochDay(long timestamp) {
-        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneId.of("UTC")).atStartOfDay()
-                .toLocalDate().toEpochDay();
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneId.of("UTC"))
+                .atStartOfDay()
+                .toLocalDate()
+                .toEpochDay();
     }
 
     private int transactionIndex() {

@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
@@ -27,22 +23,21 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
-import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import jakarta.inject.Named;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 @Log4j2
 @Named
@@ -51,8 +46,8 @@ public class EntityIdServiceImpl implements EntityIdService {
     private final Cache cache;
     private final EntityRepository entityRepository;
 
-    public EntityIdServiceImpl(@Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
-                               EntityRepository entityRepository) {
+    public EntityIdServiceImpl(
+            @Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager, EntityRepository entityRepository) {
         this.cache = cacheManager.getCache("entityId");
         this.entityRepository = entityRepository;
     }
@@ -96,7 +91,6 @@ public class EntityIdServiceImpl implements EntityIdService {
             if (!EntityId.isEmpty(entityId)) {
                 return entityId;
             }
-            log.warn("Skipping entity ID {}", entityIdProto);
         }
         return EntityId.EMPTY;
     }
@@ -145,17 +139,21 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(accountId);
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
-                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH ?
-                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT) :
-                        entityRepository.findByAlias(alias)
+                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH
+                        ? findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT)
+                        : entityRepository
+                                .findByAlias(alias)
                                 .map(id -> EntityId.of(id, ACCOUNT))
                                 .orElseGet(() -> {
-                                    log.error(RECOVERABLE_ERROR + "Unable to find entity for alias {}",
+                                    log.error(
+                                            RECOVERABLE_ERROR + "Unable to find entity for alias {}",
                                             Hex.encodeHexString(alias));
                                     return null;
                                 });
             default:
-                log.error(RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}", accountId,
+                log.error(
+                        RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}",
+                        accountId,
                         accountId.getAccountCase());
                 return null;
         }
@@ -181,8 +179,8 @@ public class EntityIdServiceImpl implements EntityIdService {
                 .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
                 .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
                 .orElseGet(() -> {
-                    log.error(RECOVERABLE_ERROR + "Entity not found for evmAddress {}",
-                            Hex.encodeHexString(evmAddress));
+                    log.error(
+                            RECOVERABLE_ERROR + "Entity not found for evmAddress {}", Hex.encodeHexString(evmAddress));
                     return null;
                 });
     }

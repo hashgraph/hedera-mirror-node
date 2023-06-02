@@ -36,7 +36,9 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts?contract.id=a&order=b&limit=c&timestamp=1234567890"],
+  "urls": [
+    "/api/v1/contracts?contract.id=a&order=b&limit=c&timestamp=1234567890"
+  ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

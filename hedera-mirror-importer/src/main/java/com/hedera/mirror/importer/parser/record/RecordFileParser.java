@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,15 @@ package com.hedera.mirror.importer.parser.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import static com.hedera.mirror.importer.reader.record.ProtoRecordFileReader.VERSION;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.inject.Named;
-import org.apache.logging.log4j.Level;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
-
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -48,6 +30,19 @@ import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import jakarta.inject.Named;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.Level;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
@@ -63,11 +58,13 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
 
-    public RecordFileParser(MeterRegistry meterRegistry, RecordParserProperties parserProperties,
-                            StreamFileRepository<RecordFile, Long> streamFileRepository,
-                            RecordItemListener recordItemListener,
-                            RecordStreamFileListener recordStreamFileListener,
-                            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+    public RecordFileParser(
+            MeterRegistry meterRegistry,
+            RecordParserProperties parserProperties,
+            StreamFileRepository<RecordFile, Long> streamFileRepository,
+            RecordItemListener recordItemListener,
+            RecordStreamFileListener recordStreamFileListener,
+            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, streamFileRepository);
         this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
@@ -80,8 +77,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
         for (TransactionType type : TransactionType.values()) {
             Timer timer = Timer.builder("hedera.mirror.transaction.latency")
-                    .description("The difference in ms between the time consensus was achieved and the mirror node " +
-                            "processed the transaction")
+                    .description("The difference in ms between the time consensus was achieved and the mirror node "
+                            + "processed the transaction")
                     .tag("type", type.toString())
                     .register(meterRegistry);
             latencyMetricsBuilder.put(type.getProtoId(), timer);
@@ -107,12 +104,14 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
      */
     @Override
     @Leader
-    @Retryable(backoff = @Backoff(
-            delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
-            maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
-            multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
-            include = Throwable.class,
-            exclude = OutOfMemoryError.class,
+    @Retryable(
+            backoff =
+                    @Backoff(
+                            delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
+                            maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
+                            multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
+            retryFor = Throwable.class,
+            noRetryFor = OutOfMemoryError.class,
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
@@ -121,8 +120,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     @Override
     protected void doParse(RecordFile recordFile) {
-        DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
-                .getDateRangeFilter(parserProperties.getStreamType());
+        DateRangeFilter dateRangeFilter =
+                mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
 
         try {
             Flux<RecordItem> recordItems = recordFile.getItems();
@@ -133,7 +132,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
             recordStreamFileListener.onStart();
 
-            long count = recordItems.doOnNext(recordFile::processItem)
+            long count = recordItems
+                    .doOnNext(recordFile::processItem)
                     .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)
@@ -143,7 +143,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             recordFile.finishLoad(count);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
         }
@@ -151,7 +151,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     private void logItem(RecordItem recordItem) {
         if (log.isTraceEnabled()) {
-            log.trace("Transaction = {}, Record = {}",
+            log.trace(
+                    "Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
                     Utility.printProtoMessage(recordItem.getTransactionRecord()));
         } else if (log.isDebugEnabled()) {
@@ -160,11 +161,14 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     }
 
     private void recordMetrics(RecordItem recordItem) {
-        sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
+        sizeMetrics
+                .getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
-        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getTransactionRecord().getConsensusTimestamp());
-        latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
+        Instant consensusTimestamp =
+                Utility.convertToInstant(recordItem.getTransactionRecord().getConsensusTimestamp());
+        latencyMetrics
+                .getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
     }
 

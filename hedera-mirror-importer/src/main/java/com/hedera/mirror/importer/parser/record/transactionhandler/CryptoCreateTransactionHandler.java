@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 
 import com.google.protobuf.ByteString;
-import javax.inject.Named;
-import org.apache.commons.lang3.ArrayUtils;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -35,6 +28,8 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
+import jakarta.inject.Named;
+import org.apache.commons.lang3.ArrayUtils;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
@@ -50,7 +45,8 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        transaction.setInitialBalance(recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
+        transaction.setInitialBalance(
+                recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
     }
 
     @Override
@@ -61,8 +57,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         var alias = DomainUtils.toBytes(
                 transactionRecord.getAlias() != ByteString.EMPTY
                         ? transactionRecord.getAlias()
-                        : transactionBody.getAlias()
-        );
+                        : transactionBody.getAlias());
         boolean emptyAlias = ArrayUtils.isEmpty(alias);
         var key = transactionBody.hasKey() ? transactionBody.getKey().toByteArray() : null;
         boolean emptyKey = ArrayUtils.isEmpty(key);

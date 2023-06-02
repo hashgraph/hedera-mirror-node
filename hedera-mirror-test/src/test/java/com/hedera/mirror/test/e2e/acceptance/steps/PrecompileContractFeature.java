@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.steps;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,29 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -41,7 +42,11 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
@@ -54,16 +59,15 @@ import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import io.cucumber.java.en.Then;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -72,26 +76,14 @@ import org.apache.tuweni.bytes.Bytes;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.util.ResourceUtils;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
-    private final List<TokenId> tokenIds = new ArrayList<>();
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
     public static final String IS_TOKEN_SELECTOR = "bff9834f";
     public static final String IS_TOKEN_FROZEN_SELECTOR = "565ca6fa";
     public static final String IS_KYC_GRANTED_SELECTOR = "bc2fb00e";
@@ -104,37 +96,39 @@ public class PrecompileContractFeature extends AbstractFeature {
     public static final String GET_TYPE_SELECTOR = "f429f19b";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
     public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "1955de0b";
-
     public static final String NAME_SELECTOR = "06fdde03";
     public static final String SYMBOL_SELECTOR = "95d89b41";
     public static final String DECIMALS_SELECTOR = "313ce567";
     public static final String TOTAL_SUPPLY_SELECTOR = "18160ddd";
     public static final String BALANCE_OF_SELECTOR = "70a08231";
     public static final String ALLOWANCE_SELECTOR = "dd62ed3e";
-
     public static final String OWNER_OF_SELECTOR = "6352211e";
     public static final String GET_APPROVED_SELECTOR = "081812fc";
     public static final String IS_APPROVED_FOR_ALL_SELECTOR = "e985e9c5";
-
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    private static final long firstNftSerialNumber = 1;
+    private final List<TokenId> tokenIds = new ArrayList<>();
     private final ContractClient contractClient;
     private final TokenClient tokenClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
-    private final static long firstNftSerialNumber = 1;
     private ExpandedAccountId ecdsaEaId;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    private Path precompileTestContract;
+    private Resource precompileTestContract;
+
     private ContractId contractId;
     private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
     @Before
-    public void initialization() throws IOException {
-        compiledSolidityArtifact = MAPPER.readValue(
-                ResourceUtils.getFile(precompileTestContract.toUri()),
-                CompiledSolidityArtifact.class);
+    public void initialization() throws Exception {
+        try (var in = precompileTestContract.getInputStream()) {
+            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+        }
     }
 
     @After
@@ -171,8 +165,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                List.of(customFixedFee, customFractionalFee)
-        );
+                List.of(customFixedFee, customFractionalFee));
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")
@@ -186,8 +179,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.INFINITE,
-                List.of(customFixedFee)
-        );
+                List.of(customFixedFee));
     }
 
     @Given("I create an ecdsa account and associate it to the tokens")
@@ -219,8 +211,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertTrue(response.getResultAsBoolean());
     }
@@ -230,40 +221,33 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertTrue(response.getResultAsBoolean());
     }
 
     @Then("the contract call REST API to is token with invalid account id should return an error")
     public void checkIfInvalidAccountIsToken() {
-        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                .to32BytesString(ZERO_ADDRESS);
+        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil.to32BytesString(ZERO_ADDRESS);
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
         String contractClientAddress = contractClient.getClientAddress();
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(
-                selectorWithData,
-                contractIdAsSolidityAddress,
-                contractClientAddress)
-        )
+                        selectorWithData, contractIdAsSolidityAddress, contractClientAddress))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
     @And("the contract call REST API to is token with valid account id should return an error")
     public void checkIfValidAccountIsToken() {
-        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
+        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR
+                + TestUtil.to32BytesString(
+                        accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
         String contractClientAddress = contractClient.getClientAddress();
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(
-                selectorWithData,
-                contractIdAsSolidityAddress,
-                contractClientAddress)
-        )
+                        selectorWithData, contractIdAsSolidityAddress, contractClientAddress))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
@@ -275,8 +259,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -288,20 +271,20 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
 
     @Given("I freeze a non fungible token")
     public void freezeToken() {
-        NetworkTransactionResponse freezeResponse = tokenClient
-                .freeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
+        NetworkTransactionResponse freezeResponse =
+                tokenClient.freeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
     }
 
-    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if non fungible token is frozen")
@@ -311,20 +294,20 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertTrue(response.getResultAsBoolean());
     }
 
     @Given("I unfreeze a non fungible token")
     public void unfreezeToken() {
-        NetworkTransactionResponse freezeResponse = tokenClient
-                .unfreeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
+        NetworkTransactionResponse freezeResponse =
+                tokenClient.unfreeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
     }
 
-    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if non fungible token is unfrozen")
@@ -334,8 +317,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
@@ -345,7 +327,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
     }
 
-    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is frozen for evm address")
@@ -357,8 +340,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertTrue(response.getResultAsBoolean());
     }
 
@@ -368,7 +350,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyTx(unfreezeResponse.getTransactionIdStringNoCheckSum());
     }
 
-    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is unfrozen for evm address")
@@ -380,12 +363,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
-    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyTx(String txId) {
@@ -400,8 +383,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -413,8 +395,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -425,8 +406,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 GET_TOKEN_DEFAULT_FREEZE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -437,8 +417,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 GET_TOKEN_DEFAULT_FREEZE_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -446,11 +425,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a fungible token")
     public void getDefaultKycOfFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_KYC_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -458,11 +435,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_KYC_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertFalse(response.getResultAsBoolean());
     }
@@ -473,15 +448,15 @@ public class PrecompileContractFeature extends AbstractFeature {
                 GET_INFORMATION_FOR_TOKEN_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple tokenInfo = baseGetInformationForTokenChecks(response);
         Long totalSupply = tokenInfo.get(1);
         assertThat(totalSupply).isEqualTo(1000000);
     }
 
-    @Retryable(value = {AssertionError.class},
+    @Retryable(
+            value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("the contract call REST API should return the information for token for a non fungible token")
@@ -490,8 +465,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 GET_INFORMATION_FOR_TOKEN_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple tokenInfo = baseGetInformationForTokenChecks(response);
         Long totalSupply = tokenInfo.get(1);
@@ -504,8 +478,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple result = decodeFunctionResult("getInformationForFungibleToken", response);
         assertThat(result).isNotEmpty();
@@ -525,8 +498,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple result = decodeFunctionResult("getInformationForNonFungibleToken", response);
         assertThat(result).isNotEmpty();
@@ -552,8 +524,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertThat(response.getResultAsNumber()).isZero();
     }
@@ -563,8 +534,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         assertThat(response.getResultAsNumber()).isEqualTo(1);
     }
@@ -572,10 +542,10 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the expiry token info for a fungible token")
     public void getExpiryTokenInfoForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         baseExpiryInfoChecks(response);
     }
@@ -583,10 +553,10 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the expiry token info for a non fungible token")
     public void getExpiryTokenInfoForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         baseExpiryInfoChecks(response);
     }
@@ -594,11 +564,11 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the token key for a fungible token")
     public void getTokenKeyForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_TOKEN_KEY_PUBLIC_SELECTOR + to32BytesString(tokenIds.get(0)
-                        .toSolidityAddress()) + to32BytesString(String.valueOf(firstNftSerialNumber)),
+                GET_TOKEN_KEY_PUBLIC_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
@@ -625,8 +595,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
 
         Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
@@ -646,7 +615,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
     }
 
-    @Retryable(value = {AssertionError.class},
+    @Retryable(
+            value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyToken(TokenId tokenId) {
@@ -656,7 +626,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
     }
 
-    @Retryable(value = {AssertionError.class},
+    @Retryable(
+            value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNft(TokenId tokenId, Long serialNumber) {
@@ -670,40 +641,28 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the name by direct call for a fungible token")
     public void getFungibleTokenNameByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                NAME_SELECTOR,
-                tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                NAME_SELECTOR, tokenIds.get(0).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a fungible token")
     public void getFungibleTokenSymbolByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                SYMBOL_SELECTOR,
-                tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                SYMBOL_SELECTOR, tokenIds.get(0).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the decimals by direct call for a  fungible token")
     public void getFungibleTokenDecimalsByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                DECIMALS_SELECTOR,
-                tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                DECIMALS_SELECTOR, tokenIds.get(0).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(10);
     }
 
     @And("the contract call REST API should return the total supply by direct call for a  fungible token")
     public void getFungibleTokenTotalSupplyByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                TOTAL_SUPPLY_SELECTOR,
-                tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                TOTAL_SUPPLY_SELECTOR, tokenIds.get(0).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
@@ -712,8 +671,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 BALANCE_OF_SELECTOR + to32BytesString(contractClient.getClientAddress()),
                 tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
@@ -724,38 +682,28 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(contractClient.getClientAddress())
                         + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()),
                 tokenIds.get(0).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertThat(response.getResultAsNumber()).isZero();
     }
 
     @And("the contract call REST API should return the name by direct call for a non fungible token")
     public void getNonFungibleTokenNameByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                NAME_SELECTOR,
-                tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                NAME_SELECTOR, tokenIds.get(1).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a non fungible token")
     public void getNonFungibleTokenSymbolByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                SYMBOL_SELECTOR,
-                tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                SYMBOL_SELECTOR, tokenIds.get(1).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the total supply by direct call for a non fungible token")
     public void getNonFungibleTokenTotalSupplyByDirectCall() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                TOTAL_SUPPLY_SELECTOR,
-                tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                TOTAL_SUPPLY_SELECTOR, tokenIds.get(1).toSolidityAddress(), contractClient.getClientAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1);
     }
 
@@ -764,10 +712,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 OWNER_OF_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertThat(Bytes.fromHexString(response.getResult()).toBigInteger())
-                .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().num);
+                .isEqualTo(tokenClient
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .num);
     }
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
@@ -775,8 +726,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         ContractCallResponse response = mirrorClient.contractsCall(
                 GET_APPROVED_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
@@ -787,18 +737,17 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(contractClient.getClientAddress())
                         + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()),
                 tokenIds.get(1).toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the custom fees for a fungible token")
     public void getCustomFeesForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
         baseFixedFeeCheck(result.get(0));
@@ -819,10 +768,10 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the custom fees for a non fungible token")
     public void getCustomFeesForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
+                contractClient.getClientAddress());
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
         baseFixedFeeCheck(result.get(0));
@@ -875,11 +824,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     private void createNewToken(
-            String symbol,
-            TokenType tokenType,
-            TokenSupplyType tokenSupplyType,
-            List<CustomFee> customFees
-    ) {
+            String symbol, TokenType tokenType, TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
                 admin,
@@ -905,11 +850,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 null,
-                null
-        );
+                null);
 
         verifyCreateContractNetworkResponse();
     }
@@ -936,7 +883,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
         Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
-                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName)).findFirst();
+                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
+                .findFirst();
 
         try {
             String abiFunctionAsJsonString = (new JSONObject((Map) function.get())).toString();

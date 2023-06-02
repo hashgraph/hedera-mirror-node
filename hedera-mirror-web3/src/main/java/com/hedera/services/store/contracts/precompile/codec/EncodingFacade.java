@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
@@ -28,20 +29,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
-
-import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 
 @Singleton
 public class EncodingFacade {
@@ -186,8 +186,7 @@ public class EncodingFacade {
                 case HAPI_ALLOWANCE -> hapiAllowanceOfType;
                 case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> INT_BOOL_TUPLE;
                 case HAPI_APPROVE_NFT -> intTuple;
-                default -> NOT_SPECIFIED_TYPE;
-            };
+                default -> NOT_SPECIFIED_TYPE;};
 
             this.functionType = functionType;
             return this;

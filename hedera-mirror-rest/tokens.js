@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {getResponseLimit} from './config';
@@ -902,7 +898,11 @@ const getNftTransferHistoryRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
-  const filters = utils.buildAndValidateFilters(req.query, acceptedNftTransferHistoryParameters, validateTokenQueryFilter);
+  const filters = utils.buildAndValidateFilters(
+    req.query,
+    acceptedNftTransferHistoryParameters,
+    validateTokenQueryFilter
+  );
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   if (logger.isTraceEnabled()) {
@@ -958,14 +958,10 @@ const acceptedNftsParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.LIMIT,
   filterKeys.ORDER,
-  filterKeys.SERIAL_NUMBER
+  filterKeys.SERIAL_NUMBER,
 ]);
 
-const acceptedNftTransferHistoryParameters = new Set([
-  filterKeys.LIMIT,
-  filterKeys.ORDER,
-  filterKeys.TIMESTAMP
-]);
+const acceptedNftTransferHistoryParameters = new Set([filterKeys.LIMIT, filterKeys.ORDER, filterKeys.TIMESTAMP]);
 
 const acceptedTokenParameters = new Set([
   filterKeys.ACCOUNT_ID,
@@ -973,12 +969,10 @@ const acceptedTokenParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TOKEN_ID,
-  filterKeys.TOKEN_TYPE
+  filterKeys.TOKEN_TYPE,
 ]);
 
-const acceptedSingleTokenParameters = new Set([
-  filterKeys.TIMESTAMP
-]);
+const acceptedSingleTokenParameters = new Set([filterKeys.TIMESTAMP]);
 
 const acceptedTokenBalancesParameters = new Set([
   filterKeys.ACCOUNT_ID,
@@ -986,7 +980,7 @@ const acceptedTokenBalancesParameters = new Set([
   filterKeys.ACCOUNT_PUBLICKEY,
   filterKeys.LIMIT,
   filterKeys.ORDER,
-  filterKeys.TIMESTAMP
+  filterKeys.TIMESTAMP,
 ]);
 
 if (utils.isTestEnv()) {

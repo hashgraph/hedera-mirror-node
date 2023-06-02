@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.record;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,24 @@ package com.hedera.mirror.importer.reader.record;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.services.stream.proto.HashAlgorithm;
+import com.hedera.services.stream.proto.HashObject;
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -36,16 +41,6 @@ import java.util.function.Function;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.services.stream.proto.HashAlgorithm;
-import com.hedera.services.stream.proto.HashObject;
-import com.hedera.services.stream.proto.RecordStreamFile;
-import com.hedera.services.stream.proto.RecordStreamItem;
 
 class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
 
@@ -66,8 +61,7 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
         var bytes = gzip(ProtoRecordStreamFile.of(RecordStreamFile.Builder::clearRecordStreamItems));
         var reader = new ProtoRecordFileReader();
         var streamFileData = StreamFileData.from(FILENAME, bytes);
-        var exception = assertThrows(InvalidStreamFileException.class,
-                () -> reader.read(streamFileData));
+        var exception = assertThrows(InvalidStreamFileException.class, () -> reader.read(streamFileData));
         var expected = "No record stream objects in record file " + FILENAME;
         assertEquals(expected, exception.getMessage());
     }
@@ -81,10 +75,11 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
         }));
         var reader = new ProtoRecordFileReader();
         var streamFileData = StreamFileData.from(FILENAME, bytes);
-        var exception = assertThrows(InvalidStreamFileException.class,
-                () -> reader.read(streamFileData));
-        var expected = String.format("%s has unsupported start running object hash algorithm " +
-                "HASH_ALGORITHM_UNKNOWN and end running object hash algorithm HASH_ALGORITHM_UNKNOWN", FILENAME);
+        var exception = assertThrows(InvalidStreamFileException.class, () -> reader.read(streamFileData));
+        var expected = String.format(
+                "%s has unsupported start running object hash algorithm "
+                        + "HASH_ALGORITHM_UNKNOWN and end running object hash algorithm HASH_ALGORITHM_UNKNOWN",
+                FILENAME);
         assertEquals(expected, exception.getMessage());
     }
 
@@ -104,7 +99,7 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
     @SneakyThrows
     private byte[] gzip(byte[] data) {
         try (var byteArrayOutputStream = new ByteArrayOutputStream();
-             var compressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
+                var compressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
             compressorOutputStream.write(data);
             compressorOutputStream.finish();
             return byteArrayOutputStream.toByteArray();
@@ -116,19 +111,23 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
         private static final int VERSION = 6;
 
         private static byte[] of(Function<RecordStreamFile.Builder, RecordStreamFile.Builder> customizer) {
-            return Bytes.concat(Ints.toByteArray(VERSION),
-                    customizer.apply(getDefaultRecordStreamFileBuilder()).build().toByteArray());
+            return Bytes.concat(
+                    Ints.toByteArray(VERSION),
+                    customizer
+                            .apply(getDefaultRecordStreamFileBuilder())
+                            .build()
+                            .toByteArray());
         }
 
         private static RecordStreamFile.Builder getDefaultRecordStreamFileBuilder() {
-            var hashObject = HashObject.newBuilder()
-                    .setAlgorithm(HashAlgorithm.SHA_384)
-                    .setLength(48);
+            var hashObject =
+                    HashObject.newBuilder().setAlgorithm(HashAlgorithm.SHA_384).setLength(48);
             var recordStreamItem = RecordStreamItem.newBuilder()
                     .setTransaction(Transaction.newBuilder()
                             .setSignedTransactionBytes(SignedTransaction.newBuilder()
                                     .setBodyBytes(TransactionBody.newBuilder()
-                                            .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().build())
+                                            .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                                                    .build())
                                             .build()
                                             .toByteString())
                                     .build()
@@ -138,10 +137,12 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
             return RecordStreamFile.newBuilder()
                     .setHapiProtoVersion(SemanticVersion.newBuilder().setMajor(27))
                     .setStartObjectRunningHash(hashObject
-                            .setHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48))).build())
+                            .setHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48)))
+                            .build())
                     .addRecordStreamItems(recordStreamItem)
                     .setEndObjectRunningHash(hashObject
-                            .setHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48))).build())
+                            .setHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48)))
+                            .build())
                     .setBlockNumber(100L);
         }
     }

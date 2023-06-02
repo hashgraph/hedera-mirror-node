@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,15 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.config;
+
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.StreamSourceProperties;
+import com.hedera.mirror.importer.downloader.provider.LocalStreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,12 +44,6 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.importer.downloader.StreamSourceProperties;
-import com.hedera.mirror.importer.downloader.provider.LocalStreamFileProvider;
-import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
-import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
-
 @Configuration
 @CustomLog
 @RequiredArgsConstructor
@@ -63,10 +58,11 @@ class CloudStorageConfiguration {
         var providers = new ArrayList<StreamFileProvider>();
 
         for (var source : commonDownloaderProperties.getSources()) {
-            var provider = switch (source.getType()) {
-                case LOCAL -> new LocalStreamFileProvider(commonDownloaderProperties);
-                case GCP, S3 -> new S3StreamFileProvider(commonDownloaderProperties, s3Client(source));
-            };
+            var provider =
+                    switch (source.getType()) {
+                        case LOCAL -> new LocalStreamFileProvider(commonDownloaderProperties);
+                        case GCP, S3 -> new S3StreamFileProvider(commonDownloaderProperties, s3Client(source));
+                    };
 
             providers.add(provider);
         }
@@ -75,17 +71,19 @@ class CloudStorageConfiguration {
     }
 
     private AwsCredentialsProvider awsCredentialsProvider(StreamSourceProperties sourceProperties) {
+        var type = sourceProperties.getType();
+
         if (commonDownloaderProperties.isAnonymousCredentials()) {
-            log.info("Setting up S3 async client using anonymous credentials");
+            log.info("Setting up {} client using anonymous credentials", type);
             return AnonymousCredentialsProvider.create();
         } else if (sourceProperties.isStaticCredentials()) {
-            log.info("Setting up S3 async client using provided access/secret key");
+            log.info("Setting up {} client using provided access/secret key", type);
             var credentials = sourceProperties.getCredentials();
-            return StaticCredentialsProvider.create(AwsBasicCredentials.create(credentials.getAccessKey(),
-                    credentials.getSecretKey()));
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(credentials.getAccessKey(), credentials.getSecretKey()));
         }
 
-        log.info("Setting up S3 async client using AWS Default Credentials Provider");
+        log.info("Setting up {} client using default credentials provider", type);
         return DefaultCredentialsProvider.create();
     }
 
@@ -93,7 +91,7 @@ class CloudStorageConfiguration {
         var httpClient = NettyNioAsyncHttpClient.builder()
                 .connectionTimeout(sourceProperties.getConnectionTimeout())
                 .maxConcurrency(sourceProperties.getMaxConcurrency())
-                .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
+                .connectionMaxIdleTime(Duration.ofSeconds(5)) // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
         if (sourceProperties.getUri() == null) {
@@ -120,7 +118,8 @@ class CloudStorageConfiguration {
                 public SdkHttpRequest modifyHttpRequest(
                         Context.ModifyHttpRequest context, ExecutionAttributes executionAttributes) {
                     return context.httpRequest().toBuilder()
-                            .appendRawQueryParameter("userProject", projectId).build();
+                            .appendRawQueryParameter("userProject", projectId)
+                            .build();
                 }
             });
         }

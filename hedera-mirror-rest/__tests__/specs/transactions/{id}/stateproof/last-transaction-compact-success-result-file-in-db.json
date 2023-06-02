@@ -10,13 +10,20 @@
     "sql": {
       "pathprefix": "data/db/stateproof",
       "funcs": ["addRecordFileWithBytes"],
-      "scripts": ["address_book.sql", "address_book_entry.sql", "record_file_v5.sql", "transaction_v5.sql"]
+      "scripts": [
+        "address_book.sql",
+        "address_book_entry.sql",
+        "record_file_v5.sql",
+        "transaction_v5.sql"
+      ]
     }
   },
   "url": "/api/v1/transactions/0.0.1744-1614921772-342959302/stateproof?scheduled=true",
   "responseStatus": 200,
   "responseJson": {
-    "address_books": ["29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"],
+    "address_books": [
+      "29ccb14cc5f65c52feb74292b01d52fdcf2de645d394b53704680db6d132ec6c"
+    ],
     "record_file": {
       "head": "e8c769dbbeb8d3f2e03952d041c8afe57ddc999fc13a233ae49cda8cbddfc4d7",
       "start_running_hash_object": "ec2142ea265aa0fe95a02ea4d9d5f4e36a88e0ace35a3afdb47d7438a2a2f65d",

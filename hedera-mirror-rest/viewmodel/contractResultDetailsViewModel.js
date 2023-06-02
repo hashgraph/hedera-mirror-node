@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,11 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import _ from 'lodash';
-import {toBigIntBE} from 'bigint-buffer';
+import {toBigIntBE} from '@trufflesuite/bigint-buffer';
 
 import ContractLogResultsViewModel from './contractResultLogViewModel';
 import ContractResultStateChangeViewModel from './contractResultStateChangeViewModel';
@@ -59,10 +55,11 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
-    this.status =
-      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
-        ? ContractResultDetailsViewModel._SUCCESS_RESULT
-        : ContractResultDetailsViewModel._FAIL_RESULT;
+    const isTransactionSuccessful =
+      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID;
+    this.status = isTransactionSuccessful
+      ? ContractResultDetailsViewModel._SUCCESS_RESULT
+      : ContractResultDetailsViewModel._FAIL_RESULT;
     if (!_.isEmpty(contractResult.failedInitcode)) {
       this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
     } else if (
@@ -93,6 +90,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.amount = ethTransaction.value && toBigIntBE(ethTransaction.value);
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
 
+      if (!isTransactionSuccessful && _.isEmpty(contractResult.errorMessage)) {
+        this.error_message = this.result;
+      }
+
       if (!_.isNil(contractResult.senderId)) {
         this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
       }
@@ -109,7 +110,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.type = ethTransaction.type;
       this.v = ethTransaction.recoveryId;
 
-      if (!_.isNil(ethTransaction.callData)) {
+      if (!_.isEmpty(ethTransaction.callData)) {
         this.function_parameters = utils.toHexStringNonQuantity(ethTransaction.callData);
       } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
         this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);

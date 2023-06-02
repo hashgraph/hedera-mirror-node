@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,23 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -36,15 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalAccountInfoMigrationTest extends IntegrationTest {
@@ -61,7 +56,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final MirrorProperties mirrorProperties;
 
-    private MirrorProperties.HederaNetwork network;
+    private String network;
 
     @BeforeEach
     void before() {
@@ -184,6 +179,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void create() {
         AccountInfo.Builder accountInfo = accountInfo();
@@ -196,13 +192,15 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
                 .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
-                .returns(DomainUtils
-                        .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
+                .returns(
+                        DomainUtils.timeStampInNanos(accountInfo.getExpirationTime()),
+                        from(Entity::getExpirationTimestamp))
                 .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
                 .returns(accountInfo.getMemo(), from(Entity::getMemo))
                 .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entity::getProxyAccountId));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void update() {
         createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
@@ -216,8 +214,9 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
                 .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
-                .returns(DomainUtils
-                        .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
+                .returns(
+                        DomainUtils.timeStampInNanos(accountInfo.getExpirationTime()),
+                        from(Entity::getExpirationTimestamp))
                 .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
                 .returns(accountInfo.getMemo(), from(Entity::getMemo))
                 .returns(EntityId.of(accountInfo.getProxyAccountID()), from(Entity::getProxyAccountId));
@@ -255,7 +254,8 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void longOverflow() {
         AccountInfo.Builder accountInfo = accountInfo()
-                .setExpirationTime(Timestamp.newBuilder().setSeconds(31556889864403199L).build());
+                .setExpirationTime(
+                        Timestamp.newBuilder().setSeconds(31556889864403199L).build());
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
         assertThat(entityRepository.findAll())
                 .hasSize(1)
@@ -277,14 +277,21 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(historicalAccountInfoMigration.skipMigration(null)).isFalse();
     }
 
+    @SuppressWarnings("deprecation")
     private AccountInfo.Builder accountInfo() {
         return AccountInfo.newBuilder()
                 .setAccountID(AccountID.newBuilder().setAccountNum(ACCOUNT_ID1).build())
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1).build())
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
-                .setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build())
+                .setKey(Key.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("abc"))
+                        .build())
                 .setMemo("Foo")
-                .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
+                .setProxyAccountID(AccountID.newBuilder()
+                        .setShardNum(0)
+                        .setRealmNum(0)
+                        .setAccountNum(2)
+                        .build());
     }
 
     private Entity createEntity(long num, EntityType type, boolean afterReset) {
@@ -300,7 +307,8 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setTimestampRange(Range.atLeast(0L));
 
         if (afterReset) {
-            Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();
+            Key key =
+                    Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();
             entity.setAutoRenewPeriod(5L);
             entity.setExpirationTimestamp(1L);
             entity.setKey(key.toByteArray());

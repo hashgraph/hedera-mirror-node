@@ -1,11 +1,6 @@
-package com.hedera.mirror.test.e2e.acceptance.client;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.common.base.Stopwatch;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-import javax.inject.Named;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.springframework.http.MediaType;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.listener.RetryListenerSupport;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.util.retry.Retry;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
@@ -50,6 +28,23 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import jakarta.inject.Named;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.http.MediaType;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.RetryListener;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.util.retry.Retry;
 
 /**
  * StartupProbe -- a helper class to validate a SDKClient before using it.
@@ -65,7 +60,7 @@ public class StartupProbe {
             .infiniteRetry()
             .notRetryOn(TimeoutException.class)
             .fixedBackoff(1000L)
-            .withListener(new RetryListenerSupport() {
+            .withListener(new RetryListener() {
                 @Override
                 public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
                     log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
@@ -83,37 +78,44 @@ public class StartupProbe {
             return;
         }
 
-        // step 1: Create a new topic for the subsequent HCS submit message action.
+        log.info("Creating a topic to confirm node connectivity");
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
 
-        // step 2: Query for the receipt of the HCS topic create (until successful or time runs out)
-        var topicId = executeQuery(client, stopwatch,
-                () -> new TransactionReceiptQuery().setTransactionId(transactionId)).topicId;
+        var topicId = executeQuery(
+                        client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionId))
+                .topicId;
 
-        // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
+        log.info("Created topic {} successfully", topicId);
         callRestEndpoint(stopwatch, transactionId);
 
-        // step 4: Query the mirror node gRPC API for a HCS message, until successful or time runs out
-        CountDownLatch messageLatch = new CountDownLatch(1);
+        var messageLatch = new CountDownLatch(1);
         SubscriptionHandle subscription = null;
 
         try {
+            log.info("Subscribing to the topic");
             subscription = retryTemplate.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .setMaxAttempts(Integer.MAX_VALUE)
-                    .setRetryHandler(t -> true)
+                    .setRetryHandler(t -> {
+                        log.info("Retrying exception: {}", t.getMessage());
+                        return true;
+                    })
                     .setStartTime(Instant.EPOCH)
                     .subscribe(client, resp -> messageLatch.countDown()));
 
+            log.info("Submitting a message to the network");
             var transactionIdMessage = executeTransaction(client, stopwatch, () -> new TopicMessageSubmitTransaction()
-                    .setTopicId(topicId).setMessage("Mirror Node acceptance test")).transactionId;
+                            .setTopicId(topicId)
+                            .setMessage("Mirror Node acceptance test"))
+                    .transactionId;
 
             executeQuery(client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionIdMessage));
+            log.info("Waiting for the mirror node to publish the topic message");
 
             if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
-                log.info("Startup probe successful.");
+                log.info("Startup probe successful");
             } else {
-                throw new TimeoutException("Timer expired while waiting on message latch.");
+                throw new TimeoutException("Timer expired while waiting on message latch");
             }
         } finally {
             if (subscription != null) {
@@ -123,11 +125,11 @@ public class StartupProbe {
     }
 
     @SneakyThrows
-    private TransactionResponse executeTransaction(Client client, Stopwatch stopwatch,
-                                                   Supplier<Transaction<?>> transaction) {
+    private TransactionResponse executeTransaction(
+            Client client, Stopwatch stopwatch, Supplier<Transaction<?>> transaction) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction.get()
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+        return retryTemplate.execute(r -> transaction
+                .get()
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
     }
@@ -135,8 +137,8 @@ public class StartupProbe {
     @SneakyThrows
     private <T> T executeQuery(Client client, Stopwatch stopwatch, Supplier<Query<T, ?>> transaction) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction.get()
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+        return retryTemplate.execute(r -> transaction
+                .get()
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
     }
@@ -148,11 +150,12 @@ public class StartupProbe {
                 .maxBackoff(properties.getMaxBackoff())
                 .filter(properties::shouldRetry);
 
-        var restTransactionId =
-                transactionId.accountId + "-" + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
+        var restTransactionId = transactionId.accountId + "-" + transactionId.validStart.getEpochSecond() + "-"
+                + transactionId.validStart.getNano();
 
         String uri = "/transactions/" + restTransactionId;
-        webClient.get()
+        webClient
+                .get()
                 .uri(uri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()

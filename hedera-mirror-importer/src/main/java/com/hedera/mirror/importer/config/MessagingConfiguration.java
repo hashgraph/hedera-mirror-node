@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,27 +12,15 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-
-import com.hedera.mirror.common.domain.event.EventFile;
-
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.channel.NullChannel;
-import org.springframework.integration.context.IntegrationContextUtils;
-import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.dsl.MessageChannels;
-import org.springframework.integration.dsl.Pollers;
-import org.springframework.messaging.MessageChannel;
+package com.hedera.mirror.importer.config;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
@@ -46,6 +29,14 @@ import com.hedera.mirror.importer.parser.event.EventFileParser;
 import com.hedera.mirror.importer.parser.event.EventParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.channel.NullChannel;
+import org.springframework.integration.context.IntegrationContextUtils;
+import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.dsl.Pollers;
+import org.springframework.messaging.MessageChannel;
 
 @Configuration
 public class MessagingConfiguration {
@@ -93,30 +84,34 @@ public class MessagingConfiguration {
 
     @Bean
     IntegrationFlow streamFileRouter() {
-        return IntegrationFlows.from(CHANNEL_STREAM)
+        return IntegrationFlow.from(CHANNEL_STREAM)
                 .route(StreamFile.class, s -> channelName(s.getType()))
                 .get();
     }
 
     private MessageChannel channel(ParserProperties properties) {
         if (properties.getQueueCapacity() <= 0) {
-            return MessageChannels.direct().get();
+            return MessageChannels.direct().getObject();
         }
 
-        return MessageChannels.queue(properties.getQueueCapacity()).get();
+        return MessageChannels.queue(properties.getQueueCapacity()).getObject();
     }
 
-    private <T extends StreamFile<?>> IntegrationFlow integrationFlow(StreamFileParser<T> parser, Class<T> streamFileType) {
+    private <T extends StreamFile<?>> IntegrationFlow integrationFlow(
+            StreamFileParser<T> parser, Class<T> streamFileType) {
         ParserProperties properties = parser.getProperties();
-        return IntegrationFlows.from(channelName(properties.getStreamType()))
-                .handle(streamFileType, (s, h) -> {
-                    parser.parse(s);
-                    return null;
-                }, e -> {
-                    if (properties.getQueueCapacity() > 0) {
-                        e.poller(Pollers.fixedDelay(properties.getFrequency()));
-                    }
-                })
+        return IntegrationFlow.from(channelName(properties.getStreamType()))
+                .handle(
+                        streamFileType,
+                        (s, h) -> {
+                            parser.parse(s);
+                            return null;
+                        },
+                        e -> {
+                            if (properties.getQueueCapacity() > 0) {
+                                e.poller(Pollers.fixedDelay(properties.getFrequency()));
+                            }
+                        })
                 .get();
     }
 

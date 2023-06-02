@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.event;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,23 +12,23 @@ package com.hedera.mirror.importer.reader.event;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.reader.event;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Ints;
-import java.io.DataInputStream;
-import java.security.MessageDigest;
-import java.time.Instant;
-import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
-
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
+import jakarta.inject.Named;
+import java.io.DataInputStream;
+import java.security.MessageDigest;
+import java.time.Instant;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 
 @Log4j2
 @Named
@@ -52,7 +47,8 @@ public class EventFileReaderV3 implements EventFileReader {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
 
-        long consensusStart = DomainUtils.convertToNanosMax(streamFileData.getStreamFilename().getInstant());
+        long consensusStart =
+                DomainUtils.convertToNanosMax(streamFileData.getStreamFilename().getInstant());
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
         eventFile.setConsensusEnd(consensusStart);
@@ -75,8 +71,7 @@ public class EventFileReaderV3 implements EventFileReader {
 
             fileVersion = dis.readInt();
             md.update(Ints.toByteArray(fileVersion));
-            if (fileVersion < EVENT_STREAM_FILE_VERSION_2 ||
-                    fileVersion > EVENT_STREAM_FILE_VERSION_3) {
+            if (fileVersion < EVENT_STREAM_FILE_VERSION_2 || fileVersion > EVENT_STREAM_FILE_VERSION_3) {
                 throw new InvalidEventFileException("Invalid event stream file version " + fileVersion);
             }
 
@@ -112,8 +107,12 @@ public class EventFileReaderV3 implements EventFileReader {
         } catch (Exception e) {
             throw new InvalidEventFileException("Error reading bad event file " + filename, e);
         } finally {
-            log.info("Read v{} event file {} {}successfully in {}",
-                    fileVersion, filename, success ? "" : "un", stopwatch);
+            log.info(
+                    "Read v{} event file {} {}successfully in {}",
+                    fileVersion,
+                    filename,
+                    success ? "" : "un",
+                    stopwatch);
         }
     }
 }

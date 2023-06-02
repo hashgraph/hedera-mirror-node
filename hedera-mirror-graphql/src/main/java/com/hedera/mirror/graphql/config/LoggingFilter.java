@@ -1,11 +1,6 @@
-package com.hedera.mirror.graphql.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +12,14 @@ package com.hedera.mirror.graphql.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.graphql.config;
+
+import jakarta.inject.Named;
 import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -39,16 +35,18 @@ import reactor.core.publisher.Mono;
 class LoggingFilter implements WebFilter {
 
     static final String X_FORWARDED_FOR = "X-Forwarded-For";
+
     @SuppressWarnings("java:S1075")
     private static final String ACTUATOR_PATH = "/actuator/";
+
     private static final String LOCALHOST = "127.0.0.1";
     private static final String LOG_FORMAT = "{} {} {} in {} ms: {}";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         long start = System.currentTimeMillis();
-        return chain.filter(exchange).transformDeferred(call ->
-                call.doOnEach(signal -> doFilter(exchange, signal.getThrowable(), start))
+        return chain.filter(exchange)
+                .transformDeferred(call -> call.doOnEach(signal -> doFilter(exchange, signal.getThrowable(), start))
                         .doOnCancel(() -> doFilter(exchange, new CancelledException(), start)));
     }
 
@@ -68,7 +66,8 @@ class LoggingFilter implements WebFilter {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
-        Object message = cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
+        Object message =
+                cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
         Object[] params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
         if (cause != null) {

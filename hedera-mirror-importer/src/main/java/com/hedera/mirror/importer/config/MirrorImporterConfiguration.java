@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.config;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,18 @@ package com.hedera.mirror.importer.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
+package com.hedera.mirror.importer.config;
+
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.leader.LeaderAspect;
+import com.hedera.mirror.importer.leader.LeaderService;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
+import com.hedera.mirror.importer.parser.batch.BatchUpserter;
+import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransferUpsertQueryGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -38,15 +42,6 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.hedera.mirror.common.domain.token.TokenTransfer;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.leader.LeaderAspect;
-import com.hedera.mirror.importer.leader.LeaderService;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
-import com.hedera.mirror.importer.parser.batch.BatchUpserter;
-import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransferUpsertQueryGenerator;
-
 @Configuration
 @EnableAsync
 @EntityScan({"com.hedera.mirror.common.domain", "com.hedera.mirror.importer.repository.upsert"})
@@ -55,13 +50,14 @@ import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransf
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {
 
-    public static final String DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER = "deletedTokenDissociateTransferBatchPersister";
+    public static final String DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER =
+            "deletedTokenDissociateTransferBatchPersister";
 
     private final MirrorProperties mirrorProperties;
 
     @Bean
     @ConditionalOnCloudPlatform(CloudPlatform.KUBERNETES)
-    @ConditionalOnProperty(prefix = "hedera.mirror.importer", name = "leaderElection", havingValue = "true")
+    @ConditionalOnProperty(value = "spring.cloud.kubernetes.leader.enabled")
     LeaderAspect leaderAspect() {
         return new LeaderAspect();
     }
@@ -77,7 +73,7 @@ public class MirrorImporterConfiguration {
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
-                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
+                if (MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
                     timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;
@@ -88,22 +84,27 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean(name = DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
-    BatchPersister deletedTokenDissociateTransferBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
-                                                                CommonParserProperties parserProperties) {
-        return new BatchUpserter(TokenTransfer.class, dataSource, meterRegistry, parserProperties,
+    BatchPersister deletedTokenDissociateTransferBatchPersister(
+            DataSource dataSource, MeterRegistry meterRegistry, CommonParserProperties parserProperties) {
+        return new BatchUpserter(
+                TokenTransfer.class,
+                dataSource,
+                meterRegistry,
+                parserProperties,
                 new DeletedTokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Configuration
     @ConditionalOnProperty(prefix = "spring.retry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @EnableRetry
-    protected static class RetryConfiguration {
-    }
+    protected static class RetryConfiguration {}
 
     @Configuration
-    @ConditionalOnProperty(prefix = "spring.task.scheduling", name = "enabled", havingValue = "true", matchIfMissing
-            = true)
+    @ConditionalOnProperty(
+            prefix = "spring.task.scheduling",
+            name = "enabled",
+            havingValue = "true",
+            matchIfMissing = true)
     @EnableScheduling
-    protected static class SchedulingConfiguration {
-    }
+    protected static class SchedulingConfiguration {}
 }

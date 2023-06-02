@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.reader.signature;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,11 @@ package com.hedera.mirror.importer.reader.signature;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
+package com.hedera.mirror.importer.reader.signature;
 
-import java.io.IOException;
-import javax.inject.Named;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
@@ -35,6 +26,10 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import jakarta.inject.Named;
+import java.io.IOException;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 @Named
 public class SignatureFileReaderV5 implements SignatureFileReader {
@@ -45,8 +40,8 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
     public StreamFileSignature read(StreamFileData signatureFileData) {
         String filename = signatureFileData.getFilename();
 
-        try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
-                signatureFileData.getInputStream(), filename)) {
+        try (ValidatedDataInputStream vdis =
+                new ValidatedDataInputStream(signatureFileData.getInputStream(), filename)) {
             vdis.readByte(VERSION, "fileVersion");
 
             // Read the objectStreamSignatureVersion, which is not used

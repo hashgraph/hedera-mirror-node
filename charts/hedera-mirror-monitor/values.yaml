@@ -106,6 +106,8 @@ livenessProbe:
   periodSeconds: 10
   timeoutSeconds: 2
 
+nameOverride: ""
+
 nodeSelector: {}
 
 podAnnotations: {}

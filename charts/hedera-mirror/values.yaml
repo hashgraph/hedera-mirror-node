@@ -64,8 +64,8 @@ citus:
   architecture: replication
   enabled: false
   image:
-    repository: xinatswirlds/citus
-    tag: 11.2.0-pg14
+    repository: mirrornodeswirldslabs/citus
+    tag: 11.2.0
   nameOverride: citus
   primary:
     args:
@@ -148,6 +148,8 @@ db:
     password: ""  # Randomly generated if left blank
     username: mirror_node
 
+fullnameOverride: ""
+
 global:
   hostname: ""
   image: {}
@@ -208,16 +210,16 @@ grpc:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_GRPC_DB_USERNAME
-    SPRING_REDIS_HOST:
+    SPRING_DATA_REDIS_HOST:
       valueFrom:
         secretKeyRef:
           name: "{{ .Release.Name }}-redis"
-          key: SPRING_REDIS_HOST
-    SPRING_REDIS_PASSWORD:
+          key: SPRING_DATA_REDIS_HOST
+    SPRING_DATA_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: "{{ .Release.Name }}-redis"
-          key: SPRING_REDIS_PASSWORD
+          key: SPRING_DATA_REDIS_PASSWORD
 
 importer:
   db:
@@ -236,8 +238,11 @@ monitor:
   enabled: true
   env:
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_GRPC_HOST: "{{ .Release.Name }}-grpc"
+    HEDERA_MIRROR_MONITOR_MIRROR_NODE_GRPC_PORT: "5600"
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_HOST: "{{ .Release.Name }}-rest"
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_PORT: "80"
+
+nameOverride: mirror
 
 networkPolicy:
   enabled: false
@@ -258,6 +263,8 @@ postgresql:
     size: 500Gi
   pgpool:
     adminPassword: ""  # Randomly generated if left blank
+    childLifeTime: 60
+    childMaxConnections: 2
     existingSecret: mirror-passwords
     extraEnvVars:
       - name: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
@@ -272,11 +279,13 @@ postgresql:
             key: PGPOOL_POSTGRES_CUSTOM_USERS
     image:
       debug: true
+    numInitChildren: 100
     podAntiAffinityPreset: soft
     podLabels:
       role: db
     pdb:
       create: true
+    reservedConnections: 0
     resources:
       limits:
         cpu: 600m
@@ -289,8 +298,9 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.7.0-debian-11-r12
+      tag: 14.7.0-debian-11-r27
     initdbScriptsCM: "{{ .Release.Name }}-init"
+    maxConnections: 200
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
     replicaCount: 1
@@ -309,7 +319,7 @@ postgresql:
 redis:
   auth:
     existingSecret: "{{ .Release.Name }}-redis"
-    existingSecretPasswordKey: SPRING_REDIS_PASSWORD
+    existingSecretPasswordKey: SPRING_DATA_REDIS_PASSWORD
     password: ""  # Randomly generated if left blank
   enabled: true
   host: "{{ .Release.Name }}-redis"
@@ -412,6 +422,10 @@ rosetta:
           key: HEDERA_MIRROR_ROSETTA_DB_USERNAME
 
 test:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "10"
   config:
     hedera:
       mirror:
@@ -424,14 +438,15 @@ test:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
-  extraArgs: "-Dcucumber.ansi-colors.disabled=true"
-  git:
-    branch: ""  # Default to Chart app version
-    repository: hashgraph/hedera-mirror-node
+  env: {}
+  args:
+    - -Dcucumber.ansi-colors.disabled=true
+    - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
   image:
     pullPolicy: IfNotPresent
-    repository: alpine
-    tag: latest
+    registry: gcr.io
+    repository: mirrornode/hedera-mirror-test
+    tag: ""  # Defaults to the chart's app version
   resources:
     limits:
       cpu: 3

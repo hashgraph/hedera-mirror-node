@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asToken;
-import static com.hedera.services.utils.EntityIdUtils.asTopic;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,8 +70,7 @@ class IdTest {
                 .setRealmNum(2)
                 .setContractNum(3)
                 .build();
-        final var address = Address.wrap(Bytes.wrap(asEvmAddress(contractId)));
-        final var grpcTopic = asTopic("1.2.3");
+        final var address = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(contractId)));
 
         assertEquals(grpcAccount, id.asGrpcAccount());
         assertEquals(grpcToken, id.asGrpcToken());
@@ -78,9 +78,7 @@ class IdTest {
         assertEquals(address, id.asEvmAddress());
         assertEquals(id, Id.fromGrpcAccount(grpcAccount));
         assertEquals(id, Id.fromGrpcToken(grpcToken));
-        assertEquals(id, Id.fromGrpcTopic(grpcTopic));
         assertEquals(id, Id.fromGrpcContract(contractId));
-        assertEquals(grpcTopic, id.asGrpcTopic());
     }
 
     @Test

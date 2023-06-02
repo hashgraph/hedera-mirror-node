@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.migration;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,14 @@ package com.hedera.mirror.importer.migration;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static org.assertj.core.api.Assertions.assertThat;
+package com.hedera.mirror.importer.migration;
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
+import static com.hedera.mirror.importer.TestUtils.toContractId;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -45,9 +30,18 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.services.stream.proto.ContractBytecode;
+import com.hederahashgraph.api.proto.java.ContractID;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-@Tag("migration")
 class SidecarContractMigrationTest extends IntegrationTest {
 
     private final ContractRepository contractRepository;
@@ -73,6 +67,30 @@ class SidecarContractMigrationTest extends IntegrationTest {
     }
 
     @Test
+    void migrateWhenMissingContract() {
+        // given
+        var runtimeBytecode = new byte[] {0, 1, 2, 3};
+        var contract = domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(null).type(CONTRACT))
+                .persist();
+        var contractBytecode = ContractBytecode.newBuilder()
+                .setContractId(toContractId(contract))
+                .setRuntimeBytecode(fromBytes(runtimeBytecode))
+                .build();
+
+        // when
+        sidecarContractMigration.migrate(List.of(contractBytecode));
+
+        // then
+        assertThat(contractRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(runtimeBytecode, Contract::getRuntimeBytecode)
+                .returns(contract.getId(), Contract::getId);
+    }
+
+    @Test
     void migrateEntityTypeToContract() {
         // given
         var entities = new ArrayList<Entity>();
@@ -80,16 +98,20 @@ class SidecarContractMigrationTest extends IntegrationTest {
         var contractBytecodesMap = new HashMap<Long, ContractBytecode>();
         var contractBytecodeBuilder = ContractBytecode.newBuilder();
         var contractIdBuilder = ContractID.newBuilder();
+
         for (int i = 0; i < 66000; i++) {
             var entity = domainBuilder.entity().get();
             var entityId = entity.getId();
 
             entities.add(entity);
-            contracts.add(domainBuilder.contract().customize(c -> c.id(entityId)).get());
-            contractBytecodesMap.put(entityId, contractBytecodeBuilder
-                    .setContractId(contractIdBuilder.setContractNum(entityId))
-                    .setRuntimeBytecode(ByteString.copyFrom(domainBuilder.bytes(256)))
-                    .build());
+            contracts.add(
+                    domainBuilder.contract().customize(c -> c.id(entityId)).get());
+            contractBytecodesMap.put(
+                    entityId,
+                    contractBytecodeBuilder
+                            .setContractId(contractIdBuilder.setContractNum(entityId))
+                            .setRuntimeBytecode(fromBytes(domainBuilder.bytes(4)))
+                            .build());
         }
 
         persistEntities(entities);
@@ -101,10 +123,10 @@ class SidecarContractMigrationTest extends IntegrationTest {
         sidecarContractMigration.migrate(contractBytecodes);
 
         // then
-        assertThat(entityRepository.findAll())
-                .extracting(Entity::getType).containsOnly(CONTRACT);
+        assertThat(entityRepository.findAll()).extracting(Entity::getType).containsOnly(CONTRACT);
         assertThat(entityHistoryRepository.findAll())
-                .extracting(EntityHistory::getType).containsOnly(CONTRACT);
+                .extracting(EntityHistory::getType)
+                .containsOnly(CONTRACT);
 
         var contractsIterator = contractRepository.findAll().iterator();
         contractsIterator.forEachRemaining(savedContract -> {
@@ -116,52 +138,45 @@ class SidecarContractMigrationTest extends IntegrationTest {
         assertThat(contractBytecodesMap).isEmpty();
     }
 
+    // These persist methods are not functionally necessary but greatly speed up bulk insertion.
     private void persistEntities(List<Entity> entities) {
         jdbcTemplate.batchUpdate(
-                "insert into entity (decline_reward, id, memo, num, realm, shard, timestamp_range, type) " +
-                        "values (?, ?, ?, ?, ?, ?, ?::int8range, ?::entity_type)",
+                "insert into entity (id, num, realm, shard, timestamp_range, type) "
+                        + "values (?, ?, ?, ?, ?::int8range, ?::entity_type)",
                 entities,
                 entities.size(),
                 (ps, entity) -> {
-                    ps.setBoolean(1, entity.getDeclineReward());
-                    ps.setLong(2, entity.getId());
-                    ps.setString(3, entity.getMemo());
-                    ps.setLong(4, entity.getNum());
-                    ps.setLong(5, entity.getRealm());
-                    ps.setLong(6, entity.getShard());
-                    ps.setString(7, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
-                    ps.setString(8, entity.getType().toString());
-                }
-        );
+                    ps.setLong(1, entity.getId());
+                    ps.setLong(2, entity.getNum());
+                    ps.setLong(3, entity.getRealm());
+                    ps.setLong(4, entity.getShard());
+                    ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
+                    ps.setString(6, entity.getType().toString());
+                });
 
         jdbcTemplate.batchUpdate(
-                "insert into entity_history (decline_reward, id, memo, num, realm, shard, timestamp_range, type) " +
-                        "values (?, ?, ?, ?, ?, ?, ?::int8range, ?::entity_type)",
+                "insert into entity_history (id, num, realm, shard, timestamp_range, type) "
+                        + "values (?, ?, ?, ?, ?::int8range, ?::entity_type)",
                 entities,
                 entities.size(),
                 (ps, entity) -> {
-                    ps.setBoolean(1, entity.getDeclineReward());
-                    ps.setLong(2, entity.getId());
-                    ps.setString(3, entity.getMemo());
-                    ps.setLong(4, entity.getNum());
-                    ps.setLong(5, entity.getRealm());
-                    ps.setLong(6, entity.getShard());
-                    ps.setString(7, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
-                    ps.setString(8, entity.getType().toString());
-                }
-        );
+                    ps.setLong(1, entity.getId());
+                    ps.setLong(2, entity.getNum());
+                    ps.setLong(3, entity.getRealm());
+                    ps.setLong(4, entity.getShard());
+                    ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()));
+                    ps.setString(6, entity.getType().toString());
+                });
     }
 
     private void persistContracts(List<Contract> contracts) {
         jdbcTemplate.batchUpdate(
-                "insert into contract (file_id, id, runtime_bytecode) values (?, ?, ?)",
+                "insert into contract (id, runtime_bytecode) values (?, ?)",
                 contracts,
                 contracts.size(),
                 (ps, contract) -> {
-                    ps.setLong(1, contract.getFileId().getId());
-                    ps.setLong(2, contract.getId());
-                    ps.setBytes(3, contract.getRuntimeBytecode());
-                }
-        );
+                    ps.setLong(1, contract.getId());
+                    ps.setBytes(2, contract.getRuntimeBytecode());
+                });
     }
 }

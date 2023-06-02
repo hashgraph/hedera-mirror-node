@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.utils;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
@@ -22,11 +23,15 @@ import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -91,25 +96,25 @@ class EntityIdUtilsTest {
     @Test
     void serializesExpectedSolidityAddress() {
         final byte[] shardBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
         };
         final var shard = Ints.fromByteArray(shardBytes);
         final byte[] realmBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
         };
         final var realm = Longs.fromByteArray(realmBytes);
         final byte[] numBytes = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+            (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
         final var num = Longs.fromByteArray(numBytes);
         final byte[] expected = {
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
-                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+            (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
         final var create2AddressBytes = Hex.decode("0102030405060708090a0b0c0d0e0f1011121314");
         final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
@@ -122,6 +127,7 @@ class EntityIdUtilsTest {
         final var actual = asEvmAddress(shard, realm, num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
+        final var typedContract = EntityIdUtils.asTypedEvmAddress(equivContract);
         final var anotherActual = asEvmAddress(equivContract);
         final var create2Actual = asEvmAddress(create2Contract);
 
@@ -129,6 +135,7 @@ class EntityIdUtilsTest {
         assertArrayEquals(expected, anotherActual);
         assertArrayEquals(expected, typedActual.toArray());
         assertArrayEquals(expected, typedToken.toArray());
+        assertArrayEquals(expected, typedContract.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
         assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
         assertEquals(equivContract, contractIdFromEvmAddress(actual));
@@ -145,5 +152,32 @@ class EntityIdUtilsTest {
     @CsvSource({"asdf", "notANumber"})
     void parsesNonValidLiteral(final String badLiteral) {
         assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
+    }
+
+    @Test
+    void entityIdFromId() {
+        assertThat(EntityIdUtils.entityIdFromId(new Id(1L, 2L, 3L)))
+                .returns(1L, EntityId::getShardNum)
+                .returns(2L, EntityId::getRealmNum)
+                .returns(3L, EntityId::getEntityNum)
+                .returns(EntityType.UNKNOWN, EntityId::getType);
+    }
+
+    @Test
+    void entityIdFromIdNullHandling() {
+        assertThat(EntityIdUtils.entityIdFromId(null)).isNull();
+    }
+
+    @Test
+    void idFromEntityId() {
+        assertThat(EntityIdUtils.idFromEntityId(new EntityId(1L, 2L, 3L, EntityType.ACCOUNT)))
+                .returns(1L, Id::shard)
+                .returns(2L, Id::realm)
+                .returns(3L, Id::num);
+    }
+
+    @Test
+    void idFromEntityIdNullHandling() {
+        assertThat(EntityIdUtils.idFromEntityId(null)).isNull();
     }
 }
