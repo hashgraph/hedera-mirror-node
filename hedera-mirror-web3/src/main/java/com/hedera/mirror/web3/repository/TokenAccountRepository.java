@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import java.util.List;
@@ -27,11 +27,11 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenAccountRepository extends CrudRepository<TokenAccount, AbstractTokenAllowance.Id> {
+public interface TokenAccountRepository extends CrudRepository<TokenAccount, AbstractTokenAccount.Id> {
 
     @Override
     @Cacheable(cacheNames = "token_account", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<TokenAccount> findById(AbstractTokenAllowance.Id id);
+    Optional<TokenAccount> findById(AbstractTokenAccount.Id id);
 
     @Query(
             value = "select count(*) as tokenCount, balance>0 as isPositiveBalance from token_account "

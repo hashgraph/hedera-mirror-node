@@ -67,7 +67,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorNodeEvmProperties evmProperties,
             final TraceProperties traceProperties,
             final StaticBlockMetaSource blockMetaSource,
-            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor,
             final TokenAccessorImpl tokenAccessor,
