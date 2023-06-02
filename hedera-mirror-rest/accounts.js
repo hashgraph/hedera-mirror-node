@@ -21,10 +21,11 @@ import EntityId from './entityId';
 import * as utils from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
-import {NotFoundError} from './errors';
+import {InvalidArgumentError, NotFoundError} from './errors';
 import Entity from './model/entity.js';
 import balances from './balances';
-import {opsMap} from './utils';
+import {opsMap, parseInteger} from './utils';
+import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -152,8 +153,8 @@ const getEntityBalanceQuery = (
 
   const queries = [
     `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
-                                    from token_account
-                                    where associated is true)`,
+                                       from token_account
+                                       where associated is true)`,
   ];
 
   const selectFields = [
@@ -179,15 +180,20 @@ const getEntityBalanceQuery = (
 
     queries.push(
       `
-        select ${selectFields.join(',\n')}
-        from (SELECT * from ${Entity.tableName} e where ${entityWhereCondition}
-                UNION ALL
-              SELECT * from ${Entity.historyTableName} e where ${entityWhereCondition}
-              order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
-        left join entity_stake es on es.id = e.id
-        left join account_balance ab on ${accountBalanceQuery.query}
-        ${whereCondition ? 'where' : ''} ${whereCondition}
-      `
+                select ${selectFields.join(',\n')}
+                from (SELECT *
+                      from ${Entity.tableName} e
+                      where ${entityWhereCondition}
+                      UNION ALL
+                      SELECT *
+                      from ${Entity.historyTableName} e
+                      where ${entityWhereCondition}
+                      order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
+                         left join entity_stake es on es.id = e.id
+                         left join account_balance ab on ${accountBalanceQuery.query} ${
+        whereCondition ? 'where' : ''
+      } ${whereCondition}
+            `
     );
   } else {
     const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
@@ -195,10 +201,10 @@ const getEntityBalanceQuery = (
     selectFields.push('e.balance as balance');
 
     queries.push(` select ${selectFields.join(',\n')}
-            from entity e
-                     left join entity_stake es on es.id = e.id
-            where ${conditions}
-            order by e.id ${order} ${limitQuery}`);
+                       from entity e
+                                left join entity_stake es on es.id = e.id
+                       where ${conditions}
+                       order by e.id ${order} ${limitQuery}`);
     utils.mergeParams(params, limitParams);
   }
 
@@ -345,6 +351,83 @@ const getAccounts = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
+const getMinTimestampFilter = (filters) => {
+  return filters.length
+    ? filters.reduce((prev, current) => {
+        const prevNum = parseInteger(prev.value);
+        const currentNum = parseInteger(current.value);
+
+        if (prevNum < currentNum) {
+          return prev;
+        }
+        if (prevNum > currentNum) {
+          return current;
+        }
+
+        return prev.condition === opsMap.lte ? prev : current;
+      })
+    : undefined;
+};
+
+const getMaxTimestampFilter = (filters) => {
+  return filters.length
+    ? filters.reduce((prev, current) => {
+        const prevNum = parseInteger(prev.value);
+        const currentNum = parseInteger(current.value);
+
+        if (prevNum < currentNum) {
+          return current;
+        }
+
+        if (prevNum > currentNum) {
+          return prev;
+        }
+
+        return prev.condition === opsMap.gte ? prev : current;
+      })
+    : undefined;
+};
+
+/**
+ * Compares the timestamp parameters to ensure there is an effective range.
+ * Not equals conditions are not considered in this calculation.
+ * */
+const isEffectiveTimestamp = (filters) => {
+  const ltFilters = filters.filter(
+    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.lte || filter.operator === opsMap.lt)
+  );
+  const gtFilters = filters.filter(
+    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.gte || filter.operator === opsMap.gt)
+  );
+  const eqTsFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.eq);
+
+  const minTsFilter = getMinTimestampFilter(ltFilters);
+  const minTs = minTsFilter ? parseInteger(minTsFilter.value) : undefined;
+
+  const maxTsFilter = getMaxTimestampFilter(gtFilters);
+  const maxTs = maxTsFilter ? parseInteger(maxTsFilter.value) : undefined;
+
+  if (eqTsFilters.length) {
+    const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
+    const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
+
+    if (minTs && (minEqTs < minTs || (minEqTs === minTs && minTsFilter.operator === opsMap.gt))) {
+      return false;
+    }
+
+    if (maxTs && (maxEqTs > maxTs || (maxEqTs === maxTs && maxTsFilter.operator === opsMap.lt))) {
+      return false;
+    }
+  }
+
+  return (
+    minTs === undefined ||
+    maxTs === undefined ||
+    minTs < maxTs ||
+    (minTs === maxTs && (minTsFilter.operator === opsMap.lte || maxTsFilter.operator === opsMap.gte))
+  );
+};
+
 /**
  * Handler function for /account/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
@@ -363,10 +446,6 @@ const getOneAccount = async (req, res) => {
   );
 
   let paramCount = 0;
-
-  // Override any equals operators with lte to find the closest balance file
-  const balanceFileTsQuery = transactionTsQuery.replace('t.', '').replace(opsMap.eq, opsMap.lte);
-  const balanceFileTsParams = transactionTsParams;
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParams = [encodedId];
@@ -380,13 +459,36 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    tokenBalanceQuery.query += ` and ${transactionTsQuery
-      .replace('t.consensus_timestamp', 'created_timestamp')
-      .replace('?', `$${++paramCount}`)} `;
+    if (!isEffectiveTimestamp(filters)) {
+      throw InvalidArgumentError.forRequestValidation({
+        code: InvalidArgumentError.INVALID_PARAM_USAGE,
+        key: filterKeys.TIMESTAMP,
+        error: 'No effective time range',
+      });
+    }
+
+    // Exclude ne query params for balance file
+    const cleanedReqParams = Object.assign({}, parsedQueryParams);
+    const tsParamValue = cleanedReqParams[filterKeys.TIMESTAMP];
+    cleanedReqParams[filterKeys.TIMESTAMP] = (Array.isArray(tsParamValue) ? tsParamValue : [tsParamValue]).filter(
+      (value) => !value.startsWith('ne')
+    );
+
+    const [balanceFileTsQuery, balanceFileTsParams] = utils.parseTimestampQueryParam(
+      cleanedReqParams,
+      'consensus_timestamp',
+      {[opsMap.eq]: opsMap.lte}
+    );
+
+    let tokenBalanceTsQuery = transactionTsQuery
+      .replaceAll('t.consensus_timestamp', 'created_timestamp')
+      .replaceAll('?', (_) => `$${++paramCount}`);
+
+    tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
     tokenBalanceQuery.params = tokenBalanceQuery.params.concat(transactionTsParams);
 
     const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(
-      filters,
+      filters.filter((filter) => filter.key === filterKeys.TIMESTAMP),
       paramCount
     );
     paramCount += entityTsParams.length;
@@ -394,7 +496,19 @@ const getOneAccount = async (req, res) => {
     entityAccountQuery.query += ` and ${entityTsQuery.join(' and ')}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
-    const accountBalanceTs = await balances.getAccountBalanceTimestamp(balanceFileTsQuery, balanceFileTsParams);
+    const accountBalanceTs = await balances.getAccountBalanceTimestamp(balanceFileTsQuery, balanceFileTsParams, order);
+    const neqTsFilters = filters.filter(
+      (filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.ne
+    );
+    const timestampExcluded = neqTsFilters.reduce(
+      (prev, curr) => prev || parseInteger(curr.value) === accountBalanceTs,
+      false
+    );
+
+    if (timestampExcluded) {
+      throw new NotFoundError('Result excluded by timestamp query');
+    }
+
     accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
     accountBalanceQuery.params = [accountBalanceTs ?? null];
   }
