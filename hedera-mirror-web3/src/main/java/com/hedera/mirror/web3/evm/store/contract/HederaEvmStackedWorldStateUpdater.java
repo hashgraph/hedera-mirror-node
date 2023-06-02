@@ -131,7 +131,7 @@ public class HederaEvmStackedWorldStateUpdater
 
     /**
      * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
-     * the given address is the mirror address of an account with an EIP-1014 address.
+     * the given address is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based address value of a given account.
      *
      * @param evmAddress an EVM address
      * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for

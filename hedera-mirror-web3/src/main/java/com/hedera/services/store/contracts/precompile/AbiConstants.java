@@ -20,10 +20,6 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class AbiConstants {
 
-    private AbiConstants() {
-        throw new UnsupportedOperationException("Utility class");
-    }
-
     // **** HIP-206 function selectors ****
     // cryptoTransfer(TokenTransferList[] memory tokenTransfers)
     public static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
@@ -77,7 +73,6 @@ public class AbiConstants {
     public static final int ABI_ID_TRANSFER_FROM = 0x15dacbea;
     // transferFromNFT(address token, address from, address to, uint256 serialNumber)
     public static final int ABI_ID_TRANSFER_FROM_NFT = 0x9b23d3d9;
-
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
     public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
@@ -144,7 +139,6 @@ public class AbiConstants {
     // ApprovalForAll(address indexed owner, address indexed operator, bool approved)
     public static final Bytes APPROVAL_FOR_ALL_EVENT =
             Bytes.fromHexString("17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31");
-
     // **** HIP-358 function selectors ****
     // createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)
     public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN = 0x7812a04b;
@@ -196,7 +190,6 @@ public class AbiConstants {
     //  FixedFee[] memory fixedFees,
     //  RoyaltyFee[] memory royaltyFees)
     public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 = 0xabb54eb5;
-
     // **** HIP-514 function selectors ****
     // getFungibleTokenInfo(address token)
     public static final int ABI_ID_GET_FUNGIBLE_TOKEN_INFO = 0x3f28a19b;
@@ -226,4 +219,8 @@ public class AbiConstants {
     public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO = 0x593d6e82;
     // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
     public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 = 0xd27be6cd;
+
+    private AbiConstants() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 }
