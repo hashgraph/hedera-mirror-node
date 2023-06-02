@@ -4,7 +4,7 @@ Feature: EstimateGas Contract Base Coverage Feature
   @estimate @web3
   Scenario Outline: Validate EstimateGas
     Given I successfully create contract from contract bytes with 10000000 balance
-    And lower deviation is 5 and upper deviation is 20
+    And lower deviation is 5% and upper deviation is 20%
     Then I call estimateGas without arguments that multiplies two numbers
     Then I call estimateGas with function msgSender
     Then I call estimateGas with function tx origin
