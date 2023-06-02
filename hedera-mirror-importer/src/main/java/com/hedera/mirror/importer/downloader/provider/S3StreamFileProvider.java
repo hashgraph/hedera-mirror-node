@@ -47,7 +47,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 @RequiredArgsConstructor
 public final class S3StreamFileProvider implements StreamFileProvider {
 
-    private static final String SEPARATOR = "/";
+    public static final String SEPARATOR = "/";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
     private final CommonDownloaderProperties commonDownloaderProperties;
@@ -98,8 +98,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     log.debug("Returned {} s3 objects", l.contents().size());
                 })
                 .flatMapIterable(ListObjectsV2Response::contents)
-                .map(S3Object::key)
-                .map(objectKey -> new StreamFilename(objectKey, SEPARATOR))
+                .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
                 .doOnSubscribe(s -> log.debug(
@@ -128,6 +127,17 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
             case NODE_ID -> getNodeIdPrefix(key);
         };
+    }
+
+    private StreamFilename toStreamFilename(S3Object s3Object) {
+        var key = s3Object.key();
+
+        try {
+            return new StreamFilename(key, SEPARATOR);
+        } catch (Exception e) {
+            log.warn("Unable to parse stream filename for {}", key, e);
+            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
+        }
     }
 
     record PathKey(ConsensusNode node, StreamType type) {}

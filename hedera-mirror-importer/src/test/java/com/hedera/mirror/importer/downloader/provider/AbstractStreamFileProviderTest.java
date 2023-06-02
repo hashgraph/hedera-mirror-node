@@ -42,6 +42,8 @@ abstract class AbstractStreamFileProviderTest {
     @TempDir
     protected Path dataPath;
 
+    protected Path bucketRootPath;
+
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties properties;
     protected StreamFileProvider streamFileProvider;
@@ -53,9 +55,14 @@ abstract class AbstractStreamFileProviderTest {
         properties = new CommonDownloaderProperties(mirrorProperties);
         customizeProperties(properties);
         fileCopier = createFileCopier(dataPath);
+        bucketRootPath = dataPath.resolve(properties.getBucketName());
     }
 
     protected abstract FileCopier createFileCopier(Path dataPath);
+
+    protected abstract String getProviderPathSeparator();
+
+    protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
 
     protected FileCopier getFileCopier(ConsensusNode node) {
         return fileCopier;
@@ -236,7 +243,8 @@ abstract class AbstractStreamFileProviderTest {
 
     protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
         try {
-            var streamFilename = new StreamFilename(filename);
+            var streamFilename =
+                    new StreamFilename(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
             var filePath = fileCopier
                     .getFrom()
                     .resolve(nodePath(node))

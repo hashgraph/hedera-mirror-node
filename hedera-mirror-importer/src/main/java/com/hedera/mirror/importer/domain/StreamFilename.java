@@ -114,20 +114,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
     }
 
-    public String getFilePath() {
-
-        var builder = new StringBuilder();
-        if (!StringUtils.isEmpty(this.path)) {
-            builder.append(this.path);
-            builder.append(pathSeparator);
-        }
-        if (this.fileType == SIDECAR) {
-            builder.append(SIDECAR_FOLDER);
-        }
-        builder.append(this.filename);
-        return builder.toString();
-    }
-
     public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
 
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
@@ -200,6 +186,20 @@ public class StreamFilename implements Comparable<StreamFilename> {
         } catch (DateTimeParseException ex) {
             throw new InvalidStreamFileException("Invalid datetime string in filename " + filename, ex);
         }
+    }
+
+    public String getFilePath() {
+
+        var builder = new StringBuilder();
+        if (!StringUtils.isEmpty(this.path)) {
+            builder.append(this.path);
+            builder.append(this.pathSeparator);
+        }
+        if (this.fileType == SIDECAR) {
+            builder.append(SIDECAR_FOLDER);
+        }
+        builder.append(this.filename);
+        return builder.toString();
     }
 
     @Override

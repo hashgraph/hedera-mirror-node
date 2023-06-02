@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -31,6 +33,16 @@ import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
+
+    @Override
+    protected String getProviderPathSeparator() {
+        return File.separator;
+    }
+
+    @Override
+    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
+        return null;
+    }
 
     @BeforeEach
     void setup() throws Exception {

@@ -22,6 +22,7 @@ import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOp
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -42,6 +43,16 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     private static final int S3_PROXY_PORT = 8001;
 
     private S3Proxy s3Proxy;
+
+    @Override
+    protected String getProviderPathSeparator() {
+        return S3StreamFileProvider.SEPARATOR;
+    }
+
+    @Override
+    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
+        return "%s/%s/%s".formatted(StreamType.RECORD.getPath(), nodePath(node).toString(), fileName);
+    }
 
     @BeforeEach
     void setup() throws Exception {
