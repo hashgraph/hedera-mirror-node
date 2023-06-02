@@ -401,30 +401,30 @@ const isEffectiveTimestamp = (filters) => {
   );
   const eqTsFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.eq);
 
-  const minTsFilter = getMinTimestampFilter(ltFilters);
-  const minTs = minTsFilter ? parseInteger(minTsFilter.value) : undefined;
+  const upperBoundFilter = getMinTimestampFilter(ltFilters);
+  const upperBound = upperBoundFilter ? parseInteger(upperBoundFilter.value) : undefined;
 
-  const maxTsFilter = getMaxTimestampFilter(gtFilters);
-  const maxTs = maxTsFilter ? parseInteger(maxTsFilter.value) : undefined;
+  const lowerBoundFilter = getMaxTimestampFilter(gtFilters);
+  const lowerBound = lowerBoundFilter ? parseInteger(lowerBoundFilter.value) : undefined;
 
   if (eqTsFilters.length) {
     const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
     const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
 
-    if (minTs && (minEqTs < minTs || (minEqTs === minTs && minTsFilter.operator === opsMap.gt))) {
+    if (lowerBound && (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))) {
       return false;
     }
 
-    if (maxTs && (maxEqTs > maxTs || (maxEqTs === maxTs && maxTsFilter.operator === opsMap.lt))) {
+    if (upperBound && (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))) {
       return false;
     }
   }
 
   return (
-    minTs === undefined ||
-    maxTs === undefined ||
-    minTs < maxTs ||
-    (minTs === maxTs && (minTsFilter.operator === opsMap.lte || maxTsFilter.operator === opsMap.gte))
+    upperBound === undefined ||
+    lowerBound === undefined ||
+    lowerBound < upperBound ||
+    (upperBound === lowerBound && upperBoundFilter.operator === opsMap.lte && lowerBoundFilter.operator === opsMap.gte)
   );
 };
 
@@ -471,7 +471,7 @@ const getOneAccount = async (req, res) => {
     const cleanedReqParams = Object.assign({}, parsedQueryParams);
     const tsParamValue = cleanedReqParams[filterKeys.TIMESTAMP];
     cleanedReqParams[filterKeys.TIMESTAMP] = (Array.isArray(tsParamValue) ? tsParamValue : [tsParamValue]).filter(
-      (value) => !value.startsWith('ne')
+      (value) => !value.startsWith(constants.queryParamOperators.ne)
     );
 
     const [balanceFileTsQuery, balanceFileTsParams] = utils.parseTimestampQueryParam(
@@ -506,7 +506,7 @@ const getOneAccount = async (req, res) => {
     );
 
     if (timestampExcluded) {
-      throw new NotFoundError('Result excluded by timestamp query');
+      throw new NotFoundError('Not found');
     }
 
     accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;

@@ -1,5 +1,5 @@
 {
-  "description": "Account api calls for specific account using path and transaction timestamp lte filter",
+  "description": "Account api calls for specific account using path and transaction timestamp lte filter and no previous balance",
   "setup": {
     "accounts": [
       {
@@ -35,13 +35,13 @@
     ],
     "balances": [
       {
-        "timestamp": "1234567890000000004",
+        "timestamp": "1234567890000000010",
         "id": 8,
         "balance": 555
       },
 
       {
-        "timestamp": "1234567880000000004",
+        "timestamp": "1234567890000000009",
         "id": 8,
         "balance": 444
       }
@@ -257,8 +257,8 @@
       }
     ],
     "balance": {
-      "timestamp": "1234567890.000000004",
-      "balance": 555,
+      "timestamp": "1234567890.000000007",
+      "balance": 30,
       "tokens": [
         {
           "token_id": "0.0.99999",
