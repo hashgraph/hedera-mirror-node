@@ -271,6 +271,34 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
+    void hollowAccountCreationIsNotSupported() {
+        // transferHbarsToAddress(address)
+        final var transferHbarsInput = "0x80b9f03c00000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
+        final var params =
+                serviceParameters(transferHbarsInput, 90L, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(params))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Auto account creation is not supported.");
+    }
+
+    @Test
+    void create2ContractDeployIsNotSupported() {
+        // deployViaCreate2()
+        final var stateChangePayable = "0xdbb6f04a";
+        final var params =
+                serviceParameters(stateChangePayable, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(params))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("CREATE2 operation is not supported yet.");
+    }
+
+    @Test
     void estimateGasForStateChangeCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var stateChangeHash =
