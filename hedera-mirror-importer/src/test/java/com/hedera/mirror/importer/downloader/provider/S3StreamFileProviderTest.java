@@ -51,7 +51,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
-        return "%s/%s/%s".formatted(StreamType.RECORD.getPath(), nodePath(node).toString(), fileName);
+        return TestUtils.accountIdStreamFileProviderPath(node, StreamType.RECORD, fileName);
     }
 
     @BeforeEach

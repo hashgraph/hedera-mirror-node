@@ -41,7 +41,13 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
-        return null;
+        return fileCopier
+                .getTo()
+                .resolve(Path.of(
+                        StreamType.RECORD.getNodePrefix()
+                                + node.getNodeAccountId().toString(),
+                        fileName))
+                .toString();
     }
 
     @BeforeEach

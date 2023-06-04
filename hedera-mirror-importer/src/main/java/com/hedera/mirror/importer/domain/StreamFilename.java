@@ -48,7 +48,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     public static final Comparator<StreamFilename> EXTENSION_COMPARATOR =
             Comparator.comparing(StreamFilename::getExtension);
     public static final StreamFilename EPOCH;
-    public static final String SIDECAR_FOLDER = "sidecar/";
+    public static final String SIDECAR_FOLDER = "sidecar";
 
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
@@ -197,6 +197,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
         }
         if (this.fileType == SIDECAR) {
             builder.append(SIDECAR_FOLDER);
+            builder.append(this.pathSeparator);
         }
         builder.append(this.filename);
         return builder.toString();
