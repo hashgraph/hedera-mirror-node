@@ -20,8 +20,10 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.NftAllowance.NftAllowanceBuilder;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import java.util.ArrayList;
@@ -113,6 +115,9 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
                         .consensusTimestamp(contractResultConsensus))
                 .persist();
 
+        // An nft allowance with a contract result that has a null sender id should not be migrated
+        var nullSenderIdNftAllowancePair = generateNftAllowanceWithNullSenderId(incorrectOwnerAccountId);
+
         // when
         migration.doMigrate();
 
@@ -125,6 +130,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         expected.add(newNftAllowance);
         collidedNftAllowance.setOwner(ownerAccountId);
         expected.add(collidedNftAllowance);
+        expected.add(nullSenderIdNftAllowancePair.getLeft());
         assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         // The history of the nft allowance should also be updated with the corrected owner
@@ -133,6 +139,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
         expectedHistory.addAll(unaffectedNftAllowancePair.getRight());
         expectedHistory.addAll(correctNftAllowancePair.getRight());
+        expectedHistory.addAll(nullSenderIdNftAllowancePair.getRight());
         nftAllowancePreMigration.setTimestampUpper(contractResultConsensus);
         expectedHistory.add(nftAllowancePreMigration);
         assertThat(findHistory(NftAllowance.class, idColumns)).containsExactlyInAnyOrderElementsOf(expectedHistory);
@@ -185,6 +192,8 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
                         .consensusTimestamp(contractResultConsensus))
                 .persist();
 
+        generateNftAllowanceWithNullSenderId(incorrectOwnerAccountId);
+
         migration.doMigrate();
         var firstPassNftAllowances = nftAllowanceRepository.findAll();
         var firstPassHistory = findHistory(NftAllowance.class, idColumns);
@@ -214,7 +223,37 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
             builder.customize(nfta -> nfta.owner(ownerAccountId));
         }
         var currentNftAllowance = builder.persist();
-        var range = currentNftAllowance.getTimestampRange();
+        var nftHistory = generateNftAllowanceHistory(currentNftAllowance, builder);
+        if (contractResultSenderId != null) {
+            var contractResult = domainBuilder.contractResult();
+            for (var nftAllowance : List.of(currentNftAllowance, nftHistory.get(0), nftHistory.get(1))) {
+                contractResult
+                        .customize(c ->
+                                c.senderId(contractResultSenderId).consensusTimestamp(nftAllowance.getTimestampLower()))
+                        .persist();
+            }
+        }
+
+        return Pair.of(currentNftAllowance, nftHistory);
+    }
+
+    private Pair<NftAllowance, List<NftAllowance>> generateNftAllowanceWithNullSenderId(Long ownerAccountId) {
+        var builder = domainBuilder.nftAllowance().customize(nfta -> nfta.owner(ownerAccountId));
+        var currentNftAllowance = builder.persist();
+        var nftHistory = generateNftAllowanceHistory(currentNftAllowance, builder);
+        var contractResult = domainBuilder.contractResult();
+        for (var nftAllowance : List.of(currentNftAllowance, nftHistory.get(0), nftHistory.get(1))) {
+            contractResult
+                    .customize(c -> c.senderId(null).consensusTimestamp(nftAllowance.getTimestampLower()))
+                    .persist();
+        }
+
+        return Pair.of(currentNftAllowance, nftHistory);
+    }
+
+    private List<NftAllowance> generateNftAllowanceHistory(
+            NftAllowance nftAllowance, DomainWrapper<NftAllowance, NftAllowanceBuilder<?, ?>> builder) {
+        var range = nftAllowance.getTimestampRange();
         var rangeUpdate1 = Range.closedOpen(range.lowerEndpoint() - 2, range.lowerEndpoint() - 1);
         var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
 
@@ -225,17 +264,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         saveHistory(update1);
         saveHistory(update2);
 
-        if (contractResultSenderId != null) {
-            var contractResult = domainBuilder.contractResult();
-            for (var nftAllowance : List.of(currentNftAllowance, update1, update2)) {
-                contractResult
-                        .customize(c ->
-                                c.senderId(contractResultSenderId).consensusTimestamp(nftAllowance.getTimestampLower()))
-                        .persist();
-            }
-        }
-
-        return Pair.of(currentNftAllowance, List.of(update1, update2));
+        return List.of(update1, update2);
     }
 
     private void saveHistory(NftAllowance nftAllowance) {

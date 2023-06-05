@@ -48,7 +48,8 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
                 union all
                 select * from nft_allowance_history
               ) nfta
-              join contract_result cr on cr.consensus_timestamp = lower(nfta.timestamp_range)
+              join contract_result cr on cr.sender_id is not null and
+              cr.consensus_timestamp = lower(nfta.timestamp_range)
             ), delete_nft_allowance as (
               delete from nft_allowance nfta
               using affected a
