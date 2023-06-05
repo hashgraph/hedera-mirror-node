@@ -8,7 +8,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.12.6
 	github.com/ethereum/go-ethereum v1.12.0
-	github.com/go-playground/validator/v10 v10.14.0
+	github.com/go-playground/validator/v10 v10.14.1
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230222133122-6549ac627de9
 	github.com/hashgraph/hedera-sdk-go/v2 v2.24.2
 	github.com/hellofresh/health-go/v4 v4.7.0
