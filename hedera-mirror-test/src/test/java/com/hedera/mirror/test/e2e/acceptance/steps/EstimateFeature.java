@@ -29,21 +29,20 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.ResourceUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStringRightPad;
@@ -58,71 +57,7 @@ public class EstimateFeature extends AbstractFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(
                     DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
-    /**
-     * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
-     * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
-     */
-    private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "0ec1551d";
-    private static final int MULTIPLY_SIMPLE_NUMBERS_ACTUAL_GAS = 21227;
-    private static final String MESSAGE_SENDER_SELECTOR = "d737d0c7";
-    private static final int MESSAGE_SENDER_ACTUAL_GAS = 21290;
-    private static final String TX_ORIGIN_SELECTOR = "f96757d1";
-    private static final int TX_ORIGIN_ACTUAL_GAS = 21289;
-    private static final String MESSAGE_VALUE_SELECTOR = "ddf363d7";
-    private static final int MESSAGE_VALUE_ACTUAL_GAS = 21234;
-    private static final String MESSAGE_SIGNER_SELECTOR = "ec3e88cf";
-    private static final int MESSAGE_SIGNER_ACTUAL_GAS = 21252;
-    private static final String ADDRESS_BALANCE_SELECTOR = "3ec4de35";
-    private static final int ADDRESS_BALANCE_ACTUAL_GAS = 24030;
-    private static final String UPDATE_COUNTER_SELECTOR = "c648049d";
-    private static final int UPDATE_COUNTER_ACTUAL_GAS = 26279;
-    private static final String DEPLOY_CONTRACT_VIA_CREATE_OPCODE_SELECTOR = "6e6662b9";
-    private static final int DEPLOY_CONTRACT_VIA_CREATE_OPCODE_ACTUAL_GAS = 53477;
-    private static final String DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE_SELECTOR = "dbb6f04a";
-    private static final int DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE_ACTUAL_GAS = 55693;
-    private static final String STATIC_CALL_TO_CONTRACT_SELECTOR = "ef0a4eac";
-    private static final int STATIC_CALL_TO_CONTRACT_ACTUAL_GAS = 26416;
-    private static final String DELEGATE_CALL_TO_CONTRACT_SELECTOR = "d3b6e741";
-    private static final int DELEGATE_CALL_TO_CONTRACT_ACTUAL_GAS = 26417;
-    private static final String CALL_CODE_TO_CONTRACT_SELECTOR = "ac7e2758";
-    private static final int CALL_CODE_TO_CONTRACT_ACTUAL_GAS = 26398;
-    private static final String LOGS_SELECTOR = "74259795";
-    private static final int LOGS_ACTUAL_GAS = 28757;
-    private static final String DESTROY_SELECTOR = "83197ef0";
-    private static final int DESTROY_ACTUAL_GAS = 51193;
-    private static final String WRONG_METHOD_SIGNATURE_SELECTOR = "ffffffff";
-    private static final String CALL_TO_INVALID_CONTRACT_SELECTOR = "70079963";
-    private static final int CALL_TO_INVALID_CONTRACT_ACTUAL_GAS = 24374;
-    private static final String DELEGATE_CALL_TO_INVALID_CONTRACT_SELECTOR = "7df6ee27";
-    private static final int DELEGATE_CALL_TO_INVALID_CONTRACT_ACTUAL_GAS = 24350;
-    private static final String STATIC_CALL_TO_INVALID_CONTRACT_SELECTOR = "41f32f0c";
-    private static final int STATIC_CALL_TO_INVALID_CONTRACT_ACTUAL_GAS = 24394;
-    private static final String CALL_CODE_TO_INVALID_CONTRACT_SELECTOR = "e080b4aa";
-    private static final int CALL_CODE_TO_INVALID_CONTRACT_ACTUAL_GAS = 24031;
-    private static final String CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_SELECTOR = "4929af37";
-    private static final int CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_ACTUAL_GAS = 26100;
-    private static final String DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_SELECTOR = "80f009b6";
-    private static final int DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_ACTUAL_GAS = 24712;
-    private static final String CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW_SELECTOR = "fa5e414e";
-    private static final int CALL_CODE_TO_EXTERNAL_CONTRACT_VIEW_FUNCTION_ACTUAL_GAS = 22272;
-    private static final String STATE_UPDATE_OF_CONTRACT_SELECTOR = "5256b99d";
-    private static final int STATE_UPDATE_OF_CONTRACT_ACTUAL_GAS = 30500;
-    private static final String GET_GAS_LEFT_SELECTOR = "51be4eaa";
-    private static final int GET_GAS_LEFT_ACTUAL_GAS = 21326;
-    private static final String REENTRANCY_TRANSFER_ATTACK_SELECTOR = "ffaf0890";
-    private static final int REENTRANCY_TRANSFER_ATTACK_ACTUAL_GAS = 55500;
-    private static final String REENTRANCY_CALL_ATTACK_SELECTOR = "e7df080e";
-    private static final int REENTRANCY_CALL_ATTACK_ACTUAL_GAS = 55818;
-    private static final String NESTED_CALLS_SELECTOR = "bb376a96";
-    private static final int POSITIVE_NESTED_CALLS_ACTUAL_GAS = 45871;
-    private static final int LIMITED_NESTED_CALLS_ACTUAL_GAS = 525255;
     private static final String HEX_DIGITS = "0123456789abcdef";
-    private static final String GET_ADDRESS_SELECTOR = "38cc4831";
-    private static final String INVALID_SELECTOR = "5a790dba";
-    private static final String GET_MOCK_ADDRESS_SELECTOR = "14a7862c";
-
-
     private final ContractClient contractClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
@@ -130,14 +65,11 @@ public class EstimateFeature extends AbstractFeature {
     private String contractSolidityAddress;
     private int lowerDeviation;
     private int upperDeviation;
-
-
     @Value("classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json")
-    private Path estimateGasTestContract;
-
-
+    private Resource estimateGasTestContract;
     private CompiledSolidityArtifact compiledSolidityArtifacts;
     private String newAccountEvnAddress;
+    private String randomAddress;
 
     /**
      * Checks if the actualUsedGas is within the specified range of the estimatedGas.
@@ -162,17 +94,16 @@ public class EstimateFeature extends AbstractFeature {
         return (estimatedGas >= lowerBound) && (estimatedGas <= upperBound);
     }
 
-    @Before
-    public void initialization() throws IOException {
-        compiledSolidityArtifacts = MAPPER.readValue(ResourceUtils.getFile(estimateGasTestContract.toUri()),
-                CompiledSolidityArtifact.class);
-    }
-
     @Given("I successfully create contract from contract bytes with {int} balance")
-    public void createNewEstimateContract(int supply) {
+    public void createNewEstimateContract(int supply) throws IOException {
+        try (var in = estimateGasTestContract.getInputStream()) {
+            compiledSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            createContract(compiledSolidityArtifacts, supply);
+        }
         deployedContract = createContract(compiledSolidityArtifacts, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvnAddress = PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
+        randomAddress = RandomStringUtils.random(40, HEX_DIGITS);
     }
 
     @And("lower deviation is {int}% and upper deviation is {int}%")
@@ -183,34 +114,33 @@ public class EstimateFeature extends AbstractFeature {
 
     @Then("I call estimateGas without arguments that multiplies two numbers")
     public void multiplyEstimateCall() {
-        validateGasEstimation(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, MULTIPLY_SIMPLE_NUMBERS_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getSelector(), ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getActualGas());
     }
 
     @Then("I call estimateGas with function msgSender")
     public void msgSenderEstimateCall() {
-        validateGasEstimation(MESSAGE_SENDER_SELECTOR, MESSAGE_SENDER_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.MESSAGE_SENDER.getSelector(), ContractMethods.MESSAGE_SENDER.getActualGas());
     }
 
     @Then("I call estimateGas with function tx origin")
     public void txOriginEstimateCall() {
-        validateGasEstimation(TX_ORIGIN_SELECTOR, TX_ORIGIN_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.TX_ORIGIN.getSelector(), ContractMethods.TX_ORIGIN.getActualGas());
     }
 
     @Then("I call estimateGas with function messageValue")
     public void msgValueEstimateCall() {
-        validateGasEstimation(MESSAGE_VALUE_SELECTOR, MESSAGE_VALUE_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.MESSAGE_VALUE.getSelector(), ContractMethods.MESSAGE_VALUE.getActualGas());
     }
 
     @Then("I call estimateGas with function messageSigner")
     public void msgSignerEstimateCall() {
-        validateGasEstimation(MESSAGE_SIGNER_SELECTOR, MESSAGE_SIGNER_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.MESSAGE_SIGNER.getSelector(), ContractMethods.MESSAGE_SIGNER.getActualGas());
     }
 
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
-        var check = RandomStringUtils.random(40, HEX_DIGITS);
-        validateGasEstimation(ADDRESS_BALANCE_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)),
-                ADDRESS_BALANCE_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.ADDRESS_BALANCE.getSelector() + to32BytesString(randomAddress),
+                ContractMethods.ADDRESS_BALANCE.getActualGas());
     }
 
     @Then("I call estimateGas with function that changes contract slot information" +
@@ -218,67 +148,73 @@ public class EstimateFeature extends AbstractFeature {
     public void updateCounterEstimateCall() {
         //update value with amount of 5
         String updateValue = to32BytesString("5");
-        validateGasEstimation(UPDATE_COUNTER_SELECTOR + updateValue, UPDATE_COUNTER_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.UPDATE_COUNTER.getSelector() + updateValue, ContractMethods.UPDATE_COUNTER.getActualGas());
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE op code")
     public void deployContractViaCreateOpcodeEstimateCall() {
-        validateGasEstimation(DEPLOY_CONTRACT_VIA_CREATE_OPCODE_SELECTOR, DEPLOY_CONTRACT_VIA_CREATE_OPCODE_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getSelector(), ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getActualGas());
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code")
     public void deployContractViaCreateTwoOpcodeEstimateCall() {
-        validateGasEstimation(DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE_SELECTOR,
-                DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getSelector(),
+                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a static call to a method from a different contract")
     public void staticCallToContractEstimateCall() {
         var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(GET_MOCK_ADDRESS_SELECTOR)
+                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
                 .to(contractSolidityAddress)
                 .estimate(false)
                 .build();
         var getMockAddressResponse = mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
-        validateGasEstimation(STATIC_CALL_TO_CONTRACT_SELECTOR + to32BytesString(getMockAddressResponse) + to32BytesStringRightPad(GET_ADDRESS_SELECTOR), STATIC_CALL_TO_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.STATIC_CALL_TO_CONTRACT.getSelector()
+                + to32BytesString(getMockAddressResponse)
+                + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()), ContractMethods.STATIC_CALL_TO_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a delegate call to a method from a different contract")
     public void delegateCallToContractEstimateCall() {
         var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(GET_MOCK_ADDRESS_SELECTOR)
+                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
                 .to(contractSolidityAddress)
                 .estimate(false)
                 .build();
         var getMockAddressResponse = mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
-        validateGasEstimation(DELEGATE_CALL_TO_CONTRACT_SELECTOR + to32BytesString(getMockAddressResponse) + to32BytesStringRightPad(GET_ADDRESS_SELECTOR), DELEGATE_CALL_TO_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.DELEGATE_CALL_TO_CONTRACT.getSelector()
+                + to32BytesString(getMockAddressResponse)
+                + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()), ContractMethods.DELEGATE_CALL_TO_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a call code to a method from a different contract")
     public void callCodeToContractEstimateCall() {
         var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(GET_MOCK_ADDRESS_SELECTOR)
+                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
                 .to(contractSolidityAddress)
                 .estimate(false)
                 .build();
         var getMockAddressResponse = mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
-        validateGasEstimation(CALL_CODE_TO_CONTRACT_SELECTOR + to32BytesString(getMockAddressResponse) + to32BytesStringRightPad(GET_ADDRESS_SELECTOR), CALL_CODE_TO_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.CALL_CODE_TO_CONTRACT.getSelector()
+                + to32BytesString(getMockAddressResponse)
+                + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()), ContractMethods.CALL_CODE_TO_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations")
     public void logsEstimateCall() {
-        validateGasEstimation(LOGS_SELECTOR, LOGS_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.LOGS.getSelector(), ContractMethods.LOGS.getActualGas());
     }
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(DESTROY_SELECTOR, DESTROY_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.DESTROY.getSelector(), ContractMethods.DESTROY.getActualGas());
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(WRONG_METHOD_SIGNATURE_SELECTOR)
+                .data(ContractMethods.WRONG_METHOD_SIGNATURE.getSelector())
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -293,7 +229,7 @@ public class EstimateFeature extends AbstractFeature {
         //wrong encoded address -> it should contain leading zero's equal to 64 characters
         String wrongEncodedAddress = "5642";
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ADDRESS_BALANCE_SELECTOR + wrongEncodedAddress)
+                .data(ContractMethods.ADDRESS_BALANCE.getSelector() + wrongEncodedAddress)
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -305,7 +241,7 @@ public class EstimateFeature extends AbstractFeature {
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(MESSAGE_SIGNER_SELECTOR)
+                .data(ContractMethods.MESSAGE_SIGNER.getSelector())
                 .to(contractSolidityAddress)
                 .from(newAccountEvnAddress)
                 .estimate(true)
@@ -314,65 +250,65 @@ public class EstimateFeature extends AbstractFeature {
                 mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSignerResponse.getResultAsNumber().intValue();
 
-        assertTrue(isWithinDeviation(MESSAGE_SIGNER_ACTUAL_GAS, estimatedGas, lowerDeviation, upperDeviation));
+        assertTrue(isWithinDeviation(ContractMethods.MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     @Then("I call estimateGas with function that makes a call to invalid smart contract")
     public void callToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(CALL_TO_INVALID_CONTRACT_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)),
-                CALL_TO_INVALID_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+                ContractMethods.CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a delegate call to invalid smart contract")
     public void delegateCallToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(DELEGATE_CALL_TO_INVALID_CONTRACT_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)),
-                CALL_TO_INVALID_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+                ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a static call to invalid smart contract")
     public void staticCallToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(STATIC_CALL_TO_INVALID_CONTRACT_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)),
-                STATIC_CALL_TO_INVALID_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+                ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a call code to invalid smart contract")
     public void callCodeToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(CALL_CODE_TO_INVALID_CONTRACT_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)),
-                CALL_CODE_TO_INVALID_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+                ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes call to an external contract function")
     public void callCodeToExternalContractFunction() {
-        validateGasEstimation(CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_SELECTOR + to32BytesString("1") + to32BytesString(
-                contractSolidityAddress), CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector() + to32BytesString("1") + to32BytesString(
+                contractSolidityAddress), ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes delegate call to an external contract function")
     public void delegateCallCodeToExternalContractFunction() {
         validateGasEstimation(
-                DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_SELECTOR + to32BytesString("1") + to32BytesString(
-                        contractSolidityAddress), DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_ACTUAL_GAS);
+                ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector() + to32BytesString("1") + to32BytesString(
+                        contractSolidityAddress), ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes call to an external contract view function")
     public void callCodeToExternalContractViewFunction() {
         validateGasEstimation(
-                CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW_SELECTOR + to32BytesString("1") + to32BytesString(
-                        contractSolidityAddress), CALL_CODE_TO_EXTERNAL_CONTRACT_VIEW_FUNCTION_ACTUAL_GAS);
+                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getSelector() + to32BytesString("1") + to32BytesString(
+                        contractSolidityAddress), ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a state update to a contract")
     public void stateUpdateContractFunction() {
         //making 5 times to state update
-        validateGasEstimation(STATE_UPDATE_OF_CONTRACT_SELECTOR + to32BytesString("5"),
-                STATE_UPDATE_OF_CONTRACT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("5"),
+                ContractMethods.STATE_UPDATE_OF_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a state update to a contract several times and estimateGas is higher")
     public void progressiveStateUpdateContractFunction() {
         //making 5 times to state update
         var contractCallRequestStateUpdateWithFive = ContractCallRequest.builder()
-                .data(STATE_UPDATE_OF_CONTRACT_SELECTOR + to32BytesString("5"))
+                .data(ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("5"))
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -381,7 +317,7 @@ public class EstimateFeature extends AbstractFeature {
         int estimatedGasOfFiveStateUpdates = fiveStateUpdatesResponse.getResultAsNumber().intValue();
         //making 10 times to state update
         var contractCallRequestStateUpdateWithTen = ContractCallRequest.builder()
-                .data(STATE_UPDATE_OF_CONTRACT_SELECTOR + to32BytesString("10"))
+                .data(ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("10"))
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -396,38 +332,41 @@ public class EstimateFeature extends AbstractFeature {
     @Then("I call estimateGas with function that executes reentrancy attack with transfer")
     public void reentrancyTransferAttackFunction() {
         validateGasEstimation(
-                REENTRANCY_TRANSFER_ATTACK_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)) + to32BytesString(
-                        "10000000000"), REENTRANCY_TRANSFER_ATTACK_ACTUAL_GAS);
+                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + to32BytesString(randomAddress) + to32BytesString(
+                        "10000000000"), ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas());
     }
 
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
         validateGasEstimation(
-                REENTRANCY_CALL_ATTACK_SELECTOR + to32BytesString(RandomStringUtils.random(40, HEX_DIGITS)) + to32BytesString(
-                        "10000000000"), REENTRANCY_CALL_ATTACK_ACTUAL_GAS);
+                ContractMethods.REENTRANCY_CALL_ATTACK.getSelector() + to32BytesString(randomAddress) + to32BytesString(
+                        "10000000000"), ContractMethods.REENTRANCY_CALL_ATTACK.getActualGas());
     }
 
     @Then("I call estimateGas with function that executes gasLeft")
     public void getGasLeftContractFunction() {
-        validateGasEstimation(GET_GAS_LEFT_SELECTOR, GET_GAS_LEFT_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.GET_GAS_LEFT.getSelector(), ContractMethods.GET_GAS_LEFT.getActualGas());
     }
 
     @Then("I call estimateGas with function that executes positive nested calls")
     public void positiveNestedCallsFunction() {
-        validateGasEstimation(NESTED_CALLS_SELECTOR + to32BytesString("1") + to32BytesString("10") + to32BytesString(
-                contractSolidityAddress), POSITIVE_NESTED_CALLS_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.NESTED_CALLS_POSITIVE.getSelector()
+                        + to32BytesString("1")
+                        + to32BytesString("10")
+                        + to32BytesString(contractSolidityAddress),
+                ContractMethods.NESTED_CALLS_POSITIVE.getActualGas());
     }
 
     @Then("I call estimateGas with function that executes limited nested calls")
     public void limitedNestedCallsFunction() {
         //verify that after exceeding a number of nested calls that the estimated gas would return the same
         //we will execute with 500, 1024 and 1025, and it should return the same estimatedGas
-        validateGasEstimation(NESTED_CALLS_SELECTOR + to32BytesString("1") + to32BytesString("500") + to32BytesString(
-                contractSolidityAddress), LIMITED_NESTED_CALLS_ACTUAL_GAS);
-        validateGasEstimation(NESTED_CALLS_SELECTOR + to32BytesString("1") + to32BytesString("1024") + to32BytesString(
-                contractSolidityAddress), LIMITED_NESTED_CALLS_ACTUAL_GAS);
-        validateGasEstimation(NESTED_CALLS_SELECTOR + to32BytesString("1") + to32BytesString("1025") + to32BytesString(
-                contractSolidityAddress), LIMITED_NESTED_CALLS_ACTUAL_GAS);
+        validateGasEstimation(ContractMethods.NESTED_CALLS_LIMITED.getSelector() + to32BytesString("1") + to32BytesString("500") + to32BytesString(
+                contractSolidityAddress), ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+        validateGasEstimation(ContractMethods.NESTED_CALLS_LIMITED.getSelector() + to32BytesString("1") + to32BytesString("1024") + to32BytesString(
+                contractSolidityAddress), ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+        validateGasEstimation(ContractMethods.NESTED_CALLS_LIMITED.getSelector() + to32BytesString("1") + to32BytesString("1025") + to32BytesString(
+                contractSolidityAddress), ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
     }
 
     private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
@@ -475,6 +414,48 @@ public class EstimateFeature extends AbstractFeature {
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
         assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+    }
+
+    /**
+     * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
+     * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
+     */
+    @Getter
+    @RequiredArgsConstructor
+    private enum ContractMethods {
+        MULTIPLY_SIMPLE_NUMBERS("0ec1551d", 21227),
+        MESSAGE_SENDER("d737d0c7", 21290),
+        TX_ORIGIN("f96757d1", 21289),
+        MESSAGE_VALUE("ddf363d7", 21234),
+        MESSAGE_SIGNER("ec3e88cf", 21252),
+        ADDRESS_BALANCE("3ec4de35", 24030),
+        UPDATE_COUNTER("c648049d", 26279),
+        DEPLOY_CONTRACT_VIA_CREATE_OPCODE("6e6662b9", 53477),
+        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("dbb6f04a", 55693),
+        STATIC_CALL_TO_CONTRACT("ef0a4eac", 26416),
+        DELEGATE_CALL_TO_CONTRACT("d3b6e741", 26417),
+        CALL_CODE_TO_CONTRACT("ac7e2758", 26398),
+        LOGS("74259795", 28757),
+        DESTROY("83197ef0", 51193),
+        WRONG_METHOD_SIGNATURE("ffffffff", 0),
+        CALL_TO_INVALID_CONTRACT("70079963", 24374),
+        DELEGATE_CALL_TO_INVALID_CONTRACT("7df6ee27", 24350),
+        STATIC_CALL_TO_INVALID_CONTRACT("41f32f0c", 24394),
+        CALL_CODE_TO_INVALID_CONTRACT("e080b4aa", 24031),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("4929af37", 26100),
+        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("80f009b6", 24712),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("fa5e414e", 22272),
+        STATE_UPDATE_OF_CONTRACT("5256b99d", 30500),
+        GET_GAS_LEFT("51be4eaa", 21326),
+        REENTRANCY_TRANSFER_ATTACK("ffaf0890", 55500),
+        REENTRANCY_CALL_ATTACK("e7df080e", 55818),
+        NESTED_CALLS_POSITIVE("bb376a96", 45871),
+        NESTED_CALLS_LIMITED("bb376a96", 525255),
+        GET_ADDRESS("38cc4831", 0),
+        GET_MOCK_ADDRESS("14a7862c", 0);
+
+        private final String selector;
+        private final int actualGas;
     }
 
     private record DeployedContract(FileId fileId, ContractId contractId,
