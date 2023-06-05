@@ -1613,11 +1613,17 @@ const isEffectiveTimestamp = (filters) => {
     const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
     const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
 
-    if (lowerBound && (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))) {
+    if (
+      lowerBound !== undefined &&
+      (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))
+    ) {
       return false;
     }
 
-    if (upperBound && (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))) {
+    if (
+      upperBound !== undefined &&
+      (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))
+    ) {
       return false;
     }
   }
