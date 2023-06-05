@@ -100,8 +100,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator),
-                ccps(gasCalculator),
+                mcps(gasCalculator, evmProperties),
+                ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 aliasManager,
                 codeCache);
