@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -58,7 +59,7 @@ class StreamFilenameTest {
             String fullExtension,
             Instant instant,
             StreamType streamType) {
-        StreamFilename streamFilename = new StreamFilename(filename);
+        StreamFilename streamFilename = StreamFilename.of(filename);
         String[] fields = {
             "filename",
             "compressor",
@@ -81,7 +82,7 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.123Z_02.rcd.gz, 02",
     })
     void newStreamFileFromSidecarRecordFilename(String filename, String expectedSidecarId) {
-        StreamFilename streamFilename = new StreamFilename(filename);
+        StreamFilename streamFilename = StreamFilename.of(filename);
         assertThat(streamFilename)
                 .returns(SIDECAR, StreamFilename::getFileType)
                 .returns(expectedSidecarId, StreamFilename::getSidecarId);
@@ -93,10 +94,11 @@ class StreamFilenameTest {
                 "2020-06-03_Balances.csv_sig",
                 "2020-06-03T16_45_00.1Z",
                 "2020-06-03T16_45_00.1Z.stream",
-                "2020-06-03T16_45_00.1Z.csv_sig"
+                "2020-06-03T16_45_00.1Z.csv_sig",
+                "2020-06-03T16_45_00"
             })
     void newStreamFileFromInvalidFilename(String filename) {
-        assertThrows(InvalidStreamFileException.class, () -> new StreamFilename(filename));
+        assertThrows(InvalidStreamFileException.class, () -> StreamFilename.of(filename));
     }
 
     @ParameterizedTest(name = "Get filename from streamType {0}, fileType {1}, and instant {2}")
@@ -133,7 +135,7 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.1Z.rcd, 2020-06-03T16_45_00.1Z_"
     })
     void getFilenameAfter(String filename, String expected) {
-        StreamFilename streamFilename = new StreamFilename(filename);
+        StreamFilename streamFilename = StreamFilename.of(filename);
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
     }
 
@@ -143,14 +145,14 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, 3, 2020-06-03T16_45_00.100200345Z_03.rcd.gz",
     })
     void getSidecarFilename(String filename, int id, String expected) {
-        StreamFilename streamFilename = new StreamFilename(filename);
+        StreamFilename streamFilename = StreamFilename.of(filename);
         assertThat(streamFilename.getSidecarFilename(id)).isEqualTo(expected);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"2020-06-03T16_45_00.1Z_Balances.csv", "2020-06-03T16_45_00.100200345Z.rcd_sig"})
     void getSidecarFilenameThrows(String filename) {
-        StreamFilename streamFilename = new StreamFilename(filename);
+        StreamFilename streamFilename = StreamFilename.of(filename);
         assertThrows(IllegalArgumentException.class, () -> streamFilename.getSidecarFilename(1));
     }
 
@@ -168,6 +170,56 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, true"
     })
     void isCompressed(String filename, boolean compressed) {
-        assertThat(new StreamFilename(filename).isCompressed()).isEqualTo(compressed);
+        assertThat(StreamFilename.of(filename).isCompressed()).isEqualTo(compressed);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "2020-06-03T16_45_00.100200345Z.rcd.gz, , /, 2020-06-03T16_45_00.100200345Z.rcd.gz",
+        "2020-06-03T16_45_00.100200345Z.rcd.gz, /some/path, /, /some/path/2020-06-03T16_45_00.100200345Z.rcd.gz",
+        "2020-06-03T16_45_00.100200345Z.rcd.gz, c:\\some\\path, \\, c:\\some\\path\\2020-06-03T16_45_00.100200345Z.rcd.gz",
+        "2020-06-03T16_45_00.100200345Z.evts_sig, eventsStreams/events_0.0.9, /, eventsStreams/events_0.0.9/2020-06-03T16_45_00.100200345Z.evts_sig",
+        "2020-06-03T16_45_00.100200345Z_02.rcd.gz, mainnet/0/3/record, /, mainnet/0/3/record/sidecar/2020-06-03T16_45_00.100200345Z_02.rcd.gz"
+    })
+    void getPathProperties(String filename, String path, String pathSeparator, String expectedFilePath) {
+        StreamFilename streamFilename = StreamFilename.of(path, filename, pathSeparator);
+        assertThat(streamFilename.getFilename()).isEqualTo(filename);
+        assertThat(streamFilename.getPath()).isEqualTo(path);
+        assertThat(streamFilename.getPathSeparator()).isEqualTo(pathSeparator);
+        assertThat(streamFilename.getFilePath()).isEqualTo(expectedFilePath);
+
+        if (!expectedFilePath.contains("sidecar")) {
+            StreamFilename streamFilenameFromPath = StreamFilename.of(expectedFilePath, pathSeparator);
+            assertThat(streamFilenameFromPath.getFilename()).isEqualTo(filename);
+            assertThat(streamFilenameFromPath.getPath()).isEqualTo(path);
+            assertThat(streamFilenameFromPath.getPathSeparator()).isEqualTo(pathSeparator);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "2020-06-03T16_45_00.100200345Z.evts_sig, /some/path, /, 2020-06-03T16_45_00.100200345Z.evts",
+        "2020-06-03T16_45_00.100200345Z_Balances.csv_sig, , \\, 2020-06-03T16_45_00.100200345Z_Balances.csv",
+        "2020-06-03T16_45_00.100200345Z.rcd_sig, mainnet/0/9/record, /, 2020-06-03T16_45_00.100200345Z.rcd"
+    })
+    void getDataFilename(String sigFilename, String path, String pathSeparator, String dataFilename) {
+        StreamFilename sigStreamFilename = StreamFilename.of(path, sigFilename, pathSeparator);
+        StreamFilename dataStreamFilename = StreamFilename.of(sigStreamFilename, dataFilename);
+
+        assertThat(dataStreamFilename.getFilename()).isEqualTo(dataFilename);
+        assertThat(dataStreamFilename.getPath()).isEqualTo(sigStreamFilename.getPath());
+        assertThat(dataStreamFilename.getPathSeparator()).isEqualTo(sigStreamFilename.getPathSeparator());
+        assertThat(dataStreamFilename).isNotEqualTo(sigStreamFilename);
+    }
+
+    // Exercise lombok @NonNull for code coverage
+    @Test
+    void ensureNonNull() {
+        assertThrows(NullPointerException.class, () -> StreamFilename.of(null));
+        assertThrows(NullPointerException.class, () -> StreamFilename.of((String) null, "/"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", null));
+        assertThrows(NullPointerException.class, () -> StreamFilename.of((StreamFilename) null, "someFilename"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", null, "\\"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", "someFilename", null));
     }
 }

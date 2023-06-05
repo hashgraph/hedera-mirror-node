@@ -36,10 +36,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.Assert;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Value
@@ -68,7 +68,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
             streamTypeExtensionMap.put(type, Collections.unmodifiableMap(extensions));
         }
         STREAM_TYPE_EXTENSION_MAP = Collections.unmodifiableMap(streamTypeExtensionMap);
-        EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
+        EPOCH = of("1970-01-01T00_00_00Z.rcd");
     }
 
     private final String compressor;
@@ -76,6 +76,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String filename;
     private final String path;
     private final String pathSeparator;
+    private final String filePath;
 
     @EqualsAndHashCode.Include
     private final String filenameWithoutCompressor;
@@ -86,18 +87,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String sidecarId;
     private final StreamType streamType;
 
-    public StreamFilename(String filePath) {
-        this(filePath, File.separator);
-    }
-
-    public StreamFilename(String filePath, String pathSeparator) {
-        Assert.hasText(filePath, "'filePath' must not be empty");
-        Assert.hasText(pathSeparator, "'pathSeparator' must not be empty");
-
-        var lastSeparatorIndex = filePath.lastIndexOf(pathSeparator);
+    private StreamFilename(String path, String filename, String pathSeparator) {
         this.pathSeparator = pathSeparator;
-        this.filename = lastSeparatorIndex < 0 ? filePath : filePath.substring(lastSeparatorIndex + 1);
-        this.path = lastSeparatorIndex < 0 ? null : filePath.substring(0, lastSeparatorIndex);
+        this.filename = filename;
+        this.path = path;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
         this.compressor = typeInfo.compressor;
@@ -112,6 +105,39 @@ public class StreamFilename implements Comparable<StreamFilename> {
         // A compressed and uncompressed file can exist simultaneously, so we need uniqueness to not include .gz
         this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
+
+        // The immutable full path for this file
+        var builder = new StringBuilder();
+        if (!StringUtils.isEmpty(this.path)) {
+            builder.append(this.path);
+            builder.append(this.pathSeparator);
+        }
+        if (this.fileType == SIDECAR) {
+            builder.append(SIDECAR_FOLDER);
+            builder.append(this.pathSeparator);
+        }
+        builder.append(this.filename);
+        this.filePath = builder.toString();
+    }
+
+    public static StreamFilename of(String filePath) {
+        return of(filePath, File.separator);
+    }
+
+    public static StreamFilename of(@NonNull String filePath, @NonNull String pathSeparator) {
+        var lastSeparatorIndex = filePath.lastIndexOf(pathSeparator);
+        var filename = lastSeparatorIndex < 0 ? filePath : filePath.substring(lastSeparatorIndex + 1);
+        var path = lastSeparatorIndex < 0 ? null : filePath.substring(0, lastSeparatorIndex);
+
+        return of(path, filename, pathSeparator);
+    }
+
+    public static StreamFilename of(@NonNull StreamFilename base, String filename) {
+        return of(base.getPath(), filename, base.getPathSeparator());
+    }
+
+    public static StreamFilename of(String path, @NonNull String filename, @NonNull String pathSeparator) {
+        return new StreamFilename(path, filename, pathSeparator);
     }
 
     public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
@@ -186,21 +212,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         } catch (DateTimeParseException ex) {
             throw new InvalidStreamFileException("Invalid datetime string in filename " + filename, ex);
         }
-    }
-
-    public String getFilePath() {
-
-        var builder = new StringBuilder();
-        if (!StringUtils.isEmpty(this.path)) {
-            builder.append(this.path);
-            builder.append(this.pathSeparator);
-        }
-        if (this.fileType == SIDECAR) {
-            builder.append(SIDECAR_FOLDER);
-            builder.append(this.pathSeparator);
-        }
-        builder.append(this.filename);
-        return builder.toString();
     }
 
     @Override

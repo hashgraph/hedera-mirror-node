@@ -647,7 +647,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     private String getSigFilename(String dataFilename) {
-        var streamFilename = new StreamFilename(dataFilename);
+        var streamFilename = StreamFilename.of(dataFilename);
         var dataExtension = streamFilename.getExtension().getName();
         // take into account that data files may be compressed so the filename has an additional compression suffix,
         // while signature files won't be compressed.
@@ -730,8 +730,8 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         file1 = files.get(0);
         file2 = files.get(1);
 
-        file1Instant = new StreamFilename(file1).getInstant();
-        file2Instant = new StreamFilename(file2).getInstant();
+        file1Instant = StreamFilename.of(file1).getInstant();
+        file2Instant = StreamFilename.of(file2).getInstant();
         instantFilenamePairs = List.of(Pair.of(file1Instant, file1), Pair.of(file2Instant, file2));
     }
 

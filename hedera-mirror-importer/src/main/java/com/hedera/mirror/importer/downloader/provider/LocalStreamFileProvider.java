@@ -42,8 +42,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        return Mono.fromSupplier(() -> streamFilename.getFilePath())
-                .map(File::new)
+        return Mono.fromSupplier(() -> streamFilename)
                 .map(StreamFileData::from)
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);

@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.reader.balance;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.Collections2;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
@@ -89,7 +89,7 @@ abstract class CsvBalanceFileReaderTest {
 
     @BeforeEach
     void setup() throws IOException {
-        Instant instant = new StreamFilename(balanceFile.getName()).getInstant();
+        Instant instant = StreamFilename.of(balanceFile.getName()).getInstant();
         consensusTimestamp = DomainUtils.convertToNanosMax(instant);
         testFile = tempDir.resolve(balanceFile.getName()).toFile();
         assertThat(testFile.createNewFile()).isTrue();

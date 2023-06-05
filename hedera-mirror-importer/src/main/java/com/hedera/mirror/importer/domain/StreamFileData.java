@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.function.Supplier;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -52,11 +53,11 @@ public class StreamFileData {
 
     private final Instant lastModified;
 
-    public static StreamFileData from(@NonNull File file) {
+    private static StreamFileData readStreamFileData(File file, Supplier<StreamFilename> streamFilenameSupplier) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             var lastModified = Instant.ofEpochMilli(file.lastModified());
-            return new StreamFileData(new StreamFilename(file.getPath()), bytes, lastModified);
+            return new StreamFileData(streamFilenameSupplier.get(), bytes, lastModified);
         } catch (InvalidStreamFileException e) {
             throw e;
         } catch (Exception e) {
@@ -64,15 +65,23 @@ public class StreamFileData {
         }
     }
 
+    public static StreamFileData from(@NonNull File file) {
+        return readStreamFileData(file, () -> StreamFilename.of(file.getPath()));
+    }
+
+    public static StreamFileData from(@NonNull StreamFilename streamFilename) {
+        return readStreamFileData(new File(streamFilename.getFilePath()), () -> streamFilename);
+    }
+
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
         return new StreamFileData(
-                new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
+                StreamFilename.of(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, byte[] bytes) {
-        return new StreamFileData(new StreamFilename(filename), bytes, Instant.now());
+        return new StreamFileData(StreamFilename.of(filename), bytes, Instant.now());
     }
 
     public InputStream getInputStream() {

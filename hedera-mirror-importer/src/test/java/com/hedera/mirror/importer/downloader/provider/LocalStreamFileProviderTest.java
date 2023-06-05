@@ -68,7 +68,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         var accountId = "0.0.3";
         var node = node(accountId);
         getFileCopier(node).copy();
-        var lastFilename = new StreamFilename(Instant.now().toString().replace(':', '_') + ".rcd.gz");
+        var lastFilename = StreamFilename.of(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))
                 .expectNextCount(0)
