@@ -22,6 +22,8 @@ import * as constants from '../constants';
 import {InvalidArgumentError, InvalidClauseError} from '../errors';
 import {Entity} from '../model/index.js';
 import {Range} from 'pg-range';
+import {filterKeys} from '../constants';
+import {opsMap} from '../utils';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
@@ -1866,7 +1868,7 @@ describe('Utils formatSlot tests', () => {
   });
 });
 
-describe('extractTimestampRangeConditionFilters', () => {
+describe('Utils extractTimestampRangeConditionFilters', () => {
   const timestampKey = constants.filterKeys.TIMESTAMP;
   const timestampColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
   const specs = [
@@ -1950,6 +1952,204 @@ describe('extractTimestampRangeConditionFilters', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(utils.extractTimestampRangeConditionFilters(spec.input)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('Utils isEffectiveTimestamp', () => {
+  const specs = [
+    {
+      name: 'No upper bound',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gt,
+          value: '90',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gt,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.ne,
+          value: '100',
+        },
+      ],
+      isEffective: true,
+    },
+    {
+      name: 'No Lower bound',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lte,
+          value: '80',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '90',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lte,
+          value: '90',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.ne,
+          value: '100',
+        },
+      ],
+      isEffective: true,
+    },
+    {
+      name: 'Upper and lower bound',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '90',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gte,
+          value: '75',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gt,
+          value: '80',
+        },
+      ],
+      isEffective: true,
+    },
+    {
+      name: 'On boundary valid',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gt,
+          value: '98',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: '99',
+        },
+      ],
+      isEffective: true,
+    },
+    {
+      name: 'On boundary invalid',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gt,
+          value: '99',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: '100',
+        },
+      ],
+      isEffective: false,
+    },
+    {
+      name: 'Eq below range',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '500',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: '10',
+        },
+      ],
+      isEffective: false,
+    },
+    {
+      name: 'Eq above range',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gte,
+          value: '100',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '500',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: '600',
+        },
+      ],
+      isEffective: false,
+    },
+    {
+      name: 'Upper less than lower',
+      filters: [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.gte,
+          value: '500',
+        },
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: opsMap.lt,
+          value: '100',
+        },
+      ],
+      isEffective: false,
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`verify timestamps - ${spec.name}`, () => {
+      expect(utils.isEffectiveTimestamp(spec.filters)).toEqual(spec.isEffective);
     });
   });
 });

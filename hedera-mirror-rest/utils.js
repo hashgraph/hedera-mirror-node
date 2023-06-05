@@ -1551,6 +1551,85 @@ const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => 
   return Math.round(Math.max(tinyBars, 1));
 };
 
+const getMinTimestampFilter = (filters) => {
+  const filtered = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator !== opsMap.ne);
+  return filtered.length
+    ? filtered.reduce((prev, current) => {
+        const prevNum = parseInteger(prev.value);
+        const currentNum = parseInteger(current.value);
+        logger.info(`The values are prev=${prevNum}, curr=${currentNum}`);
+        if (prevNum < currentNum) {
+          return prev;
+        }
+        if (prevNum > currentNum) {
+          return current;
+        }
+
+        return prev.operator === opsMap.lte ? current : prev;
+      })
+    : undefined;
+};
+
+const getMaxTimestampFilter = (filters) => {
+  const filtered = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator !== opsMap.ne);
+  return filters.length
+    ? filtered.reduce((prev, current) => {
+        const prevNum = parseInteger(prev.value);
+        const currentNum = parseInteger(current.value);
+
+        if (prevNum < currentNum) {
+          return current;
+        }
+
+        if (prevNum > currentNum) {
+          return prev;
+        }
+
+        return prev.operator === opsMap.gte ? current : prev;
+      })
+    : undefined;
+};
+
+/**
+ * Compares the timestamp filters to ensure there is an effective range.
+ * Not equals conditions are not considered in this calculation.
+ * */
+const isEffectiveTimestamp = (filters) => {
+  const ltFilters = filters.filter(
+    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.lte || filter.operator === opsMap.lt)
+  );
+  const gtFilters = filters.filter(
+    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.gte || filter.operator === opsMap.gt)
+  );
+  const eqTsFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.eq);
+
+  const upperBoundFilter = getMinTimestampFilter(ltFilters);
+  const upperBound = upperBoundFilter ? parseInteger(upperBoundFilter.value) : undefined;
+
+  const lowerBoundFilter = getMaxTimestampFilter(gtFilters);
+  const lowerBound = lowerBoundFilter ? parseInteger(lowerBoundFilter.value) : undefined;
+
+  if (eqTsFilters.length) {
+    const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
+    const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
+
+    if (lowerBound && (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))) {
+      return false;
+    }
+
+    if (upperBound && (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))) {
+      return false;
+    }
+  }
+
+  return (
+    upperBound === undefined ||
+    lowerBound === undefined ||
+    lowerBound < upperBound ||
+    (upperBound === lowerBound && upperBoundFilter.operator === opsMap.lte && lowerBoundFilter.operator === opsMap.gte)
+  );
+};
+
 const JSONParse = JSONBig.parse;
 const JSONStringify = JSONBig.stringify;
 
@@ -1588,6 +1667,7 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
+  isEffectiveTimestamp,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,

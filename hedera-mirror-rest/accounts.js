@@ -351,83 +351,6 @@ const getAccounts = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-const getMinTimestampFilter = (filters) => {
-  return filters.length
-    ? filters.reduce((prev, current) => {
-        const prevNum = parseInteger(prev.value);
-        const currentNum = parseInteger(current.value);
-
-        if (prevNum < currentNum) {
-          return prev;
-        }
-        if (prevNum > currentNum) {
-          return current;
-        }
-
-        return prev.condition === opsMap.lte ? prev : current;
-      })
-    : undefined;
-};
-
-const getMaxTimestampFilter = (filters) => {
-  return filters.length
-    ? filters.reduce((prev, current) => {
-        const prevNum = parseInteger(prev.value);
-        const currentNum = parseInteger(current.value);
-
-        if (prevNum < currentNum) {
-          return current;
-        }
-
-        if (prevNum > currentNum) {
-          return prev;
-        }
-
-        return prev.condition === opsMap.gte ? prev : current;
-      })
-    : undefined;
-};
-
-/**
- * Compares the timestamp parameters to ensure there is an effective range.
- * Not equals conditions are not considered in this calculation.
- * */
-const isEffectiveTimestamp = (filters) => {
-  const ltFilters = filters.filter(
-    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.lte || filter.operator === opsMap.lt)
-  );
-  const gtFilters = filters.filter(
-    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.gte || filter.operator === opsMap.gt)
-  );
-  const eqTsFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.eq);
-
-  const upperBoundFilter = getMinTimestampFilter(ltFilters);
-  const upperBound = upperBoundFilter ? parseInteger(upperBoundFilter.value) : undefined;
-
-  const lowerBoundFilter = getMaxTimestampFilter(gtFilters);
-  const lowerBound = lowerBoundFilter ? parseInteger(lowerBoundFilter.value) : undefined;
-
-  if (eqTsFilters.length) {
-    const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
-    const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
-
-    if (lowerBound && (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))) {
-      return false;
-    }
-
-    if (upperBound && (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))) {
-      return false;
-    }
-  }
-
-  return (
-    upperBound === undefined ||
-    lowerBound === undefined ||
-    lowerBound < upperBound ||
-    (upperBound === lowerBound && upperBoundFilter.operator === opsMap.lte && lowerBoundFilter.operator === opsMap.gte)
-  );
-};
-
 /**
  * Handler function for /account/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
@@ -459,7 +382,7 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    if (!isEffectiveTimestamp(filters)) {
+    if (!utils.isEffectiveTimestamp(filters)) {
       throw InvalidArgumentError.forRequestValidation({
         code: InvalidArgumentError.INVALID_PARAM_USAGE,
         key: filterKeys.TIMESTAMP,
