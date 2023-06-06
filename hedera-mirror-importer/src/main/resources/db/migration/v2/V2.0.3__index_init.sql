@@ -151,11 +151,6 @@ alter table if exists nft_allowance_history
     add constraint nft_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
 create index if not exists nft_allowance_history__timestamp_range on nft_allowance_history using gist (timestamp_range);
 
--- nft_transfer
-create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
-create index if not exists nft_transfer__token_id_serial_num_timestamp
-    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
-
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
 
