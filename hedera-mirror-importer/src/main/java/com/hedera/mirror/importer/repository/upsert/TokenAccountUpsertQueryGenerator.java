@@ -18,10 +18,8 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import jakarta.inject.Named;
 import java.text.MessageFormat;
-import lombok.Value;
 
 @Named
-@Value
 public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
