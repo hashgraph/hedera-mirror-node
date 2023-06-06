@@ -388,19 +388,6 @@ create table if not exists nft_allowance_history
 ) partition by range (owner);
 comment on table nft_allowance_history is 'History of NFT allowances delegated by payer to spender';
 
--- nft_transfer
-create table if not exists nft_transfer
-(
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    payer_account_id    bigint  not null,
-    receiver_account_id bigint,
-    sender_account_id   bigint,
-    serial_number       bigint  not null,
-    token_id            bigint  not null
-) partition by range (consensus_timestamp);
-comment on table nft_transfer is 'Crypto account nft transfers';
-
 create table if not exists node_stake
 (
     consensus_timestamp bigint not null,
