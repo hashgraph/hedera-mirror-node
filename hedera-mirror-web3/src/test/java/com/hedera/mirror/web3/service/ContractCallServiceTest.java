@@ -46,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class ContractCallServiceTest extends ContractCallTestSetup {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+
     private static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
 
