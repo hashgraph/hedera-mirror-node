@@ -49,10 +49,11 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
                 select * from nft_allowance_history
               ) nfta
               join contract_result cr on cr.consensus_timestamp = lower(nfta.timestamp_range)
+              where cr.sender_id is not null
             ), delete_nft_allowance as (
               delete from nft_allowance nfta
               using affected a
-              where nfta.owner in (a.owner, a.sender_id) and a.sender_id is not null and nfta.spender = a.spender and nfta.token_id = a.token_id
+              where nfta.owner in (a.owner, a.sender_id) and nfta.spender = a.spender and nfta.token_id = a.token_id
               returning
                 nfta.approved_for_all,
                 lower(nfta.timestamp_range) as created_timestamp,
@@ -63,7 +64,7 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
             ), delete_nft_allowance_history as (
               delete from nft_allowance_history nfta
               using affected a
-              where a.sender_id is not null and (nfta.owner = a.owner and nfta.spender = a.spender and nfta.token_id = a.token_id and nfta.timestamp_range = a.timestamp_range) or
+              where (nfta.owner = a.owner and nfta.spender = a.spender and nfta.token_id = a.token_id and nfta.timestamp_range = a.timestamp_range) or
                 (nfta.owner = a.sender_id and nfta.spender = a.spender and nfta.token_id = a.token_id)
               returning
                 nfta.approved_for_all,
