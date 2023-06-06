@@ -52,6 +52,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final EntityAddressSequencer entityAddressSequencer;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
+    @SuppressWarnings("java:S107")
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
@@ -128,6 +129,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         private final MirrorEvmContractAliases mirrorEvmContractAliases;
         private final StackedStateFrames<Object> stackedStateFrames;
 
+        @SuppressWarnings("java:S107")
         protected Updater(
                 final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,

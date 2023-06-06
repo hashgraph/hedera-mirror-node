@@ -77,6 +77,9 @@ class HederaEvmWorldStateTest {
 
     private StackedStateFrames<Object> stackedStateFrames;
 
+    @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private HederaEvmWorldState subject;
 
     @BeforeEach
