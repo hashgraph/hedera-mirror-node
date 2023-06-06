@@ -31,9 +31,8 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected MirrorEvmContractAliases mirrorEvmContractAliases;
-
     private final StackedStateFrames<Object> stackedStateFrames;
+    protected MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,
@@ -46,8 +45,6 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
         this.mirrorEvmContractAliases.resetPendingChanges();
         this.stackedStateFrames = stackedStateFrames;
-
-        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     @Override

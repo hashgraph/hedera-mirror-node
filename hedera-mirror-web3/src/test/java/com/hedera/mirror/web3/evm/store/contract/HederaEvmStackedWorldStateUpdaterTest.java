@@ -214,7 +214,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void getSbhRefundReturnsZero() {
-        assertThat(subject.getSbhRefund()).isEqualTo(0L);
+        assertThat(subject.getSbhRefund()).isZero();
     }
 
     @Test
