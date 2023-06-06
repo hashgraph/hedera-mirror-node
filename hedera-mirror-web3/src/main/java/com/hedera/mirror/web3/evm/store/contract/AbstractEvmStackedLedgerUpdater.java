@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -29,6 +30,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
+    protected final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final StackedStateFrames<Object> stackedStateFrames;
 
     protected AbstractEvmStackedLedgerUpdater(
@@ -36,8 +38,11 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
+        this.mirrorEvmContractAliases.resetPendingChanges();
         this.stackedStateFrames = stackedStateFrames;
     }
 
@@ -55,6 +60,8 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             topFrame.commit();
             stackedStateFrames.pop();
         }
+
+        mirrorEvmContractAliases.commit();
 
         // partially copied from services
         final var wrapped = wrappedWorldView();
@@ -79,5 +86,10 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             }
             updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
         }
+    }
+
+    @Override
+    public void revert() {
+        mirrorEvmContractAliases.resetPendingChanges();
     }
 }

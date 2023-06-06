@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -45,7 +46,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
+    private static final long aBalance = 1_000L;
+    private static final long aNonce = 1L;
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @Mock
     private AccountAccessor accountAccessor;
@@ -63,14 +67,16 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EvmProperties properties;
 
     @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     private StackedStateFrames<Object> stackedStateFrames;
     private HederaEvmStackedWorldStateUpdater subject;
-
-    private static final long aBalance = 1_000L;
-    private static final long aNonce = 1L;
-    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
     void setUp() {
@@ -78,7 +84,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         stackedStateFrames = new StackedStateFrames<>(accessors);
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+                updater,
+                accountAccessor,
+                entityAccess,
+                tokenAccessor,
+                properties,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
     }
 
     @Test
@@ -98,7 +111,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void commitsNewlyCreatedAccountAsExpected() {
         updater = new MockLedgerWorldUpdater(null, accountAccessor);
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+                updater,
+                accountAccessor,
+                entityAccess,
+                tokenAccessor,
+                properties,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();

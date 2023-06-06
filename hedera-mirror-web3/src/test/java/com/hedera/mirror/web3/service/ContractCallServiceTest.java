@@ -46,6 +46,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.operation.CallOperation;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -79,6 +80,12 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Value("classpath:contracts/EthCall/State.bin")
     private Path STATE_CONTRACT_BYTES_PATH;
+
+    @BeforeEach
+    void setup() {
+        // reset gas metrics
+        meterRegistry.clear();
+    }
 
     @Test
     void pureCall() {
@@ -310,26 +317,32 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
-    void create2ContractDeployIsNotSupported() {
-        // deployViaCreate2()
-        final var stateChangePayable = "0xdbb6f04a";
-        final var params =
-                serviceParameters(stateChangePayable, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
-
-        persistEntities(false);
-
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("CREATE2 operation is not supported yet.");
-    }
-
-    @Test
     void estimateGasForStateChangeCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var stateChangeHash =
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters =
                 serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasForCreate2ContractDeploy() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        // deployViaCreate2()
+        final var deployViaCreate2Hash = "0xdbb6f04a";
+        final var serviceParameters =
+                serviceParameters(deployViaCreate2Hash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);

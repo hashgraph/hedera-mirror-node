@@ -49,7 +49,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final MirrorNodeEvmProperties evmProperties;
     private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
-    private final MirrorEvmContractAliases aliasManager;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final PricesAndFeesImpl pricesAndFees;
     private final AbstractCodeCache codeCache;
     private final HederaEvmMutableWorldState worldState;
@@ -68,8 +68,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
-        this.aliasManager = new MirrorEvmContractAliases(entityAccess);
-        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, aliasManager);
+        this.mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
+        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
 
@@ -86,6 +86,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
+                mirrorEvmContractAliases,
                 stackedStateFrames);
     }
 
@@ -105,7 +106,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 mcps(gasCalculator, evmProperties),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
-                aliasManager,
+                mirrorEvmContractAliases,
                 codeCache);
 
         processor.setOperationTracer(mirrorOperationTracer);

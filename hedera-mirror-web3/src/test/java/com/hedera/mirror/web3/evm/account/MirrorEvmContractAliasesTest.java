@@ -124,20 +124,20 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void link() {
-        mirrorEvmContractAliases.aliases.clear();
+        mirrorEvmContractAliases.pendingChanges.clear();
 
         Address alias = ADDRESS;
         Address address = ADDRESS2;
         mirrorEvmContractAliases.link(alias, address);
 
-        assertThat(mirrorEvmContractAliases.aliases).hasSize(1).hasEntrySatisfying(alias, v -> assertThat(v)
+        assertThat(mirrorEvmContractAliases.pendingChanges).hasSize(1).hasEntrySatisfying(alias, v -> assertThat(v)
                 .isEqualTo(address));
     }
 
     @Test
     void unlink() {
-        mirrorEvmContractAliases.aliases.clear();
-        mirrorEvmContractAliases.aliases.put(ADDRESS, ADDRESS2);
+        mirrorEvmContractAliases.pendingChanges.clear();
+        mirrorEvmContractAliases.pendingChanges.put(ADDRESS, ADDRESS2);
         mirrorEvmContractAliases.unlink(ADDRESS);
         assertThat(mirrorEvmContractAliases.aliases).isEmpty();
     }

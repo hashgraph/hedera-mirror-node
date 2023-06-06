@@ -17,7 +17,9 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -26,6 +28,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
@@ -38,10 +41,11 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>
-        implements HederaEvmStackedWorldUpdater {
+        implements HederaEvmWorldUpdater, HederaEvmStackedWorldUpdater {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
+    private final EntityAddressSequencer entityAddressSequencer;
     private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -50,10 +54,19 @@ public class HederaEvmStackedWorldStateUpdater
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
+        super(
+                updater,
+                accountAccessor,
+                tokenAccessor,
+                hederaEvmEntityAccess,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
+        this.entityAddressSequencer = entityAddressSequencer;
         this.stackedStateFrames = stackedStateFrames;
         this.stackedStateFrames.push();
     }
@@ -120,6 +133,34 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     public Address newAliasedContractAddress(Address sponsor, Address alias) {
-        throw new UnsupportedOperationException("CREATE2 operation is not supported yet.");
+        final var mirrorAddress = newContractAddress(sponsor);
+        // Only link the alias if it's not already in use, or if the target of the alleged link
+        // doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
+        // alias address is going to fail in short order; in the second case, the existing link
+        // must have been created by an inline create2 that failed, but didn't revert us---we are
+        // free to re-use this alias).
+        if (!mirrorEvmContractAliases.isInUse(alias) || isMissingTarget(alias)) {
+            mirrorEvmContractAliases.link(alias, mirrorAddress);
+        }
+        return mirrorAddress;
+    }
+
+    @Override
+    public Address newContractAddress(Address sponsor) {
+        return asTypedEvmAddress(entityAddressSequencer.getNewContractId(sponsor));
+    }
+
+    @Override
+    public long getSbhRefund() {
+        return 0;
+    }
+
+    private boolean isMissingTarget(final Address alias) {
+        final var target = mirrorEvmContractAliases.resolveForEvm(alias);
+        return stackedStateFrames
+                .top()
+                .getAccessor(com.hedera.services.store.models.Account.class)
+                .get(target)
+                .isEmpty();
     }
 }
