@@ -23,14 +23,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
-import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hederahashgraph.api.proto.java.ContractID;
-import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +63,8 @@ class HederaEvmWorldStateTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
-    final List<DatabaseAccessor<Object, ?>> accessors =
-            List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
+    @Mock
+    private StackedStateFrames<Object> stackedStateFrames;
 
     private HederaEvmWorldState subject;
 
@@ -79,7 +77,7 @@ class HederaEvmWorldStateTest {
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
-                accessors);
+                stackedStateFrames);
     }
 
     @Test

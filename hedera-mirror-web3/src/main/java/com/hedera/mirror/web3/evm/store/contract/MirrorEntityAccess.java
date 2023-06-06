@@ -28,23 +28,17 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
-    private StackedStateFrames<Object> stackedStateFrames;
-
-    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
-        this.stackedStateFrames = stackedStateFrames;
-    }
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     @Override
     public boolean isUsable(final Address address) {

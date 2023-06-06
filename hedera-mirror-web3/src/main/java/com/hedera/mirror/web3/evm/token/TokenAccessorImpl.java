@@ -52,7 +52,6 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -62,16 +61,11 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class TokenAccessorImpl implements TokenAccessor {
 
-    private StackedStateFrames<Object> stackedStateFrames;
     private final MirrorNodeEvmProperties properties;
-
-    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
-        this.stackedStateFrames = stackedStateFrames;
-    }
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     @Override
     public Optional<EvmTokenInfo> evmInfoForToken(Address address) {

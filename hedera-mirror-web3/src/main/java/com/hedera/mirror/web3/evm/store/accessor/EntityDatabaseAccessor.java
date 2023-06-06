@@ -38,8 +38,8 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
 
     @Override
     public @NotNull Optional<Entity> get(@NotNull Object key) {
-        if (key instanceof EntityId) {
-            return entityRepository.findByIdAndDeletedIsFalse(((EntityId) key).getId());
+        if (key instanceof EntityId entityId) {
+            return entityRepository.findByIdAndDeletedIsFalse((entityId).getId());
         }
         var address = (Address) key;
         var addressBytes = address.toArrayUnsafe();

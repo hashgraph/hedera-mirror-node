@@ -18,10 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
-import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -32,7 +29,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenA
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import java.util.List;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -46,11 +42,10 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
     private final AbstractCodeCache abstractCodeCache;
-
     private final AccountAccessor accountAccessor;
     private final TokenAccessor tokenAccessor;
     private final EntityAddressSequencer entityAddressSequencer;
-    private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -59,14 +54,14 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+            final StackedStateFrames<Object> stackedStateFrames) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
-        this.databaseAccessors = databaseAccessors;
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     public Account get(final Address address) {
@@ -102,12 +97,12 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     public HederaEvmWorldUpdater updater() {
         return new Updater(
                 this,
-                (AccountAccessorImpl) accountAccessor,
-                (MirrorEntityAccess) hederaEvmEntityAccess,
-                (TokenAccessorImpl) tokenAccessor,
+                accountAccessor,
+                hederaEvmEntityAccess,
+                tokenAccessor,
                 evmProperties,
                 entityAddressSequencer,
-                databaseAccessors);
+                stackedStateFrames);
     }
 
     public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
@@ -120,22 +115,18 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
         protected Updater(
                 final HederaEvmWorldState world,
-                final AccountAccessorImpl accountAccessor,
-                final MirrorEntityAccess hederaEvmEntityAccess,
-                final TokenAccessorImpl tokenAccessor,
+                final AccountAccessor accountAccessor,
+                final HederaEvmEntityAccess hederaEvmEntityAccess,
+                final TokenAccessor tokenAccessor,
                 final EvmProperties evmProperties,
                 final EntityAddressSequencer contractAddressState,
-                final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+                final StackedStateFrames<Object> stackedStateFrames) {
             super(world, accountAccessor);
-            this.stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-            tokenAccessor.setStackedStateFrames(stackedStateFrames);
-            accountAccessor.setStackedStateFrames(stackedStateFrames);
-            hederaEvmEntityAccess.setStackedStateFrames(stackedStateFrames);
-
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;
             this.entityAddressSequencer = contractAddressState;
+            this.stackedStateFrames = stackedStateFrames;
         }
 
         @Override

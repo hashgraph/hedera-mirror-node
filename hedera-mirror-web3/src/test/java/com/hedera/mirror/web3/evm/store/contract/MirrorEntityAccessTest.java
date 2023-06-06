@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -38,11 +39,11 @@ import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,8 +59,7 @@ class MirrorEntityAccessTest {
     private static final Long ENTITY_ID =
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
 
-    @Mock
-    private EntityRepository entityRepository;
+    private EntityRepository entityRepository = mock(EntityRepository.class);
 
     @Mock
     private ContractRepository contractRepository;
@@ -70,17 +70,13 @@ class MirrorEntityAccessTest {
     @Mock
     Entity entity;
 
+    final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+
+    @Spy
+    private StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
+
     @InjectMocks
     private MirrorEntityAccess mirrorEntityAccess;
-
-    private StackedStateFrames<Object> stackedStateFrames;
-
-    @BeforeEach
-    void setUp() {
-        final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
-        mirrorEntityAccess.setStackedStateFrames(stackedStateFrames);
-    }
 
     @Test
     void isUsableWithPositiveBalance() {

@@ -21,22 +21,16 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
-    private StackedStateFrames<Object> stackedStateFrames;
 
     private final MirrorEntityAccess mirrorEntityAccess;
-
-    public void setStackedStateFrames(StackedStateFrames<Object> stackedStateFrames) {
-        this.stackedStateFrames = stackedStateFrames;
-    }
+    private final StackedStateFrames<Object> stackedStateFrames;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
