@@ -49,7 +49,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     static final String SEPARATOR = "/";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
-    private final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
+    private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
