@@ -176,7 +176,13 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties, mirrorAliasManager, stackedStateFrames);
+                    this,
+                    accountAccessor,
+                    hederaEvmEntityAccess,
+                    tokenAccessor,
+                    evmProperties,
+                    mirrorAliasManager,
+                    stackedStateFrames);
         }
     }
 }
