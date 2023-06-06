@@ -18,10 +18,8 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import jakarta.inject.Named;
 import java.text.MessageFormat;
-import lombok.Value;
 
 @Named
-@Value
 public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
@@ -60,14 +58,6 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     token_account_temp t
                     left join current e on e.account_id = t.account_id
                     and e.token_id = t.token_id
-                ),
-                token as (
-                  select
-                    token_id,
-                    freeze_key,
-                    freeze_default,
-                    kyc_key
-                  from token
                 ),
                 existing_history as (
                   insert into
