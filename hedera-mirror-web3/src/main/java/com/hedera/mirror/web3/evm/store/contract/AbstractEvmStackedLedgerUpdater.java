@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
@@ -29,6 +31,8 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
+    protected MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private final StackedStateFrames<Object> stackedStateFrames;
 
     protected AbstractEvmStackedLedgerUpdater(
@@ -36,9 +40,12 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
         this.stackedStateFrames = stackedStateFrames;
+
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     @Override
@@ -79,5 +86,9 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             }
             updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
         }
+    }
+
+    public HederaEvmContractAliases aliases() {
+        return mirrorEvmContractAliases;
     }
 }
