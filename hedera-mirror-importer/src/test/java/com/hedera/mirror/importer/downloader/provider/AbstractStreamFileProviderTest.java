@@ -187,7 +187,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected final void listAfter(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var lastFilename = StreamFilename.of("2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var lastFilename = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -198,7 +198,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected final void listNotFound(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var lastFilename = StreamFilename.of("2100-01-01T01_01_01.000000001Z.rcd_sig");
+        var lastFilename = StreamFilename.from("2100-01-01T01_01_01.000000001Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0)
@@ -244,7 +244,7 @@ abstract class AbstractStreamFileProviderTest {
     protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
         try {
             var streamFilename =
-                    StreamFilename.of(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
+                    StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
             var filePath = fileCopier
                     .getFrom()
                     .resolve(nodePath(node))

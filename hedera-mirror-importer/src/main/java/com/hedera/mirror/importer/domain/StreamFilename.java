@@ -68,7 +68,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
             streamTypeExtensionMap.put(type, Collections.unmodifiableMap(extensions));
         }
         STREAM_TYPE_EXTENSION_MAP = Collections.unmodifiableMap(streamTypeExtensionMap);
-        EPOCH = of("1970-01-01T00_00_00Z.rcd");
+        EPOCH = from("1970-01-01T00_00_00Z.rcd");
     }
 
     private final String compressor;
@@ -120,23 +120,23 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.filePath = builder.toString();
     }
 
-    public static StreamFilename of(String filePath) {
-        return of(filePath, File.separator);
+    public static StreamFilename from(String filePath) {
+        return from(filePath, File.separator);
     }
 
-    public static StreamFilename of(@NonNull String filePath, @NonNull String pathSeparator) {
+    public static StreamFilename from(@NonNull String filePath, @NonNull String pathSeparator) {
         var lastSeparatorIndex = filePath.lastIndexOf(pathSeparator);
         var filename = lastSeparatorIndex < 0 ? filePath : filePath.substring(lastSeparatorIndex + 1);
         var path = lastSeparatorIndex < 0 ? null : filePath.substring(0, lastSeparatorIndex);
 
-        return of(path, filename, pathSeparator);
+        return from(path, filename, pathSeparator);
     }
 
-    public static StreamFilename of(@NonNull StreamFilename base, String filename) {
-        return of(base.getPath(), filename, base.getPathSeparator());
+    public static StreamFilename from(@NonNull StreamFilename base, String filename) {
+        return from(base.getPath(), filename, base.getPathSeparator());
     }
 
-    public static StreamFilename of(String path, @NonNull String filename, @NonNull String pathSeparator) {
+    public static StreamFilename from(String path, @NonNull String filename, @NonNull String pathSeparator) {
         return new StreamFilename(path, filename, pathSeparator);
     }
 

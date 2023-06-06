@@ -66,7 +66,7 @@ public class StreamFileData {
     }
 
     public static StreamFileData from(@NonNull File file) {
-        return readStreamFileData(file, () -> StreamFilename.of(file.getPath()));
+        return readStreamFileData(file, () -> StreamFilename.from(file.getPath()));
     }
 
     public static StreamFileData from(@NonNull StreamFilename streamFilename) {
@@ -76,12 +76,12 @@ public class StreamFileData {
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
         return new StreamFileData(
-                StreamFilename.of(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
+                StreamFilename.from(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, byte[] bytes) {
-        return new StreamFileData(StreamFilename.of(filename), bytes, Instant.now());
+        return new StreamFileData(StreamFilename.from(filename), bytes, Instant.now());
     }
 
     public InputStream getInputStream() {

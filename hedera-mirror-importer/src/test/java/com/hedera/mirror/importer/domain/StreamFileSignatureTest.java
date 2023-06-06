@@ -33,7 +33,7 @@ class StreamFileSignatureTest {
     })
     void getDataFilename(String filename, byte version, String expected) {
         var streamFileSignature = new StreamFileSignature();
-        streamFileSignature.setFilename(StreamFilename.of(filename));
+        streamFileSignature.setFilename(StreamFilename.from(filename));
         streamFileSignature.setVersion(version);
         assertThat(streamFileSignature.getDataFilename().getFilename()).isEqualTo(expected);
     }

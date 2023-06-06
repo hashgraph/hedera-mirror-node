@@ -293,7 +293,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     return streamFile;
                 })
                 .map(StreamFile::getName)
-                .map(StreamFilename::of)
+                .map(StreamFilename::from)
                 .orElse(StreamFilename.EPOCH);
     }
 

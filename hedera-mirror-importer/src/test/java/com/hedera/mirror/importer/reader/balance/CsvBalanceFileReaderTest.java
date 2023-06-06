@@ -89,7 +89,7 @@ abstract class CsvBalanceFileReaderTest {
 
     @BeforeEach
     void setup() throws IOException {
-        Instant instant = StreamFilename.of(balanceFile.getName()).getInstant();
+        Instant instant = StreamFilename.from(balanceFile.getName()).getInstant();
         consensusTimestamp = DomainUtils.convertToNanosMax(instant);
         testFile = tempDir.resolve(balanceFile.getName()).toFile();
         assertThat(testFile.createNewFile()).isTrue();

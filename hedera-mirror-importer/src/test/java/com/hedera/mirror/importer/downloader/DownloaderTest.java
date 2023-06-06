@@ -39,7 +39,7 @@ class DownloaderTest {
     void streamFileSignatureMultiMapExpectNoDuplicate() {
         // given
         when(downloader.getStreamFileSignatureMultiMap()).thenCallRealMethod();
-        var signatureFilename = StreamFilename.of("2022-01-01T00_00_00Z.rcd_sig");
+        var signatureFilename = StreamFilename.from("2022-01-01T00_00_00Z.rcd_sig");
         var multimap = downloader.getStreamFileSignatureMultiMap();
         var streamFileSignature = streamFileSignature(1L, signatureFilename);
         multimap.put(signatureFilename, streamFileSignature);

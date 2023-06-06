@@ -137,7 +137,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
     }
 
     private Mono<SidecarFile> getSidecar(ConsensusNode node, StreamFilename recordFilename, SidecarFile sidecar) {
-        var sidecarFilename = StreamFilename.of(recordFilename, sidecar.getName());
+        var sidecarFilename = StreamFilename.from(recordFilename, sidecar.getName());
         return streamFileProvider.get(node, sidecarFilename).map(streamFileData -> {
             sidecarFileReader.read(sidecar, streamFileData);
 

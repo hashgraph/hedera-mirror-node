@@ -133,7 +133,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         var key = s3Object.key();
 
         try {
-            return StreamFilename.of(key, SEPARATOR);
+            return StreamFilename.from(key, SEPARATOR);
         } catch (Exception e) {
             log.warn("Unable to parse stream filename for {}", key, e);
             return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later

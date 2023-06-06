@@ -59,7 +59,7 @@ class StreamFilenameTest {
             String fullExtension,
             Instant instant,
             StreamType streamType) {
-        StreamFilename streamFilename = StreamFilename.of(filename);
+        StreamFilename streamFilename = StreamFilename.from(filename);
         String[] fields = {
             "filename",
             "compressor",
@@ -82,7 +82,7 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.123Z_02.rcd.gz, 02",
     })
     void newStreamFileFromSidecarRecordFilename(String filename, String expectedSidecarId) {
-        StreamFilename streamFilename = StreamFilename.of(filename);
+        StreamFilename streamFilename = StreamFilename.from(filename);
         assertThat(streamFilename)
                 .returns(SIDECAR, StreamFilename::getFileType)
                 .returns(expectedSidecarId, StreamFilename::getSidecarId);
@@ -98,7 +98,7 @@ class StreamFilenameTest {
                 "2020-06-03T16_45_00"
             })
     void newStreamFileFromInvalidFilename(String filename) {
-        assertThrows(InvalidStreamFileException.class, () -> StreamFilename.of(filename));
+        assertThrows(InvalidStreamFileException.class, () -> StreamFilename.from(filename));
     }
 
     @ParameterizedTest(name = "Get filename from streamType {0}, fileType {1}, and instant {2}")
@@ -135,7 +135,7 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.1Z.rcd, 2020-06-03T16_45_00.1Z_"
     })
     void getFilenameAfter(String filename, String expected) {
-        StreamFilename streamFilename = StreamFilename.of(filename);
+        StreamFilename streamFilename = StreamFilename.from(filename);
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
     }
 
@@ -145,14 +145,14 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, 3, 2020-06-03T16_45_00.100200345Z_03.rcd.gz",
     })
     void getSidecarFilename(String filename, int id, String expected) {
-        StreamFilename streamFilename = StreamFilename.of(filename);
+        StreamFilename streamFilename = StreamFilename.from(filename);
         assertThat(streamFilename.getSidecarFilename(id)).isEqualTo(expected);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"2020-06-03T16_45_00.1Z_Balances.csv", "2020-06-03T16_45_00.100200345Z.rcd_sig"})
     void getSidecarFilenameThrows(String filename) {
-        StreamFilename streamFilename = StreamFilename.of(filename);
+        StreamFilename streamFilename = StreamFilename.from(filename);
         assertThrows(IllegalArgumentException.class, () -> streamFilename.getSidecarFilename(1));
     }
 
@@ -170,7 +170,7 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, true"
     })
     void isCompressed(String filename, boolean compressed) {
-        assertThat(StreamFilename.of(filename).isCompressed()).isEqualTo(compressed);
+        assertThat(StreamFilename.from(filename).isCompressed()).isEqualTo(compressed);
     }
 
     @ParameterizedTest
@@ -182,14 +182,14 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, mainnet/0/3/record, /, mainnet/0/3/record/sidecar/2020-06-03T16_45_00.100200345Z_02.rcd.gz"
     })
     void getPathProperties(String filename, String path, String pathSeparator, String expectedFilePath) {
-        StreamFilename streamFilename = StreamFilename.of(path, filename, pathSeparator);
+        StreamFilename streamFilename = StreamFilename.from(path, filename, pathSeparator);
         assertThat(streamFilename.getFilename()).isEqualTo(filename);
         assertThat(streamFilename.getPath()).isEqualTo(path);
         assertThat(streamFilename.getPathSeparator()).isEqualTo(pathSeparator);
         assertThat(streamFilename.getFilePath()).isEqualTo(expectedFilePath);
 
         if (!expectedFilePath.contains("sidecar")) {
-            StreamFilename streamFilenameFromPath = StreamFilename.of(expectedFilePath, pathSeparator);
+            StreamFilename streamFilenameFromPath = StreamFilename.from(expectedFilePath, pathSeparator);
             assertThat(streamFilenameFromPath.getFilename()).isEqualTo(filename);
             assertThat(streamFilenameFromPath.getPath()).isEqualTo(path);
             assertThat(streamFilenameFromPath.getPathSeparator()).isEqualTo(pathSeparator);
@@ -203,8 +203,8 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z.rcd_sig, mainnet/0/9/record, /, 2020-06-03T16_45_00.100200345Z.rcd"
     })
     void getDataFilename(String sigFilename, String path, String pathSeparator, String dataFilename) {
-        StreamFilename sigStreamFilename = StreamFilename.of(path, sigFilename, pathSeparator);
-        StreamFilename dataStreamFilename = StreamFilename.of(sigStreamFilename, dataFilename);
+        StreamFilename sigStreamFilename = StreamFilename.from(path, sigFilename, pathSeparator);
+        StreamFilename dataStreamFilename = StreamFilename.from(sigStreamFilename, dataFilename);
 
         assertThat(dataStreamFilename.getFilename()).isEqualTo(dataFilename);
         assertThat(dataStreamFilename.getPath()).isEqualTo(sigStreamFilename.getPath());
@@ -215,11 +215,11 @@ class StreamFilenameTest {
     // Exercise lombok @NonNull for code coverage
     @Test
     void ensureNonNull() {
-        assertThrows(NullPointerException.class, () -> StreamFilename.of(null));
-        assertThrows(NullPointerException.class, () -> StreamFilename.of((String) null, "/"));
-        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", null));
-        assertThrows(NullPointerException.class, () -> StreamFilename.of((StreamFilename) null, "someFilename"));
-        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", null, "\\"));
-        assertThrows(NullPointerException.class, () -> StreamFilename.of("somePath", "someFilename", null));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from(null));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from((String) null, "/"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from("somePath", null));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from((StreamFilename) null, "someFilename"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from("somePath", null, "\\"));
+        assertThrows(NullPointerException.class, () -> StreamFilename.from("somePath", "someFilename", null));
     }
 }
