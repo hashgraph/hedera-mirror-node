@@ -39,6 +39,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+@SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>
         implements HederaEvmWorldUpdater, HederaEvmStackedWorldUpdater {

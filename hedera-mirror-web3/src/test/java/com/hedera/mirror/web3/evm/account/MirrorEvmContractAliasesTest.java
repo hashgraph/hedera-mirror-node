@@ -102,6 +102,16 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
+    void resolveForEvmForContractShouldReturnFromPendingChangesRightAfterLink() {
+        Address alias = ADDRESS;
+        Address address = ADDRESS2;
+        mirrorEvmContractAliases.link(alias, address);
+
+        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
+        assertThat(result).isEqualTo(address);
+    }
+
+    @Test
     void resolveForEvmWhenTypeIsNotTokenOrContractShouldFail() {
         when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOPIC);

@@ -206,6 +206,11 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertThat(subject.isTokenAddress(someAddress)).isFalse();
     }
 
+    @Test
+    void getSbhRefundReturnsZero() {
+        assertThat(subject.getSbhRefund()).isEqualTo(0L);
+    }
+
     private void givenForRedirect() {
         when(properties.isRedirectTokenCallsEnabled()).thenReturn(true);
         when(entityAccess.isTokenAccount(address)).thenReturn(true);
