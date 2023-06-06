@@ -58,17 +58,6 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
     }
 
-    private Account getTreasury(EntityId treasuryId) {
-        if (treasuryId == null) {
-            return null;
-        }
-        return entityRepository
-                .findByIdAndDeletedIsFalse(treasuryId.getId())
-                .map(entity ->
-                        new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
-                .orElse(null);
-    }
-
     private Token tokenFromEntity(Entity entity) {
         final var databaseToken =
                 tokenRepository.findById(new TokenId(entity.toEntityId())).orElse(null);
