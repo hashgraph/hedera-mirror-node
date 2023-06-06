@@ -61,14 +61,6 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     left join current e on e.account_id = t.account_id
                     and e.token_id = t.token_id
                 ),
-                token as (
-                  select
-                    token_id,
-                    freeze_key,
-                    freeze_default,
-                    kyc_key
-                  from token
-                ),
                 existing_history as (
                   insert into
                     token_account_history (
