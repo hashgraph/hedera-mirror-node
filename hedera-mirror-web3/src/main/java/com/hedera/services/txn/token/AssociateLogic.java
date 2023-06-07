@@ -54,7 +54,7 @@ public class AssociateLogic {
                 .toList();
 
         /* Associate and commit the changes */
-        final var newTokenRelationships = associateWith(account, tokens, false);
+        final var newTokenRelationships = associateWith(account, tokens);
 
         final var relationshipAccessor = frame.getAccessor(TokenRelationship.class);
         newTokenRelationships.forEach(
@@ -80,8 +80,7 @@ public class AssociateLogic {
                 FAIL_INVALID, String.format("Association with %s %s failed", type, address), "");
     }
 
-    public List<TokenRelationship> associateWith(
-            final Account account, final List<Token> tokens, final boolean shouldEnableRelationship) {
+    private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {
         int numAssociations = account.getNumAssociations();
         final var proposedTotalAssociations = tokens.size() + numAssociations;
 
@@ -94,10 +93,7 @@ public class AssociateLogic {
 
             validateFalse(hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
-            final var newRel = shouldEnableRelationship
-                    ? newEnabledRelationship(token, account)
-                    : newRelationshipWith(token, account, false);
-
+            final var newRel = new TokenRelationship(token, account);
             numAssociations++;
             newModelRels.add(newRel);
         }
@@ -109,27 +105,17 @@ public class AssociateLogic {
         return newModelRels;
     }
 
+    private boolean exceedsTokenAssociationLimit(int totalAssociations) {
+        return mirrorNodeEvmProperties.isTokenAssociationsLimited()
+                && totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
+    }
+
     private boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
         return stackedStateFrames
                 .top()
                 .getAccessor(TokenRelationship.class)
                 .get(tokenRelationshipKey)
                 .isPresent();
-    }
-
-    public TokenRelationship newEnabledRelationship(Token token, Account account) {
-        return new TokenRelationship(token, account, 0, false, true, false, true, true, 0);
-    }
-
-    public TokenRelationship newRelationshipWith(Token token, Account account, boolean automaticAssociation) {
-        boolean frozen = token.hasFreezeKey() && token.isFrozenByDefault();
-        return new TokenRelationship(
-                token, account, 0, frozen, !token.hasKycKey(), false, true, automaticAssociation, 0);
-    }
-
-    private boolean exceedsTokenAssociationLimit(int totalAssociations) {
-        return mirrorNodeEvmProperties.isTokenAssociationsLimited()
-                && totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
     }
 
     private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {
