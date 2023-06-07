@@ -38,6 +38,9 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
 
     @Override
     public @NotNull Optional<Entity> get(@NotNull Object address) {
+        if (address instanceof EntityId entityId) {
+            return entityRepository.findByIdAndDeletedIsFalse(entityId.getId());
+        }
         final var castedAddress = (Address) address;
         final var addressBytes = (castedAddress).toArrayUnsafe();
         if (isMirror(addressBytes)) {
