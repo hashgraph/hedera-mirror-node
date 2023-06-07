@@ -16,16 +16,13 @@
 
 package com.hedera.services.txns.crypto;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Responsible for creating accounts during a crypto transfer that sends hbar to a previously unused alias.
@@ -34,15 +31,15 @@ import javax.inject.Singleton;
 public class AutoCreationLogic extends AbstractAutoCreationLogic {
 
     @Inject
-    public AutoCreationLogic(final EntityIdSource ids, final StackedStateFrames<Object> stackedStateFrames) {
-        super(ids, stackedStateFrames);
+    public AutoCreationLogic(
+            final EntityIdSource ids,
+            final StackedStateFrames<Object> stackedStateFrames,
+            MirrorEvmContractAliases mirrorEvmContractAliases) {
+        super(ids, stackedStateFrames, mirrorEvmContractAliases);
     }
 
     @Override
-    protected void trackAlias(final ByteString alias, final AccountID newId) {}
-
-    @VisibleForTesting
-    public Map<ByteString, Set<Id>> getTokenAliasMap() {
-        return tokenAliasMap;
+    protected void trackAlias(final JKey jKey, final Address alias) {
+        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, alias);
     }
 }

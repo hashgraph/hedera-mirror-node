@@ -23,6 +23,7 @@ import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFro
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
@@ -39,35 +40,28 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractAutoCreationLogic {
     private final StackedStateFrames<Object> stackedStateFrames;
     protected final EntityIdSource ids;
-    protected final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
     protected FeeCalculator feeCalculator;
+    final MirrorEvmContractAliases mirrorEvmContractAliases;
 
-    protected AbstractAutoCreationLogic(final EntityIdSource ids, final StackedStateFrames<Object> stackedStateFrames) {
+    protected AbstractAutoCreationLogic(
+            final EntityIdSource ids,
+            final StackedStateFrames<Object> stackedStateFrames,
+            MirrorEvmContractAliases mirrorEvmContractAliases) {
         this.ids = ids;
         this.stackedStateFrames = stackedStateFrames;
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     public void setFeeCalculator(final FeeCalculator feeCalculator) {
         this.feeCalculator = feeCalculator;
-    }
-
-    /**
-     * Clears any state related to provisionally created accounts and their pending child records.
-     */
-    public void reset() {
-        tokenAliasMap.clear();
     }
 
     /**
@@ -89,7 +83,6 @@ public abstract class AbstractAutoCreationLogic {
         if (alias == null) {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
-        analyzeTokenTransferCreations(changes);
         final var key = asPrimitiveKeyUnchecked(alias);
         final JKey jKey = asFcKeyUnchecked(key);
         var fee = autoCreationFeeFor(jKey, stackedStateFrames, timestamp);
@@ -113,13 +106,13 @@ public abstract class AbstractAutoCreationLogic {
                 0,
                 0,
                 0L);
-        accountAccessor.set(Id.fromGrpcAccount(newId).asEvmAddress(), account);
+        accountAccessor.set(account.getAccountAddress(), account);
         replaceAliasAndSetBalanceOnChange(change, newId);
-        trackAlias(alias, newId);
+        trackAlias(jKey, account.getAccountAddress());
         return Pair.of(OK, fee);
     }
 
-    protected abstract void trackAlias(final ByteString alias, final AccountID newId);
+    protected abstract void trackAlias(final JKey jKey, final Address alias);
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
@@ -143,24 +136,5 @@ public abstract class AbstractAutoCreationLogic {
         final var accessor = uncheckedFrom(txn);
         final var fees = feeCalculator.computeFee(accessor, payerKey, stackedStateFrames, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
-    }
-
-    private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {
-        for (final var change : changes) {
-            if (change.isForHbar()) {
-                continue;
-            }
-            var alias = change.getNonEmptyAliasIfPresent();
-
-            if (alias != null) {
-                if (tokenAliasMap.containsKey(alias)) {
-                    final var oldSet = tokenAliasMap.get(alias);
-                    oldSet.add(change.getToken());
-                    tokenAliasMap.put(alias, oldSet);
-                } else {
-                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
-                }
-            }
-        }
     }
 }

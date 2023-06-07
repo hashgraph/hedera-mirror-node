@@ -16,20 +16,40 @@
 
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SignedTxnAccessor implements TxnAccessor {
-
+    private HederaFunctionality function;
+    private final int sigMapSize;
+    private final int numSigPairs;
+    private final byte[] hash;
+    private final byte[] txnBytes;
+    private final byte[] utf8MemoBytes;
+    private final String memo;
+    private final Transaction signedTxnWrapper;
+    private final SignatureMap sigMap;
+    private final TransactionID txnId;
+    private final TransactionBody txn;
+    private AccountID payer;
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
     public static SignedTxnAccessor uncheckedFrom(final Transaction validSignedTxn) {
@@ -50,50 +70,101 @@ public class SignedTxnAccessor implements TxnAccessor {
         return new SignedTxnAccessor(signedTxnWrapperBytes, signedTxnWrapper);
     }
 
-    protected SignedTxnAccessor(final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction) {}
+    @SuppressWarnings("deprecation")
+    protected SignedTxnAccessor(final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
+            throws InvalidProtocolBufferException {
 
-    @Override
-    public SubType getSubType() {
-        return null;
+        final Transaction txnWrapper;
+        if (transaction != null) {
+            txnWrapper = transaction;
+        } else {
+            txnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
+        }
+        this.signedTxnWrapper = txnWrapper;
+
+        final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
+        if (signedTxnBytes.isEmpty()) {
+            txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
+            sigMap = signedTxnWrapper.getSigMap();
+            hash = noThrowSha384HashOf(signedTxnWrapperBytes);
+        } else {
+            final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
+            txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
+            sigMap = signedTxn.getSigMap();
+            hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
+        }
+
+        txn = TransactionBody.parseFrom(txnBytes);
+        // Note that the SignatureMap was parsed with either the top-level
+        // Transaction or the SignedTransaction, so we've already checked
+        // it for unknown fields either way; only still need to check the body
+        memo = txn.getMemo();
+        txnId = txn.getTransactionID();
+        sigMapSize = sigMap.getSerializedSize();
+        numSigPairs = sigMap.getSigPairCount();
+        utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+        payer = getTxnId().getAccountID();
+
+        getFunction();
     }
 
-    @Override
-    public AccountID getPayer() {
-        return null;
+    public static byte[] unwrapUnsafelyIfPossible(@NonNull final ByteString byteString) {
+        return byteString.toByteArray();
     }
 
-    @Override
-    public TransactionID getTxnId() {
-        return null;
+    public static byte[] noThrowSha384HashOf(final byte[] byteArray) {
+        try {
+            return MessageDigest.getInstance("SHA-384").digest(byteArray);
+        } catch (final NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(fatal);
+        }
     }
 
     @Override
     public HederaFunctionality getFunction() {
-        return null;
-    }
-
-    @Override
-    public SigUsage usageGiven(int numPayerKeys) {
-        return null;
-    }
-
-    @Override
-    public TransactionBody getTxn() {
-        return null;
-    }
-
-    @Override
-    public String getMemo() {
-        return null;
-    }
-
-    @Override
-    public byte[] getHash() {
-        return new byte[0];
+        if (function == null) {
+            function = FUNCTION_EXTRACTOR.apply(getTxn());
+        }
+        return function;
     }
 
     @Override
     public Transaction getSignedTxnWrapper() {
-        return null;
+        return signedTxnWrapper;
+    }
+
+    @Override
+    public TransactionBody getTxn() {
+        return txn;
+    }
+
+    @Override
+    public TransactionID getTxnId() {
+        return txnId;
+    }
+
+    @Override
+    public AccountID getPayer() {
+        return payer;
+    }
+
+    @Override
+    public String getMemo() {
+        return memo;
+    }
+
+    @Override
+    public byte[] getHash() {
+        return hash;
+    }
+
+    @Override
+    public SubType getSubType() {
+        return SubType.DEFAULT;
+    }
+
+    @Override
+    public SigUsage usageGiven(final int numPayerKeys) {
+        return new SigUsage(numSigPairs, sigMapSize, numPayerKeys);
     }
 }

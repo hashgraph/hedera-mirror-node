@@ -140,15 +140,15 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         if (pricedUsageCalculator.supports(function)) {
             final var applicablePrices = prices.get(accessor.getSubType());
             return inHandle
-                    ? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
-                    : pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
+                    ? pricedUsageCalculator.inHandleFees(applicablePrices, rate)
+                    : pricedUsageCalculator.extraHandleFees(applicablePrices, rate);
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, stackedStateFrames);
                 final var applicablePrices = prices.get(usage.getSubType());
-                return feesIncludingCongestion(usage, applicablePrices, rate);
+                return getFeeObject(usage, applicablePrices, rate);
             } catch (Exception e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",
@@ -157,10 +157,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                 throw new IllegalArgumentException(e);
             }
         }
-    }
-
-    public FeeObject feesIncludingCongestion(final FeeData usage, final FeeData typedPrices, final ExchangeRate rate) {
-        return getFeeObject(typedPrices, usage, rate, 1L);
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
