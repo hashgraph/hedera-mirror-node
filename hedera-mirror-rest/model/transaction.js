@@ -29,6 +29,7 @@ class Transaction {
   static INITIAL_BALANCE = `initial_balance`;
   static MAX_FEE = `max_fee`;
   static MEMO = `memo`;
+  static NFT_TRANSFER = `nft_transfer`;
   static NODE_ACCOUNT_ID = `node_account_id`;
   static NONCE = `nonce`;
   static PARENT_CONSENSUS_TIMESTAMP = `parent_consensus_timestamp`;
@@ -55,6 +56,7 @@ class Transaction {
     this.initialBalance = transaction.initial_balance;
     this.maxFee = transaction.max_fee;
     this.memo = transaction.memo;
+    this.nftTransfer = transaction.nft_transfer;
     this.nodeAccountId = transaction.node_account_id;
     this.nonce = transaction.nonce;
     this.parentConsensusTimestamp = transaction.parent_consensus_timestamp;

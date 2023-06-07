@@ -77,13 +77,7 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
 
-const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
-    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
+const nftTransferJsonAgg = `jsonb_agg(value)`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -716,8 +710,9 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
     ) as token_transfer_list,
     (
       select ${nftTransferJsonAgg}
-      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
+      from ${Transaction.tableName}
+      cross join jsonb_array_elements( ${Transaction.NFT_TRANSFER} )
+      where ${subQueryCondition}
     ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}

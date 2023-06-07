@@ -777,6 +777,7 @@ const getTokenInfo = async (query, params) => {
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters) => {
+  // TO DO: Replace use of NftTransfer table (nft_transfer) with transaction.nft_transfers
   let limit = defaultLimit;
   let order = orderFilterValues.DESC;
 
@@ -864,12 +865,14 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
 };
 
 const formatNftHistoryRow = (row) => {
+  // TO DO: Replace use of NftTransfer table (nft_transfer) with transaction.nft_transfers
   const nftTransferModel = new NftTransfer(row);
   const transactionModel = new Transaction(row);
   return new NftTransactionHistoryViewModel(nftTransferModel, transactionModel);
 };
 
 const nftTransferHistorySelectFields = [
+  // TO DO: Replace use of NftTransfer table (nft_transfer) with transaction.nft_transfers
   NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID),
   NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID),
@@ -881,6 +884,7 @@ const nftTransferHistorySelectFields = [
 ];
 
 const nftTransferHistoryCteSelectFields = [
+  // TO DO: Replace use of NftTransfer table (nft_transfer) with transaction.nft_transfers
   NftTransfer.CONSENSUS_TIMESTAMP,
   NftTransfer.RECEIVER_ACCOUNT_ID,
   NftTransfer.SENDER_ACCOUNT_ID,
@@ -895,6 +899,7 @@ const nftTransferHistoryCteSelectFields = [
  * @param {Response} res HTTP response object
  */
 const getNftTransferHistoryRequest = async (req, res) => {
+  // TO DO: Replace use of NftTransfer table (nft_transfer) with transaction.nft_transfers
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
