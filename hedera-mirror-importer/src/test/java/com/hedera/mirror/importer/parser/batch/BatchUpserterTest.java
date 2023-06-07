@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -30,8 +31,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -58,10 +59,10 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageLookupRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.Key;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -275,7 +276,7 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
                 .isNotEmpty()
-                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
+                .extracting(TokenAccount::getCreatedTimestamp, History::getTimestampLower)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(1L, 1L), Tuple.tuple(2L, 2L), Tuple.tuple(3L, 3L), Tuple.tuple(4L, 4L));
     }
@@ -301,7 +302,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getTimestampLower(), TokenAccount::getFreezeStatus)
+                .extracting(History::getTimestampLower, TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
@@ -327,7 +328,7 @@ class BatchUpserterTest extends IntegrationTest {
                         Tuple.tuple(7L, 11L, TokenFreezeStatusEnum.FROZEN));
 
         assertThat(tokenAccountHistoryRepository.findAll())
-                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccountHistory::getFreezeStatus)
+                .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccountHistory::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN), Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN));
     }
@@ -350,7 +351,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
+                .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenKycStatusEnum.REVOKED));
@@ -363,7 +364,7 @@ class BatchUpserterTest extends IntegrationTest {
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
+                .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenKycStatusEnum.GRANTED));
@@ -412,7 +413,7 @@ class BatchUpserterTest extends IntegrationTest {
 
         // assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
+                .extracting(TokenAccount::getCreatedTimestamp, History::getTimestampLower)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, 6L),
                         Tuple.tuple(6L, 7L),
@@ -492,127 +493,55 @@ class BatchUpserterTest extends IntegrationTest {
     void nftUpdateWithoutExisting() {
         var nft = domainBuilder.nft().customize(n -> n.createdTimestamp(null)).get();
         persist(batchPersister, List.of(nft));
-        assertThat(nftRepository.findAll()).isEmpty();
+        assertThat(nftRepository.findAll()).containsExactly(nft);
+        assertThat(findHistory(Nft.class)).isEmpty();
     }
 
     @Test
     void nftMint() {
-        // inserts tokens first
-        var tokens = new ArrayList<Token>();
-        tokens.add(getToken("0.0.2000", "0.0.98", 1L));
-        tokens.add(getToken("0.0.3000", "0.0.98", 2L));
-        tokens.add(getToken("0.0.4000", "0.0.98", 3L));
-        tokens.add(getToken("0.0.5000", "0.0.98", 4L));
-
-        persist(batchPersister, tokens);
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
-
-        // insert due to mint
-        var nfts = new ArrayList<Nft>();
-        nfts.add(getNft("0.0.2000", 1, "0.0.1001", 10L, 10L, "nft1", false));
-        nfts.add(getNft("0.0.3000", 2, "0.0.1002", 11L, 11L, "nft2", false));
-        nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
-        nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
-
+        var nfts = List.of(domainBuilder.nft().get(), domainBuilder.nft().get());
         persist(batchPersister, nfts);
-
-        assertThat(nftRepository.findAll())
-                .isNotEmpty()
-                .hasSize(4)
-                .extracting(Nft::getAccountId)
-                .extracting(EntityId::toString)
-                .containsExactlyInAnyOrder("0.0.1001", "0.0.1002", "0.0.1003", "0.0.1004");
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(nfts);
+        assertThat(findHistory(Nft.class)).isEmpty();
     }
 
     @Test
     void nftInsertAndUpdate() {
-        // inserts tokens first
-        var tokens = new ArrayList<Token>();
-        tokens.add(getToken("0.0.2000", "0.0.98", 1L));
-        tokens.add(getToken("0.0.3000", "0.0.98", 2L));
-        tokens.add(getToken("0.0.4000", "0.0.98", 3L));
-        tokens.add(getToken("0.0.5000", "0.0.98", 4L));
-        tokens.add(getToken("0.0.6000", "0.0.98", 5L));
-        tokens.add(getToken("0.0.7000", "0.0.98", 6L));
+        // nft mints
+        var nft1 = domainBuilder.nft().get();
+        var nft2 = domainBuilder.nft().get();
+        var nft3 = domainBuilder.nft().get();
+        var nft4 = domainBuilder.nft().get();
 
-        persist(batchPersister, tokens);
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+        // when
+        persist(batchPersister, List.of(nft1, nft2, nft3, nft4));
 
-        // insert due to mint
-        var nfts = new ArrayList<Nft>();
-        nfts.add(getNft("0.0.2000", 1, "0.0.1001", 10L, 10L, "nft1", false));
-        nfts.add(getNft("0.0.3000", 2, "0.0.1002", 11L, 11L, "nft2", false));
-        nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
-        nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
+        // then
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4);
+        assertThat(findHistory(Nft.class)).isEmpty();
 
-        persist(batchPersister, nfts);
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(nfts);
+        // given transfer nft3 and nft4, mint nft5 and nft6
+        var nft3Transfer = transferNft(nft3);
+        var nft4Transfer = transferNft(nft4);
+        var nft5 = domainBuilder.nft().get();
+        var nft6 = domainBuilder.nft().get();
 
-        // updates with transfer
-        nfts.clear();
-        nfts.add(getNft("0.0.4000", 3, "0.0.1013", null, 15L, null, null));
-        nfts.add(getNft("0.0.5000", 4, "0.0.1014", null, 16L, null, null));
-        nfts.add(getNft("0.0.6000", 5, "0.0.1015", 17L, 17L, "nft5", false));
-        nfts.add(getNft("0.0.7000", 6, "0.0.1016", 18L, 18L, "nft6", false));
+        // when
+        persist(batchPersister, List.of(nft3Transfer, nft4Transfer, nft5, nft6));
 
-        persist(batchPersister, nfts);
-
+        // then
+        nft3Transfer.setCreatedTimestamp(nft3.getCreatedTimestamp());
+        nft3Transfer.setDeleted(nft3.getDeleted());
+        nft3Transfer.setMetadata(nft3.getMetadata());
+        nft4Transfer.setCreatedTimestamp(nft4.getCreatedTimestamp());
+        nft4Transfer.setDeleted(nft4.getDeleted());
+        nft4Transfer.setMetadata(nft4.getMetadata());
         assertThat(nftRepository.findAll())
-                .isNotEmpty()
-                .hasSize(6)
-                .extracting(Nft::getAccountId)
-                .extracting(EntityId::toString)
-                .containsExactlyInAnyOrder("0.0.1001", "0.0.1002", "0.0.1013", "0.0.1014", "0.0.1015", "0.0.1016");
-    }
+                .containsExactlyInAnyOrder(nft1, nft2, nft3Transfer, nft4Transfer, nft5, nft6);
 
-    @Test
-    void nftInsertTransferBurnWipe() {
-        // inserts tokens first
-        var tokens = new ArrayList<Token>();
-        tokens.add(getToken("0.0.2000", "0.0.98", 1L));
-        tokens.add(getToken("0.0.3000", "0.0.98", 2L));
-        tokens.add(getToken("0.0.4000", "0.0.98", 3L));
-        tokens.add(getToken("0.0.5000", "0.0.98", 4L));
-
-        persist(batchPersister, tokens);
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
-
-        // insert due to mint
-        var nfts = new ArrayList<Nft>();
-        nfts.add(getNft("0.0.2000", 1, "0.0.1001", 10L, 10L, "nft1", false));
-        nfts.add(getNft("0.0.3000", 2, "0.0.1002", 11L, 11L, "nft2", false));
-        nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
-        nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
-
-        persist(batchPersister, nfts);
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(nfts);
-
-        // updates with mint transfers
-        nfts.clear();
-        nfts.add(getNft("0.0.2000", 1, "0.0.1005", null, 15L, null, false));
-        nfts.add(getNft("0.0.3000", 2, "0.0.1006", null, 16L, null, false));
-        nfts.add(getNft("0.0.4000", 3, "0.0.1007", null, 17L, null, false));
-        nfts.add(getNft("0.0.5000", 4, "0.0.1008", null, 18L, null, false));
-
-        persist(batchPersister, nfts);
-        assertThat(nftRepository.findAll())
-                .isNotEmpty()
-                .hasSize(4)
-                .extracting(Nft::getAccountId)
-                .extracting(EntityId::toString)
-                .containsExactlyInAnyOrder("0.0.1005", "0.0.1006", "0.0.1007", "0.0.1008");
-
-        // updates with wipe/burn
-        nfts.clear();
-        nfts.add(getNft("0.0.3000", 2, "0.0.0", null, 21L, null, true));
-        nfts.add(getNft("0.0.5000", 4, "0.0.0", null, 23L, null, true));
-        persist(batchPersister, nfts);
-
-        assertThat(nftRepository.findAll())
-                .isNotEmpty()
-                .hasSize(4)
-                .extracting(Nft::getDeleted)
-                .containsExactlyInAnyOrder(false, true, false, true);
+        nft3.setTimestampUpper(nft3Transfer.getTimestampLower());
+        nft4.setTimestampUpper(nft4Transfer.getTimestampLower());
+        assertThat(findHistory(Nft.class)).containsExactlyInAnyOrder(nft3, nft4);
     }
 
     @Test
@@ -638,54 +567,72 @@ class BatchUpserterTest extends IntegrationTest {
     @Test
     void tokenDissociateTransfer() {
         // given
-        var accountId = EntityId.of("0.0.215", ACCOUNT);
-        var accountId2 = EntityId.of("0.0.216", ACCOUNT);
-        var nftClass1 = getDeletedNftClass(10L, 25L, EntityId.of("0.0.100", TOKEN));
-        var nftClass2 = getDeletedNftClass(11L, 24L, EntityId.of("0.0.101", TOKEN));
+        var accountId1 = domainBuilder.entityId(ACCOUNT);
+        var accountId2 = domainBuilder.entityId(ACCOUNT);
+        var fungibleToken = domainBuilder.entityId(TOKEN);
+        var nonFungibleToken1 = domainBuilder.entityId(TOKEN);
+        var nonFungibleToken2 = domainBuilder.entityId(TOKEN);
 
-        var tokenId1 = nftClass1.getTokenId().getTokenId();
-        var nft1 = getNft(tokenId1, accountId, 1L, 11L, 16L, true); // already deleted, result of wipe
-        var nft2 = getNft(tokenId1, accountId, 2L, 11L, 11L, false);
-        var nft3 = getNft(tokenId1, accountId, 3L, 12L, 12L, false);
-        var nft4 = getNft(tokenId1, accountId2, 4L, 18L, 18L, false); // different account
+        // Already deleted
+        var nft1 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(null)
+                        .deleted(true)
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                        .tokenId(nonFungibleToken1.getId()))
+                .persist();
+        // With delegating spender and spender, should preserve the two fields for history and clear them for current
+        var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(accountId1)
+                        .delegatingSpender(domainBuilder.entityId(ACCOUNT))
+                        .spender(domainBuilder.entityId(ACCOUNT))
+                        .tokenId(nonFungibleToken1.getId()))
+                .persist();
+        var nft3 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(accountId1).tokenId(nonFungibleToken1.getId()))
+                .persist();
+        // Owner is accountId2
+        var nft4 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(accountId2).tokenId(nonFungibleToken1.getId()))
+                .persist();
+        // nonFungibleToken2
+        var nft5 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(accountId1).tokenId(nonFungibleToken2.getId()))
+                .persist();
 
-        var tokenId2 = nftClass2.getTokenId().getTokenId();
-        var nft5 = getNft(tokenId2, accountId, 1L, 15L, 15L, false);
-
-        nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
-        tokenRepository.saveAll(List.of(nftClass1, nftClass2));
-
-        long consensusTimestamp = 30L;
-        var ftId = EntityId.of("0.0.217", TOKEN);
-        var payerId = EntityId.of("0.0.2002", ACCOUNT);
+        long dissociateTimestamp = domainBuilder.timestamp();
         var fungibleTokenTransfer = domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.amount(-10)
-                        .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                        .id(new TokenTransfer.Id(dissociateTimestamp, fungibleToken, accountId1))
                         .isApproval(false)
-                        .payerAccountId(payerId)
+                        .payerAccountId(accountId1)
                         .deletedTokenDissociate(true))
                 .get();
         var nonFungibleTokenTransfer1 = domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.amount(-2)
-                        .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                        .id(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken1, accountId1))
                         .isApproval(false)
-                        .payerAccountId(payerId)
+                        .payerAccountId(accountId1)
                         .deletedTokenDissociate(true))
                 .get();
         var nonFungibleTokenTransfer2 = domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.amount(-1)
-                        .id(new TokenTransfer.Id(consensusTimestamp, tokenId2, accountId))
+                        .id(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken2, accountId1))
                         .isApproval(false)
-                        .payerAccountId(payerId)
+                        .payerAccountId(accountId1)
                         .deletedTokenDissociate(true))
                 .get();
         var transaction = domainBuilder
                 .transaction()
                 .customize(t ->
-                        t.consensusTimestamp(consensusTimestamp).type(TransactionType.TOKENDISSOCIATE.getProtoId()))
+                        t.consensusTimestamp(dissociateTimestamp).type(TransactionType.TOKENDISSOCIATE.getProtoId()))
                 .persist();
         var tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer1, nonFungibleTokenTransfer2);
 
@@ -693,31 +640,39 @@ class BatchUpserterTest extends IntegrationTest {
         persist(tokenDissociateTransferBatchUpserter, tokenTransfers);
 
         // then
-        nft2.setDeleted(true);
-        nft2.setModifiedTimestamp(consensusTimestamp);
-        nft3.setDeleted(true);
-        nft3.setModifiedTimestamp(consensusTimestamp);
-        nft5.setDeleted(true);
-        nft5.setModifiedTimestamp(consensusTimestamp);
+        // history nft rows just have timetamp range closed
+        var expectedNftHistory = Stream.of(nft2, nft3, nft5)
+                .map(n -> n.toBuilder().build())
+                .peek(n -> n.setTimestampUpper(dissociateTimestamp))
+                .toList();
+        Stream.of(nft2, nft3, nft5).forEach(n -> {
+            n.setAccountId(null);
+            n.setDelegatingSpender(null);
+            n.setDeleted(true);
+            n.setSpender(null);
+            n.setTimestampLower(dissociateTimestamp);
+        });
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4, nft5);
+        assertThat(findHistory(Nft.class)).containsExactlyInAnyOrderElementsOf(expectedNftHistory);
 
         fungibleTokenTransfer.setDeletedTokenDissociate(false);
         assertThat(tokenTransferRepository.findAll()).containsExactly(fungibleTokenTransfer);
 
+        // Negative number in nft transfer is the number of NFTs burned
         transaction.setNftTransfer(List.of(
                 NftTransfer.builder()
                         .isApproval(false)
                         .receiverAccountId(null)
-                        .senderAccountId(accountId)
+                        .senderAccountId(accountId1)
                         .serialNumber(-2L)
-                        .tokenId(tokenId1)
+                        .tokenId(nonFungibleToken1)
                         .build(),
                 NftTransfer.builder()
                         .isApproval(false)
                         .receiverAccountId(null)
-                        .senderAccountId(accountId)
+                        .senderAccountId(accountId1)
                         .serialNumber(-1L)
-                        .tokenId(tokenId2)
+                        .tokenId(nonFungibleToken2)
                         .build()));
         assertThat(transactionRepository.findAll()).containsExactly(transaction);
     }
@@ -825,63 +780,13 @@ class BatchUpserterTest extends IntegrationTest {
         return schedule;
     }
 
-    private Nft getNft(
-            EntityId tokenId,
-            EntityId accountId,
-            long serialNumber,
-            long createdTimestamp,
-            long modifiedTimestamp,
-            boolean deleted) {
-        return getNft(
-                tokenId.toString(),
-                serialNumber,
-                accountId.toString(),
-                createdTimestamp,
-                modifiedTimestamp,
-                "meta",
-                deleted);
-    }
-
-    private Nft getNft(
-            String tokenId,
-            long serialNumber,
-            String accountId,
-            Long createdTimestamp,
-            long modifiedTimeStamp,
-            String metadata,
-            Boolean deleted) {
-        Nft nft = new Nft();
-        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityType.ACCOUNT));
-        nft.setCreatedTimestamp(createdTimestamp);
-        nft.setDeleted(deleted);
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, TOKEN)));
-        nft.setMetadata(metadata == null ? null : metadata.getBytes(StandardCharsets.UTF_8));
-        nft.setModifiedTimestamp(modifiedTimeStamp);
-        return nft;
-    }
-
-    private NftTransfer getNftTransfer(
-            EntityId tokenId, EntityId senderAccountId, long serialNumber, long consensusTimestamp) {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setIsApproval(false);
-        nftTransfer.setSenderAccountId(senderAccountId);
-        return nftTransfer;
-    }
-
-    private Token getDeletedNftClass(long createdTimestamp, long deletedTimestamp, EntityId tokenId) {
-        Token token = Token.of(tokenId);
-        token.setCreatedTimestamp(createdTimestamp);
-        token.setDecimals(0);
-        token.setFreezeDefault(false);
-        token.setInitialSupply(0L);
-        token.setModifiedTimestamp(deletedTimestamp);
-        token.setName("foo");
-        token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
-        token.setSupplyType(TokenSupplyTypeEnum.FINITE);
-        token.setSymbol("bar");
-        token.setTotalSupply(200L);
-        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityType.ACCOUNT));
-        token.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
-        return token;
+    private Nft transferNft(Nft nft) {
+        return nft.toBuilder()
+                .accountId(domainBuilder.entityId(ACCOUNT))
+                .createdTimestamp(null)
+                .deleted(null)
+                .metadata(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
     }
 }

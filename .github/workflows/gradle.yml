@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [ graphql, grpc, importer, monitor, rest, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
+        project: [ graphql, grpc, importer, monitor, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
         schema: [ v1, v2 ]
         exclude:
           - project: monitor

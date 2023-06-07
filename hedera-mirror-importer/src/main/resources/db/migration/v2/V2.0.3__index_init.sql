@@ -144,6 +144,10 @@ create index if not exists nft__account_token_serialnumber on nft (account_id, t
 create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
     where account_id is not null and spender is not null;
 
+-- nft history
+alter table nft_history
+    add constraint nft_history__pk primary key (token_id, serial_number, timestamp_range);
+
 -- nft_allowance
 alter table if exists nft_allowance
     add constraint nft_allowance__pk primary key (owner, spender, token_id);
