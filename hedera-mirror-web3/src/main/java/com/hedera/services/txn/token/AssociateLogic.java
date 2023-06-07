@@ -89,7 +89,8 @@ public class AssociateLogic {
 
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
-            TokenRelationshipKey tokenRelationshipKey = new TokenRelationshipKey(token, account);
+            TokenRelationshipKey tokenRelationshipKey =
+                    new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
             validateFalse(hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 

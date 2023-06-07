@@ -16,15 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor.model;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Token;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public record TokenRelationshipKey(Address tokenAddress, Address accountAddress) {
-    public TokenRelationshipKey(Token token, Account account) {
-        this(Address.wrap(Bytes.wrap(toEvmAddress(token.getId().asGrpcContract()))), account.getAccountAddress());
-    }
-}
+public record TokenRelationshipKey(Address tokenAddress, Address accountAddress) {}
