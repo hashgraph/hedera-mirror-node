@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -150,6 +151,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(MessageFrame frame) {}
+
+    @Override
+    public Set<Integer> getFunctionSelectors() {
+        return Set.of(functionId);
+    }
 
     /**
      * Decodes the given bytes of the cryptoTransfer function parameters
