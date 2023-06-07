@@ -58,6 +58,7 @@ public class EstimateFeature extends AbstractFeature {
                     DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final String HEX_DIGITS = "0123456789abcdef";
+    private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
     private final ContractClient contractClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
@@ -69,7 +70,6 @@ public class EstimateFeature extends AbstractFeature {
     private Resource estimateGasTestContract;
     private CompiledSolidityArtifact compiledSolidityArtifacts;
     private String newAccountEvnAddress;
-    private String randomAddress;
 
     /**
      * Checks if the actualUsedGas is within the specified range of the estimatedGas.
@@ -103,7 +103,6 @@ public class EstimateFeature extends AbstractFeature {
         deployedContract = createContract(compiledSolidityArtifacts, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvnAddress = PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
-        randomAddress = RandomStringUtils.random(40, HEX_DIGITS);
     }
 
     @And("lower deviation is {int}% and upper deviation is {int}%")
@@ -139,7 +138,7 @@ public class EstimateFeature extends AbstractFeature {
 
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
-        validateGasEstimation(ContractMethods.ADDRESS_BALANCE.getSelector() + to32BytesString(randomAddress),
+        validateGasEstimation(ContractMethods.ADDRESS_BALANCE.getSelector() + RANDOM_ADDRESS,
                 ContractMethods.ADDRESS_BALANCE.getActualGas());
     }
 
@@ -255,25 +254,25 @@ public class EstimateFeature extends AbstractFeature {
 
     @Then("I call estimateGas with function that makes a call to invalid smart contract")
     public void callToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(ContractMethods.CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+        validateGasEstimation(ContractMethods.CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
                 ContractMethods.CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a delegate call to invalid smart contract")
     public void delegateCallToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+        validateGasEstimation(ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
                 ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a static call to invalid smart contract")
     public void staticCallToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+        validateGasEstimation(ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
                 ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getActualGas());
     }
 
     @Then("I call estimateGas with function that makes a call code to invalid smart contract")
     public void callCodeToInvalidSmartContractEstimateCall() {
-        validateGasEstimation(ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getSelector() + to32BytesString(randomAddress),
+        validateGasEstimation(ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
                 ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getActualGas());
     }
 
@@ -332,14 +331,14 @@ public class EstimateFeature extends AbstractFeature {
     @Then("I call estimateGas with function that executes reentrancy attack with transfer")
     public void reentrancyTransferAttackFunction() {
         validateGasEstimation(
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + to32BytesString(randomAddress) + to32BytesString(
+                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString(
                         "10000000000"), ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas());
     }
 
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
         validateGasEstimation(
-                ContractMethods.REENTRANCY_CALL_ATTACK.getSelector() + to32BytesString(randomAddress) + to32BytesString(
+                ContractMethods.REENTRANCY_CALL_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString(
                         "10000000000"), ContractMethods.REENTRANCY_CALL_ATTACK.getActualGas());
     }
 
@@ -423,40 +422,41 @@ public class EstimateFeature extends AbstractFeature {
     @Getter
     @RequiredArgsConstructor
     private enum ContractMethods {
-        MULTIPLY_SIMPLE_NUMBERS("0ec1551d", 21227),
-        MESSAGE_SENDER("d737d0c7", 21290),
-        TX_ORIGIN("f96757d1", 21289),
-        MESSAGE_VALUE("ddf363d7", 21234),
-        MESSAGE_SIGNER("ec3e88cf", 21252),
         ADDRESS_BALANCE("3ec4de35", 24030),
-        UPDATE_COUNTER("c648049d", 26279),
+        CALL_CODE_TO_CONTRACT("ac7e2758", 26398),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("4929af37", 26100),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("fa5e414e", 22272),
+        CALL_CODE_TO_INVALID_CONTRACT("e080b4aa", 24031),
+        CALL_TO_INVALID_CONTRACT("70079963", 24374),
+        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("80f009b6", 24712),
+        DELEGATE_CALL_TO_CONTRACT("d3b6e741", 26417),
+        DELEGATE_CALL_TO_INVALID_CONTRACT("7df6ee27", 24350),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("6e6662b9", 53477),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("dbb6f04a", 55693),
-        STATIC_CALL_TO_CONTRACT("ef0a4eac", 26416),
-        DELEGATE_CALL_TO_CONTRACT("d3b6e741", 26417),
-        CALL_CODE_TO_CONTRACT("ac7e2758", 26398),
-        LOGS("74259795", 28757),
         DESTROY("83197ef0", 51193),
-        WRONG_METHOD_SIGNATURE("ffffffff", 0),
-        CALL_TO_INVALID_CONTRACT("70079963", 24374),
-        DELEGATE_CALL_TO_INVALID_CONTRACT("7df6ee27", 24350),
-        STATIC_CALL_TO_INVALID_CONTRACT("41f32f0c", 24394),
-        CALL_CODE_TO_INVALID_CONTRACT("e080b4aa", 24031),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("4929af37", 26100),
-        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("80f009b6", 24712),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("fa5e414e", 22272),
-        STATE_UPDATE_OF_CONTRACT("5256b99d", 30500),
-        GET_GAS_LEFT("51be4eaa", 21326),
-        REENTRANCY_TRANSFER_ATTACK("ffaf0890", 55500),
-        REENTRANCY_CALL_ATTACK("e7df080e", 55818),
-        NESTED_CALLS_POSITIVE("bb376a96", 45871),
-        NESTED_CALLS_LIMITED("bb376a96", 525255),
         GET_ADDRESS("38cc4831", 0),
-        GET_MOCK_ADDRESS("14a7862c", 0);
+        GET_GAS_LEFT("51be4eaa", 21326),
+        GET_MOCK_ADDRESS("14a7862c", 0),
+        LOGS("74259795", 28757),
+        MESSAGE_SENDER("d737d0c7", 21290),
+        MESSAGE_SIGNER("ec3e88cf", 21252),
+        MESSAGE_VALUE("ddf363d7", 21234),
+        MULTIPLY_SIMPLE_NUMBERS("0ec1551d", 21227),
+        NESTED_CALLS_LIMITED("bb376a96", 525255),
+        NESTED_CALLS_POSITIVE("bb376a96", 45871),
+        REENTRANCY_CALL_ATTACK("e7df080e", 55818),
+        REENTRANCY_TRANSFER_ATTACK("ffaf0890", 55500),
+        STATIC_CALL_TO_CONTRACT("ef0a4eac", 26416),
+        STATIC_CALL_TO_INVALID_CONTRACT("41f32f0c", 24394),
+        STATE_UPDATE_OF_CONTRACT("5256b99d", 30500),
+        TX_ORIGIN("f96757d1", 21289),
+        UPDATE_COUNTER("c648049d", 26279),
+        WRONG_METHOD_SIGNATURE("ffffffff", 0);
 
         private final String selector;
         private final int actualGas;
     }
+
 
     private record DeployedContract(FileId fileId, ContractId contractId,
                                     CompiledSolidityArtifact compiledSolidityArtifact) {

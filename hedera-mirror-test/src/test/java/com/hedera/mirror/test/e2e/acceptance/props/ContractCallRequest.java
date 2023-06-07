@@ -16,16 +16,13 @@
 
 package com.hedera.mirror.test.e2e.acceptance.props;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 @Getter
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ContractCallRequest {
 
     @Builder.Default
