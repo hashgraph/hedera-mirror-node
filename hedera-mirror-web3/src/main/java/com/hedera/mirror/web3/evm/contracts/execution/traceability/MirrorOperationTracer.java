@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
-import jakarta.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -27,7 +26,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 
 @CustomLog
-@Named
 @RequiredArgsConstructor
 public class MirrorOperationTracer implements HederaEvmOperationTracer {
 

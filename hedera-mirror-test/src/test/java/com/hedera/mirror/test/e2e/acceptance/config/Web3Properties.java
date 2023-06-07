@@ -31,6 +31,8 @@ public class Web3Properties {
 
     private String baseUrl;
 
+    private boolean enabled = false;
+
     public String getBaseUrl() {
         if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
             return baseUrl + URL_SUFFIX;

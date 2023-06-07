@@ -35,7 +35,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
@@ -69,10 +69,8 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void notStaked(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void notStaked(String network) {
         // given
         setupForNetwork(network);
         var entity = domainBuilder
@@ -117,10 +115,8 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void stakedAfterEnabled(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void stakedAfterEnabled(String network) {
         // given
         setupForNetwork(network);
         var entity = domainBuilder
@@ -141,10 +137,8 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void stakedAfterEnabledWithHistory(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void stakedAfterEnabledWithHistory(String network) {
         // given
         setupForNetwork(network);
         long stakingSetTimestamp = lastHapi26RecordFileConsensusEnd - 100L;
@@ -178,10 +172,8 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void stakedBeforeEnabled(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void stakedBeforeEnabled(String network) {
         // given
         setupForNetwork(network);
         var entity = domainBuilder
@@ -208,10 +200,8 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = HederaNetwork.class,
-            names = {"MAINNET", "TESTNET"})
-    void stakedBeforeEnabledInHistory(HederaNetwork network) {
+    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    void stakedBeforeEnabledInHistory(String network) {
         // given
         setupForNetwork(network);
         long stakingSetTimestamp = lastHapi26RecordFileConsensusEnd - 100L;
@@ -273,7 +263,7 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
     }
 
-    private void setupForNetwork(HederaNetwork network) {
+    private void setupForNetwork(String network) {
         mirrorProperties.setNetwork(network);
         lastHapi26RecordFileConsensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(network);
         lastHapi26EpochDay = Utility.getEpochDay(lastHapi26RecordFileConsensusEnd);

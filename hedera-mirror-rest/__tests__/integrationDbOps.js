@@ -130,7 +130,7 @@ const flywayMigrate = async () => {
       "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
       "user": "${dbConnectionParams.user}"
     },
-    "version": "8.5.9",
+    "version": "9.16.3",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }
@@ -140,20 +140,20 @@ const flywayMigrate = async () => {
   fs.writeFileSync(flywayConfigPath, flywayConfig);
   logger.info(`Added ${flywayConfigPath} to file system for flyway CLI`);
 
-  // retry logic on flyway info to ensure flyway is downloaded
-  let retries = 3;
+  const maxRetries = 10;
+  let retries = maxRetries;
   const retryMsDelay = 2000;
-  while (retries > 0) {
-    retries--;
+
+  while (retries-- > 0) {
     try {
-      execSync(`node ${exePath} -c ${flywayConfigPath} info`, {stdio: 'ignore'});
+      execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
+      logger.info('Successfully executed all Flyway migrations');
+      break;
     } catch (e) {
-      logger.debug(`Error running flyway info, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
+      logger.warn(`Error running flyway during attempt #${maxRetries - retries}: ${e}`);
       await new Promise((resolve) => setTimeout(resolve, retryMsDelay));
     }
   }
-
-  execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 
   if (isV2Schema()) {
     fs.rmSync(locations, {force: true, recursive: true});
@@ -175,13 +175,20 @@ const getCleanupSql = async () => {
   // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
   // each jest worker, it's done this way because the query to find the correct table names is also slow.
   const {rows} = await pool.queryQuietly(`
-    select table_name
-    from information_schema.tables
-    left join time_partitions on partition::text = table_name::text
-    where table_schema = 'public' and table_type <> 'VIEW'
-      and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
-    order by table_name`);
-  cleanupSql.v2 = rows.map((row) => `delete from ${row.table_name};`).join('\n');
+      select table_name
+      from information_schema.tables
+               left join time_partitions on partition::text = table_name::text
+      where table_schema = 'public'
+        and table_type <> 'VIEW'
+        and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*'
+        and partition is null
+      order by table_name`);
+  cleanupSql.v2 = rows
+    .map(
+      (row) => `delete
+                                     from ${row.table_name};`
+    )
+    .join('\n');
   return cleanupSql.v2;
 };
 

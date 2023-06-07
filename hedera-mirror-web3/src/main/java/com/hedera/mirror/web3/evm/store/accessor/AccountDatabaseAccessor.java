@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -45,11 +46,10 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> {
+@RequiredArgsConstructor
+public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
@@ -64,8 +64,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Address address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object address) {
+        return entityDatabaseAccessor.get((Address) address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {
@@ -84,18 +84,12 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Address, Account> 
                 getApproveForAllNfts(entity.getId()),
                 tokenAssociationsCounts.getFirst(),
                 tokenAssociationsCounts.getSecond(),
-                0);
+                0,
+                Optional.ofNullable(entity.getEthereumNonce()).orElse(0L));
     }
 
     private long getOwnedNfts(Long accountId) {
         return nftRepository.countByAccountIdNotDeleted(accountId);
-    }
-
-    private Id idFromEntityId(EntityId entityId) {
-        if (entityId == null) {
-            return null;
-        }
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {

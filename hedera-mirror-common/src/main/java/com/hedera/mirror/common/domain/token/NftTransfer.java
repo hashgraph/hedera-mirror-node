@@ -20,15 +20,10 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.AccountIdDeserializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.converter.TokenIdDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-
-import jakarta.persistence.Convert;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,19 +40,16 @@ public class NftTransfer {
 
     private Boolean isApproval;
 
-    @Convert(converter = AccountIdConverter.class)
     @JsonDeserialize(using = AccountIdDeserializer.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
 
-    @Convert(converter = AccountIdConverter.class)
     @JsonDeserialize(using = AccountIdDeserializer.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
 
     private Long serialNumber;
 
-    @Convert(converter = TokenIdConverter.class)
     @JsonDeserialize(using = TokenIdDeserializer.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId tokenId;

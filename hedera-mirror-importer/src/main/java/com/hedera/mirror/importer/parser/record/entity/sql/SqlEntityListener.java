@@ -81,6 +81,7 @@ import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
+import org.springframework.util.CollectionUtils;
 
 @Log4j2
 @Named
@@ -216,6 +217,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (recordFile != null) {
             recordFileRepository.save(recordFile);
             sidecarFileRepository.saveAll(recordFile.getSidecars());
+            log.info("Processed {} sidecars", recordFile.getSidecars().size());
         }
     }
 
@@ -439,33 +441,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionHashes.add(transaction.toTransactionHash());
         }
 
-        if (transaction.getNftTransfer() != null && transaction.getNftTransfer().size() > 0) {
-            for (NftTransfer nftTransfer : transaction.getNftTransfer()) {
-                // TO DO: rewrite NftRepository.updateTreasury() to update transaction.nft_transfer column
-                // instead of nft_transfer table, and call it when nftTransfer.serial number == WILDCARD_SERIAL_NUMBER
-
-                if (entityProperties.getPersist().isTrackBalance()) {
-                    long tokenId = nftTransfer.getTokenId().getId();
-                    if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
-                        var tokenAccount = new TokenAccount();
-                        tokenAccount.setAccountId(nftTransfer.getSenderAccountId() == null ? 0 : nftTransfer.getSenderAccountId().getId());
-                        tokenAccount.setTokenId(tokenId);
-                        tokenAccount.setBalance(-1);
-                        onTokenAccount(tokenAccount);
-                    }
- 
-                    if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
-                        var tokenAccount = new TokenAccount();
-                        tokenAccount.setAccountId(nftTransfer.getReceiverAccountId() == null ? 0 : nftTransfer.getReceiverAccountId().getId());
-                        tokenAccount.setTokenId(tokenId);
-                        tokenAccount.setBalance(1);
-                        onTokenAccount(tokenAccount);
-                    }
-                }
-
-                // TO DO: rewrite mergeNftTransfer logic to not require nftTransferId (which has been eliminated)
-            }
-        }
+        onNftTransferList(transaction);
 
         if (transactions.size() == sqlProperties.getBatchSize()) {
             flush();
@@ -857,5 +833,46 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
         previous.setTimestampUpper(current.getTimestampLower());
         return current;
+    }
+
+    private void onNftTransferList(Transaction transaction) {
+        var nftTransferList = transaction.getNftTransfer();
+        if (CollectionUtils.isEmpty(nftTransferList)) {
+            return;
+        }
+
+        for (var nftTransfer : nftTransferList) {
+            long tokenId = nftTransfer.getTokenId().getId();
+            if (nftTransfer.getSerialNumber() == NftTransfer.WILDCARD_SERIAL_NUMBER) {
+                // nft treasury change, there should be only one such nft transfer in the list
+                flushNftState();
+                nftRepository.updateTreasury(
+                        transaction.getConsensusTimestamp(),
+                        nftTransfer.getReceiverAccountId().getId(),
+                        nftTransfer.getSenderAccountId().getId(),
+                        nftTransfer.getTokenId().getId());
+                return;
+            }
+
+            if (!entityProperties.getPersist().isTrackBalance()) {
+                return;
+            }
+
+            if (!EntityId.isEmpty(nftTransfer.getSenderAccountId())) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(-1);
+                onTokenAccount(tokenAccount);
+            }
+
+            if (!EntityId.isEmpty(nftTransfer.getReceiverAccountId())) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(1);
+                onTokenAccount(tokenAccount);
+            }
+        }
     }
 }

@@ -125,11 +125,10 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     private String getNodeIdPrefix(PathKey key) {
-        var networkPrefix = commonDownloaderProperties.getMirrorProperties().getEffectiveNetwork();
+        var network = commonDownloaderProperties.getMirrorProperties().getNetwork();
         var shard = commonDownloaderProperties.getMirrorProperties().getShard();
         var streamFolder = key.type().getNodeIdBasedSuffix();
-        return TEMPLATE_NODE_ID_PREFIX.formatted(
-                networkPrefix, shard, key.node().getNodeId(), streamFolder);
+        return TEMPLATE_NODE_ID_PREFIX.formatted(network, shard, key.node().getNodeId(), streamFolder);
     }
 
     private String getPrefix(PathKey key, PathType pathType) {

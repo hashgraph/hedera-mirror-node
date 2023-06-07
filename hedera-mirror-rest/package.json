@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.82.0-SNAPSHOT",
+  "version": "0.83.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -19,7 +19,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.332.0",
+    "@aws-sdk/client-s3": "^3.341.0",
+    "@aws-sdk/node-http-handler": "^3.338.0",
     "@godaddy/terminus": "^4.12.0",
     "@hashgraph/proto": "^2.12.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -40,10 +41,10 @@
     "mathjs": "^11.8.0",
     "mem": "^9.0.2",
     "parse-duration": "^1.0.3",
-    "pg": "~8.10.0",
+    "pg": "~8.11.0",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
-    "qs": "^6.11.1",
+    "qs": "^6.11.2",
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.5",
@@ -52,6 +53,7 @@
   "bundledDependencies": [
     "@awaitjs/express",
     "@aws-sdk/client-s3",
+    "@aws-sdk/node-http-handler",
     "@godaddy/terminus",
     "@hashgraph/proto",
     "@trufflesuite/bigint-buffer",
@@ -97,7 +99,7 @@
     "nodemon": "^2.0.22",
     "pg-format": "^1.0.4",
     "rewire": "^6.0.0",
-    "sinon": "^15.0.4",
+    "sinon": "^15.1.0",
     "supertest": "^6.3.3",
     "testcontainers": "^9.8.0"
   },

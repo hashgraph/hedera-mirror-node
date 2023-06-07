@@ -62,7 +62,8 @@ class RecordFile {
   }
 
   getFullHapiVersion() {
-    return `${this.hapiVersionMajor}.${this.hapiVersionMinor}.${this.hapiVersionPatch}`;
+    return (this.hapiVersionMajor === null || this.hapiVersionMinor === null || this.hapiVersionPatch === null) ? null
+        : `${this.hapiVersionMajor}.${this.hapiVersionMinor}.${this.hapiVersionPatch}`;
   }
 }
 

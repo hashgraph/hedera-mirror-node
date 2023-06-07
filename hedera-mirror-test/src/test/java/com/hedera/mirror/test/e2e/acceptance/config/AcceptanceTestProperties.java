@@ -39,7 +39,6 @@ public class AcceptanceTestProperties {
 
     private final FeatureProperties featureProperties;
     private final RestPollingProperties restPollingProperties;
-    private final SdkProperties sdkProperties;
     private final WebClientProperties webClientProperties;
 
     @NotNull
@@ -48,7 +47,6 @@ public class AcceptanceTestProperties {
     private boolean createOperatorAccount = false;
 
     private boolean emitBackgroundMessages = false;
-    private boolean contractTraceability = false;
 
     @Min(1)
     private int maxNodes = 10;
@@ -86,7 +84,7 @@ public class AcceptanceTestProperties {
 
     @DurationMin(seconds = 0L)
     @NotNull
-    private Duration startupTimeout = Duration.ofMinutes(30);
+    private Duration startupTimeout = Duration.ofMinutes(60);
 
     public enum HederaNetwork {
         MAINNET,

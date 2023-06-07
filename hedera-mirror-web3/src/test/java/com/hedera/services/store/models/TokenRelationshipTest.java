@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,8 @@ class TokenRelationshipTest {
                 "BTC",
                 10,
                 defaultLongValue,
-                defaultLongValue);
+                defaultLongValue,
+                Collections.emptyList());
 
         account = new Account(
                 accountId,
@@ -96,7 +98,8 @@ class TokenRelationshipTest {
                 null,
                 3,
                 defaultIntValue,
-                defaultIntValue);
+                defaultIntValue,
+                0L);
 
         subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
     }
