@@ -196,7 +196,7 @@ public class MirrorNodeClient {
 
     public ContractCallResponse contractsCall(String data, String to, String from) {
         ContractCallRequest contractCallRequest =
-                new ContractCallRequest("latest", data, false, from, 100000000, 100000000, to, 0);
+                new ContractCallRequest("latest", data, false, from, 100000, 10, to, 0);
 
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, contractCallRequest);
     }

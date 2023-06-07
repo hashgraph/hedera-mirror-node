@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
@@ -66,6 +67,9 @@ class HederaEvmWorldStateTest {
     @Mock
     private StackedStateFrames<Object> stackedStateFrames;
 
+    @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private HederaEvmWorldState subject;
 
     @BeforeEach
@@ -77,6 +81,7 @@ class HederaEvmWorldStateTest {
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
+                mirrorEvmContractAliases,
                 stackedStateFrames);
     }
 

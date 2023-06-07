@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -30,6 +31,7 @@ import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -41,7 +43,10 @@ public class HederaEvmStackedWorldStateUpdater
         implements HederaEvmStackedWorldUpdater {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
+
+    private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     private final EvmProperties evmProperties;
+    private final TokenAccessor tokenAccessor;
     private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -50,12 +55,20 @@ public class HederaEvmStackedWorldStateUpdater
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
+        super(
+                updater,
+                accountAccessor,
+                tokenAccessor,
+                hederaEvmEntityAccess,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.stackedStateFrames = stackedStateFrames;
         this.stackedStateFrames.push();
+        this.tokenAccessor = tokenAccessor;
     }
 
     @Override
@@ -107,6 +120,32 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 nonce);
         accountAccessor.set(address, accountModel);
+    }
+
+    /**
+     * Returns the mirror form of the given EVM address.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form
+     */
+    public byte[] permissivelyUnaliased(final byte[] evmAddress) {
+        return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+    }
+
+    /**
+     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
+     * the given address is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based address value of a given account.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
+     *     this account
+     */
+    public byte[] unaliased(final byte[] evmAddress) {
+        final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
+            return NON_CANONICAL_REFERENCE;
+        }
+        return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
     }
 
     private boolean isTokenRedirect(final Address address) {

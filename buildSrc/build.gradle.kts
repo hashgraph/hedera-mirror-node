@@ -47,14 +47,14 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.5.3")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.6.0")
     implementation("org.owasp:dependency-check-gradle:8.2.1")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.1.0.3113")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.2.0.3129")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
 
     // Temporary due to https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/16
     implementation("org.springframework.boot:spring-boot-starter-graphql:${springBootVersion}")
 
     // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
-    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.14")
+    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.15")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {

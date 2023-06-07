@@ -62,6 +62,10 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(grpc.getTokenNum());
     }
 
+    static boolean areValidNums(final long shard, final long realm) {
+        return shard == 0 && realm == 0;
+    }
+
     public int intValue() {
         return value;
     }
@@ -87,10 +91,6 @@ public class EntityNum implements Comparable<EntityNum> {
         final var that = (EntityNum) o;
 
         return this.value == that.value;
-    }
-
-    static boolean areValidNums(final long shard, final long realm) {
-        return shard == 0 && realm == 0;
     }
 
     @Override

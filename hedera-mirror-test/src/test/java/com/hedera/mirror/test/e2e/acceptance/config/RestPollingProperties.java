@@ -59,7 +59,9 @@ public class RestPollingProperties {
 
     public boolean shouldRetry(Throwable t) {
         // Don't retry negative test cases
-        if (t instanceof WebClientResponseException wcre && wcre.getStatusCode() == HttpStatus.BAD_REQUEST) {
+        if (t instanceof WebClientResponseException wcre
+                && (wcre.getStatusCode() == HttpStatus.BAD_REQUEST
+                        || wcre.getStatusCode() == HttpStatus.NOT_IMPLEMENTED)) {
             return false;
         }
         return retryableExceptions.stream()

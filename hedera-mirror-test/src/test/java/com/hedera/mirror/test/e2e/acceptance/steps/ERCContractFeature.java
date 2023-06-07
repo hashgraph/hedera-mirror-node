@@ -174,8 +174,9 @@ public class ERCContractFeature extends AbstractFeature {
                 .isEqualTo(tokenClient
                         .getSdkClient()
                         .getExpandedOperatorAccountId()
-                        .getAccountId()
-                        .toSolidityAddress());
+                        .getPublicKey()
+                        .toEvmAddress()
+                        .toString());
     }
 
     @RetryAsserts
