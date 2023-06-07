@@ -55,8 +55,8 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
                 select is_approval,
                 consensus_timestamp,
                 amount,
-                entity_id as sender,
                 cast(null as bigint) as receiver,
+                entity_id as sender,
                 cast(null as bigint) as token_id,
                 cast(null as int) as index,
                 'CRYPTO_TRANSFER' as transfer_type
@@ -76,8 +76,8 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
                 select is_approval,
                 consensus_timestamp,
                 amount,
-                account_id as sender,
                 cast(null as bigint) as receiver,
+                account_id as sender,
                 token_id,
                 cast(null as int) as index,
                 'TOKEN_TRANSFER' as transfer_type
