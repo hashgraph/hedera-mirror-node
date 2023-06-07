@@ -31,7 +31,7 @@ class Transaction {
   static INITIAL_BALANCE = `initial_balance`;
   static MAX_FEE = `max_fee`;
   static MEMO = `memo`;
-  static NFT_TRANSFER = 'nft_transfer';
+  static NFT_TRANSFER = `nft_transfer`;
   static NODE_ACCOUNT_ID = `node_account_id`;
   static NONCE = `nonce`;
   static PARENT_CONSENSUS_TIMESTAMP = `parent_consensus_timestamp`;
