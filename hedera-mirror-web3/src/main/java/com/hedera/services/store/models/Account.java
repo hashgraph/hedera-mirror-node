@@ -24,6 +24,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,7 +42,7 @@ public class Account extends HederaEvmAccount {
     private final long ownedNfts;
 
     private final long autoRenewSecs;
-    final Id proxy;
+    private final Id proxy;
     private final Address accountAddress;
     private final int autoAssociationMetadata;
     private final SortedMap<EntityNum, Long> cryptoAllowances;
@@ -52,6 +53,7 @@ public class Account extends HederaEvmAccount {
     private final int numTreasuryTitles;
     private final long ethereumNonce;
 
+    @Builder
     @SuppressWarnings("java:S107")
     public Account(
             Id id,
@@ -250,5 +252,27 @@ public class Account extends HederaEvmAccount {
                 .add("numAssociations", numAssociations)
                 .add("numPositiveBalances", numPositiveBalances)
                 .toString();
+    }
+
+    /**
+     * Builder for creating a modified copy of this account. Used in order to keep immutability.
+     */
+    public AccountBuilder modificationBuilder() {
+        return new AccountBuilder()
+                .id(id)
+                .expiry(expiry)
+                .balance(balance)
+                .deleted(deleted)
+                .ownedNfts(ownedNfts)
+                .autoRenewSecs(autoRenewSecs)
+                .proxy(proxy)
+                .autoAssociationMetadata(autoAssociationMetadata)
+                .cryptoAllowances(cryptoAllowances)
+                .fungibleTokenAllowances(fungibleTokenAllowances)
+                .approveForAllNfts(approveForAllNfts)
+                .numAssociations(numAssociations)
+                .numPositiveBalances(numPositiveBalances)
+                .numTreasuryTitles(numTreasuryTitles)
+                .ethereumNonce(ethereumNonce);
     }
 }
