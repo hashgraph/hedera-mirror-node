@@ -37,10 +37,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-    private final MirrorEntityAccess mirrorEntityAccess;
 
     public static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN = EthSigsUtils::recoverAddressFromPubKey;
     final Map<Address, Address> aliases = new HashMap<>();
+    private final MirrorEntityAccess mirrorEntityAccess;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         return maybeLinkEvmAddress(key, address, ADDRESS_RECOVERY_FN);
