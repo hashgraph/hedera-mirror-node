@@ -31,9 +31,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-    private final MirrorEntityAccess mirrorEntityAccess;
-
     final Map<Address, Address> aliases = new HashMap<>();
+    private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {

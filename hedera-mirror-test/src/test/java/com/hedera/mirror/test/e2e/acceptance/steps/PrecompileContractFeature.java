@@ -72,7 +72,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.tuweni.bytes.Bytes;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -573,19 +572,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
 
-        Tuple keyValue = result.get(0);
-        boolean inheritAccountKey = keyValue.get(0);
-        String contractId = keyValue.get(1).toString();
-        byte[] ed25519 = ((Tuple) result.get(0)).get(2);
-        byte[] ecdsa = ((Tuple) result.get(0)).get(3);
-        String delegatableContractId = keyValue.get(4).toString();
-
-        assertThat(keyValue).isNotEmpty();
-        assertFalse(inheritAccountKey);
-        assertThat(contractId).isEqualTo(ZERO_ADDRESS);
-        assertThat(ed25519).isNotEmpty();
-        assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
+        tokenKeyCheck(result);
     }
 
     @And("the contract call REST API should return the token key for a non fungible token")
@@ -600,19 +587,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
 
-        Tuple keyValue = result.get(0);
-        boolean inheritAccountKey = keyValue.get(0);
-        String contractId = keyValue.get(1).toString();
-        byte[] ed25519 = ((Tuple) result.get(0)).get(2);
-        byte[] ecdsa = ((Tuple) result.get(0)).get(3);
-        String delegatableContractId = keyValue.get(4).toString();
-
-        assertThat(keyValue).isNotEmpty();
-        assertFalse(inheritAccountKey);
-        assertThat(contractId).isEqualTo(ZERO_ADDRESS);
-        assertThat(ed25519).isNotEmpty();
-        assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
+        tokenKeyCheck(result);
     }
 
     @Retryable(
@@ -713,12 +688,14 @@ public class PrecompileContractFeature extends AbstractFeature {
                 OWNER_OF_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 tokenIds.get(1).toSolidityAddress(),
                 contractClient.getClientAddress());
-        assertThat(Bytes.fromHexString(response.getResult()).toBigInteger())
+
+        assertThat(response.getResultAsAddress())
                 .isEqualTo(tokenClient
                         .getSdkClient()
                         .getExpandedOperatorAccountId()
-                        .getAccountId()
-                        .num);
+                        .getPublicKey()
+                        .toEvmAddress()
+                        .toString());
     }
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
@@ -761,7 +738,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(3)).isZero();
         assertFalse((boolean) fractionalFee.get(4));
         assertThat(fractionalFee.get(5).toString().toLowerCase())
-                .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
+                .isEqualTo("0x"
+                        + contractClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getPublicKey()
+                                .toEvmAddress()
+                                .toString());
         assertThat(royaltyFees).isEmpty();
     }
 
@@ -781,6 +764,29 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(royaltyFees).isEmpty();
     }
 
+    private void tokenKeyCheck(final Tuple result) {
+        Tuple keyValue = result.get(0);
+        boolean inheritAccountKey = keyValue.get(0);
+        String contractId = keyValue.get(1).toString();
+        byte[] ed25519 = ((Tuple) result.get(0)).get(2);
+        byte[] ecdsa = ((Tuple) result.get(0)).get(3);
+        String delegatableContractId = keyValue.get(4).toString();
+
+        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        if (admin.getPublicKey().isED25519()) {
+            assertThat(ed25519).isNotEmpty();
+            assertThat(ecdsa).isEmpty();
+        } else if (admin.getPublicKey().isECDSA()) {
+            assertThat(ed25519).isEmpty();
+            assertThat(ecdsa).isNotEmpty();
+        }
+
+        assertThat(keyValue).isNotEmpty();
+        assertFalse(inheritAccountKey);
+        assertThat(contractId).isEqualTo(ZERO_ADDRESS);
+        assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
+    }
+
     private void baseFixedFeeCheck(Tuple[] fixedFees) {
         assertThat(fixedFees).isNotEmpty();
         Tuple fixedFee = fixedFees[0];
@@ -789,7 +795,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertTrue((boolean) fixedFee.get(2));
         assertFalse((boolean) fixedFee.get(3));
         assertThat(fixedFee.get(4).toString().toLowerCase())
-                .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
+                .isEqualTo("0x"
+                        + contractClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getPublicKey()
+                                .toEvmAddress()
+                                .toString());
     }
 
     private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {

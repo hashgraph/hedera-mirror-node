@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 contract ERCTestContract {
 
+    //Read operations
+
     function name(address token) public view returns (string memory) {
         return IERC20Metadata(token).name();
     }
@@ -47,5 +49,28 @@ contract ERCTestContract {
 
     function tokenURI(address token, uint256 tokenId) public view returns (string memory) {
         return IERC721Metadata(token).tokenURI(tokenId);
+    }
+
+    //Modification operations
+
+    function transfer(address token, address recipient, uint256 amount) public {
+        IERC20(token).transfer(recipient, amount);
+    }
+
+    function delegateTransfer(address token, address recipient, uint256 amount) public {
+        (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
+    }
+
+    function transferFrom(address token, address sender, address recipient, uint256 amount) public {
+        IERC20(token).transferFrom(sender, recipient, amount);
+    }
+
+    function transferFromThenRevert(address token, address sender, address recipient, uint256 amount) public {
+        IERC20(token).transferFrom(sender, recipient, amount);
+        revert();
+    }
+
+    function approve(address token, address spender, uint256 amount) public {
+        IERC20(token).approve(spender, amount);
     }
 }

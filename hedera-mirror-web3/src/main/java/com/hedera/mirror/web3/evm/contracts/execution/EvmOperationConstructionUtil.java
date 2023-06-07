@@ -20,7 +20,9 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSP
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
+import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
@@ -32,10 +34,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
@@ -73,20 +72,32 @@ public class EvmOperationConstructionUtil {
     }
 
     public static Map<String, Provider<MessageCallProcessor>> mcps(
-            GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final GasCalculator gasCalculator,
+            final StackedStateFrames<Object> stackedStateFrames,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new MessageCallProcessor(evm, new PrecompileContractRegistry()),
                 EVM_VERSION_0_34,
-                () -> new MirrorEvmMessageCallProcessor(evm, new PrecompileContractRegistry(), precompiles()));
+                () -> new MirrorEvmMessageCallProcessor(
+                        evm,
+                        new PrecompileContractRegistry(),
+                        precompiles(stackedStateFrames, mirrorNodeEvmProperties, precompileMapper)));
     }
 
-    private static Map<String, PrecompiledContract> precompiles() {
+    private static Map<String, PrecompiledContract> precompiles(
+            final StackedStateFrames<Object> stackedStateFrames,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
-        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, new MirrorHTSPrecompiledContract(evmFactory));
+        hederaPrecompiles.put(
+                EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
+                new MirrorHTSPrecompiledContract(
+                        evmFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper));
 
         return hederaPrecompiles;
     }
