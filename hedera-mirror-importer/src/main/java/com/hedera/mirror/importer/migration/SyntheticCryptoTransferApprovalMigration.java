@@ -20,9 +20,11 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hederahashgraph.api.proto.java.Key;
+import jakarta.inject.Named;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.inject.Named;
 import lombok.SneakyThrows;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -43,86 +45,77 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
                 select key, id, timestamp_range from entity_history
               ) e
               join contract_result cr on cr.sender_id > 2119900 and --lower bound for sender ids where this problem occurred
-              -- TODO upper bound for sender ids where this problem occurred
+              -- TODO upper bound for this migration
               lower(e.timestamp_range) <= cr.consensus_timestamp and
               (upper(e.timestamp_range) > cr.consensus_timestamp or upper(e.timestamp_range) is null)
             ),
             cryptotransfers as (
               select ct.*, ecr.sender_id, ecr.key, ecr.id
               from (
-                select cast(null as bigint) account_id,
-                amount,
+                select is_approval,
                 consensus_timestamp,
-                entity_id, --receiver
-                is_approval,
-                cast(null as bigint) as payer_account_id,
-                cast(null as bigint) as receiver_account_id,
-                cast(null as bigint) as sender_account_id,
-                cast(null as bigint) as serial_number,
+                amount,
+                entity_id as sender,
+                cast(null as bigint) as receiver,
                 cast(null as bigint) as token_id,
+                cast(null as int) as index,
                 'CRYPTO_TRANSFER' as transfer_type
                 from crypto_transfer
               ) ct
               join ecr on ecr.consensus_timestamp = ct.consensus_timestamp and
-              ecr.id = ct.entity_id and
+              ecr.id = ct.sender and
               lower(ecr.timestamp_range) <= ct.consensus_timestamp and
               (upper(ecr.timestamp_range) > ct.consensus_timestamp or upper(ecr.timestamp_range) is null)
               where
-                ecr.sender_id <> ct.entity_id and --sender does not equal receiver
+                ecr.sender_id <> ct.sender and --sender is not itself
                 ct.is_approval = false and
-                ct.amount <> 0
-            ), nfttransfers as (
-                select nft.*, ecr.sender_id, ecr.key, ecr.id
-                from (
-                  select cast(null as bigint) account_id,
-                  cast(null as bigint) as amount,
-                  consensus_timestamp,
-                  cast(null as bigint) as entity_id,
-                  is_approval,
-                  cast(null as bigint) as payer_account_id,
-                  receiver_account_id, --receiver
-                  sender_account_id,
-                  serial_number,
-                  token_id,
-                  'NFT_TRANSFER' as transfer_type
-                  from nft_transfer
-                ) nft
-                join ecr on ecr.consensus_timestamp = nft.consensus_timestamp and
-                ecr.id = nft.receiver_account_id and
-                lower(ecr.timestamp_range) <= nft.consensus_timestamp and
-                (upper(ecr.timestamp_range) > nft.consensus_timestamp or upper(ecr.timestamp_range) is null)
-              where
-                ecr.sender_id <> nft.sender_account_id and --sender does not equal receiver
-                nft.is_approval = false
+                ct.amount < 0
             ), tokentransfers as (
               select t.*, ecr.sender_id, ecr.key, ecr.id
               from (
-                select account_id, --receiver
-                amount,
+                select is_approval,
                 consensus_timestamp,
-                cast(null as bigint) as entity_id,
-                is_approval,
-                payer_account_id,
-                cast(null as bigint) as receiver_account_id,
-                cast(null as bigint) as sender_account_id,
-                cast(null as bigint) as serial_number,
+                amount,
+                account_id as sender,
+                cast(null as bigint) as receiver,
                 token_id,
+                cast(null as int) as index,
                 'TOKEN_TRANSFER' as transfer_type
                 from token_transfer
               ) t
               join ecr on ecr.consensus_timestamp = t.consensus_timestamp and
-                ecr.id = t.account_id and
+                ecr.id = t.sender and
                 lower(ecr.timestamp_range) <= t.consensus_timestamp and
                 (upper(ecr.timestamp_range) > t.consensus_timestamp or upper(ecr.timestamp_range) is null)
               where
-                ecr.sender_id <> t.account_id and
+                ecr.sender_id <> t.sender and
                 t.is_approval = false and
-                t.amount <> 0
+                t.amount < 0
+            ), nfttransfers as (
+              select nft.*, ecr.sender_id, ecr.key, ecr.id
+              from (
+                select (arr.item->>'is_approval')::boolean as is_approval,
+                consensus_timestamp,
+                cast(null as bigint) as amount,
+                (arr.item->>'receiver_account_id')::bigint as receiver,
+                (arr.item->>'sender_account_id')::bigint as sender,
+                cast(null as bigint) as token_id,
+                arr.index,
+                'NFT_TRANSFER' as transfer_type
+                from transaction, jsonb_array_elements(nft_transfer) with ordinality arr(item, index)
+              ) nft
+              join ecr on ecr.consensus_timestamp = nft.consensus_timestamp and
+                ecr.id = nft.receiver and
+                lower(ecr.timestamp_range) <= nft.consensus_timestamp and
+                (upper(ecr.timestamp_range) > nft.consensus_timestamp or upper(ecr.timestamp_range) is null)
+              where
+                ecr.sender_id <> nft.sender and
+                nft.is_approval = false
             ) select * from cryptotransfers
               union all
-              select * from nfttransfers
-              union all
               select * from tokentransfers
+              union all
+              select * from nfttransfers
               order by consensus_timestamp asc
             """;
 
@@ -132,7 +125,7 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
             """;
     private static final String UPDATE_NFT_TRANSFER_SQL =
             """
-            update nft_transfer set is_approval = true where consensus_timestamp = ? and serial_number = ? and token_id = ?
+            update transaction set nft_transfer = jsonb_set(nft_transfer, array[?::text, 'is_approval'], 'true', false) where consensus_timestamp = ?
             """;
     private static final String UPDATE_TOKEN_TRANSFER_SQL =
             """
@@ -160,36 +153,35 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        // The version where contract_result sender_id was added
-        return MigrationVersion.fromVersion("1.58.4");
+        // The version where the nft_transfer table was migrated to the transaction table
+        return MigrationVersion.fromVersion("1.81.0");
     }
 
     @Override
     protected void doMigrate() {
         AtomicLong count = new AtomicLong(0L);
+        var migrationErrors = new ArrayList<String>();
         var stopwatch = Stopwatch.createStarted();
         jdbcTemplate.setFetchSize(BATCH_SIZE);
         try {
             jdbcTemplate.query(TRANSFER_SQL, rs -> {
-                if (!isAuthorizedByContractKey(rs)) {
+                if (!isAuthorizedByContractKey(rs, migrationErrors)) {
                     // set is_approval to true
                     var consensusTimestamp = rs.getLong("consensus_timestamp");
                     switch (TRANSFER_TYPE.valueOf(rs.getString("transfer_type"))) {
                         case CRYPTO_TRANSFER:
                             var amount = rs.getLong("amount");
-                            var entityId = rs.getLong("entity_id");
+                            var entityId = rs.getLong("sender");
                             jdbcTemplate.update(UPDATE_CRYPTO_TRANSFER_SQL, amount, consensusTimestamp, entityId);
                             break;
                         case NFT_TRANSFER:
-                            var serialNumber = rs.getLong("serial_number");
-                            var nftTokenId = rs.getLong("token_id");
-                            jdbcTemplate.update(UPDATE_NFT_TRANSFER_SQL, consensusTimestamp, serialNumber, nftTokenId);
+                            var index = rs.getInt("index") - 1;
+                            jdbcTemplate.update(UPDATE_NFT_TRANSFER_SQL, index, consensusTimestamp);
                             break;
                         case TOKEN_TRANSFER:
-                            var tokenTransferId = rs.getLong("token_id");
-                            var accountId = rs.getLong("account_id");
-                            jdbcTemplate.update(
-                                    UPDATE_TOKEN_TRANSFER_SQL, consensusTimestamp, tokenTransferId, accountId);
+                            var tokenId = rs.getLong("token_id");
+                            var accountId = rs.getLong("sender");
+                            jdbcTemplate.update(UPDATE_TOKEN_TRANSFER_SQL, consensusTimestamp, tokenId, accountId);
                     }
                     count.incrementAndGet();
                 }
@@ -200,10 +192,17 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
         }
 
         log.info("Updated {} crypto transfer approvals in {}", count, stopwatch);
+        migrationErrors.forEach(log::error);
     }
 
+    /**
+     * A return value of false denotes that the transfer's isApproval value should be set to true
+     * @param rs
+     * @param migrationErrors
+     * @return
+     */
     @SneakyThrows
-    private boolean isAuthorizedByContractKey(ResultSet rs) {
+    private boolean isAuthorizedByContractKey(ResultSet rs, List<String> migrationErrors) {
         var keyBytes = rs.getBytes("key");
         if (keyBytes == null) {
             return false;
@@ -213,13 +212,15 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
         try {
             parsedKey = Key.parseFrom(keyBytes);
         } catch (Exception e) {
-            var entityId = rs.getLong("entity_id");
+            var entityId = rs.getLong("sender");
             var consensusTimestamp = rs.getLong("consensus_timestamp");
-            log.error("Unable to parse protobuf key for entity id {} at {}: ", entityId, consensusTimestamp, e);
-            // TODO get list of failures
+            migrationErrors.add(String.format(
+                    "Unable to determine if transfer should be migrated. Entity id %d at %d: %s",
+                    entityId, consensusTimestamp, e.getMessage()));
             return true;
         }
 
+        // If the threshold is greater than one ignore it
         if (!parsedKey.hasThresholdKey() || parsedKey.getThresholdKey().getThreshold() > 1) {
             return false;
         }

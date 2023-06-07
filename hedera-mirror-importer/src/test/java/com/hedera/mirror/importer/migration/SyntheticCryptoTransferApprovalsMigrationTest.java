@@ -26,13 +26,13 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -51,7 +51,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private final SyntheticCryptoTransferApprovalMigration migration;
     private final CryptoTransferRepository cryptoTransferRepository;
-    private final NftTransferRepository nftTransferRepository;
+    private final TransactionRepository transactionRepository;
     private final TokenTransferRepository tokenTransferRepository;
 
     @Test
@@ -63,7 +63,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     void empty() {
         migration.doMigrate();
         assertThat(cryptoTransferRepository.findAll()).isEmpty();
-        assertThat(nftTransferRepository.findAll()).isEmpty();
+        assertThat(transactionRepository.findAll()).isEmpty();
         assertThat(tokenTransferRepository.findAll()).isEmpty();
     }
 
@@ -87,9 +87,9 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                         .timestampRange(Range.atLeast(Long.MAX_VALUE - 1000))
                         .build())
                 .persist();
-        var multiLevelThresholdEntity = domainBuilder
+        var thresholdTwoKeyEntity = domainBuilder
                 .entity()
-                .customize(e -> e.key(getMultiLevelThresholdKey(contractResultSenderId.getEntityNum()))
+                .customize(e -> e.key(getThresholdTwoKey(contractResultSenderId.getEntityNum()))
                         .build())
                 .persist();
 
@@ -105,11 +105,11 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 pastKeyUnaffectedEntity,
                 pastKeyAffectedEntity,
                 futureUnaffectedEntity,
-                multiLevelThresholdEntity);
+                thresholdTwoKeyEntity);
 
         var nftPastKeyUnaffectedEntity = entityPastKey(contractResultSenderId.getEntityNum());
         var nftPastKeyAffectedEntity = entityPastKey(contractResultSenderId2.getEntityNum());
-        var nftTransfersPair = setupNftTransfers(
+        var nftTransfersTransactionPair = setupTransactionNfts(
                 contractResultSenderId,
                 contractResultSenderId2,
                 outsideBoundsContractResultSenderId,
@@ -121,7 +121,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 nftPastKeyUnaffectedEntity,
                 nftPastKeyAffectedEntity,
                 futureUnaffectedEntity,
-                multiLevelThresholdEntity);
+                thresholdTwoKeyEntity);
 
         var tokenPastKeyUnaffectedEntity = entityPastKey(contractResultSenderId.getEntityNum());
         var tokenPastKeyAffectedEntity = entityPastKey(contractResultSenderId2.getEntityNum());
@@ -137,7 +137,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 tokenPastKeyUnaffectedEntity,
                 tokenPastKeyAffectedEntity,
                 futureUnaffectedEntity,
-                multiLevelThresholdEntity);
+                thresholdTwoKeyEntity);
 
         // when
         migration.doMigrate();
@@ -148,15 +148,18 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         expectedCryptoTransfers.addAll(cryptoTransfersPair.getRight());
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
 
-        var expectedNftTransfers = new ArrayList<>(nftTransfersPair.getLeft());
-        expectedNftTransfers.forEach(t -> t.setIsApproval(true));
-        expectedNftTransfers.addAll(nftTransfersPair.getRight());
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
-
         var expectedTokenTransfers = new ArrayList<>(tokenTransfersPair.getLeft());
         expectedTokenTransfers.forEach(t -> t.setIsApproval(true));
         expectedTokenTransfers.addAll(tokenTransfersPair.getRight());
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
+
+        var expectedNftTransfers = new ArrayList<>(nftTransfersTransactionPair.getLeft());
+        expectedNftTransfers.forEach(t -> t.setIsApproval(true));
+        expectedNftTransfers.addAll(nftTransfersTransactionPair.getRight());
+
+        var repositoryNftTransfers = new ArrayList<NftTransfer>();
+        transactionRepository.findAll().forEach(t -> repositoryNftTransfers.addAll(t.getNftTransfer()));
+        assertThat(repositoryNftTransfers).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
     }
 
     @Test
@@ -164,14 +167,14 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // given
         migrate();
         var firstPassCryptoTransfers = cryptoTransferRepository.findAll();
-        var firstPassNftTransfers = nftTransferRepository.findAll();
+        var firstPassNftTransfers = transactionRepository.findAll();
         var firstPassTokenTransfers = tokenTransferRepository.findAll();
 
         // when
         migration.doMigrate();
 
         var secondPassCryptoTransfers = cryptoTransferRepository.findAll();
-        var secondPassNftTransfers = nftTransferRepository.findAll();
+        var secondPassNftTransfers = transactionRepository.findAll();
         var secondPassTokenTransfers = tokenTransferRepository.findAll();
 
         // then
@@ -192,7 +195,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity pastKeyUnaffectedEntity,
             Entity pastKeyAffectedEntity,
             Entity futureUnaffectedEntity,
-            Entity multiLevelThresholdEntity) {
+            Entity thresholdTwoKeyEntity) {
         var approvalTrueCryptoTransfers = new ArrayList<CryptoTransfer>();
         var unaffectedCryptoTransfers = new ArrayList<CryptoTransfer>();
 
@@ -265,17 +268,17 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         persistContractResult(contractResultSenderId, futureTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(futureTransfer);
 
-        // crypto transfer with multi-level threshold key. A threshold beyond the first level have isApproval set to
+        // crypto transfer with threshold set to 2. A threshold over 1 should have isApproval set to
         // true
-        var multiTransfer =
-                persistCryptoTransfer(multiLevelThresholdEntity.getId(), contractResultSenderId2, null, false);
-        persistContractResult(contractResultSenderId, multiTransfer.getConsensusTimestamp());
-        approvalTrueCryptoTransfers.add(multiTransfer);
+        var thresholdTwoTransfer =
+                persistCryptoTransfer(thresholdTwoKeyEntity.getId(), contractResultSenderId2, null, false);
+        persistContractResult(contractResultSenderId, thresholdTwoTransfer.getConsensusTimestamp());
+        approvalTrueCryptoTransfers.add(thresholdTwoTransfer);
 
         return Pair.of(approvalTrueCryptoTransfers, unaffectedCryptoTransfers);
     }
 
-    private Pair<List<NftTransfer>, List<NftTransfer>> setupNftTransfers(
+    private Pair<List<NftTransfer>, List<NftTransfer>> setupTransactionNfts(
             EntityId contractResultSenderId,
             EntityId contractResultSenderId2,
             EntityId outsideBoundsContractResultSenderId,
@@ -287,90 +290,97 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity pastKeyUnaffectedEntity,
             Entity pastKeyAffectedEntity,
             Entity futureUnaffectedEntity,
-            Entity multiLevelThresholdEntity) {
+            Entity thresholdTwoKeyEntity) {
         var approvalTrueNftTransfers = new ArrayList<NftTransfer>();
         var unaffectedNftTransfers = new ArrayList<NftTransfer>();
 
+        long currentTimestamp = domainBuilder.timestamp();
+        long pastTimestamp = pastKeyAffectedEntity.getTimestampLower() + 1;
+
         // nft transfer with current threshold key matching the contract result sender id should not have isApproval set
         // to true
-        var nftMatchingThreshold =
-                persistNftTransfer(currentKeyUnaffectedEntity.toEntityId(), contractResultSenderId, null, false);
-        persistContractResult(
-                contractResultSenderId, nftMatchingThreshold.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(nftMatchingThreshold);
+        var currentKeyUnaffectedNft =
+                getNftTransfer(currentKeyUnaffectedEntity.toEntityId(), contractResultSenderId, false);
+        unaffectedNftTransfers.add(currentKeyUnaffectedNft);
 
         // nft transfer with past threshold key matching the contract result sender id should not have isApproval set to
         // true
-        var pastNftMatchingThreshold = persistNftTransfer(
-                pastKeyUnaffectedEntity.toEntityId(),
-                contractResultSenderId,
-                pastKeyUnaffectedEntity.getTimestampLower(),
-                false);
-        persistContractResult(
-                contractResultSenderId, pastNftMatchingThreshold.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(pastNftMatchingThreshold);
+        var pastKeyUnaffectedNft = getNftTransfer(pastKeyUnaffectedEntity.toEntityId(), contractResultSenderId, false);
+        unaffectedNftTransfers.add(pastKeyUnaffectedNft);
 
         // nft transfer with current threshold key not matching the contract result sender id should have isApproval set
         // to true
-        var nftNotMatchingThreshold =
-                persistNftTransfer(currentKeyAffectedEntity.toEntityId(), contractResultSenderId2, null, false);
-        persistContractResult(
-                contractResultSenderId, nftNotMatchingThreshold.getId().getConsensusTimestamp());
-        approvalTrueNftTransfers.add(nftNotMatchingThreshold);
+        var currentKeyAffectedNft =
+                getNftTransfer(currentKeyAffectedEntity.toEntityId(), contractResultSenderId2, false);
+        approvalTrueNftTransfers.add(currentKeyAffectedNft);
 
         // nft transfer with past threshold key not matching the contract result sender id should have isApproval set to
         // true
-        var pastNftNotMatchingThreshold = persistNftTransfer(
-                pastKeyAffectedEntity.toEntityId(),
-                contractResultSenderId2,
-                pastKeyAffectedEntity.getTimestampLower(),
-                false);
-        persistContractResult(
-                contractResultSenderId, pastNftNotMatchingThreshold.getId().getConsensusTimestamp());
-        approvalTrueNftTransfers.add(pastNftNotMatchingThreshold);
+        var pastKeyAffectedNft = getNftTransfer(pastKeyAffectedEntity.toEntityId(), contractResultSenderId2, false);
+        approvalTrueNftTransfers.add(pastKeyAffectedNft);
+
+        // nft transfer with no threshold key and transfer not sent to itself should have isApproval set to true
+        var noKeyNft = getNftTransfer(noKeyEntity.toEntityId(), noKeyEntity.toEntityId(), false);
+        approvalTrueNftTransfers.add(noKeyNft);
+
+        // nft transfer without a contract result, will not be affected by the migration
+        var noContractResultNft = domainBuilder.nftTransfer().get();
+        unaffectedNftTransfers.add(noContractResultNft);
+
+        // nft transfer with approved set to true, it should not be affected by the migration
+        var approvalTrueNft = getNftTransfer(currentKeyAffectedEntity.toEntityId(), contractResultSenderId2, true);
+        unaffectedNftTransfers.add(approvalTrueNft);
+
+        // nft transfer with a threshold set to 2. A threshold over 1 should have isApproval set to true
+        var thresholdTwoNft = getNftTransfer(thresholdTwoKeyEntity.toEntityId(), contractResultSenderId2, false);
+        approvalTrueNftTransfers.add(thresholdTwoNft);
+
+        persistTransaction(pastTimestamp, List.of(pastKeyAffectedNft, pastKeyUnaffectedNft));
+        persistTransaction(
+                currentTimestamp,
+                List.of(
+                        currentKeyUnaffectedNft,
+                        currentKeyAffectedNft,
+                        noKeyNft,
+                        noContractResultNft,
+                        approvalTrueNft,
+                        thresholdTwoNft));
+
+        persistContractResult(contractResultSenderId, currentTimestamp);
+        persistContractResult(contractResultSenderId, pastTimestamp);
 
         // nft transfer with threshold key matching the contract result sender prior grandfathered id, isApproval should
         // not be affected
-        var priorNftTransferThreshold = persistNftTransfer(
-                outsidePastBoundaryEntity.toEntityId(), outsideBoundsContractResultSenderId, null, false);
-        persistContractResult(
-                outsideBoundsContractResultSenderId,
-                priorNftTransferThreshold.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(priorNftTransferThreshold);
+        var outsidePastBoundaryNft = List.of(
+                getNftTransfer(outsidePastBoundaryEntity.toEntityId(), outsideBoundsContractResultSenderId, false));
+        var priorNftTransferThreshold = persistTransaction(null, outsidePastBoundaryNft);
+        persistContractResult(outsideBoundsContractResultSenderId, priorNftTransferThreshold.getConsensusTimestamp());
+        unaffectedNftTransfers.addAll(outsidePastBoundaryNft);
 
-        // nft transfer with no threshold key and transfer not sent to itself should have isApproval set to true
-        var noKeyNftTransfer = persistNftTransfer(noKeyEntity.toEntityId(), noKeyEntity.toEntityId(), null, false);
-        persistContractResult(contractResultSenderId, noKeyNftTransfer.getId().getConsensusTimestamp());
-        approvalTrueNftTransfers.add(noKeyNftTransfer);
-
-        // nft transfer with no threshold key and transfer sent to itself should not have isApproval set to true
-        var unaffectedNftTransfer =
-                persistNftTransfer(unaffectedEntity.toEntityId(), unaffectedEntity.toEntityId(), null, false);
-        persistContractResult(
-                unaffectedEntity.toEntityId(), unaffectedNftTransfer.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(unaffectedNftTransfer);
-
-        // nft transfer without a contract result, will not be affected by the migration
-        unaffectedNftTransfers.add(domainBuilder.nftTransfer().persist());
-
-        // nft transfer with approved set to true, it should not be affected by the migration
-        var nftNotMatchingThresholdApproved =
-                persistNftTransfer(currentKeyAffectedEntity.toEntityId(), contractResultSenderId2, null, true);
-        persistContractResult(
-                contractResultSenderId, nftNotMatchingThresholdApproved.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(nftNotMatchingThresholdApproved);
+        // nft transfer with no threshold key and transfer sent by sender id should not have isApproval set to true
+        var unaffectedNft =
+                List.of(getNftTransfer(unaffectedEntity.toEntityId(), unaffectedEntity.toEntityId(), false));
+        var unaffectedNftTransfer = persistTransaction(null, unaffectedNft);
+        persistContractResult(unaffectedEntity.toEntityId(), unaffectedNftTransfer.getConsensusTimestamp());
+        unaffectedNftTransfers.addAll(unaffectedNft);
 
         // nft transfer outside the future bounds should not be affected by the migration
-        var nftFuture = persistNftTransfer(
-                futureUnaffectedEntity.toEntityId(), contractResultSenderId2, Long.MAX_VALUE - 998, false);
-        persistContractResult(contractResultSenderId, nftFuture.getId().getConsensusTimestamp());
-        unaffectedNftTransfers.add(nftFuture);
+        var futureUnaffectedNft =
+                List.of(getNftTransfer(futureUnaffectedEntity.toEntityId(), contractResultSenderId2, false));
+        var nftFuture = persistTransaction(Long.MAX_VALUE - 998, futureUnaffectedNft);
+        persistContractResult(contractResultSenderId, nftFuture.getConsensusTimestamp());
+        unaffectedNftTransfers.addAll(futureUnaffectedNft);
 
-        // nft transfer with multi-level threshold key. A threshold beyond the first level have isApproval set to true
-        var multiTransfer =
-                persistNftTransfer(multiLevelThresholdEntity.toEntityId(), contractResultSenderId2, null, false);
-        persistContractResult(contractResultSenderId, multiTransfer.getId().getConsensusTimestamp());
-        approvalTrueNftTransfers.add(multiTransfer);
+        // transaction with a list of nft transfers, the first and third should be migrated and the second should not
+        var listNft = List.of(
+                getNftTransfer(currentKeyAffectedEntity.toEntityId(), contractResultSenderId2, false),
+                getNftTransfer(currentKeyUnaffectedEntity.toEntityId(), contractResultSenderId, false),
+                getNftTransfer(pastKeyAffectedEntity.toEntityId(), contractResultSenderId2, false));
+        var nftsTransaction = persistTransaction(null, listNft);
+        persistContractResult(contractResultSenderId, nftsTransaction.getConsensusTimestamp());
+        approvalTrueNftTransfers.add(listNft.get(0));
+        unaffectedNftTransfers.add(listNft.get(1));
+        approvalTrueNftTransfers.add(listNft.get(2));
 
         return Pair.of(approvalTrueNftTransfers, unaffectedNftTransfers);
     }
@@ -387,7 +397,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity pastKeyUnaffectedEntity,
             Entity pastKeyAffectedEntity,
             Entity futureUnaffectedEntity,
-            Entity multiLevelThresholdEntity) {
+            Entity thresholdTwoKeyEntity) {
         var approvalTrueTokenTransfers = new ArrayList<TokenTransfer>();
         var unaffectedTokenTransfers = new ArrayList<TokenTransfer>();
 
@@ -466,16 +476,16 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         persistContractResult(contractResultSenderId, tokenFuture.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(tokenFuture);
 
-        // token transfer with multi-level threshold key. A threshold beyond the first level have isApproval set to true
-        var multiTransfer =
-                persistTokenTransfer(multiLevelThresholdEntity.toEntityId(), contractResultSenderId2, null, false);
-        persistContractResult(contractResultSenderId, multiTransfer.getId().getConsensusTimestamp());
-        approvalTrueTokenTransfers.add(multiTransfer);
+        // token transfer with threshold set to 2. A threshold over 1 should have isApproval set to true
+        var thresholdTwoTransfer =
+                persistTokenTransfer(thresholdTwoKeyEntity.toEntityId(), contractResultSenderId2, null, false);
+        persistContractResult(
+                contractResultSenderId, thresholdTwoTransfer.getId().getConsensusTimestamp());
+        approvalTrueTokenTransfers.add(thresholdTwoTransfer);
 
         return Pair.of(approvalTrueTokenTransfers, unaffectedTokenTransfers);
     }
 
-    // TODO Tests with threshhold key of higher level > 1
     private byte[] getThresholdKey(Long contractNum) {
         if (contractNum == null) {
             return null;
@@ -490,7 +500,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         return Key.newBuilder().setThresholdKey(thresholdKey).build().toByteArray();
     }
 
-    private byte[] getMultiLevelThresholdKey(Long contractNum) {
+    // Threshold key with threshold set to 2
+    private byte[] getThresholdTwoKey(Long contractNum) {
         var thresholdKeyList = KeyList.newBuilder()
                 .addKeys(Key.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(domainBuilder.id()))
@@ -515,18 +526,10 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private CryptoTransfer persistCryptoTransfer(
             long entityId, EntityId payerAccountId, Long consensusTimestamp, boolean isApproval) {
-        long amount;
-        long consensus;
-        if (consensusTimestamp == null) {
-            amount = 10;
-            consensus = domainBuilder.timestamp();
-        } else {
-            amount = 20;
-            consensus = consensusTimestamp;
-        }
+        long consensus = consensusTimestamp == null ? domainBuilder.timestamp() : consensusTimestamp;
         return domainBuilder
                 .cryptoTransfer()
-                .customize(t -> t.amount(amount)
+                .customize(t -> t.amount(-10) // debit from account
                         .entityId(entityId)
                         .isApproval(isApproval)
                         .payerAccountId(payerAccountId)
@@ -551,15 +554,12 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         var currentEntity = builder.persist();
         if (pastContractNum != null) {
             var range = currentEntity.getTimestampRange();
-            var rangeUpdate1 = Range.closedOpen(range.lowerEndpoint() - 2, range.lowerEndpoint() - 1);
-            var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
+            long oneMinute = 60000000000L; // 1 minute in nanoseconds.
+            var rangeUpdate1 = Range.closedOpen(range.lowerEndpoint() - oneMinute, range.lowerEndpoint() - 1);
             var update1 = builder.customize(
                             e -> e.key(getThresholdKey(pastContractNum)).timestampRange(rangeUpdate1))
                     .get();
-            var update2 = builder.customize(e -> e.key(null).timestampRange(rangeUpdate2))
-                    .get();
             var pastEntityHistory = saveHistory(update1);
-            saveHistory(update2);
             var pastEntity = domainBuilder
                     .entity()
                     .customize(e -> e.id(pastEntityHistory.getId())
@@ -574,16 +574,20 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         return currentEntity;
     }
 
-    private NftTransfer persistNftTransfer(
-            EntityId entityId, EntityId payerAccountId, Long consensusTimestamp, boolean isApproval) {
-        long consensus = consensusTimestamp == null ? domainBuilder.timestamp() : consensusTimestamp;
-        var nftTransferId = new NftTransferId(consensus, 1L, domainBuilder.entityId(TOKEN));
+    private NftTransfer getNftTransfer(EntityId entityId, EntityId senderAccountId, boolean isApproval) {
         return domainBuilder
                 .nftTransfer()
-                .customize(t -> t.id(nftTransferId)
-                        .receiverAccountId(entityId)
-                        .payerAccountId(payerAccountId)
+                .customize(t -> t.receiverAccountId(entityId)
+                        .senderAccountId(senderAccountId)
                         .isApproval(isApproval))
+                .get();
+    }
+
+    private Transaction persistTransaction(Long consensusTimestamp, List<NftTransfer> nftTransfers) {
+        long consensus = consensusTimestamp == null ? domainBuilder.timestamp() : consensusTimestamp;
+        return domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(consensus).nftTransfer(nftTransfers))
                 .persist();
     }
 
@@ -597,7 +601,10 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 .build();
         return domainBuilder
                 .tokenTransfer()
-                .customize(t -> t.id(id).payerAccountId(payerAccountId).isApproval(isApproval))
+                .customize(t -> t.amount(-10) // debit from account
+                        .id(id)
+                        .payerAccountId(payerAccountId)
+                        .isApproval(isApproval))
                 .persist();
     }
 
