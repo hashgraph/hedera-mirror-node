@@ -19,8 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.341.0",
-    "@aws-sdk/node-http-handler": "^3.338.0",
+    "@aws-sdk/client-s3": "^3.345.0",
     "@godaddy/terminus": "^4.12.0",
     "@hashgraph/proto": "^2.12.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -47,13 +46,12 @@
     "qs": "^6.11.2",
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
-    "swagger-stats": "^0.99.5",
+    "swagger-stats": "^0.99.6",
     "swagger-ui-express": "^4.6.3"
   },
   "bundledDependencies": [
     "@awaitjs/express",
     "@aws-sdk/client-s3",
-    "@aws-sdk/node-http-handler",
     "@godaddy/terminus",
     "@hashgraph/proto",
     "@trufflesuite/bigint-buffer",
@@ -87,7 +85,7 @@
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-import": "npm:eslint-plugin-i@^2.27.5",
     "eslint-plugin-jest": "^27.2.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-security": "^1.7.1",
@@ -106,10 +104,6 @@
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
     "outputName": "TEST-jest.xml"
-  },
-  "overrides": {
-    "json5": "2.2.3",
-    "protobufjs": "7.1.2"
   },
   "baseUrlPath": "/api/v1"
 }

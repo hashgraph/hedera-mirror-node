@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -73,6 +74,9 @@ class HederaEvmWorldStateTest {
 
     private StackedStateFrames<Object> stackedStateFrames;
 
+    @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private HederaEvmWorldState subject;
 
     @BeforeEach
@@ -87,6 +91,7 @@ class HederaEvmWorldStateTest {
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
+                mirrorEvmContractAliases,
                 stackedStateFrames);
     }
 
