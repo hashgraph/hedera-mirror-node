@@ -39,6 +39,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
+    implementation("net.java.dev.jna:jna:5.13.0")
     runtimeOnly(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
@@ -47,5 +48,6 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.flywaydb:flyway-core")
+
     testImplementation(project(path = ":common", configuration = "testClasses"))
 }
