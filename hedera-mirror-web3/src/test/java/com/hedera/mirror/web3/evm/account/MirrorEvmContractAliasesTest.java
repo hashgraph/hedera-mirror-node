@@ -91,6 +91,14 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
+    void resolveForEvmForContractShouldReturnFromPendingChangesRightAfterLink() {
+        mirrorEvmContractAliases.link(ALIAS, ADDRESS);
+
+        final var result = mirrorEvmContractAliases.resolveForEvm(ALIAS);
+        assertThat(result).isEqualTo(ADDRESS);
+    }
+
+    @Test
     void resolveForEvmWhenTypeIsNotTokenOrContractShouldFail() {
         when(mirrorEntityAccess.findEntity(ALIAS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOPIC);
@@ -114,18 +122,18 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void link() {
-        mirrorEvmContractAliases.aliases.clear();
+        mirrorEvmContractAliases.pendingChanges.clear();
 
         mirrorEvmContractAliases.link(ALIAS, ADDRESS);
 
-        assertThat(mirrorEvmContractAliases.aliases).hasSize(1).hasEntrySatisfying(ALIAS, v -> assertThat(v)
+        assertThat(mirrorEvmContractAliases.pendingChanges).hasSize(1).hasEntrySatisfying(ALIAS, v -> assertThat(v)
                 .isEqualTo(ADDRESS));
     }
 
     @Test
     void unlink() {
-        mirrorEvmContractAliases.aliases.clear();
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingChanges.clear();
+        mirrorEvmContractAliases.pendingChanges.put(ALIAS, ADDRESS);
         mirrorEvmContractAliases.unlink(ALIAS);
         assertThat(mirrorEvmContractAliases.aliases).isEmpty();
     }
