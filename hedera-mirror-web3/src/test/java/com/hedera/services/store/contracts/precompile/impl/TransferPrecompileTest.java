@@ -17,11 +17,15 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.addNftExchanges;
@@ -37,6 +41,7 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -104,6 +109,13 @@ class TransferPrecompileTest {
     private static final Bytes CRYPTO_TRANSFER_HBAR_NFT_INPUT = Bytes.fromHexString(
             "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000b00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000");
 
+    private static final long TEST_SERVICE_FEE = 5_000_000;
+    private static final long TEST_NETWORK_FEE = 400_000;
+    private static final long TEST_NODE_FEE = 300_000;
+
+    private static final long EXPECTED_GAS_PRICE =
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+
     @Mock
     private MessageFrame frame;
 
@@ -122,6 +134,25 @@ class TransferPrecompileTest {
     @AfterEach
     void closeMocks() {
         staticTransferPrecompile.close();
+    }
+
+    @Test
+    void gasRequirementReturnsCorrectValueForTransferSingleToken() {
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKEN, false);
+
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+
+        staticTransferPrecompile
+                .when(() -> decodeTransferToken(eq(input), any()))
+                .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
+        when(pricingUtils.computeGasRequirement(anyLong(), any())).thenReturn(EXPECTED_GAS_PRICE);
+
+        transferPrecompile.body(input, a -> a);
+
+        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME);
+
+        // then
+        assertEquals(EXPECTED_GAS_PRICE, result);
     }
 
     @Test
