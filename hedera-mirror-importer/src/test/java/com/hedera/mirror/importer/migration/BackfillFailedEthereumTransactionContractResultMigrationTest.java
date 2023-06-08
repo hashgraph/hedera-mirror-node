@@ -59,6 +59,9 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
     @Value("classpath:db/migration/v1/V1.80.0__backfill_ethereum_transaction_contract_result.sql")
     private final Resource sql;
 
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
+
     @Test
     void empty() {
         runMigration();

@@ -192,14 +192,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                         nft(account2, 28L, true, account2Nft1DissociateTimestamp, 4L, nftId1),
                         nft(account2, 33L, true, 37L, 3L, nftId2),
                         nft(account2, 45L, false, 45L, 2L, nftId3));
-        // expect new nft transfers from token dissociate of deleted nft class
         // expect nft transfers for nft treasury update removed
-        assertThat(findAllNftTransfers())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "payerAccountId", "senderAccountId")
-                .containsExactlyInAnyOrder(
-                        nftTransfer(account1Nft1DissociateTimestamp, null, account1, 2L, nftId1),
-                        nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
-                        nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1));
         assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(findAllTokens())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields(

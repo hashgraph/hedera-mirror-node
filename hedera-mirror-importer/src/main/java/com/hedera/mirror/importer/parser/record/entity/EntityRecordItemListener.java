@@ -477,7 +477,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var tokenId = tokenTransferList.getToken();
         var entityTokenId = EntityId.of(tokenId);
-
         for (var nftTransfer : tokenTransferList.getNftTransfersList()) {
             long serialNumber = nftTransfer.getSerialNumber();
             var receiverId = EntityId.of(nftTransfer.getReceiverAccountID());

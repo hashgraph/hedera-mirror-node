@@ -96,6 +96,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -1302,6 +1303,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onTransactionWithNftTransfer(boolean trackBalance) {
@@ -1327,13 +1329,11 @@ class SqlEntityListenerTest extends IntegrationTest {
                     long tokenId = transfer.getTokenId().getId();
                     var tokenAccountSender = domainBuilder
                             .tokenAccount()
-                            .customize(
-                                    ta -> ta.accountId(sender).tokenId(tokenId).balance(6))
+                            .customize(ta -> ta.accountId(sender.getId()).balance(6))
                             .persist();
                     var tokenAccountReceiver = domainBuilder
                             .tokenAccount()
-                            .customize(ta ->
-                                    ta.accountId(receiver).tokenId(tokenId).balance(1))
+                            .customize(ta -> ta.accountId(receiver.getId()).balance(1))
                             .persist();
                     if (trackBalance) {
                         tokenAccountSender.setBalance(5);
@@ -1357,6 +1357,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
     }
 
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onTransactionWithNftTransferBurn(boolean trackBalance) {
@@ -1395,6 +1396,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
+    // currently broken (for the TRUE case) due to balance tracking broken
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onTransactionWithNftTransferMint(boolean trackBalance) {
@@ -1419,7 +1421,6 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .transaction()
                 .customize(t -> t.nftTransfer(List.of(nftTransfer)))
                 .get();
-
         // when
         sqlEntityListener.onTransaction(transaction);
         completeFileAndCommit();
@@ -1433,6 +1434,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
     }
 
+    // currently broken as we are getting back all 3 transfers, instead of the merged one
     @Test
     void onNodeStake() {
         // given
@@ -2593,5 +2595,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setTimestampRange(timestampRange);
         tokenAccount.setTokenId(tokenId.getId());
         return tokenAccount;
+    }
+
+    private List<NftTransfer> collectAllNftTransfers() {
+        var results = new HashSet<NftTransfer>();
+        for (Transaction t : transactionRepository.findAll()) {
+            results.addAll(t.getNftTransfer());
+        }
+        return new ArrayList<>(results);
     }
 }
