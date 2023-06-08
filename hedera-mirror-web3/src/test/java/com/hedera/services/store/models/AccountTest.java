@@ -125,6 +125,6 @@ class AccountTest {
 
     @Test
     void modificationBuilder() {
-        assertThat(subject.modificationBuilder().build()).isEqualTo(subject);
+        assertThat(subject.toBuilder().build()).isEqualTo(subject);
     }
 }

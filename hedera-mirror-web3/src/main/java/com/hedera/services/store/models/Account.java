@@ -53,7 +53,7 @@ public class Account extends HederaEvmAccount {
     private final int numTreasuryTitles;
     private final long ethereumNonce;
 
-    @Builder
+    @Builder(toBuilder = true)
     @SuppressWarnings("java:S107")
     public Account(
             Id id,
@@ -252,27 +252,5 @@ public class Account extends HederaEvmAccount {
                 .add("numAssociations", numAssociations)
                 .add("numPositiveBalances", numPositiveBalances)
                 .toString();
-    }
-
-    /**
-     * Builder for creating a modified copy of this account. Used in order to keep immutability.
-     */
-    public AccountBuilder modificationBuilder() {
-        return new AccountBuilder()
-                .id(id)
-                .expiry(expiry)
-                .balance(balance)
-                .deleted(deleted)
-                .ownedNfts(ownedNfts)
-                .autoRenewSecs(autoRenewSecs)
-                .proxy(proxy)
-                .autoAssociationMetadata(autoAssociationMetadata)
-                .cryptoAllowances(cryptoAllowances)
-                .fungibleTokenAllowances(fungibleTokenAllowances)
-                .approveForAllNfts(approveForAllNfts)
-                .numAssociations(numAssociations)
-                .numPositiveBalances(numPositiveBalances)
-                .numTreasuryTitles(numTreasuryTitles)
-                .ethereumNonce(ethereumNonce);
     }
 }

@@ -172,7 +172,7 @@ class AssociateLogicTest {
 
     private Account setupAccount() {
         when(accountAccessor.get(accountAddress)).thenReturn(Optional.of(account));
-        when(account.modificationBuilder()).thenReturn(accountBuilder);
+        when(account.toBuilder()).thenReturn(accountBuilder);
         when(accountBuilder.numAssociations(anyInt())).thenReturn(accountBuilder);
         Account modifiedAccount = mock(Account.class);
         when(accountBuilder.build()).thenReturn(modifiedAccount);

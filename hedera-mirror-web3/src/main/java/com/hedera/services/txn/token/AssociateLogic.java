@@ -86,9 +86,8 @@ public class AssociateLogic {
 
         validateFalse(exceedsTokenAssociationLimit(proposedTotalAssociations), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-        Account updatedAccount = account.modificationBuilder()
-                .numAssociations(proposedTotalAssociations)
-                .build();
+        Account updatedAccount =
+                account.toBuilder().numAssociations(proposedTotalAssociations).build();
 
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
