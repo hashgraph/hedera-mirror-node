@@ -50,7 +50,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             @Nullable final JKey key, final Address address, final UnaryOperator<byte[]> addressRecovery) {
         final var evmAddress = tryAddressRecovery(key, addressRecovery);
         if (isRecoveredEvmAddress(evmAddress)) {
-            link(Address.wrap(Bytes.wrap(evmAddress)), address);
+            link(Address.wrap(Bytes.wrap(evmAddress)), address); // NOSONAR we have a null check
             return true;
         } else {
             return false;

@@ -33,7 +33,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +42,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private final int numSigPairs;
     private final byte[] hash;
     private final byte[] txnBytes;
-    private final byte[] utf8MemoBytes;
     private final String memo;
     private final Transaction signedTxnWrapper;
     private final SignatureMap sigMap;
@@ -102,7 +100,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         txnId = txn.getTransactionID();
         sigMapSize = sigMap.getSerializedSize();
         numSigPairs = sigMap.getSigPairCount();
-        utf8MemoBytes = StringUtils.getBytesUtf8(memo);
         payer = getTxnId().getAccountID();
 
         getFunction();

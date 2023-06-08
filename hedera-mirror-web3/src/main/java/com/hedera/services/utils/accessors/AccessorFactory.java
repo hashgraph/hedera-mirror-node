@@ -18,12 +18,8 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
-import javax.inject.Inject;
 
 public class AccessorFactory {
-
-    @Inject
-    public AccessorFactory() {}
 
     /**
      * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle the transaction's
