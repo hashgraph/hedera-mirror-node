@@ -387,9 +387,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 if (downloaderProperties.isWriteSignatures()) {
                     var destination = downloaderProperties.getStreamPath();
-                    signatures.forEach(s -> {
-                        Utility.archiveFile(s.getFilename(), s.getBytes(), destination);
-                    });
+                    signatures.forEach(s -> Utility.archiveFile(s.getFilename(), s.getBytes(), destination));
                 }
 
                 if (!downloaderProperties.isPersistBytes()) {

@@ -21,7 +21,6 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import jakarta.validation.constraints.NotNull;
-import java.nio.file.Path;
 import java.time.Duration;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -48,11 +47,6 @@ public class EventDownloaderProperties implements DownloaderProperties {
     private boolean writeFiles = false;
 
     private boolean writeSignatures = false;
-
-    @Override
-    public Path getStreamPath() {
-        return mirrorProperties.getDataPath();
-    }
 
     @Override
     public StreamType getStreamType() {
