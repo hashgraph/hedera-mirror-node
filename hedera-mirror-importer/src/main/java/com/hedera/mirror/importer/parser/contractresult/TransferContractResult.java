@@ -20,12 +20,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 public class TransferContractResult extends AbstractSyntheticContractResult {
-    public TransferContractResult(
-            RecordItem recordItem, EntityId entityId, EntityId senderId, EntityId receiverId, long amount) {
-        super(
-                recordItem,
-                entityId,
-                senderId,
-                hexToBytes(TRANSFER_SIGNATURE + longToPaddedHex(receiverId.getEntityNum()) + longToPaddedHex(amount)));
+    public TransferContractResult(RecordItem recordItem, EntityId entityId, EntityId senderId) {
+        super(recordItem, entityId, senderId, hexToBytes(TRANSFER_SIGNATURE));
     }
 }

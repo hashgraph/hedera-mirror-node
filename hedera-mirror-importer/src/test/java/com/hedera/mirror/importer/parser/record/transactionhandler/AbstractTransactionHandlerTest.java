@@ -60,6 +60,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -147,6 +148,9 @@ abstract class AbstractTransactionHandlerTest {
 
     @Mock
     protected SyntheticContractLogService syntheticContractLogService;
+
+    @Mock
+    protected SyntheticContractResultService syntheticContractResultService;
 
     @Captor
     protected ArgumentCaptor<Entity> entityCaptor;

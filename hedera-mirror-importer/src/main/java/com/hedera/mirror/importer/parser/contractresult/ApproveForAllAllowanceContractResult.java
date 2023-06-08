@@ -20,7 +20,14 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 public class ApproveForAllAllowanceContractResult extends AbstractSyntheticContractResult {
-    public ApproveForAllAllowanceContractResult(RecordItem recordItem, EntityId entityId, EntityId senderId) {
-        super(recordItem, entityId, senderId, hexToBytes(APPROVE_FOR_ALL_SIGNATURE));
+    public ApproveForAllAllowanceContractResult(
+            RecordItem recordItem, EntityId entityId, EntityId senderId, EntityId operatorId, boolean approved) {
+        super(
+                recordItem,
+                entityId,
+                senderId,
+                hexToBytes(APPROVE_FOR_ALL_SIGNATURE
+                        + longToPaddedHex(operatorId.getId())
+                        + longToPaddedHex(approved ? 1 : 0)));
     }
 }

@@ -36,6 +36,9 @@ import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractlog.ApproveForAllAllowanceContractLog;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractresult.ApproveAllowanceContractResult;
+import com.hedera.mirror.importer.parser.contractresult.ApproveForAllAllowanceContractResult;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hederahashgraph.api.proto.java.AccountID;
 import jakarta.inject.Named;
@@ -54,6 +57,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private final EntityListener entityListener;
 
     private final SyntheticContractLogService syntheticContractLogService;
+
+    private final SyntheticContractResultService syntheticContractResultService;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -153,6 +158,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 }
             }
         }
+        if (nftAllowances.size() > 0) {
+            EntityId tokenId = EntityId.of(nftAllowances.get(0).getTokenId());
+            syntheticContractResultService.create(
+                    new ApproveAllowanceContractResult(recordItem, tokenId, payerAccountId));
+        }
     }
 
     private void parseNftApproveForAll(
@@ -179,6 +189,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             if (nftAllowanceState.putIfAbsent(nftAllowance.getId(), nftAllowance) == null) {
                 entityListener.onNftAllowance(nftAllowance);
                 syntheticContractLogService.create(new ApproveForAllAllowanceContractLog(
+                        recordItem, tokenId, ownerAccountId, spender, approvedForAll));
+                syntheticContractResultService.create(new ApproveForAllAllowanceContractResult(
                         recordItem, tokenId, ownerAccountId, spender, approvedForAll));
             }
         }
@@ -215,6 +227,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 syntheticContractLogService.create(new ApproveAllowanceContractLog(
                         recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
             }
+        }
+        if (tokenAllowances.size() > 0) {
+            EntityId tokenId = EntityId.of(tokenAllowances.get(0).getTokenId());
+            syntheticContractResultService.create(
+                    new ApproveAllowanceContractResult(recordItem, tokenId, payerAccountId));
         }
     }
 

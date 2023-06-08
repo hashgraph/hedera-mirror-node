@@ -66,8 +66,7 @@ class SyntheticContractResultServiceImplTest {
     @Test
     @DisplayName("Should be able to create valid synthetic contract result")
     void createValid() {
-        syntheticContractResultService.create(
-                new TransferContractResult(recordItem, entityTokenId, senderId, receiverId, amount));
+        syntheticContractResultService.create(new TransferContractResult(recordItem, entityTokenId, senderId));
         verify(entityListener, times(1)).onContractResult(any());
     }
 
@@ -75,8 +74,7 @@ class SyntheticContractResultServiceImplTest {
     @DisplayName("Should not create synthetic contract result with contract")
     void createWithContract() {
         recordItem = recordItemBuilder.contractCall().build();
-        syntheticContractResultService.create(
-                new TransferContractResult(recordItem, entityTokenId, senderId, receiverId, amount));
+        syntheticContractResultService.create(new TransferContractResult(recordItem, entityTokenId, senderId));
         verify(entityListener, times(0)).onContractResult(any());
     }
 
@@ -84,8 +82,7 @@ class SyntheticContractResultServiceImplTest {
     @DisplayName("Should not create synthetic contract result with entity property turned off")
     void createTurnedOff() {
         entityProperties.getPersist().setSyntheticContractResults(false);
-        syntheticContractResultService.create(
-                new TransferContractResult(recordItem, entityTokenId, senderId, receiverId, amount));
+        syntheticContractResultService.create(new TransferContractResult(recordItem, entityTokenId, senderId));
         verify(entityListener, times(0)).onContractResult(any());
     }
 }
