@@ -48,6 +48,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
+    final long balance = 1_234L;
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
+
+    @Mock
+    AccountAccessor accountAccessor;
+
+    @Mock
+    TokenAccessor tokenAccessor;
+
+    @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    EntityAddressSequencer entityAddressSequencer;
+
     @Mock
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
@@ -57,25 +72,10 @@ class HederaEvmWorldStateTest {
     @Mock
     private AbstractCodeCache abstractCodeCache;
 
-    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
-    final long balance = 1_234L;
-
-    @Mock
-    AccountAccessor accountAccessor;
-
-    @Mock
-    TokenAccessor tokenAccessor;
-
-    @Mock
-    EntityAddressSequencer entityAddressSequencer;
-
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     private StackedStateFrames<Object> stackedStateFrames;
-
-    @Mock
-    MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private HederaEvmWorldState subject;
 
