@@ -30,31 +30,16 @@ import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.*;
-import jakarta.inject.Inject;
-import jakarta.inject.Provider;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 
+@Named
 public class PrecompilePricingUtils {
 
     public static final JKey EMPTY_KEY;
-
-    static {
-        EMPTY_KEY = asFcKeyUnchecked(
-                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
-    }
-
-    static class CanonicalOperationsUnloadableException extends RuntimeException {
-
-        static final long serialVersionUID = 1L;
-
-        public CanonicalOperationsUnloadableException(final Exception e) {
-            super("Canonical prices for precompiles are not available", e);
-        }
-    }
-
     /**
      * If we lack an entry (because of a bad data load), return a value that cannot reasonably be paid. In this case $1
      * Million Dollars.
@@ -64,23 +49,25 @@ public class PrecompilePricingUtils {
     private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
             .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
             .build();
-    private final BasicHbarCentExchange exchange;
-    private final Provider<FeeCalculator> feeCalculator;
-    private final BasicFcfsUsagePrices resourceCosts;
-    private final StackedStateFrames<?> state;
-    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
-    @Inject
+    static {
+        EMPTY_KEY = asFcKeyUnchecked(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+    }
+
+    private final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    private final BasicHbarCentExchange exchange;
+    private final FeeCalculator feeCalculator;
+    private final BasicFcfsUsagePrices resourceCosts;
+
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
             final BasicHbarCentExchange exchange,
-            final Provider<FeeCalculator> feeCalculator,
-            final BasicFcfsUsagePrices resourceCosts,
-            final StackedStateFrames<?> state) {
+            final FeeCalculator feeCalculator,
+            final BasicFcfsUsagePrices resourceCosts) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
-        this.state = state;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -112,13 +99,14 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(final Timestamp timestamp) {
-        final var fees = feeCalculator.get().computeFee(EMPTY_KEY, state, timestamp);
+    public long gasFeeInTinybars(final Timestamp timestamp, final StackedStateFrames<Object> state) {
+        final var fees = feeCalculator.computeFee(EMPTY_KEY, state, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
-        final var calculator = feeCalculator.get();
+    public long computeViewFunctionGas(
+            final Timestamp now, final long minimumTinybarCost, final StackedStateFrames<Object> state) {
+        final var calculator = feeCalculator;
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
         final var fees = calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, state, now, ANSWER_ONLY);
 
@@ -133,12 +121,13 @@ public class PrecompilePricingUtils {
         return baseGasCost + (baseGasCost / 5L);
     }
 
-    public long computeGasRequirement(final long blockTimestamp, final Precompile precompile) {
+    public long computeGasRequirement(
+            final long blockTimestamp, final Precompile precompile, final StackedStateFrames<Object> state) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+        final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp);
+        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp, state);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
@@ -185,6 +174,15 @@ public class PrecompilePricingUtils {
         GasCostType(final HederaFunctionality functionality, final SubType subtype) {
             this.functionality = functionality;
             this.subtype = subtype;
+        }
+    }
+
+    static class CanonicalOperationsUnloadableException extends RuntimeException {
+
+        static final long serialVersionUID = 1L;
+
+        public CanonicalOperationsUnloadableException(final Exception e) {
+            super("Canonical prices for precompiles are not available", e);
         }
     }
 }

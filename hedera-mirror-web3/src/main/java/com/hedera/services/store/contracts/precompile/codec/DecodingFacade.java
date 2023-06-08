@@ -24,27 +24,29 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class DecodingFacade {
-    private static final int WORD_LENGTH = 32;
-    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
-
-    /* --- Token Create Structs --- */
-    private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
-    public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
-
     public static final String HEDERA_TOKEN_STRUCT_V2 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    private static final int WORD_LENGTH = 32;
+    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
+    private static final int ADDRESS_BYTES_LENGTH = 20;
+    /* --- Token Create Structs --- */
+    private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
+    public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
             + TOKEN_KEY_DECODER
             + ARRAY_BRACKETS
@@ -103,5 +105,14 @@ public class DecodingFacade {
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+    }
+
+    public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
+        final var address = Address.wrap(getSlicedAddressBytes(addressBytes));
+        return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
+    }
+
+    public static Bytes getSlicedAddressBytes(byte[] addressBytes) {
+        return Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
     }
 }

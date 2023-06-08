@@ -18,23 +18,28 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.contract.precompile.codec.BodyParams;
+import com.hedera.mirror.web3.evm.store.contract.precompile.codec.EmptyResult;
+import com.hedera.mirror.web3.evm.store.contract.precompile.codec.RunResult;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import jakarta.inject.Named;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+@Named
 public class MockPrecompile implements Precompile {
 
-    private Bytes input;
-
     @Override
-    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        this.input = input;
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
+        return TransactionBody.newBuilder();
     }
 
     @Override
@@ -43,15 +48,19 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public void run(MessageFrame frame) {
+    public RunResult run(MessageFrame frame, StackedStateFrames<Object> stackedStateFrames) {
         // Dummy logic to mimic invalid behaviour
         if (Address.ZERO.equals(frame.getSenderAddress())) {
             throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        } else if (Address.ECREC.equals(frame.getSenderAddress())) {
+            return null;
+        } else {
+            return new EmptyResult();
         }
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) {
+    public long getGasRequirement(long blockTimestamp, StackedStateFrames<Object> stackedStateFrames) {
         return 0;
     }
 
@@ -61,9 +70,8 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public Bytes getSuccessResultFor() {
-        if (Bytes.fromHexString("0x000000000000000000000000000000000000000000000000")
-                .equals(input)) {
+    public Bytes getSuccessResultFor(final RunResult runResult) {
+        if (runResult == null) {
             return null;
         } else {
             return SUCCESS_RESULT;

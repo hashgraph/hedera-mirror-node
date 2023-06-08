@@ -28,9 +28,9 @@ import java.util.Set;
 public class PrecompileMapper {
 
     public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
-    private final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
+    private static final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
 
-    private final Set<Integer> precompileSelectors = Set.of(
+    private static final Set<Integer> precompileSelectors = Set.of(
             AbiConstants.ABI_ID_CRYPTO_TRANSFER,
             AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2,
             AbiConstants.ABI_ID_TRANSFER_TOKENS,
@@ -71,6 +71,8 @@ public class PrecompileMapper {
             AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL,
             AbiConstants.ABI_ID_ERC_OWNER_OF_NFT,
             AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT,
+            AbiConstants.ABI_ID_HRC_ASSOCIATE,
+            AbiConstants.ABI_ID_HRC_DISSOCIATE,
             AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE,
             AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2,
             AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT,
@@ -109,16 +111,17 @@ public class PrecompileMapper {
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO,
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2);
 
-    public void setSupportedPrecompiles(final Set<Precompile> precompiles) {
-        for (Precompile precompile : precompiles) {
-            for (Integer selector : precompile.getFunctionSelectors()) {
+    public PrecompileMapper(final Set<Precompile> precompiles) {
+        for (final Precompile precompile : precompiles) {
+            for (final Integer selector : precompile.getFunctionSelectors()) {
                 abiConstantToPrecompile.put(selector, precompile);
             }
         }
     }
 
-    public Optional<Precompile> lookup(int functionSelector) {
+    public Optional<Precompile> lookup(final int functionSelector) {
         final var precompile = abiConstantToPrecompile.get(functionSelector);
+
         if (precompile != null) {
             return Optional.of(precompile);
         }

@@ -94,6 +94,8 @@ class MirrorHTSPrecompiledContractTest {
     private Deque<MessageFrame> messageFrameStack;
 
     @InjectMocks
+    private MockPrecompile mockPrecompile;
+
     private PrecompileMapper precompileMapper;
 
     @InjectMocks
@@ -113,7 +115,7 @@ class MirrorHTSPrecompiledContractTest {
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
-        precompileMapper.setSupportedPrecompiles(Set.of(new MockPrecompile()));
+        precompileMapper = new PrecompileMapper(Set.of(mockPrecompile));
         subject = new MirrorHTSPrecompiledContract(
                 evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper);
     }
@@ -286,7 +288,7 @@ class MirrorHTSPrecompiledContractTest {
 
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
-        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ECREC);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);

@@ -22,6 +22,9 @@ import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
+import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
@@ -36,14 +39,13 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
-    private final CacheProperties cacheProperties;
-
     public static final String CACHE_MANAGER_FEE = "cacheManagerFee";
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
     public static final String CACHE_MANAGER_STATE = "cacheManagerState";
     public static final String CACHE_MANAGER_ENTITY = "cacheManagerEntity";
     public static final String CACHE_MANAGER_TOKEN = "cacheManagerToken";
+    private final CacheProperties cacheProperties;
 
     @Bean(CACHE_MANAGER_STATE)
     CacheManager cacheManagerState() {
@@ -107,5 +109,25 @@ public class EvmConfiguration {
     @Bean
     BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
+    }
+
+    @Bean
+    AssetsLoader assetsLoader() {
+        return new AssetsLoader();
+    }
+
+    @Bean
+    UsageBasedFeeCalculator usageBasedFeeCalculator() {
+        return new UsageBasedFeeCalculator();
+    }
+
+    @Bean
+    PrecompilePricingUtils precompilePricingUtils(
+            final AssetsLoader assetsLoader,
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final UsageBasedFeeCalculator usageBasedFeeCalculator,
+            final BasicFcfsUsagePrices basicFcfsUsagePrices) {
+        return new PrecompilePricingUtils(
+                assetsLoader, basicHbarCentExchange, usageBasedFeeCalculator, basicFcfsUsagePrices);
     }
 }

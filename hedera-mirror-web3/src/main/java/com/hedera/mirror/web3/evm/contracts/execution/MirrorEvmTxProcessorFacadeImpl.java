@@ -56,6 +56,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
+    private final PrecompileMapper precompileMapper;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -68,7 +69,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors,
+            final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
@@ -76,6 +78,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
         this.databaseAccessors = databaseAccessors;
+        this.precompileMapper = precompileMapper;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
@@ -110,7 +113,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, stackedStateFrames, evmProperties, new PrecompileMapper()),
+                mcps(gasCalculator, stackedStateFrames, evmProperties, precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

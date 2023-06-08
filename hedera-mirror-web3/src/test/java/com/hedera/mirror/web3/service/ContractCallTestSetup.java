@@ -33,11 +33,15 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +69,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
+
+    protected static final ToLongFunction<String> longValueOf =
+            value -> Bytes.fromHexString(value).toLong();
+
+    @Autowired
+    protected MirrorEvmTxProcessorFacadeImpl processor;
 
     @Autowired
     protected FunctionEncodeDecoder functionEncodeDecoder;
@@ -102,6 +112,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/EthCall/State.bin")
     protected Path STATE_CONTRACT_BYTES_PATH;
+
+    protected long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
+        return processor
+                .execute(
+                        serviceParameters.getSender(),
+                        serviceParameters.getReceiver(),
+                        serviceParameters.getGas(),
+                        serviceParameters.getValue(),
+                        serviceParameters.getCallData(),
+                        Instant.now(),
+                        serviceParameters.isStatic())
+                .getGasUsed();
+    }
 
     protected void persistEntities(boolean isRegularTransfer) {
         if (isRegularTransfer) {

@@ -38,9 +38,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class FileDataRepositoryTest extends Web3IntegrationTest {
 
-    @Resource
-    private final FileDataRepository fileDataRepository;
-
     private static final long expiry = 1_234_567_890L;
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
@@ -54,7 +51,6 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
-
     private static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
@@ -67,9 +63,11 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
             .build();
-
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
+
+    @Resource
+    private final FileDataRepository fileDataRepository;
 
     @Test
     void getFileForExchangeRates() throws InvalidProtocolBufferException {

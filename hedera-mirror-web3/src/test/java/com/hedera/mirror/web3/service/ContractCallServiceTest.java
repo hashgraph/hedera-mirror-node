@@ -25,14 +25,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
+import com.hedera.mirror.web3.evm.store.contract.precompile.impl.AssociatePrecompile;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.function.ToLongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
@@ -46,14 +47,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 class ContractCallServiceTest extends ContractCallTestSetup {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
 
     @Autowired
     private MeterRegistry meterRegistry;
 
     @Autowired
-    private MirrorEvmTxProcessorFacadeImpl processor;
+    private AssociatePrecompile associatePrecompile;
+
+    @Autowired
+    private PrecompilePricingUtils precompilePricingUtils;
+
+    @Autowired
+    private BasicHbarCentExchange basicHbarCentExchange;
+
+    @Autowired
+    private BasicFcfsUsagePrices basicFcfsUsagePrices;
 
     @Test
     void pureCall() {
@@ -426,19 +434,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         }
 
         return gasUsedBeforeExecution;
-    }
-
-    private long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
-        return processor
-                .execute(
-                        serviceParameters.getSender(),
-                        serviceParameters.getReceiver(),
-                        serviceParameters.getGas(),
-                        serviceParameters.getValue(),
-                        serviceParameters.getCallData(),
-                        Instant.now(),
-                        serviceParameters.isStatic())
-                .getGasUsed();
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {

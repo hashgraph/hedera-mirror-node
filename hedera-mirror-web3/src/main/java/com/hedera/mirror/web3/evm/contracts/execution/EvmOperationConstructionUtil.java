@@ -94,6 +94,7 @@ public class EvmOperationConstructionUtil {
             final PrecompileMapper precompileMapper) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
+
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(

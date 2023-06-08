@@ -27,13 +27,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.evm.store.contract.precompile.codec.HrcParams;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
+import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -61,6 +67,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private HederaEvmStackedWorldStateUpdater updater;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
+    private Address senderAddress;
 
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -133,7 +140,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now);
+        gasRequirement = precompile.getGasRequirement(now, stackedStateFrames);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -173,9 +180,9 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            precompile.run(frame);
+            final var precompileResultWrapper = precompile.run(frame, stackedStateFrames);
 
-            result = precompile.getSuccessResultFor();
+            result = precompile.getSuccessResultFor(precompileResultWrapper);
 
             stackedStateFrames.top().commit();
         } catch (final InvalidTransactionException e) {
@@ -195,15 +202,42 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final int functionId = input.getInt(0);
-        this.precompile = precompileMapper.lookup(functionId).orElseThrow();
 
-        precompile.body(input, aliasResolver);
+        if (AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN == functionId) {
+            RedirectTarget target;
+            try {
+                target = DescriptorUtils.getRedirectTarget(input);
+            } catch (final Exception e) {
+                throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+            }
+            final var isExplicitRedirectCall = target.massagedInput() != null;
+            if (isExplicitRedirectCall) {
+                input = target.massagedInput();
+            }
+            final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+
+            final var nestedFunctionSelector = target.descriptor();
+
+            this.precompile = precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+
+            if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
+                    || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
+                precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+            }
+
+        } else {
+            this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+            precompile.body(input, aliasResolver, null);
+        }
+
         gasRequirement = defaultGas();
     }
 
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-        updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+        final var unaliasedSenderAddress =
+                updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+        this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
