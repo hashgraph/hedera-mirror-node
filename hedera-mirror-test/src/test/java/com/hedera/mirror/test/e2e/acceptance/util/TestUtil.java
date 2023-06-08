@@ -49,6 +49,10 @@ public class TestUtil {
         return StringUtils.leftPad(data.replace("0x", ""), 64, '0');
     }
 
+    public static String to32BytesStringRightPad(String data) {
+        return StringUtils.rightPad(data.replace("0x", ""), 64, '0');
+    }
+
     public static String hexToAscii(String hexStr) {
         StringBuilder output = new StringBuilder("");
         for (int i = 0; i < hexStr.length(); i += 2) {

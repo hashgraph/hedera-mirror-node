@@ -72,12 +72,15 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EvmProperties properties;
 
     @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     private StackedStateFrames<Object> stackedStateFrames;
-
-    @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private HederaEvmStackedWorldStateUpdater subject;
 
@@ -92,6 +95,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAccess,
                 tokenAccessor,
                 properties,
+                entityAddressSequencer,
                 mirrorEvmContractAliases,
                 stackedStateFrames);
     }
@@ -118,6 +122,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAccess,
                 tokenAccessor,
                 properties,
+                entityAddressSequencer,
                 mirrorEvmContractAliases,
                 stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
@@ -205,6 +210,11 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         assertThat(subject.isTokenAddress(someAddress)).isFalse();
+    }
+
+    @Test
+    void getSbhRefundReturnsZero() {
+        assertThat(subject.getSbhRefund()).isZero();
     }
 
     @Test
