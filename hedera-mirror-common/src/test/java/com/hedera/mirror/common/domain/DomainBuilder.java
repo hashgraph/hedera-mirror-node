@@ -559,7 +559,7 @@ public class DomainBuilder {
                 .deleted(false)
                 .metadata(bytes(16))
                 .serialNumber(id())
-                .timestampRange(Range.atLeast(timestamp()))
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

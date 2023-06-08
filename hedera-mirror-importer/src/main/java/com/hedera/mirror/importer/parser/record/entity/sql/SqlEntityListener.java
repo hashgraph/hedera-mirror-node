@@ -717,7 +717,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         var dest = newNft;
         var src = cachedNft;
         if (Objects.equals(cachedNft.getTimestampLower(), newNft.getTimestampLower())) {
-            // Two NFT updates for the same nft can have the same lower timestamp in 4 cases
+            // Two NFT updates for the same nft can have the same lower timestamp in 3 cases
             // - token mint, the NFT object built in the transaction handler has everything but accountId, the NFT
             //   object built in EntityRecordItemListener has accountId for ownership transfer
             // - duplicate NFT objects due to possible duplicate nft transfers in record

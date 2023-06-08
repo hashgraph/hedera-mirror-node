@@ -362,7 +362,7 @@ create table if not exists nft
     account_id         bigint,
     created_timestamp  bigint,
     delegating_spender bigint default null,
-    deleted            boolean,
+    deleted            boolean default false,
     metadata           bytea,
     serial_number      bigint not null,
     spender            bigint default null,
