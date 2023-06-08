@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
@@ -481,5 +483,15 @@ public class TokenClient extends AbstractNetworkClient {
         long balance = accountBalance.tokens.get(tokenId);
         log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
         return balance;
+    }
+
+    public void validateAddress(final String actualAddress) {
+        final var account = getSdkClient().getExpandedOperatorAccountId();
+
+        assertThat(actualAddress)
+                .isEqualTo(
+                        account.getPublicKey().isECDSA()
+                                ? account.getPublicKey().toEvmAddress().toString()
+                                : account.getAccountId().toSolidityAddress());
     }
 }

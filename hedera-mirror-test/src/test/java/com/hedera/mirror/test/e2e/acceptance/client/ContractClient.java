@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
@@ -144,6 +146,16 @@ public class ContractClient extends AbstractNetworkClient {
 
     public String getClientAddress() {
         return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
+    }
+
+    public void validateAddress(final String actualAddress) {
+        final var account = getSdkClient().getExpandedOperatorAccountId();
+
+        assertThat(actualAddress)
+                .isEqualTo("0x"
+                        + (account.getPublicKey().isECDSA()
+                                ? account.getPublicKey().toEvmAddress().toString()
+                                : getClientAddress().toLowerCase()));
     }
 
     public record ExecuteContractResult(
