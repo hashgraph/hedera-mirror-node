@@ -80,6 +80,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
+    private int maxTokensPerAccount = 10_000_000;
+
+    @Getter
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
@@ -90,9 +93,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     private boolean tokenAssociationsLimited = true;
-
-    @Getter
-    private int maxTokensPerAccount = 10_000_000;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
