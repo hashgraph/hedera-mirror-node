@@ -16,21 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.ContractFunctionParameters;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.*;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
@@ -39,6 +28,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
@@ -48,12 +38,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.HexFormat;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,6 +45,18 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.HexFormat;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
@@ -179,19 +175,49 @@ public class ContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = deployedParentContract.contractId().toSolidityAddress();
 
-        var getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, to, from);
+        var contractCallRequestGetAccountBalance = ContractCallRequest.builder()
+                .data(GET_ACCOUNT_BALANCE_SELECTOR)
+                .from(from)
+                .to(to)
+                .estimate(false)
+                .build();
+        var getAccountBalanceResponse = mirrorClient.contractsCall(contractCallRequestGetAccountBalance);
         assertThat(getAccountBalanceResponse.getResultAsNumber()).isEqualTo(1000L);
 
-        var getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, to, from);
+        var contractCallRequestGetSender = ContractCallRequest.builder()
+                .data(GET_SENDER_SELECTOR)
+                .from(from)
+                .to(to)
+                .estimate(false)
+                .build();
+        var getSenderResponse = mirrorClient.contractsCall(contractCallRequestGetSender);
         assertThat(getSenderResponse.getResultAsAddress()).isEqualTo(from);
 
-        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, to, from);
+        var contractCallMultiplySimpleNumbers = ContractCallRequest.builder()
+                .data(MULTIPLY_SIMPLE_NUMBERS_SELECTOR)
+                .from(from)
+                .to(to)
+                .estimate(false)
+                .build();
+        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(contractCallMultiplySimpleNumbers);
         assertThat(multiplySimpleNumbersResponse.getResultAsNumber()).isEqualTo(4L);
 
-        var identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, to, from);
+        var contractCallIdentifier = ContractCallRequest.builder()
+                .data(IDENTIFIER_SELECTOR)
+                .from(from)
+                .to(to)
+                .estimate(false)
+                .build();
+        var identifierResponse = mirrorClient.contractsCall(contractCallIdentifier);
         assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
 
-        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
+        var contractCallWrongSelector = ContractCallRequest.builder()
+                .data(WRONG_SELECTOR)
+                .from(from)
+                .to(to)
+                .estimate(false)
+                .build();
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallWrongSelector))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
@@ -314,7 +340,7 @@ public class ContractFeature extends AbstractFeature {
 
     private FileId persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -528,5 +554,6 @@ public class ContractFeature extends AbstractFeature {
      * Static state to persist across contract Cucumber scenarios.
      */
     private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {
+    }
 }

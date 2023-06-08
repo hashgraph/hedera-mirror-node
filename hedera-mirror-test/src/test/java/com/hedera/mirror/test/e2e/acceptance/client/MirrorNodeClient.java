@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import static org.awaitility.Awaitility.await;
-
 import com.google.common.base.Stopwatch;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
@@ -29,24 +27,9 @@ import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.*;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -58,6 +41,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 
 @Log4j2
 @Named
@@ -194,11 +184,8 @@ public class MirrorNodeClient {
                 "/contracts/results/{transactionId}", MirrorContractResultResponse.class, transactionId);
     }
 
-    public ContractCallResponse contractsCall(String data, String to, String from) {
-        ContractCallRequest contractCallRequest =
-                new ContractCallRequest("latest", data, false, from, 100000, 10, to, 0);
-
-        return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, contractCallRequest);
+    public ContractCallResponse contractsCall(ContractCallRequest request) {
+        return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, request);
     }
 
     public List<MirrorNetworkNode> getNetworkNodes() {
@@ -316,11 +303,10 @@ public class MirrorNodeClient {
                 .block();
     }
 
-    private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        return web3Client
-                .post()
+    private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
+        return web3Client.post()
                 .uri(uri)
-                .body(Mono.just(contractCallRequest), ContractCallRequest.class)
+                .body(Mono.just(request), request.getClass())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)

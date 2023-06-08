@@ -32,6 +32,7 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> aliases = new HashMap<>();
+    final Map<Address, Address> pendingChanges = new HashMap<>();
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
@@ -39,6 +40,10 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         // returning the zero address in cases when estimating contract creations
         if (addressOrAlias.equals(Address.ZERO)) {
             return addressOrAlias;
+        }
+
+        if (pendingChanges.containsKey(addressOrAlias)) {
+            return pendingChanges.get(addressOrAlias);
         }
 
         if (aliases.containsKey(addressOrAlias)) {
@@ -63,11 +68,23 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
     }
 
+    public boolean isInUse(final Address address) {
+        return pendingChanges.containsKey(address) || aliases.containsKey(address);
+    }
+
     public void link(final Address alias, final Address address) {
-        aliases.put(alias, address);
+        pendingChanges.put(alias, address);
     }
 
     public void unlink(Address alias) {
-        aliases.remove(alias);
+        pendingChanges.remove(alias);
+    }
+
+    public void commit() {
+        aliases.putAll(pendingChanges);
+    }
+
+    public void resetPendingChanges() {
+        pendingChanges.clear();
     }
 }
