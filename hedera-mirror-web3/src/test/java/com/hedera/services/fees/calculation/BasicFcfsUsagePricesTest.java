@@ -17,16 +17,21 @@
 package com.hedera.services.fees.calculation;
 
 import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
+import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -34,11 +39,14 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,6 +54,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BasicFcfsUsagePricesTest {
     private final long currentExpiry = 1_234_567;
     private final long nextExpiry = currentExpiry + 1_000;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    TxnAccessor accessor;
+
     private final FeeComponents currResourceUsagePrices = FeeComponents.newBuilder()
             .setMin(currentExpiry)
             .setMax(currentExpiry)
@@ -76,9 +88,6 @@ class BasicFcfsUsagePricesTest {
     private final Map<SubType, FeeData> currUsagePricesMap = Map.of(DEFAULT, currUsagePrices);
     private final Map<SubType, FeeData> nextUsagePricesMap = Map.of(DEFAULT, nextUsagePrices);
 
-    private final Map<SubType, FeeData> nextContractCallPrices = nextUsagePricesMap;
-    private final Map<SubType, FeeData> currentContractCallPrices = currUsagePricesMap;
-
     private BasicFcfsUsagePrices subject;
 
     @Mock
@@ -88,19 +97,29 @@ class BasicFcfsUsagePricesTest {
             .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
             .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                     .setHederaFunctionality(ContractCall)
-                    .addFees(nextContractCallPrices.get(DEFAULT)))
+                    .addFees(nextUsagePricesMap.get(DEFAULT)))
             .build();
 
     private final FeeSchedule currentFeeSchedule = FeeSchedule.newBuilder()
             .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
             .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                     .setHederaFunctionality(ContractCall)
-                    .addFees(currentContractCallPrices.get(DEFAULT)))
+                    .addFees(currUsagePricesMap.get(DEFAULT)))
             .build();
 
     private final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(currentFeeSchedule)
             .setNextFeeSchedule(nextFeeSchedule)
+            .build();
+    TransactionBody contractCallTxnNext = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(currentExpiry + 1)))
+            .setContractCall(ContractCallTransactionBody.newBuilder().setContractID(asContract("1.2.3")))
+            .build();
+    TransactionBody contractCallTxnCurr = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(currentExpiry - 1)))
+            .setContractCall(ContractCallTransactionBody.newBuilder().setContractID(asContract("1.2.3")))
             .build();
 
     @BeforeEach
@@ -110,7 +129,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void updatesPricesWhenDefaultCalled() {
-        // given:
+        // when:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
@@ -124,7 +143,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsTransferUsagePricesAtCurrent() {
-        // given:
+        // when:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
@@ -138,7 +157,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsTransferUsagePricesAtNext() {
-        // given:
+        // when:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry + 1).build();
@@ -157,6 +176,58 @@ class BasicFcfsUsagePricesTest {
 
         // when:
         final var prices = subject.pricesGiven(ContractCreate, at, feeSchedules);
+
+        // then:
+        assertEquals(DEFAULT_RESOURCE_PRICES, prices);
+    }
+
+    @Test
+    void usesDefaultPricesForUnexpectedFailure() {
+        // when
+        when(accessor.getFunction()).thenThrow(IllegalStateException.class);
+
+        // when:
+        final var prices = subject.activePrices(accessor);
+
+        // then:
+        assertEquals(DEFAULT_RESOURCE_PRICES, prices);
+    }
+
+    @Test
+    void getsActivePricesCurr() {
+        // when
+        when(accessor.getTxnId()).thenReturn(contractCallTxnCurr.getTransactionID());
+        when(accessor.getFunction()).thenReturn(ContractCall);
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
+
+        // when:
+        final Map<SubType, FeeData> prices = subject.activePrices(accessor);
+
+        // then:
+        assertEquals(currUsagePricesMap, prices);
+    }
+
+    @Test
+    void getsActivePricesNext() {
+        // when
+        when(accessor.getTxnId()).thenReturn(contractCallTxnNext.getTransactionID());
+        when(accessor.getFunction()).thenReturn(ContractCall);
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
+
+        // when:
+        final Map<SubType, FeeData> prices = subject.activePrices(accessor);
+
+        // then:
+        assertEquals(nextUsagePricesMap, prices);
+    }
+
+    @Test
+    void getsDefaultPricesIfActiveTxnInvalid() {
+        // when
+        when(accessor.getFunction()).thenReturn(UNRECOGNIZED);
+
+        // when:
+        final Map<SubType, FeeData> prices = subject.activePrices(accessor);
 
         // then:
         assertEquals(DEFAULT_RESOURCE_PRICES, prices);

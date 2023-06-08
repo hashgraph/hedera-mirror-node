@@ -86,7 +86,11 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     @Override
     public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
         try {
-            return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart(), null);
+            final var at = accessor.getTxnId().getTransactionValidStart();
+            return pricesGiven(
+                    accessor.getFunction(),
+                    at,
+                    ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at)));
         } catch (final Exception e) {
             log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
         }
