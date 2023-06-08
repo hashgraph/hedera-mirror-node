@@ -18,7 +18,10 @@ package com.hedera.services.utils;
 
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.services.utils.MiscUtils.perm64;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -63,5 +66,13 @@ class MiscUtilsTest {
         assertEquals(0L, perm64(0L));
         assertEquals(-4328535976359616544L, perm64(1L));
         assertEquals(2657016865369639288L, perm64(7L));
+    }
+
+    @Test
+    void testAsPrimitiveKeyUncheckedFails() {
+        final var ecdsaKeyBytes = unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var alias = ByteString.copyFrom(ecdsaKeyBytes);
+
+        assertThrows(IllegalStateException.class, () -> MiscUtils.asPrimitiveKeyUnchecked(alias));
     }
 }

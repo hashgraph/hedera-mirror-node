@@ -26,6 +26,7 @@ import org.apache.commons.codec.DecoderException;
  */
 public abstract class JKey {
 
+    private static final byte[] MISSING_ED25519_KEY = new byte[0];
     private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
     static final int MAX_KEY_DEPTH = 15;
 
@@ -99,5 +100,9 @@ public abstract class JKey {
 
     public byte[] getECDSASecp256k1Key() {
         return MISSING_ECDSA_SECP256K1_KEY;
+    }
+
+    public byte[] getEd25519() {
+        return MISSING_ED25519_KEY;
     }
 }
