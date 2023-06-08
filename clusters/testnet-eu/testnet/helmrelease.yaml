@@ -58,5 +58,6 @@ spec:
       enabled: true
     web3:
       env:
-        HEDERA_MIRROR_WEB3_APPROVEDFORALLENABLED: "true"
+        HEDERA_MIRROR_WEB3_EVM_ALLOWANCEENABLED: "true"
+        HEDERA_MIRROR_WEB3_EVM_APPROVEDFORALLENABLED: "true"
 
