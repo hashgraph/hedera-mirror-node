@@ -86,6 +86,10 @@ public class AssociateLogic {
 
         validateFalse(exceedsTokenAssociationLimit(proposedTotalAssociations), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
+        Account updatedAccount = account.modificationBuilder()
+                .numAssociations(proposedTotalAssociations)
+                .build();
+
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
             TokenRelationshipKey tokenRelationshipKey =
@@ -93,13 +97,11 @@ public class AssociateLogic {
 
             validateFalse(hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
-            final var newRel = new TokenRelationship(token, account);
+            final var newRel = new TokenRelationship(token, updatedAccount);
             numAssociations++;
             newModelRels.add(newRel);
         }
 
-        Account updatedAccount =
-                account.modificationBuilder().numAssociations(numAssociations).build();
         accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
 
         return newModelRels;
