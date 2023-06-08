@@ -916,8 +916,12 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
     );
   };
 
+  // NOTE TO DRAFT PR REVIEWERS:
   // the following is the "old" version of the code.  Currently retaining it so that the tests pass, but I really do
-  // think we would be better off once we can entirely remove it.
+  // think we would be better off once we can entirely remove it.  I want to make the code only need to update the
+  // nft_transfer column of the transaction table (the "new" version above), and not the nft_transfer table (which
+  // is supposed to eventually go away).  But, currently, without this query, many of the transactions spec tests
+  // only return one transaction instead of many.
 
   const nftTransfers = nftTransferList.map((transfer) => {
     return [
