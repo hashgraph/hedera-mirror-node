@@ -17,28 +17,28 @@
 package com.hedera.services.store.contracts.precompile;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Arrays;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class AssessedCustomFeeWrapper {
 
-    private final EntityId token;
-    private final EntityId account;
+    private final TokenID token;
+    private final AccountID account;
     private final long units;
     private final AccountID[] effPayerAccounts;
 
     public AssessedCustomFeeWrapper(
-            final EntityId account, final EntityId token, final long units, final AccountID[] effPayerAccounts) {
+            final AccountID account, final TokenID token, final long units, final AccountID[] effPayerAccounts) {
         this.account = account;
         this.token = token;
         this.units = units;
         this.effPayerAccounts = effPayerAccounts;
     }
 
-    public AssessedCustomFeeWrapper(final EntityId account, final long units, final AccountID[] effPayerAccounts) {
+    public AssessedCustomFeeWrapper(final AccountID account, final long units, final AccountID[] effPayerAccounts) {
         this.token = null;
         this.account = account;
         this.units = units;
@@ -49,7 +49,7 @@ public class AssessedCustomFeeWrapper {
         return token == null;
     }
 
-    public EntityId token() {
+    public TokenID token() {
         return token;
     }
 
