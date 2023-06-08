@@ -16,13 +16,20 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -153,6 +160,41 @@ class TransferPrecompileTest {
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void testBody() {
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKENS, false);
+        final Bytes transferTokensInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        staticTransferPrecompile
+                .when(() -> decodeTransferTokens(eq(transferTokensInput), any()))
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
+        transferPrecompile.body(transferTokensInput, a -> a);
+        assertEquals(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER, transferPrecompile.transferOp);
+
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER, false);
+        final Bytes cryptoTransferInput = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransfer(eq(cryptoTransferInput), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
+        transferPrecompile.body(cryptoTransferInput, a -> a);
+        assertEquals(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER, transferPrecompile.transferOp);
+
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFTS, false);
+        final Bytes transferNftsInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        staticTransferPrecompile
+                .when(() -> decodeTransferNFTs(eq(transferNftsInput), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER);
+        transferPrecompile.body(transferNftsInput, a -> a);
+        assertEquals(CRYPTO_TRANSFER_NFTS_WRAPPER, transferPrecompile.transferOp);
+
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFT, false);
+        final Bytes transferNftInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+        staticTransferPrecompile
+                .when(() -> decodeTransferNFT(eq(transferNftInput), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
+        transferPrecompile.body(transferNftInput, a -> a);
+        assertEquals(CRYPTO_TRANSFER_NFT_WRAPPER, transferPrecompile.transferOp);
     }
 
     @Test
