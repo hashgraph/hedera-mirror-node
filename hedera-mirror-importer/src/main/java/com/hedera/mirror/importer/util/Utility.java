@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
@@ -117,8 +118,8 @@ public class Utility {
         return TextFormat.shortDebugString(message);
     }
 
-    public static void archiveFile(String filename, byte[] contents, Path destinationRoot) {
-        Path destination = destinationRoot.resolve(filename);
+    public static void archiveFile(StreamFilename streamFilename, byte[] contents, Path destinationRoot) {
+        Path destination = destinationRoot.resolve(streamFilename.getFilePath());
 
         try {
             destination.getParent().toFile().mkdirs();

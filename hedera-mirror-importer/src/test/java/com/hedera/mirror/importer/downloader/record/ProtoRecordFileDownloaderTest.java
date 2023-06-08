@@ -72,7 +72,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         super.verifyStreamFiles(List.of(file1, file2), s -> {});
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -98,7 +98,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                     .block();
             assertThat(transactionSidecarRecords).isEmpty();
         });
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -122,7 +122,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                 assertThat(sidecarTypes).isEmpty();
             }
         });
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -133,7 +133,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         verifyForSuccess(List.of(file1));
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -156,7 +156,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
             downloader.download();
 
             verifyForSuccess(List.of(file1));
-            assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+            assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
         }
     }
 

@@ -176,8 +176,8 @@ class StreamFilenameTest {
     @ParameterizedTest
     @CsvSource({
         "2020-06-03T16_45_00.100200345Z.rcd.gz, , /, 2020-06-03T16_45_00.100200345Z.rcd.gz",
-        "2020-06-03T16_45_00.100200345Z.rcd.gz, /some/path, /, /some/path/2020-06-03T16_45_00.100200345Z.rcd.gz",
-        "2020-06-03T16_45_00.100200345Z.rcd.gz, c:\\some\\path, \\, c:\\some\\path\\2020-06-03T16_45_00.100200345Z.rcd.gz",
+        "2020-06-03T16_45_00.100200345Z.rcd.gz, some/path, /, some/path/2020-06-03T16_45_00.100200345Z.rcd.gz",
+        "2020-06-03T16_45_00.100200345Z.rcd.gz, some\\path, \\, some\\path\\2020-06-03T16_45_00.100200345Z.rcd.gz",
         "2020-06-03T16_45_00.100200345Z.evts_sig, eventsStreams/events_0.0.9, /, eventsStreams/events_0.0.9/2020-06-03T16_45_00.100200345Z.evts_sig",
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, mainnet/0/3/record, /, mainnet/0/3/record/sidecar/2020-06-03T16_45_00.100200345Z_02.rcd.gz"
     })
@@ -198,7 +198,7 @@ class StreamFilenameTest {
 
     @ParameterizedTest
     @CsvSource({
-        "2020-06-03T16_45_00.100200345Z.evts_sig, /some/path, /, 2020-06-03T16_45_00.100200345Z.evts",
+        "2020-06-03T16_45_00.100200345Z.evts_sig, some/path, /, 2020-06-03T16_45_00.100200345Z.evts",
         "2020-06-03T16_45_00.100200345Z_Balances.csv_sig, , \\, 2020-06-03T16_45_00.100200345Z_Balances.csv",
         "2020-06-03T16_45_00.100200345Z.rcd_sig, mainnet/0/9/record, /, 2020-06-03T16_45_00.100200345Z.rcd"
     })

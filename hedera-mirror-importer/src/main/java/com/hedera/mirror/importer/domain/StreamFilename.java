@@ -74,8 +74,11 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String compressor;
     private final StreamType.Extension extension;
     private final String filename;
-    private final String path;
     private final String pathSeparator;
+
+    // Relative path to directory containing filename, utilizing pathSeparator
+    private final String path;
+    // The computed file system or bucket relative path for this stream file
     private final String filePath;
 
     @EqualsAndHashCode.Include
@@ -106,7 +109,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
 
-        // The immutable full path for this file
         var builder = new StringBuilder();
         if (!StringUtils.isEmpty(this.path)) {
             builder.append(this.path);

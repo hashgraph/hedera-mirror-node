@@ -307,7 +307,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -485,7 +485,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @Test
@@ -616,7 +616,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
     }
 
     @SneakyThrows

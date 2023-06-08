@@ -29,10 +29,6 @@ public interface DownloaderProperties {
 
     MirrorProperties getMirrorProperties();
 
-    default Path getNodeStreamPath(long nodeId) {
-        return getStreamPath().resolve(getStreamType().getNodePrefix() + nodeId);
-    }
-
     Path getStreamPath();
 
     StreamType getStreamType();

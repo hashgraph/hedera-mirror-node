@@ -51,7 +51,7 @@ public class EventDownloaderProperties implements DownloaderProperties {
 
     @Override
     public Path getStreamPath() {
-        return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
+        return mirrorProperties.getDataPath();
     }
 
     @Override

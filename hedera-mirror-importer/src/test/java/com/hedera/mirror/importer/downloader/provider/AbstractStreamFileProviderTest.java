@@ -245,12 +245,12 @@ abstract class AbstractStreamFileProviderTest {
         try {
             var streamFilename =
                     StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
-            var filePath = fileCopier
+            var repoDataPath = fileCopier
                     .getFrom()
                     .resolve(nodePath(node))
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
                     .resolve(filename);
-            var bytes = FileUtils.readFileToByteArray(filePath.toFile());
+            var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
             return new StreamFileData(streamFilename, bytes, Instant.now());
         } catch (Exception e) {
             throw new RuntimeException(e);

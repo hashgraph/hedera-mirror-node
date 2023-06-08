@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
-import java.util.function.Supplier;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -53,11 +53,11 @@ public class StreamFileData {
 
     private final Instant lastModified;
 
-    private static StreamFileData readStreamFileData(File file, Supplier<StreamFilename> streamFilenameSupplier) {
+    private static StreamFileData readStreamFileData(File file, StreamFilename streamFilename) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             var lastModified = Instant.ofEpochMilli(file.lastModified());
-            return new StreamFileData(streamFilenameSupplier.get(), bytes, lastModified);
+            return new StreamFileData(streamFilename, bytes, lastModified);
         } catch (InvalidStreamFileException e) {
             throw e;
         } catch (Exception e) {
@@ -66,11 +66,12 @@ public class StreamFileData {
     }
 
     public static StreamFileData from(@NonNull File file) {
-        return readStreamFileData(file, () -> StreamFilename.from(file.getPath()));
+        return readStreamFileData(file, StreamFilename.from(file.getPath()));
     }
 
-    public static StreamFileData from(@NonNull StreamFilename streamFilename) {
-        return readStreamFileData(new File(streamFilename.getFilePath()), () -> streamFilename);
+    public static StreamFileData from(@NonNull Path basePath, @NonNull StreamFilename streamFilename) {
+        var streamFile = new File(basePath.toFile(), streamFilename.getFilePath());
+        return readStreamFileData(streamFile, streamFilename);
     }
 
     // Used for testing String based files like CSVs

@@ -18,14 +18,18 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -42,36 +46,61 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        return Mono.fromSupplier(() -> streamFilename)
-                .map(StreamFileData::from)
+        var basePath =
+                commonDownloaderProperties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename last) {
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times two for file plus signature.
-        final int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-        final String lastFilename = last.getFilenameAfter();
+        var batchSize = commonDownloaderProperties.getBatchSize() * 2;
+        var startAfter = lastFilename.getFilenameAfter();
+        var streamType = lastFilename.getStreamType();
 
-        return Mono.fromSupplier(() -> getDirectory(node, last))
+        var startingPathType = commonDownloaderProperties.getPathType();
+        var basePath =
+                commonDownloaderProperties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        var prefixPath = getPrefixPath(startingPathType, node, streamType);
+
+        return Mono.fromSupplier(() -> getDirectory(basePath, prefixPath, lastFilename))
                 .timeout(commonDownloaderProperties.getTimeout())
-                .flatMapIterable(dir -> Arrays.asList(dir.listFiles(f -> matches(lastFilename, f))))
+                .flatMapIterable(dir -> Arrays.asList(dir.listFiles(f -> matches(startAfter, f))))
+                .switchIfEmpty(Flux.defer(() -> {
+                    // Since local FS access is fast and cheap (unlike S3), no refresh interval, state nor
+                    // complex logic is implemented for AUTO mode. Simply move on to the node ID based structure.
+                    if (startingPathType == PathType.AUTO) {
+                        log.debug("No files found in node account ID bucket structure after: {}", startAfter);
+                        var nodeIdPrefixPath = getPrefixPath(NODE_ID, node, streamType);
+                        var dir = getDirectory(basePath, nodeIdPrefixPath, lastFilename);
+                        return Flux.fromArray(dir.listFiles(f -> matches(startAfter, f)));
+                    }
+                    return Flux.empty();
+                }))
                 .sort()
                 .take(batchSize)
-                .map(StreamFileData::from)
-                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, lastFilename));
+                .map(file -> StreamFilename.from(prefixPath.toString(), file.getName(), File.separator))
+                .flatMapSequential(streamFilename -> get(node, streamFilename))
+                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
     }
 
-    private File getDirectory(ConsensusNode node, StreamFilename streamFilename) {
-        var streamType = streamFilename.getStreamType();
-        var path = commonDownloaderProperties
-                .getMirrorProperties()
-                .getDataPath()
-                .resolve(STREAMS)
-                .resolve(streamType.getPath())
-                .resolve(streamType.getNodePrefix() + node.getNodeAccountId());
+    Path getPrefixPath(PathType pathType, ConsensusNode node, StreamType streamType) {
+        return switch (pathType) {
+            case ACCOUNT_ID, AUTO -> Path.of(
+                    streamType.getPath(), streamType.getNodePrefix() + node.getNodeAccountId());
+            case NODE_ID -> Path.of(
+                    commonDownloaderProperties.getMirrorProperties().getNetwork(),
+                    String.valueOf(
+                            commonDownloaderProperties.getMirrorProperties().getShard()),
+                    streamType.getNodePrefix(),
+                    node.getNodeAccountId().toString());
+        };
+    }
 
+    private File getDirectory(Path basePath, Path prefixPath, StreamFilename streamFilename) {
+        var path = basePath.resolve(prefixPath);
         if (streamFilename.getFileType() == StreamFilename.FileType.SIDECAR) {
             path = path.resolve(SIDECAR_FOLDER);
         }
