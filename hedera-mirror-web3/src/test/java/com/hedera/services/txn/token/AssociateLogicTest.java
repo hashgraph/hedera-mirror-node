@@ -76,6 +76,12 @@ class AssociateLogicTest {
 
     private AssociateLogic associateLogic;
 
+    private final Address accountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
+
+    private final Address tokenAddress = Address.fromHexString("0x0000000000000000000000000000000000000182");
+
+    private final List<Address> tokenAddresses = List.of(tokenAddress);
+
     @BeforeEach
     public void setUp() {
         when(stackedStateFrames.top()).thenReturn(cachingStateFrame);
@@ -85,13 +91,9 @@ class AssociateLogicTest {
         associateLogic = new AssociateLogic(stackedStateFrames, mirrorNodeEvmProperties);
     }
 
-    Address accountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
-
-    Address tokenAddress = Address.fromHexString("0x0000000000000000000000000000000000000182");
-
     @Test
     void throwErrorWhenAccountNotFound() {
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, List.of(tokenAddress)))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail", String.format("Association with account %s failed", accountAddress));
@@ -100,7 +102,7 @@ class AssociateLogicTest {
     @Test
     void throwErrorWhenTokenNotFound() {
         when(accountAccessor.get(any())).thenReturn(Optional.of(account));
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, List.of(tokenAddress)))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue("detail", String.format("Association with token %s failed", tokenAddress));
     }
@@ -114,7 +116,7 @@ class AssociateLogicTest {
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
 
         // expect:
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, List.of(tokenAddress)))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED.name());
     }
@@ -125,7 +127,7 @@ class AssociateLogicTest {
         setupToken();
         when(tokenRelationshipAccessor.get(any())).thenReturn(Optional.of(mock(TokenRelationship.class)));
 
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, List.of(tokenAddress)))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.name());
     }
@@ -137,7 +139,7 @@ class AssociateLogicTest {
 
         setupToken();
 
-        associateLogic.associate(accountAddress, List.of(tokenAddress));
+        associateLogic.associate(accountAddress, tokenAddresses);
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
         final var tokenRelationship = new TokenRelationship(token, modifiedAccount);
@@ -152,7 +154,7 @@ class AssociateLogicTest {
 
         setupToken();
 
-        associateLogic.associate(accountAddress, List.of(tokenAddress));
+        associateLogic.associate(accountAddress, tokenAddresses);
 
         verify(accountAccessor).set(accountAddress, modifiedAccount);
         verify(accountBuilder).numAssociations(6);
@@ -163,7 +165,7 @@ class AssociateLogicTest {
         setupAccount();
         setupToken();
 
-        associateLogic.associate(accountAddress, List.of(tokenAddress));
+        associateLogic.associate(accountAddress, tokenAddresses);
 
         verify(stackedStateFrames.top()).commit();
     }
