@@ -31,9 +31,8 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected MirrorEvmContractAliases mirrorEvmContractAliases;
-
     private final StackedStateFrames<Object> stackedStateFrames;
+    protected MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,
@@ -43,9 +42,9 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
-        this.stackedStateFrames = stackedStateFrames;
-
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
+        this.mirrorEvmContractAliases.resetPendingChanges();
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
@@ -62,6 +61,8 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             topFrame.commit();
             stackedStateFrames.pop();
         }
+
+        mirrorEvmContractAliases.commit();
 
         // partially copied from services
         final var wrapped = wrappedWorldView();
@@ -90,5 +91,10 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
 
     public HederaEvmContractAliases aliases() {
         return mirrorEvmContractAliases;
+    }
+
+    @Override
+    public void revert() {
+        mirrorEvmContractAliases.resetPendingChanges();
     }
 }
