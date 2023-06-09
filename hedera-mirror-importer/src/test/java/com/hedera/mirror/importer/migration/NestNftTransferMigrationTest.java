@@ -54,7 +54,7 @@ import org.springframework.util.StreamUtils;
 @TestPropertySource(properties = "spring.flyway.target=1.80.1")
 class NestNftTransferMigrationTest extends IntegrationTest {
 
-    private static final String REVERT_DDL = "alter table transaction drop column if exists jsonb";
+    private static final String REVERT_DDL = "alter table transaction drop column if exists nft_transfer";
 
     private final @Owner JdbcTemplate jdbcTemplate;
 
