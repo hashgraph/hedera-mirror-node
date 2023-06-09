@@ -16,19 +16,12 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-import java.util.Optional;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +36,7 @@ class MirrorEvmContractAliasesTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final String HEX2 = "0x00000000000000000000000000000000000004e5";
     private static final Address ADDRESS2 = Address.fromHexString(HEX2);
+    private static final Address ALIAS = Address.fromHexString("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
     private static final String INVALID_HEX_ADDRESS = "0x000000000000000000000000004e5";
     private static final EntityId entityId = new EntityId(0L, 0L, 3L, EntityType.TOKEN);
     private static final Address INVALID_ADDRESS = Address.fromHexString(INVALID_HEX_ADDRESS);
@@ -62,7 +56,7 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddress() {
-        Address alias = ADDRESS;
+        Address alias = ALIAS;
         Address address = ADDRESS2;
         mirrorEvmContractAliases.aliases.put(alias, address);
 
@@ -70,61 +64,13 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmForContractWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.CONTRACT);
-        when(entity.getEvmAddress()).thenReturn(ADDRESS2.toArray());
-
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS2);
-    }
-
-    @Test
-    void resolveForEvmForTokenWhenNoAliasesShouldReturnEvmAddressFromEntityId() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOKEN);
-        when(entity.toEntityId()).thenReturn(entityId);
-
-        final var expected = Bytes.wrap(toEvmAddress(entityId));
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(expected);
-    }
-
-    @Test
-    void resolveForEvmForContractWhenNoAliasesShouldReturnEvmAddressFromEntityId() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.CONTRACT);
-        when(entity.toEntityId()).thenReturn(entityId);
-
-        final var expected = Bytes.wrap(toEvmAddress(entityId));
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(expected);
-    }
-
-    @Test
     void resolveForEvmForContractShouldReturnFromPendingChangesRightAfterLink() {
-        Address alias = ADDRESS;
+        Address alias = ALIAS;
         Address address = ADDRESS2;
         mirrorEvmContractAliases.link(alias, address);
 
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(address);
-    }
-
-    @Test
-    void resolveForEvmWhenTypeIsNotTokenOrContractShouldFail() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOPIC);
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ADDRESS))
-                .isInstanceOf(InvalidParametersException.class)
-                .hasMessage("Not a contract or token: " + HEX);
-    }
-
-    @Test
-    void resolveForEvmWhenInvalidAddressShouldFail() {
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("No such contract or token: " + HEX2);
+        final var result = mirrorEvmContractAliases.resolveForEvm(ALIAS);
+        assertThat(result).isEqualTo(ADDRESS2);
     }
 
     @Test
@@ -136,7 +82,7 @@ class MirrorEvmContractAliasesTest {
     void link() {
         mirrorEvmContractAliases.pendingChanges.clear();
 
-        Address alias = ADDRESS;
+        Address alias = ALIAS;
         Address address = ADDRESS2;
         mirrorEvmContractAliases.link(alias, address);
 

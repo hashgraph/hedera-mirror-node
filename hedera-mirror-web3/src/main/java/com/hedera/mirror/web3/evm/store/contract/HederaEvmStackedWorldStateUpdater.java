@@ -45,9 +45,8 @@ public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>
         implements HederaEvmWorldUpdater, HederaEvmStackedWorldUpdater {
 
-    protected final HederaEvmEntityAccess hederaEvmEntityAccess;
-
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
+    protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
     private final EntityAddressSequencer entityAddressSequencer;
     private final TokenAccessor tokenAccessor;
@@ -154,10 +153,6 @@ public class HederaEvmStackedWorldStateUpdater
         return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
     }
 
-    private boolean isTokenRedirect(final Address address) {
-        return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
-    }
-
     @Override
     public Address priorityAddress(Address addressOrAlias) {
         return accountAccessor.canonicalAddress(addressOrAlias);
@@ -187,6 +182,10 @@ public class HederaEvmStackedWorldStateUpdater
         return 0;
     }
 
+    public StackedStateFrames<Object> getStackedStateFrames() {
+        return stackedStateFrames;
+    }
+
     private boolean isMissingTarget(final Address alias) {
         final var target = mirrorEvmContractAliases.resolveForEvm(alias);
         return stackedStateFrames
@@ -194,5 +193,9 @@ public class HederaEvmStackedWorldStateUpdater
                 .getAccessor(com.hedera.services.store.models.Account.class)
                 .get(target)
                 .isEmpty();
+    }
+
+    private boolean isTokenRedirect(final Address address) {
+        return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
     }
 }

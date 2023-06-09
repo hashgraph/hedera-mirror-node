@@ -18,10 +18,8 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,8 +35,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
-        // returning the zero address in cases when estimating contract creations
-        if (addressOrAlias.equals(Address.ZERO)) {
+        if (isMirror(addressOrAlias)) {
             return addressOrAlias;
         }
 
@@ -55,17 +52,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
 
         final var entityId = entity.toEntityId();
-
-        if (entity.getType() == EntityType.TOKEN) {
-            final var bytes = Bytes.wrap(toEvmAddress(entityId));
-            return Address.wrap(bytes);
-        } else if (entity.getType() == EntityType.CONTRACT) {
-            final var bytes =
-                    Bytes.wrap(entity.getEvmAddress() != null ? entity.getEvmAddress() : toEvmAddress(entityId));
-            return Address.wrap(bytes);
-        } else {
-            throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
-        }
+        return Address.wrap(Bytes.wrap(toEvmAddress(entityId)));
     }
 
     public boolean isInUse(final Address address) {

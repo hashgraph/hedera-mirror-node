@@ -39,11 +39,10 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
-public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
+public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private final TokenRepository tokenRepository;
 
@@ -54,7 +53,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Address address) {
+    public @NonNull Optional<Token> get(@NonNull Object address) {
         return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
     }
 

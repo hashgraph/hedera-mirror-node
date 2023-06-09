@@ -79,7 +79,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctionsTest(SupportedContractModificationFunctions contractFunc) {
-        final var functionHash = functionEncodeDecoder.functionHashWithEmptyDataFor(
+        final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
 
@@ -357,8 +357,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]});
+        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
+        ASSOCIATE_TOKENS(
+                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}});
 
         private final String name;
         private final Object[] functionParameters;

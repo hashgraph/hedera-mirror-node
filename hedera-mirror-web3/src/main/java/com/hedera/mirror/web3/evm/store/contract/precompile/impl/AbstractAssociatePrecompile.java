@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile.impl;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -25,14 +23,15 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.codec.EmptyRunResult;
 import com.hedera.mirror.web3.evm.store.contract.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
-import java.util.Set;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractAssociatePrecompile implements Precompile {
@@ -71,8 +70,12 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
         return new EmptyRunResult();
     }
 
-    @Override
-    public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_ASSOCIATE_TOKEN, ABI_ID_ASSOCIATE_TOKENS);
+    protected TransactionBody.Builder createAssociate(final Association association) {
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+
+        builder.setAccount(association.accountId());
+        builder.addAllTokens(association.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenAssociate(builder);
     }
 }

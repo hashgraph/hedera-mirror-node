@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
@@ -113,9 +112,6 @@ class MirrorEvmTxProcessorTest {
     private BlockMetaSource blockMetaSource;
 
     @Mock
-    private StackedStateFrames<Object> stackedStateFrames;
-
-    @Mock
     private PrecompileMapper precompileMapper;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
@@ -134,7 +130,7 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, stackedStateFrames, evmProperties, precompileMapper),
+                mcps(gasCalculator, evmProperties, precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

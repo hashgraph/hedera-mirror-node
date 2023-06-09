@@ -25,15 +25,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.evm.store.contract.precompile.impl.AssociatePrecompile;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.fees.BasicHbarCentExchange;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
@@ -43,26 +38,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-
-    @Autowired
-    private MeterRegistry meterRegistry;
-
-    @Autowired
-    private AssociatePrecompile associatePrecompile;
-
-    @Autowired
-    private PrecompilePricingUtils precompilePricingUtils;
-
-    @Autowired
-    private BasicHbarCentExchange basicHbarCentExchange;
-
-    @Autowired
-    private BasicFcfsUsagePrices basicFcfsUsagePrices;
 
     @BeforeEach
     void setup() {

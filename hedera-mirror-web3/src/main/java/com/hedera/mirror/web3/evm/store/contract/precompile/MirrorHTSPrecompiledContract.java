@@ -61,8 +61,8 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
-    private final StackedStateFrames<Object> stackedStateFrames;
     private final PrecompileMapper precompileMapper;
+    private StackedStateFrames<Object> stackedStateFrames;
     private Precompile precompile;
     private long gasRequirement = 0L;
     private TransactionBody.Builder transactionBody;
@@ -74,12 +74,10 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
-            final StackedStateFrames<Object> stackedStateFrames,
             final PrecompileMapper precompileMapper) {
         super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
-        this.stackedStateFrames = stackedStateFrames;
         this.precompileMapper = precompileMapper;
     }
 
@@ -240,6 +238,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        this.stackedStateFrames = updater.getStackedStateFrames();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
