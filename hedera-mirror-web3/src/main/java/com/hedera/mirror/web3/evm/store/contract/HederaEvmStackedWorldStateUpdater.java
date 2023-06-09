@@ -103,7 +103,8 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 0,
                 0,
-                nonce);
+                nonce,
+                false);
         accountAccessor.set(address, accountModel);
     }
 

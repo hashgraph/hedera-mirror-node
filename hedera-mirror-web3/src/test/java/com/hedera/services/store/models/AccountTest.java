@@ -17,7 +17,9 @@
 package com.hedera.services.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
@@ -55,7 +57,8 @@ class AccountTest {
                 numAssociations,
                 numPositiveBalances,
                 numTreasuryTitles,
-                0L);
+                0L,
+                false);
     }
 
     @Test

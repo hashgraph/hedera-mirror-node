@@ -20,8 +20,21 @@ import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -32,7 +45,14 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +91,8 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
     private Account nonTreasuryAccount = new Account(
             nonTreasuryId,
             defaultLongValue,
@@ -87,7 +108,8 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -537,7 +559,7 @@ class TokenTest {
         // given:
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
+        subject.getLoadedUniqueTokens().put(1L, oneToBurn);
 
         // expect:
         assertFailsWith(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)), TREASURY_MUST_OWN_BURNED_NFT);
@@ -545,7 +567,7 @@ class TokenTest {
         // and when:
 
         oneToBurn = new UniqueToken(subject.getId(), 1L, null, treasuryId, null, new byte[] {});
-        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
+        subject.getLoadedUniqueTokens().put(1L, oneToBurn);
         assertDoesNotThrow(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)));
     }
 
