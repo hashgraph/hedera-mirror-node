@@ -72,8 +72,8 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         return pendingChanges.containsKey(address) || aliases.containsKey(address);
     }
 
-    public void link(final Address alias, final Address address1) {
-        pendingChanges.put(alias, address1);
+    public void link(final Address alias, final Address address) {
+        pendingChanges.put(alias, address);
     }
 
     public void unlink(Address alias) {
