@@ -26,6 +26,7 @@ import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,10 +46,20 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        if (isInUse(addressOrAlias)) {
-            return getAlias(addressOrAlias);
-        }
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromEntityAccess(addressOrAlias));
+    }
 
+    private Optional<Address> resolveFromAliases(Address alias) {
+        if (pendingAliases.containsKey(alias)) {
+            return Optional.ofNullable(pendingAliases.get(alias));
+        }
+        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
+            return Optional.ofNullable(aliases.get(alias));
+        }
+        return Optional.empty();
+    }
+
+    private Address resolveFromEntityAccess(Address addressOrAlias) {
         final var entity = mirrorEntityAccess
                 .findEntity(addressOrAlias)
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
@@ -61,16 +72,6 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         link(addressOrAlias, resolvedAddress);
 
         return resolvedAddress;
-    }
-
-    private Address getAlias(Address alias) {
-        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
-            return aliases.get(alias);
-        }
-        if (pendingAliases.containsKey(alias)) {
-            return pendingAliases.get(alias);
-        }
-        return null;
     }
 
     public boolean isInUse(final Address address) {

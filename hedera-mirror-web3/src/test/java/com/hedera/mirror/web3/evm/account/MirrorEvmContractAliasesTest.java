@@ -80,6 +80,26 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
+    void resolveForEvmWhenAliasAndPendingAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.aliases.put(ALIAS, Address.ZERO);
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
+    }
+
+    @Test
+    void resolveForEvmWhenAliasIsPresentAndIsPendingRemovalShouldReturnEntityEvmAddress() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        when(mirrorEntityAccess.findEntity(ALIAS)).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.CONTRACT);
+        when(entity.toEntityId()).thenReturn(entityId);
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
+    }
+
+    @Test
     void resolveForEvmForContractWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
         when(mirrorEntityAccess.findEntity(ALIAS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.CONTRACT);
