@@ -19,8 +19,8 @@ package com.hedera.mirror.web3.evm.account;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -34,7 +34,6 @@ import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -177,13 +176,12 @@ class MirrorEvmContractAliasesTest {
             utilities
                     .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
                     .thenReturn(new byte[0]);
-            assertEquals(Map.of(recoveredAddress, ADDRESS2), mirrorEvmContractAliases.getAliases());
+            assertTrue(mirrorEvmContractAliases.isInUse(recoveredAddress));
         }
     }
 
     @Test
     void ignoresNullKeys() {
-        assertFalse(
-                mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS2, EthSigsUtils::recoverAddressFromPubKey));
+        assertFalse(mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS2));
     }
 }

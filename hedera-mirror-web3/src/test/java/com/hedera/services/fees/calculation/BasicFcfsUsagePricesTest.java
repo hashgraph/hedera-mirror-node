@@ -46,7 +46,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,7 +54,7 @@ class BasicFcfsUsagePricesTest {
     private final long currentExpiry = 1_234_567;
     private final long nextExpiry = currentExpiry + 1_000;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     TxnAccessor accessor;
 
     private final FeeComponents currResourceUsagePrices = FeeComponents.newBuilder()
@@ -129,7 +128,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void updatesPricesWhenDefaultCalled() {
-        // when:
+        // given:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
@@ -143,7 +142,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsTransferUsagePricesAtCurrent() {
-        // when:
+        // given:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
@@ -157,7 +156,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsTransferUsagePricesAtNext() {
-        // when:
+        // given:
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry + 1).build();
@@ -183,8 +182,9 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void usesDefaultPricesForUnexpectedFailure() {
-        // when
+        // given
         when(accessor.getFunction()).thenThrow(IllegalStateException.class);
+        when(accessor.getTxnId()).thenReturn(contractCallTxnCurr.getTransactionID());
 
         // when:
         final var prices = subject.activePrices(accessor);
@@ -195,7 +195,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsActivePricesCurr() {
-        // when
+        // given
         when(accessor.getTxnId()).thenReturn(contractCallTxnCurr.getTransactionID());
         when(accessor.getFunction()).thenReturn(ContractCall);
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
@@ -209,7 +209,7 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsActivePricesNext() {
-        // when
+        // given
         when(accessor.getTxnId()).thenReturn(contractCallTxnNext.getTransactionID());
         when(accessor.getFunction()).thenReturn(ContractCall);
         when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
@@ -223,9 +223,9 @@ class BasicFcfsUsagePricesTest {
 
     @Test
     void getsDefaultPricesIfActiveTxnInvalid() {
-        // when
+        // given
         when(accessor.getFunction()).thenReturn(UNRECOGNIZED);
-
+        when(accessor.getTxnId()).thenReturn(contractCallTxnCurr.getTransactionID());
         // when:
         final Map<SubType, FeeData> prices = subject.activePrices(accessor);
 

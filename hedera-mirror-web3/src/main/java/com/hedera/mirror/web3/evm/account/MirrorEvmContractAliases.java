@@ -30,7 +30,6 @@ import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.UnaryOperator;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,18 +37,12 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
-    public static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN = EthSigsUtils::recoverAddressFromPubKey;
     final Map<Address, Address> aliases = new HashMap<>();
     final Map<Address, Address> pendingChanges = new HashMap<>();
     private final MirrorEntityAccess mirrorEntityAccess;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
-        return maybeLinkEvmAddress(key, address, ADDRESS_RECOVERY_FN);
-    }
-
-    boolean maybeLinkEvmAddress(
-            @Nullable final JKey key, final Address address, final UnaryOperator<byte[]> addressRecovery) {
-        final var evmAddress = tryAddressRecovery(key, addressRecovery);
+        final var evmAddress = tryAddressRecovery(key);
         if (isRecoveredEvmAddress(evmAddress)) {
             link(Address.wrap(Bytes.wrap(evmAddress)), address); // NOSONAR we have a null check
             return true;
@@ -59,12 +52,12 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     @Nullable
-    public static byte[] tryAddressRecovery(@Nullable final JKey key, final UnaryOperator<byte[]> addressRecovery) {
+    private byte[] tryAddressRecovery(@Nullable final JKey key) {
         if (key != null) {
             // Only compressed keys are stored at the moment
             final var keyBytes = key.getECDSASecp256k1Key();
             if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                final var evmAddress = addressRecovery.apply(keyBytes);
+                final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
                 if (isRecoveredEvmAddress(evmAddress)) {
                     return evmAddress;
                 }
@@ -124,9 +117,5 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
     public void resetPendingChanges() {
         pendingChanges.clear();
-    }
-
-    public Map<Address, Address> getAliases() {
-        return aliases;
     }
 }

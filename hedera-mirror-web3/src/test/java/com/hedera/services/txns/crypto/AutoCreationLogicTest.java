@@ -40,7 +40,6 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,20 +108,23 @@ class AutoCreationLogicTest {
 
     @Test
     void createsAsExpected() {
+        // given
         given(ids.newAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(stackedStateFrames), eq(at)))
                 .willReturn(fees);
+
+        // when
         final var input1 = wellKnownTokenChange(edKeyAlias);
         final var input2 = anotherTokenChange();
         final var changes = List.of(input1, input2);
-
         final var result = subject.create(input1, changes, at);
 
-        final var topFrame = stackedStateFrames.top();
-        final var addressAccessor = topFrame.getAccessor(Account.class);
+        // then
+        final var expected = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+        final var addressAccessor = stackedStateFrames.top().getAccessor(Account.class);
         assertEquals(16L, input1.getAggregatedUnits());
-        assertEquals(1, aliasManager.getAliases().size());
-        assertNotNull(addressAccessor.get(Id.fromGrpcAccount(created).asEvmAddress()));
+        assertTrue(aliasManager.isInUse(expected));
+        assertNotNull(addressAccessor.get(expected));
 
         assertEquals(Pair.of(OK, totalFee), result);
     }
