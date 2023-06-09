@@ -94,8 +94,8 @@ public class LocalStreamFileProvider implements StreamFileProvider {
                     commonDownloaderProperties.getMirrorProperties().getNetwork(),
                     String.valueOf(
                             commonDownloaderProperties.getMirrorProperties().getShard()),
-                    streamType.getNodePrefix(),
-                    node.getNodeAccountId().toString());
+                    String.valueOf(node.getNodeId()),
+                    streamType.getNodeIdBasedSuffix());
         };
     }
 
