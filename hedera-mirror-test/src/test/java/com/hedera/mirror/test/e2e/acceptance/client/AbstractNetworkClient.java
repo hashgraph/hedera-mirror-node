@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Key;
@@ -169,5 +171,15 @@ public abstract class AbstractNetworkClient {
         String memo = String.format("Mirror Node acceptance test: %s %s", Instant.now(), message);
         // Memos are capped at 100 bytes
         return StringUtils.truncate(memo, MEMO_BYTES_MAX_LENGTH);
+    }
+
+    public void validateAddress(final String actualAddress) {
+        final var account = getSdkClient().getExpandedOperatorAccountId();
+
+        assertThat(actualAddress)
+                .isEqualTo(
+                        account.getPublicKey().isECDSA()
+                                ? account.getPublicKey().toEvmAddress().toString()
+                                : account.getAccountId().toSolidityAddress());
     }
 }
