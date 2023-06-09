@@ -38,15 +38,9 @@ public abstract class AbstractSyntheticContractResult implements SyntheticContra
 
     static final String TRANSFER_SIGNATURE = "a9059cbb";
 
-    static final String APPROVE_FOR_ALL_SIGNATURE = "a22cb465";
-
     static final String APPROVE_SIGNATURE = "095ea7b3";
 
     static byte[] hexToBytes(String hex) {
         return Bytes.fromHexString(hex).toArrayUnsafe();
-    }
-
-    static String longToPaddedHex(long value) {
-        return String.format("%064d", value);
     }
 }
