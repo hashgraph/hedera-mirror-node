@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -43,17 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
-    @Mock
-    private HederaEvmEntityAccess hederaEvmEntityAccess;
-
-    @Mock
-    private EvmProperties evmProperties;
-
-    @Mock
-    private AbstractCodeCache abstractCodeCache;
-
-    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     final long balance = 1_234L;
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
 
     @Mock
     AccountAccessor accountAccessor;
@@ -62,7 +54,19 @@ class HederaEvmWorldStateTest {
     TokenAccessor tokenAccessor;
 
     @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
     EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
+
+    @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
+    private AbstractCodeCache abstractCodeCache;
 
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
@@ -83,6 +87,7 @@ class HederaEvmWorldStateTest {
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
+                mirrorEvmContractAliases,
                 stackedStateFrames);
     }
 

@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -29,14 +31,18 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
         extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     private final StackedStateFrames<Object> stackedStateFrames;
+    protected MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
         super(world, accountAccessor, tokenAccessor, entityAccess, stackedStateFrames);
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
+        this.mirrorEvmContractAliases.resetPendingChanges();
         this.stackedStateFrames = stackedStateFrames;
     }
 
@@ -54,6 +60,8 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             topFrame.commit();
             stackedStateFrames.pop();
         }
+
+        mirrorEvmContractAliases.commit();
 
         // partially copied from services
         final var wrapped = wrappedWorldView();
@@ -81,5 +89,14 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             }
             updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
         }
+    }
+
+    public HederaEvmContractAliases aliases() {
+        return mirrorEvmContractAliases;
+    }
+
+    @Override
+    public void revert() {
+        mirrorEvmContractAliases.resetPendingChanges();
     }
 }

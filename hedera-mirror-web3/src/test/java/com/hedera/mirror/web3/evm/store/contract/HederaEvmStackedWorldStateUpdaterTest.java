@@ -17,12 +17,15 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -45,7 +48,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
+    private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
+    private static final Address sponsor = Address.fromHexString("0xcba");
+    private static final long aBalance = 1_000L;
+    private static final long aNonce = 1L;
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @Mock
     private AccountAccessor accountAccessor;
@@ -63,14 +72,17 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EvmProperties properties;
 
     @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     private StackedStateFrames<Object> stackedStateFrames;
-    private HederaEvmStackedWorldStateUpdater subject;
 
-    private static final long aBalance = 1_000L;
-    private static final long aNonce = 1L;
-    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
+    private HederaEvmStackedWorldStateUpdater subject;
 
     @BeforeEach
     void setUp() {
@@ -78,7 +90,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         stackedStateFrames = new StackedStateFrames<>(accessors);
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+                updater,
+                accountAccessor,
+                entityAccess,
+                tokenAccessor,
+                properties,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
     }
 
     @Test
@@ -98,7 +117,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void commitsNewlyCreatedAccountAsExpected() {
         updater = new MockLedgerWorldUpdater(null, accountAccessor);
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+                updater,
+                accountAccessor,
+                entityAccess,
+                tokenAccessor,
+                properties,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();
@@ -110,7 +136,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void commitsDeletedAccountsAsExpected() {
         updater = new MockLedgerWorldUpdater(null, accountAccessor);
         subject = new HederaEvmStackedWorldStateUpdater(
-                updater, accountAccessor, entityAccess, tokenAccessor, properties, stackedStateFrames);
+                updater,
+                accountAccessor,
+                entityAccess,
+                tokenAccessor,
+                properties,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses().size()).isEqualTo(0);
@@ -208,6 +241,27 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         assertThat(subject.isTokenAddress(someAddress)).isFalse();
+    }
+
+    @Test
+    void getSbhRefundReturnsZero() {
+        assertThat(subject.getSbhRefund()).isZero();
+    }
+
+    @Test
+    void usesAliasesForDecodingHelp() {
+        given(mirrorEvmContractAliases.resolveForEvm(alias)).willReturn(sponsor);
+        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias);
+
+        final var resolved = subject.unaliased(alias.toArrayUnsafe());
+        assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+    }
+
+    @Test
+    void unaliasingFailsWhenNotUsingCanonicalAddress() {
+        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
+
+        assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
     }
 
     private void givenForRedirect() {

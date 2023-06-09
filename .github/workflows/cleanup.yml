@@ -43,18 +43,19 @@ jobs:
           
           ALL_DIGESTS=($(cat "$IMAGES_JSON_FILE" | jq -r '[.[].key] | join(" ")'))
           
+          CHILD_DIGESTS=()
           MULTI_PLATFORM_DIGESTS=($(cat "$IMAGES_JSON_FILE" | \
             jq -r 'map(select(.value.mediaType == "application/vnd.docker.distribution.manifest.list.v2+json")) |
               [.[].key] | join(" ")'))
           for digest in ${MULTI_PLATFORM_DIGESTS[*]}; do
             # add child image digests to ALL_DIGESTS
-            CHILD_DIGESTS=($(curl "$BASE_REGISTRY_API_URL/manifests/$digest" | \
+            CHILD_DIGESTS+=($(curl "$BASE_REGISTRY_API_URL/manifests/$digest" | \
               jq -r '[.manifests[].digest] | join(" ")'))
-            ALL_DIGESTS+=(${CHILD_DIGESTS[@]})
           done
           
-          # dedup the digests since images may be shared by list type images
-          ALL_DIGESTS=($(printf '%s\n' "${ALL_DIGESTS[@]}" | sort -u))
+          # dedup the child digests since some may be shared by list type images
+          CHILD_DIGESTS=($(printf '%s\n' "${CHILD_DIGESTS[@]}" | sort -u))
+          ALL_DIGESTS+=(${CHILD_DIGESTS[@]})
           
           for digest in ${ALL_DIGESTS[@]}; do
             gcloud container images delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
