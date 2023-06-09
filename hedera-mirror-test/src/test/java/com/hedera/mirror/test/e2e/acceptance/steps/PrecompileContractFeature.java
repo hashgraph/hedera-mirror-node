@@ -16,12 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.FastHex;
@@ -42,9 +36,6 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -56,6 +47,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -223,6 +225,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
 
+
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
@@ -232,7 +235,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void checkIfValidAccountIsToken() {
         String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR
                 + TestUtil.to32BytesString(
-                        accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
+                accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
         String contractClientAddress = contractClient.getClientAddress();
 
@@ -456,8 +459,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a fungible token")
     public void getDefaultKycOfFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -470,8 +472,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -862,11 +863,11 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fractionalFee.get(5).toString().toLowerCase())
                 .isEqualTo("0x"
                         + contractClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getPublicKey()
-                                .toEvmAddress()
-                                .toString());
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getPublicKey()
+                        .toEvmAddress()
+                        .toString());
         assertThat(royaltyFees).isEmpty();
     }
 
@@ -922,11 +923,11 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFee.get(4).toString().toLowerCase())
                 .isEqualTo("0x"
                         + contractClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getPublicKey()
-                                .toEvmAddress()
-                                .toString());
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getPublicKey()
+                        .toEvmAddress()
+                        .toString());
     }
 
     private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
@@ -1000,7 +1001,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     private void persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;

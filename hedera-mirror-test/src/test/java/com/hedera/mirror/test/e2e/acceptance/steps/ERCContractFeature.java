@@ -16,10 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -33,6 +29,13 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -41,12 +44,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -168,9 +169,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I call the erc contract via the mirror node REST API for token ownerOf")
     public void ownerOfContractCall() {
         var contractCallGetOwnerOf = ContractCallRequest.builder()
-                .data(GET_OWNER_OF_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString("1"))
+                .data(GET_OWNER_OF_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -204,9 +203,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I call the erc contract via the mirror node REST API for token getApproved")
     public void getApprovedContractCall() {
         var contractCallGetApproved = ContractCallRequest.builder()
-                .data(GET_APPROVED_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString("1"))
+                .data(GET_APPROVED_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -224,10 +221,10 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -246,12 +243,12 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(
-                                allowanceSpenderAccountId.getAccountId().toSolidityAddress()))
+                        allowanceSpenderAccountId.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -268,10 +265,10 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -289,12 +286,12 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(
-                                spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()))
+                        spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -334,7 +331,8 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
 
-        var getApprovedResponse = mirrorClient.contractsCall(contractCallGetApproved);
+        var getApprovedResponse =
+                mirrorClient.contractsCall(contractCallGetApproved);
         assertThat(getApprovedResponse.getResultAsAddress())
                 .isEqualTo(spenderAccountId.getAccountId().toSolidityAddress());
     }
@@ -462,7 +460,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     private void persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;
