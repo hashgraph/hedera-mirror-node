@@ -77,6 +77,19 @@ public class TokenRelationship {
         this.balanceChange = balanceChange;
     }
 
+    public TokenRelationship(Token token, Account account) {
+        this(
+                token,
+                account,
+                0,
+                token.isFrozenByDefault() && token.hasFreezeKey(),
+                !token.hasKycKey(),
+                false,
+                true,
+                false,
+                0);
+    }
+
     /**
      * Creates new instance of {@link TokenRelationship} with updated balance in order to keep the object's immutability and avoid
      * entry points for changing the state.
