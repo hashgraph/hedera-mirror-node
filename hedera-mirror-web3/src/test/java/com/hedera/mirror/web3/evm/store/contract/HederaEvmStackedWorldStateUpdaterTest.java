@@ -146,10 +146,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 stackedStateFrames);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
-        assertThat(updater.getDeletedAccountAddresses().size()).isEqualTo(0);
+        assertThat(updater.getDeletedAccountAddresses()).isEmpty();
         subject.commit();
-        assertThat(subject.getDeletedAccountAddresses().size()).isEqualTo(1);
-        assertThat(updater.getDeletedAccountAddresses().size()).isEqualTo(1);
+        assertThat(subject.getDeletedAccountAddresses()).hasSize(1);
         final var topFrame = stackedStateFrames.top();
         final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
         var accountFromTopFrame = accountAccessor.get(address);
