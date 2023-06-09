@@ -50,6 +50,16 @@ public class UniqueToken {
         this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
     }
 
+    private UniqueToken createNewUniqueTokenWithNewOwner(UniqueToken oldUniqueToken, Id newOwner) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                newOwner,
+                oldUniqueToken.spender,
+                oldUniqueToken.metadata);
+    }
+
     public NftId getNftId() {
         return nftId;
     }
@@ -72,6 +82,10 @@ public class UniqueToken {
 
     public Id getOwner() {
         return owner;
+    }
+
+    public UniqueToken setOwner(Id newOwner) {
+        return createNewUniqueTokenWithNewOwner(this, newOwner);
     }
 
     public Id getSpender() {

@@ -85,6 +85,26 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
+    @Getter
+    @NotNull
+    private boolean atLeastOneAutoRenewTargetType = false;
+
+    @Getter
+    @NotNull
+    private boolean expireAccounts = false;
+
+    @Getter
+    @NotNull
+    private boolean expireContracts = false;
+
+    @Getter
+    @NotNull
+    private boolean limitTokenAssociations = false;
+
+    @Getter
+    @NotNull
+    private int maxTokensPerAccount = 1000;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;

@@ -20,10 +20,9 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class BitPackUtils {
+    public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
     private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
     private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
-
-    public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
     private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     /**
@@ -68,6 +67,7 @@ public class BitPackUtils {
     public static boolean isValidNum(long num) {
         return num >= 0 && num <= MAX_NUM_ALLOWED;
     }
+
     /**
      * Returns the lower-order 16 bits of a given {@code int}
      *
@@ -86,5 +86,17 @@ public class BitPackUtils {
      */
     public static int getAlreadyUsedAutomaticAssociationsFrom(int autoAssociationMetadata) {
         return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) >>> 16;
+    }
+
+    /**
+     * Set the lower-order 16 bits of automatic association Metadata
+     *
+     * @param autoAssociationMetadata  metadata of already used automatic associations and max allowed automatic
+     *                                 associations
+     * @param maxAutomaticAssociations new max allowed automatic associations to set
+     * @return metadata after changing the new max.
+     */
+    public static int setMaxAutomaticAssociationsTo(int autoAssociationMetadata, int maxAutomaticAssociations) {
+        return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
     }
 }

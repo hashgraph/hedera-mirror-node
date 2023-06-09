@@ -29,11 +29,11 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- *
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
  */
 public class Account extends HederaEvmAccount {
+    final Id proxy;
     private final Id id;
     private final long expiry;
     private final long balance;
@@ -41,7 +41,6 @@ public class Account extends HederaEvmAccount {
     private final long ownedNfts;
 
     private final long autoRenewSecs;
-    final Id proxy;
     private final Address accountAddress;
     private final int autoAssociationMetadata;
     private final SortedMap<EntityNum, Long> cryptoAllowances;
@@ -51,6 +50,7 @@ public class Account extends HederaEvmAccount {
     private final int numPositiveBalances;
     private final int numTreasuryTitles;
     private final long ethereumNonce;
+    private final boolean isSmartContract;
 
     @SuppressWarnings("java:S107")
     public Account(
@@ -68,7 +68,8 @@ public class Account extends HederaEvmAccount {
             int numAssociations,
             int numPositiveBalances,
             int numTreasuryTitles,
-            long ethereumNonce) {
+            long ethereumNonce,
+            boolean isSmartContract) {
         super(id.asEvmAddress());
         this.id = id;
         this.expiry = expiry;
@@ -86,14 +87,15 @@ public class Account extends HederaEvmAccount {
         this.numPositiveBalances = numPositiveBalances;
         this.numTreasuryTitles = numTreasuryTitles;
         this.ethereumNonce = ethereumNonce;
+        this.isSmartContract = isSmartContract;
     }
 
     /**
-     * Create a partial account with only ID and balance values.
-     * Used for treasury accounts as those are the only fields we need.
+     * Create a partial account with only ID and balance values. Used for treasury accounts as those are the only fields
+     * we need.
      */
     public Account(Id id, long balance) {
-        this(id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L);
+        this(id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L, false);
     }
 
     /**
@@ -120,13 +122,13 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
-                oldAccount.ethereumNonce);
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
     }
 
     /**
-     *
-     * Creates new instance of {@link Account} with updated numPositiveBalances in order to keep the object's immutability and
-     * avoid entry points for changing the state.
+     * Creates new instance of {@link Account} with updated numPositiveBalances in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldAccount
      * @param newNumPositiveBalances
@@ -148,7 +150,64 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numAssociations,
                 newNumPositiveBalances,
                 oldAccount.numTreasuryTitles,
-                oldAccount.ethereumNonce);
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated numAssociations in order to keep the object's immutability
+     * and avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newNumAssociations
+     * @return the new instance of {@link Account} with updated {@link #numPositiveBalances} property
+     */
+    private Account createNewAccountWithNewNumAssociations(Account oldAccount, int newNumAssociations) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                newNumAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated autoAssociationMetadata in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newAutoAssociationMetadata
+     * @return the new instance of {@link Account} with updated {@link #numPositiveBalances} property
+     */
+    private Account createNewAccountWithNewAutoAssociationMetadata(Account oldAccount, int newAutoAssociationMetadata) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                newAutoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
     }
 
     public int getMaxAutomaticAssociations() {
@@ -157,6 +216,14 @@ public class Account extends HederaEvmAccount {
 
     public int getAlreadyUsedAutomaticAssociations() {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+    }
+
+    public int getAutoAssociationMetadata() {
+        return autoAssociationMetadata;
+    }
+
+    public Account setAutoAssociationMetadata(int newAutoAssociationMetadata) {
+        return createNewAccountWithNewAutoAssociationMetadata(this, newAutoAssociationMetadata);
     }
 
     public Id getId() {
@@ -173,6 +240,10 @@ public class Account extends HederaEvmAccount {
 
     public boolean isDeleted() {
         return deleted;
+    }
+
+    public boolean isSmartContract() {
+        return isSmartContract;
     }
 
     public long getOwnedNfts() {
@@ -209,6 +280,10 @@ public class Account extends HederaEvmAccount {
 
     public int getNumAssociations() {
         return numAssociations;
+    }
+
+    public Account setNumAssociations(int newNumAssociations) {
+        return createNewAccountWithNewNumAssociations(this, newNumAssociations);
     }
 
     public int getNumTreasuryTitles() {
