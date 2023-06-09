@@ -24,7 +24,9 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -32,7 +34,9 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> aliases = new HashMap<>();
-    final Map<Address, Address> pendingChanges = new HashMap<>();
+    final Map<Address, Address> pendingAliases = new HashMap<>();
+    final Set<Address> pendingRemovals = new HashSet<>();
+
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
@@ -41,12 +45,8 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        if (pendingChanges.containsKey(addressOrAlias)) {
-            return pendingChanges.get(addressOrAlias);
-        }
-
-        if (aliases.containsKey(addressOrAlias)) {
-            return aliases.get(addressOrAlias);
+        if (isInUse(addressOrAlias)) {
+            return getAlias(addressOrAlias);
         }
 
         final var entity = mirrorEntityAccess
@@ -58,28 +58,45 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
 
         final var resolvedAddress = Address.wrap(Bytes.wrap(toEvmAddress(entity.toEntityId())));
-        aliases.put(addressOrAlias, resolvedAddress);
+        link(addressOrAlias, resolvedAddress);
 
         return resolvedAddress;
     }
 
+    private Address getAlias(Address alias) {
+        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
+            return aliases.get(alias);
+        }
+        if (pendingAliases.containsKey(alias)) {
+            return pendingAliases.get(alias);
+        }
+        return null;
+    }
+
     public boolean isInUse(final Address address) {
-        return pendingChanges.containsKey(address) || aliases.containsKey(address);
+        return aliases.containsKey(address) && !pendingRemovals.contains(address)
+                || pendingAliases.containsKey(address);
     }
 
     public void link(final Address alias, final Address address) {
-        pendingChanges.put(alias, address);
+        pendingAliases.put(alias, address);
+        pendingRemovals.remove(alias);
     }
 
     public void unlink(Address alias) {
-        pendingChanges.remove(alias);
+        pendingRemovals.add(alias);
+        pendingAliases.remove(alias);
     }
 
     public void commit() {
-        aliases.putAll(pendingChanges);
+        aliases.putAll(pendingAliases);
+        aliases.keySet().removeAll(pendingRemovals);
+
+        resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        pendingChanges.clear();
+        pendingAliases.clear();
+        pendingRemovals.clear();
     }
 }

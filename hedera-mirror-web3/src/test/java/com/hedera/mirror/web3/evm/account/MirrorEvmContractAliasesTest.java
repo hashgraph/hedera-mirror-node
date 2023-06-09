@@ -66,8 +66,15 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddress() {
+    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromAliases() {
         mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
+    }
+
+    @Test
+    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
@@ -91,14 +98,6 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmForContractShouldReturnFromPendingChangesRightAfterLink() {
-        mirrorEvmContractAliases.link(ALIAS, ADDRESS);
-
-        final var result = mirrorEvmContractAliases.resolveForEvm(ALIAS);
-        assertThat(result).isEqualTo(ADDRESS);
-    }
-
-    @Test
     void resolveForEvmWhenTypeIsNotTokenOrContractShouldFail() {
         when(mirrorEntityAccess.findEntity(ALIAS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOPIC);
@@ -118,23 +117,91 @@ class MirrorEvmContractAliasesTest {
     @Test
     void initializeWithEmptyAliasesMap() {
         assertThat(mirrorEvmContractAliases.aliases).isNotNull().isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingAliases).isNotNull().isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isNotNull().isEmpty();
     }
 
     @Test
     void link() {
-        mirrorEvmContractAliases.pendingChanges.clear();
-
         mirrorEvmContractAliases.link(ALIAS, ADDRESS);
 
-        assertThat(mirrorEvmContractAliases.pendingChanges).hasSize(1).hasEntrySatisfying(ALIAS, v -> assertThat(v)
-                .isEqualTo(ADDRESS));
+        assertThat(mirrorEvmContractAliases.pendingAliases).hasSize(1).containsEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
     }
 
     @Test
     void unlink() {
-        mirrorEvmContractAliases.pendingChanges.clear();
-        mirrorEvmContractAliases.pendingChanges.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
         mirrorEvmContractAliases.unlink(ALIAS);
-        assertThat(mirrorEvmContractAliases.aliases).isEmpty();
+
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingRemovals).hasSize(1).contains(ALIAS);
+    }
+
+    @Test
+    void commitAddsAllFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        mirrorEvmContractAliases.commit();
+
+        assertThat(mirrorEvmContractAliases.aliases).containsEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+    }
+
+    @Test
+    void commitRemovesAllFromPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        mirrorEvmContractAliases.commit();
+
+        assertThat(mirrorEvmContractAliases.aliases).doesNotContainEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+    }
+
+    @Test
+    void resetPendingChangesClearsPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        mirrorEvmContractAliases.resetPendingChanges();
+
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+    }
+
+    @Test
+    void resetPendingChangesClearsPendingRemovals() {
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        mirrorEvmContractAliases.resetPendingChanges();
+
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+    }
+
+    @Test
+    void isInUseShouldBeTrueIfInPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
+    }
+
+    @Test
+    void isInUseShouldBeTrueIfInAliasesAndNotInPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
+    }
+
+    @Test
+    void isInUseShouldBeFalseIfInAliasesAndInPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
+    }
+
+    @Test
+    void isInUseShouldBeFalseIfNotInAliasesOrPending() {
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
     }
 }
