@@ -101,6 +101,14 @@ public class DecodingFacade {
         return accountIDs;
     }
 
+    public static List<TokenID> decodeTokenIDsFromBytesArray(@NonNull final byte[][] accountBytesArray) {
+        final List<TokenID> accountIDs = new ArrayList<>();
+        for (final var account : accountBytesArray) {
+            accountIDs.add(convertAddressBytesToTokenID(account));
+        }
+        return accountIDs;
+    }
+
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
