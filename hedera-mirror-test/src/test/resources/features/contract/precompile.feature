@@ -1,7 +1,6 @@
-@contractbase @fullsuite
+@contractbase @fullsuite @precompile @web3 @acceptance
 Feature: Precompile Contract Base Coverage Feature
 
-  @precompile @web3 @acceptance
   Scenario Outline: Validate Precompile Contract
     Given I successfully create and verify a precompile contract from contract bytes
     Given I successfully create and verify a fungible token for precompile contract tests

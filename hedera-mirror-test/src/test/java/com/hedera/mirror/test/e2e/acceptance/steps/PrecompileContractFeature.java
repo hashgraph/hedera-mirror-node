@@ -44,7 +44,12 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -855,7 +860,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(2)).isZero();
         assertThat((long) fractionalFee.get(3)).isZero();
         assertFalse((boolean) fractionalFee.get(4));
-        contractClient.validateAddress(fractionalFee.get(5).toString().toLowerCase());
+        contractClient.validateAddress(
+                fractionalFee.get(5).toString().toLowerCase().replace("0x", ""));
         assertThat(royaltyFees).isEmpty();
     }
 
@@ -908,7 +914,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFee.get(1).toString()).hasToString(ZERO_ADDRESS);
         assertTrue((boolean) fixedFee.get(2));
         assertFalse((boolean) fixedFee.get(3));
-        contractClient.validateAddress(fixedFee.get(4).toString().toLowerCase());
+        contractClient.validateAddress(fixedFee.get(4).toString().toLowerCase().replace("0x", ""));
     }
 
     private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
