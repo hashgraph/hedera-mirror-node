@@ -16,4 +16,4 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile.codec;
 
-public record EmptyResult() implements RunResult {}
+public record EmptyRunResult() implements RunResult {}

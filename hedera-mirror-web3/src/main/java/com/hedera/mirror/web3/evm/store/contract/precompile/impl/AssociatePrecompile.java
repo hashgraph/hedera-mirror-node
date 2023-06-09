@@ -26,6 +26,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.codec.BodyParams;
 import com.hedera.mirror.web3.evm.store.contract.precompile.codec.HrcParams;
@@ -48,8 +49,9 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    public AssociatePrecompile(final PrecompilePricingUtils pricingUtils) {
-        super(pricingUtils);
+    public AssociatePrecompile(
+            final PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        super(pricingUtils, mirrorNodeEvmProperties);
     }
 
     public static Association decodeAssociation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -82,6 +84,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
         return createAssociate(associateOp);
     }
 
+    // TODO fix pricing logic to include transactionBody into account
     @Override
     public long getGasRequirement(final long blockTimestamp, final StackedStateFrames<Object> stackedStateFrames) {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, stackedStateFrames);

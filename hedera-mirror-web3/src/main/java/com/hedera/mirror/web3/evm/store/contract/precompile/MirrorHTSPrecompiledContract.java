@@ -40,6 +40,7 @@ import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -64,6 +65,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private final PrecompileMapper precompileMapper;
     private Precompile precompile;
     private long gasRequirement = 0L;
+    private TransactionBody.Builder transactionBody;
     private HederaEvmStackedWorldStateUpdater updater;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
@@ -180,7 +182,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, stackedStateFrames);
+            final var precompileResultWrapper = precompile.run(frame, stackedStateFrames, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
 
@@ -222,12 +224,12 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
             if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                     || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
             }
 
         } else {
             this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            precompile.body(input, aliasResolver, null);
+            this.transactionBody = precompile.body(input, aliasResolver, null);
         }
 
         gasRequirement = defaultGas();
