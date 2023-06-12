@@ -274,7 +274,7 @@ When connecting to an AWS S3 bucket that requires authentication (such as a requ
 the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access
 and secret keys in the config. This will also allow you to take advantage of alternative authorization modes such as
 [AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html). If the mirror node is configured
-to connect to an S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the
+to connect to an S3 bucket that requires authentication, and the static credentials are not provided in the config, the
 mirror node will default to using this provider. For more information and to see how you can set up your environment to
 take advantage of this, see
 [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html)
