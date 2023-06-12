@@ -18,7 +18,7 @@ import {ContractLogViewModel} from '../../viewmodel';
 
 describe('ContractLogViewModel', () => {
   const hexArray = Array(18).fill(0x00).concat(0x12, 0x34);
-  const longHexArray = Array(40).fill(0x00).concat(0x12, 0x34, 0x56);
+  const longHexArray = Array(40).fill(0x11).concat(0x12, 0x34, 0x56);
   const defaultContractLog = {
     bloom: Buffer.from([0xa, 0xb]),
     contractId: '1',
@@ -39,7 +39,7 @@ describe('ContractLogViewModel', () => {
     address: '0x0000000000000000000000000000000000000001',
     bloom: '0x0a0b',
     contract_id: '0.0.1',
-    data: '0x00000000000000000000000000000000000000000000000000000000001234',
+    data: '0x0000000000000000000000000000000000000000000000000000000000001234',
     index: 6,
     root_contract_id: '0.0.2',
     timestamp: '99999999.000000000',
@@ -60,7 +60,8 @@ describe('ContractLogViewModel', () => {
   });
 
   test('ContractLogViewModel - long data field', () => {
-    const expectedDataField = '0x00000000000000000000000000000000000000000000000000000000123456';
+    const expectedDataField =
+      '0x11111111111111111111111111111111111111111111111111111111111111111111111111111111123456';
     expect(new ContractLogViewModel({...defaultContractLog, data: Buffer.from(longHexArray)})).toEqual({
       ...defaultExpected,
       data: expectedDataField,
