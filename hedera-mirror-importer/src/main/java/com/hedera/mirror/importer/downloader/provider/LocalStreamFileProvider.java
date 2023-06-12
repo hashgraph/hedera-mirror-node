@@ -31,6 +31,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -63,25 +64,27 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         var startingPathType = commonDownloaderProperties.getPathType();
         var basePath =
                 commonDownloaderProperties.getMirrorProperties().getDataPath().resolve(STREAMS);
-        var prefixPath = getPrefixPath(startingPathType, node, streamType);
+        var prefixPathRef = new AtomicReference<>(getPrefixPath(startingPathType, node, streamType));
 
-        return Mono.fromSupplier(() -> getDirectory(basePath, prefixPath, lastFilename))
+        return Mono.fromSupplier(() -> getDirectory(basePath, prefixPathRef.get(), lastFilename))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .flatMapIterable(dir -> Arrays.asList(dir.listFiles(f -> matches(startAfter, f))))
                 .switchIfEmpty(Flux.defer(() -> {
                     // Since local FS access is fast and cheap (unlike S3), no refresh interval, state nor
                     // complex logic is implemented for AUTO mode. Simply move on to the node ID based structure.
                     if (startingPathType == PathType.AUTO) {
-                        log.debug("No files found in node account ID bucket structure after: {}", startAfter);
-                        var nodeIdPrefixPath = getPrefixPath(NODE_ID, node, streamType);
-                        var dir = getDirectory(basePath, nodeIdPrefixPath, lastFilename);
+                        log.debug(
+                                "Try node ID bucket structure after no files found in node account ID structure after: {}",
+                                startAfter);
+                        prefixPathRef.set(getPrefixPath(NODE_ID, node, streamType));
+                        var dir = getDirectory(basePath, prefixPathRef.get(), lastFilename);
                         return Flux.fromArray(dir.listFiles(f -> matches(startAfter, f)));
                     }
                     return Flux.empty();
                 }))
                 .sort()
                 .take(batchSize)
-                .map(file -> StreamFilename.from(prefixPath.toString(), file.getName(), File.separator))
+                .map(file -> StreamFilename.from(prefixPathRef.get().toString(), file.getName(), File.separator))
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
                 .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
     }
