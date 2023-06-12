@@ -34,10 +34,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     @Test
     void findById() {
         final var nft = domainBuilder.nft().persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(nft.getId().getTokenId().getId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
 
         assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
                 .returns(nft.getSpender(), Nft::getSpender)
@@ -50,7 +47,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
         final var nft = domainBuilder.nft().persist();
         domainBuilder
                 .entity()
-                .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
+                .customize(e -> e.id(nft.getTokenId()).deleted(true))
                 .persist();
 
         assertThat(nftRepository.findById(nft.getId())).hasValueSatisfying(actual -> assertThat(actual)
@@ -62,13 +59,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
     @Test
     void findActiveById() {
         final var nft = domainBuilder.nft().persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(nft.getId().getTokenId().getId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
 
-        assertThat(nftRepository.findActiveById(
-                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+        assertThat(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
                 .hasValueSatisfying(actual -> assertThat(actual)
                         .returns(nft.getSpender(), Nft::getSpender)
                         .returns(nft.getAccountId(), Nft::getAccountId)
@@ -78,13 +71,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
     @Test
     void findActiveByIdReturnEmptyIfDeleted() {
         final var nft = domainBuilder.nft().customize(n -> n.deleted(true)).persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(nft.getId().getTokenId().getId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
 
-        assertThat(nftRepository.findActiveById(
-                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+        assertThat(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
                 .isEmpty();
     }
 
@@ -93,11 +82,10 @@ class NftRepositoryTest extends Web3IntegrationTest {
         final var nft = domainBuilder.nft().persist();
         domainBuilder
                 .entity()
-                .customize(e -> e.id(nft.getId().getTokenId().getId()).deleted(true))
+                .customize(e -> e.id(nft.getTokenId()).deleted(true))
                 .persist();
 
-        assertThat(nftRepository.findActiveById(
-                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+        assertThat(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
                 .isEmpty();
     }
 
@@ -105,8 +93,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     void findActiveByIdReturnObjectIfEntityMissing() {
         final var nft = domainBuilder.nft().persist();
 
-        assertThat(nftRepository.findActiveById(
-                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+        assertThat(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
                 .isNotEmpty();
     }
 
@@ -114,16 +101,13 @@ class NftRepositoryTest extends Web3IntegrationTest {
     void countByAccountIdNotDeleted() {
         final var firstNft =
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(firstNft.getId().getTokenId().getId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(firstNft.getTokenId())).persist();
 
         final var secondNft =
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder
                 .entity()
-                .customize(e -> e.id(secondNft.getId().getTokenId().getId()).deleted(null))
+                .customize(e -> e.id(secondNft.getTokenId()).deleted(null))
                 .persist();
 
         assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isEqualTo(2);
@@ -135,10 +119,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .nft()
                 .customize(n -> n.accountId(accountId).deleted(true))
                 .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(deletedNft.getId().getTokenId().getId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(deletedNft.getTokenId())).persist();
 
         assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();
     }
@@ -149,8 +130,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 domainBuilder.nft().customize(n -> n.accountId(accountId)).persist();
         domainBuilder
                 .entity()
-                .customize(
-                        e -> e.id(deletedEntityNft.getId().getTokenId().getId()).deleted(true))
+                .customize(e -> e.id(deletedEntityNft.getTokenId()).deleted(true))
                 .persist();
 
         assertThat(nftRepository.countByAccountIdNotDeleted(accountId.getId())).isZero();

@@ -58,7 +58,7 @@ import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.NftHistory;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -539,15 +539,28 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Nft, Nft.NftBuilder> nft() {
+    public DomainWrapper<Nft, Nft.NftBuilder<?, ?>> nft() {
         var createdTimestamp = timestamp();
         var builder = Nft.builder()
                 .accountId(entityId(ACCOUNT))
                 .createdTimestamp(createdTimestamp)
                 .deleted(false)
-                .id(new NftId(id(), entityId(TOKEN)))
                 .metadata(bytes(16))
-                .modifiedTimestamp(createdTimestamp);
+                .serialNumber(id())
+                .timestampRange(Range.atLeast(createdTimestamp))
+                .tokenId(id());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NftHistory, NftHistory.NftHistoryBuilder<?, ?>> nftHistory() {
+        var builder = NftHistory.builder()
+                .accountId(entityId(ACCOUNT))
+                .createdTimestamp(timestamp())
+                .deleted(false)
+                .metadata(bytes(16))
+                .serialNumber(id())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

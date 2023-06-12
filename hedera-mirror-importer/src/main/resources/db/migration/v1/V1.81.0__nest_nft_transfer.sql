@@ -46,5 +46,3 @@ update transaction
 set nft_transfer = transfer
 from nested_nft_transfer
 where nested_nft_transfer.consensus_timestamp = transaction.consensus_timestamp;
-
-drop table nft_transfer;

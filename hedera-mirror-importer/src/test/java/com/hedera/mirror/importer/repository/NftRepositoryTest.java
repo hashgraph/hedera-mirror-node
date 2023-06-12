@@ -18,110 +18,90 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
-import jakarta.annotation.Resource;
-import java.util.List;
+import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NftRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private NftRepository nftRepository;
-
-    @Resource
-    private TokenAccountRepository tokenAccountRepository;
+    private final NftRepository nftRepository;
+    private final TokenAccountRepository tokenAccountRepository;
 
     @Test
     void save() {
-        Nft savedNft = nftRepository.save(nft("0.0.2", 1, 1));
+        var savedNft = nftRepository.save(domainBuilder.nft().get());
         assertThat(nftRepository.findById(savedNft.getId())).contains(savedNft);
-    }
-
-    @Test
-    void updateDeleted() {
-        Nft savedNft = nftRepository.save(nft("0.0.3", 2, 2));
-        nftRepository.burnOrWipeNft(savedNft.getId(), 3L);
-        savedNft.setDeleted(true);
-        savedNft.setModifiedTimestamp(3L);
-        assertThat(nftRepository.findById(savedNft.getId())).contains(savedNft);
-    }
-
-    @Test
-    void updateDeletedMissingNft() {
-        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityType.TOKEN));
-        nftRepository.burnOrWipeNft(nftId, 1L);
-        assertThat(nftRepository.findById(nftId)).isNotPresent();
-    }
-
-    @Test
-    void updateAccountId() {
-        Nft savedNft = nftRepository.save(nft("0.0.3", 2, 2));
-        EntityId accountId = EntityId.of("0.0.10", EntityType.ACCOUNT);
-        nftRepository.transferNftOwnership(savedNft.getId(), accountId, 3L);
-        savedNft.setAccountId(accountId);
-        savedNft.setModifiedTimestamp(3L);
-        assertThat(nftRepository.findById(savedNft.getId())).contains(savedNft);
-    }
-
-    @Test
-    void updateAccountIdMissingNft() {
-        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityType.TOKEN));
-        EntityId accountId = EntityId.of("0.0.10", EntityType.ACCOUNT);
-        nftRepository.transferNftOwnership(nftId, accountId, 3L);
-        assertThat(nftRepository.findById(nftId)).isNotPresent();
     }
 
     @Test
     void updateTreasury() {
         // given
-        long consensusTimestamp = 6L;
-        var newTreasury = EntityId.of("0.0.2", EntityType.ACCOUNT);
-        var nft1 = nft("0.0.100", 1, 1);
-        var nft2 = nft("0.0.100", 2, 2);
-        var nft3 = nft("0.0.100", 3, 3);
-        var nft4 = nft("0.0.101", 1, 4); // Not updated since wrong token
-        var nft5 = nft("0.0.100", 4, 5); // Not updated since wrong account
-        nft5.setAccountId(newTreasury);
-        nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
-        long nftTokenId = nft1.getId().getTokenId().getId();
-        long oldTreasuryId = nft1.getAccountId().getId();
-        var tokenAccountOldTreasury = domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.accountId(oldTreasuryId).balance(3).tokenId(nftTokenId))
-                .persist();
+        var newTreasury = domainBuilder.entityId(EntityType.ACCOUNT);
+        var oldTreasury = domainBuilder.entityId(EntityType.ACCOUNT);
+        long tokenId = domainBuilder.id();
+
         var tokenAccountNewTreasury = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(newTreasury.getId()).balance(1).tokenId(nftTokenId))
+                .customize(ta -> ta.accountId(newTreasury.getId()).balance(1).tokenId(tokenId))
                 .persist();
+        var tokenAccountOldTreasury = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(oldTreasury.getId()).balance(3).tokenId(tokenId))
+                .persist();
+        var nft1 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(oldTreasury).tokenId(tokenId))
+                .persist();
+        var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(oldTreasury).tokenId(tokenId))
+                .persist();
+        // The history row should preserve the delegating spender and spender
+        var nft3 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(oldTreasury)
+                        .delegatingSpender(domainBuilder.entityId(EntityType.ACCOUNT))
+                        .spender(domainBuilder.entityId(EntityType.ACCOUNT))
+                        .tokenId(tokenId))
+                .persist();
+        // Already owned by new treasury before the update
+        var nft4 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(newTreasury).tokenId(tokenId))
+                .persist();
+        // Different token
+        var nft5 = domainBuilder.nft().customize(n -> n.accountId(oldTreasury)).persist();
+        // Owned by a third account
+        var nft6 = domainBuilder.nft().customize(n -> n.tokenId(tokenId)).persist();
 
         // when
-        nftRepository.updateTreasury(consensusTimestamp, newTreasury.getId(), oldTreasuryId, nftTokenId);
+        var updateTimestamp = domainBuilder.timestamp();
+        nftRepository.updateTreasury(updateTimestamp, newTreasury.getId(), oldTreasury.getId(), tokenId);
 
         // then
-        nft1.setAccountId(newTreasury);
-        nft1.setModifiedTimestamp(consensusTimestamp);
-        nft2.setAccountId(newTreasury);
-        nft2.setModifiedTimestamp(consensusTimestamp);
-        nft3.setAccountId(newTreasury);
-        nft3.setModifiedTimestamp(consensusTimestamp);
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4, nft5);
-
         tokenAccountOldTreasury.setBalance(0);
         tokenAccountNewTreasury.setBalance(4);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccountOldTreasury, tokenAccountNewTreasury);
-    }
 
-    private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
-        Nft nft = new Nft();
-        nft.setAccountId(EntityId.of("0.0.1", EntityType.ACCOUNT));
-        nft.setCreatedTimestamp(consensusTimestamp);
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityType.TOKEN)));
-        nft.setMetadata(new byte[] {1});
-        nft.setModifiedTimestamp(consensusTimestamp);
-        return nft;
+        var expectedNftList = Stream.concat(
+                        Stream.of(nft1, nft2, nft3).map(Nft::toBuilder).map(n -> n.accountId(newTreasury)
+                                .delegatingSpender(null)
+                                .spender(null)
+                                .timestampRange(Range.atLeast(updateTimestamp))
+                                .build()),
+                        Stream.of(nft4, nft5, nft6))
+                .toList();
+        // The only change to the history rows is closing the timestamp range
+        var expectedNftHistoryList = Stream.of(nft1, nft2, nft3)
+                .peek(n -> n.setTimestampUpper(updateTimestamp))
+                .toList();
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNftList);
+        assertThat(findHistory(Nft.class)).containsExactlyInAnyOrderElementsOf(expectedNftHistoryList);
     }
 }
