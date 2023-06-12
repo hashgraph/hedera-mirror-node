@@ -161,6 +161,9 @@ const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => 
      ${tsQuery ? ' where ' : ''} ${tsQuery}
     order by consensus_timestamp ${order}
     limit 1`;
+
+  logger.info(`The query is ${query}`);
+  logger.info(tsParams);
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
   const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
   return rows[0]?.consensus_timestamp;

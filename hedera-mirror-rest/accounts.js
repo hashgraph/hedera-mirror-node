@@ -26,6 +26,7 @@ import Entity from './model/entity.js';
 import balances from './balances';
 import {opsMap, parseInteger} from './utils';
 import {filterKeys} from './constants';
+import Balances from './balances';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -358,14 +359,17 @@ const getAccounts = async (req, res) => {
  * @return {Promise}
  */
 const getOneAccount = async (req, res) => {
+  // Parse the filter parameters for account-numbers, balance, and pagination
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
-
-  // Parse the filter parameters for account-numbers, balance, and pagination
   const parsedQueryParams = req.query;
-  const [transactionTsQuery, transactionTsParams] = utils.parseTimestampQueryParam(
-    parsedQueryParams,
-    't.consensus_timestamp'
+  const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
+  const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
+  const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
+    tsRange,
+    't.consensus_timestamp',
+    neValues,
+    eqValues
   );
 
   let paramCount = 0;
@@ -382,27 +386,6 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    if (!utils.isEffectiveTimestamp(filters)) {
-      throw InvalidArgumentError.forRequestValidation({
-        code: InvalidArgumentError.INVALID_PARAM_USAGE,
-        key: filterKeys.TIMESTAMP,
-        error: 'No effective time range',
-      });
-    }
-
-    // Exclude ne query params for balance file
-    const cleanedReqParams = Object.assign({}, parsedQueryParams);
-    const tsParamValue = cleanedReqParams[filterKeys.TIMESTAMP];
-    cleanedReqParams[filterKeys.TIMESTAMP] = (Array.isArray(tsParamValue) ? tsParamValue : [tsParamValue]).filter(
-      (value) => !value.startsWith(constants.queryParamOperators.ne)
-    );
-
-    const [balanceFileTsQuery, balanceFileTsParams] = utils.parseTimestampQueryParam(
-      cleanedReqParams,
-      'consensus_timestamp',
-      {[opsMap.eq]: opsMap.lte}
-    );
-
     let tokenBalanceTsQuery = transactionTsQuery
       .replaceAll('t.consensus_timestamp', 'created_timestamp')
       .replaceAll('?', (_) => `$${++paramCount}`);
@@ -410,23 +393,28 @@ const getOneAccount = async (req, res) => {
     tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
     tokenBalanceQuery.params = tokenBalanceQuery.params.concat(transactionTsParams);
 
-    const {conditions: entityTsQuery, params: entityTsParams} = utils.extractTimestampRangeConditionFilters(
-      filters.filter((filter) => filter.key === filterKeys.TIMESTAMP),
-      paramCount
+    const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
+      tsRange,
+      Entity.getFullName(Entity.TIMESTAMP_RANGE),
+      neValues,
+      eqValues
     );
-    paramCount += entityTsParams.length;
-
-    entityAccountQuery.query += ` and ${entityTsQuery.join(' and ')}`;
+    entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
-    const accountBalanceTs = await balances.getAccountBalanceTimestamp(balanceFileTsQuery, balanceFileTsParams, order);
-    const neqTsFilters = filters.filter(
-      (filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.ne
-    );
-    const timestampExcluded = neqTsFilters.reduce(
-      (prev, curr) => prev || parseInteger(curr.value) === accountBalanceTs,
+    const [balanceFileTsQuery, balanceFileTsParams] = utils.buildTimestampQuery(
+      tsRange,
+      'consensus_timestamp',
+      [],
+      eqValues,
       false
     );
+    const accountBalanceTs = await balances.getAccountBalanceTimestamp(
+      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
+      balanceFileTsParams,
+      order
+    );
+    const timestampExcluded = neValues.reduce((prev, curr) => prev || curr === accountBalanceTs, false);
 
     if (timestampExcluded) {
       throw new NotFoundError('Not found');

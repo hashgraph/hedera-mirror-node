@@ -38,12 +38,6 @@
         "timestamp": "1234567890000000004",
         "id": 8,
         "balance": 555
-      },
-
-      {
-        "timestamp": "1234567880000000004",
-        "id": 8,
-        "balance": 444
       }
     ],
     "recordFiles": [
@@ -150,7 +144,7 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.8?timestamp=lte:1234567880.000000006",
-    "/api/v1/accounts/0.0.8?timestamp=lte:1234567890.000000007&timestamp=ne:1234567890.000000004",
+    "/api/v1/accounts/0.0.8?timestamp=ne:1234567890.000000004",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567880.000000006"
   ],
   "responseStatus": 404,

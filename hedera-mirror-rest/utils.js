@@ -1441,61 +1441,108 @@ const getStakingPeriod = (stakingPeriod) => {
  * beyond a configured limit), or a set of equals operators within the same limit.
  *
  * @param {[]}timestampFilters an array of timestamp filters
+ * @param filterRequired indicates whether timestamp filters can be empty
+ * @param allowNe indicates whether existence of ne filter is error condition
+ * @param allowOpenRange indicates if we allow lt or gt to be passed individually
+ * @param strictCheckOverride override feature flag to force strict checking
+ * @return [range, eqValues, neqValues] - range is null in the case of equals
  */
-const checkTimestampRange = (timestampFilters) => {
+const checkTimestampRange = (
+  timestampFilters,
+  filterRequired = true,
+  allowNe = false,
+  allowOpenRange = false,
+  strictCheckOverride = true
+) => {
+  const forceStrictChecks = strictCheckOverride || config.strictTimestampParam;
+
   //No timestamp params provided
   if (timestampFilters.length === 0) {
-    throw new InvalidArgumentError('No timestamp range or eq operator provided');
+    if (filterRequired) {
+      throw new InvalidArgumentError('No timestamp range or eq operator provided');
+    }
+
+    return [null, [], []];
   }
 
   const valuesByOp = {};
   Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
-  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(filter.value));
+  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(BigInt(filter.value)));
 
   const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
   const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
 
-  if (valuesByOp[opsMap.ne].length > 0) {
-    // Don't allow ne
-    throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
+  if (forceStrictChecks) {
+    if (!allowNe && valuesByOp[opsMap.ne].length > 0) {
+      // Don't allow ne
+      throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
+    }
+
+    if (gtGteLength > 1) {
+      //Don't allow multiple gt/gte
+      throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
+    }
+
+    if (ltLteLength > 1) {
+      //Don't allow multiple lt/lte
+      throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
+    }
+
+    if (valuesByOp[opsMap.ne].length > 0 && valuesByOp[opsMap.eq].length > 0) {
+      throw new InvalidArgumentError('Cannot combine eq with ne timestamp param');
+    }
+
+    if (
+      (valuesByOp[opsMap.eq].length > 0 || valuesByOp[opsMap.ne].length > 0) &&
+      (gtGteLength > 0 || ltLteLength > 0)
+    ) {
+      //Combined eq|neq with other operator
+      throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
+    }
   }
 
-  if (gtGteLength > 1) {
-    //Don't allow multiple gt/gte
-    throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
+  if (valuesByOp[opsMap.eq].length > 0 || valuesByOp[opsMap.ne].length > 0) {
+    return [null, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
   }
 
-  if (ltLteLength > 1) {
-    //Don't allow multiple lt/lte
-    throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
-  }
-
-  if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0)) {
-    //Combined eq with other operator
-    throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
-  }
-
-  if (valuesByOp[opsMap.eq].length > 0) {
-    //Only eq provided, no range needed
-    return;
-  }
-
-  if (gtGteLength === 0 || ltLteLength === 0) {
+  if (!allowOpenRange && (gtGteLength === 0 || ltLteLength === 0)) {
     //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
   }
 
-  // there should be exactly one gt/gte and one lt/lte at this point
-  const earliest =
-    valuesByOp[opsMap.gt].length > 0 ? BigInt(valuesByOp[opsMap.gt][0]) + 1n : BigInt(valuesByOp[opsMap.gte][0]);
-  const latest =
-    valuesByOp[opsMap.lt].length > 0 ? BigInt(valuesByOp[opsMap.lt][0]) - 1n : BigInt(valuesByOp[opsMap.lte][0]);
-  const difference = latest - earliest + 1n;
-
-  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
-  if (difference > maxTimestampRangeNs || difference <= 0n) {
-    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+  // there should be exactly one gt/gte and/or one lt/lte at this point
+  const boundStart = '[';
+  const boundEnd = ']';
+  let earliest = null;
+  let latest = null;
+  if (valuesByOp[opsMap.gt].length) {
+    earliest = valuesByOp[opsMap.gt][0] + 1n;
+  } else if (valuesByOp[opsMap.gte].length) {
+    earliest = valuesByOp[opsMap.gte][0];
   }
+
+  if (valuesByOp[opsMap.lt].length) {
+    latest = valuesByOp[opsMap.lt][0] - 1n;
+  } else if (valuesByOp[opsMap.lte].length) {
+    latest = valuesByOp[opsMap.lte][0];
+  }
+
+  if (!allowOpenRange) {
+    const difference = latest - earliest + 1n;
+    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+
+    if (difference > maxTimestampRangeNs || difference <= 0n) {
+      throw new InvalidArgumentError(
+        `Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`
+      );
+    }
+  }
+
+  if (forceStrictChecks && earliest != null && latest != null && latest - earliest + 1n <= 0n) {
+    throw new InvalidArgumentError(`Timestamp lower bound ${earliest} must be less than the upper bound ${latest}`);
+  }
+
+  return [Range(earliest, latest, boundStart + boundEnd), valuesByOp[opsMap.ne], valuesByOp[opsMap.ne]];
 };
 
 /**
@@ -1551,89 +1598,75 @@ const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => 
   return Math.round(Math.max(tinyBars, 1));
 };
 
-const getMinTimestampFilter = (filters) => {
-  const filtered = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator !== opsMap.ne);
-  return filtered.length
-    ? filtered.reduce((prev, current) => {
-        const prevNum = parseInteger(prev.value);
-        const currentNum = parseInteger(current.value);
-        logger.info(`The values are prev=${prevNum}, curr=${currentNum}`);
-        if (prevNum < currentNum) {
-          return prev;
-        }
-        if (prevNum > currentNum) {
-          return current;
-        }
-
-        return prev.operator === opsMap.lte ? current : prev;
-      })
-    : undefined;
+const boundToOp = {
+  '(': opsMap.gt,
+  '[': opsMap.gte,
+  ')': opsMap.lt,
+  ']': opsMap.lte,
 };
+const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
+  const conditions = [];
+  const params = [];
 
-const getMaxTimestampFilter = (filters) => {
-  const filtered = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator !== opsMap.ne);
-  return filters.length
-    ? filtered.reduce((prev, current) => {
-        const prevNum = parseInteger(prev.value);
-        const currentNum = parseInteger(current.value);
-
-        if (prevNum < currentNum) {
-          return current;
-        }
-
-        if (prevNum > currentNum) {
-          return prev;
-        }
-
-        return prev.operator === opsMap.gte ? current : prev;
-      })
-    : undefined;
-};
-
-/**
- * Compares the timestamp filters to ensure there is an effective range.
- * Not equals conditions are not considered in this calculation.
- * */
-const isEffectiveTimestamp = (filters) => {
-  const ltFilters = filters.filter(
-    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.lte || filter.operator === opsMap.lt)
-  );
-  const gtFilters = filters.filter(
-    (filter) => filter.key === filterKeys.TIMESTAMP && (filter.operator === opsMap.gte || filter.operator === opsMap.gt)
-  );
-  const eqTsFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP && filter.operator === opsMap.eq);
-
-  const upperBoundFilter = getMinTimestampFilter(ltFilters);
-  const upperBound = upperBoundFilter ? parseInteger(upperBoundFilter.value) : undefined;
-
-  const lowerBoundFilter = getMaxTimestampFilter(gtFilters);
-  const lowerBound = lowerBoundFilter ? parseInteger(lowerBoundFilter.value) : undefined;
-
-  if (eqTsFilters.length) {
-    const minEqTs = parseInteger(getMinTimestampFilter(eqTsFilters).value);
-    const maxEqTs = parseInteger(getMaxTimestampFilter(eqTsFilters).value);
-
-    if (
-      lowerBound !== undefined &&
-      (minEqTs < lowerBound || (minEqTs === lowerBound && lowerBoundFilter.operator === opsMap.gt))
-    ) {
-      return false;
+  if (range) {
+    const bounds = [...range.bounds];
+    if (bounds.length !== 2) {
+      return ['', []];
     }
-
-    if (
-      upperBound !== undefined &&
-      (maxEqTs > upperBound || (maxEqTs === upperBound && upperBoundFilter.operator === opsMap.lt))
-    ) {
-      return false;
+    if (range.begin) {
+      conditions.push(`${column}${boundToOp[bounds[0]]} ?`);
+      params.push(range.begin);
+    }
+    if (range.end) {
+      conditions.push(`${column} ${boundToOp[bounds[1]]} ?`);
+      params.push(range.end);
     }
   }
 
-  return (
-    upperBound === undefined ||
-    lowerBound === undefined ||
-    lowerBound < upperBound ||
-    (upperBound === lowerBound && upperBoundFilter.operator === opsMap.lte && lowerBoundFilter.operator === opsMap.gte)
-  );
+  if (neValues.length) {
+    if (buildAsIn) {
+      conditions.push(`${column} not in (?`.concat(', ?'.repeat(neValues.length - 1)).concat(')'));
+    } else {
+      neValues.forEach((_) => conditions.push(`${column} != ?`));
+    }
+    params.push(...neValues);
+  }
+
+  if (eqValues.length) {
+    if (buildAsIn) {
+      conditions.push(`${column} in (?`.concat(', ?'.repeat(eqValues.length - 1)).concat(')'));
+    } else {
+      eqValues.forEach((_) => conditions.push(`${column} = ?`));
+    }
+    params.push(...eqValues);
+  }
+
+  return [conditions.join(' and '), params];
+};
+
+const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) => {
+  const conditions = [];
+  const params = [];
+
+  if (range) {
+    conditions.push(`${column} && ?`);
+    params.push(range);
+  }
+  if (neValues.length) {
+    neValues.forEach((value) => {
+      conditions.push(`not ${column} @> ?`);
+      params.push(Range(value, value, '[]'));
+    });
+  }
+
+  if (eqValues.length) {
+    eqValues.forEach((value) => {
+      conditions.push(`${column} && ?`);
+      params.push(Range(null, value, '(]'));
+    });
+  }
+
+  return [conditions.join(' and '), params];
 };
 
 const JSONParse = JSONBig.parse;
@@ -1647,6 +1680,8 @@ export {
   buildAndValidateFilters,
   buildComparatorFilter,
   buildFilters,
+  buildTimestampQuery,
+  buildTimestampRangeQuery,
   buildPgSqlObject,
   calculateExpiryTimestamp,
   checkTimestampRange,
@@ -1673,7 +1708,6 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
-  isEffectiveTimestamp,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,
