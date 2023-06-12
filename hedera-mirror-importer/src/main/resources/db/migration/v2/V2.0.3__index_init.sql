@@ -147,6 +147,7 @@ create index if not exists nft__allowance on nft (account_id, spender, token_id,
 -- nft history
 alter table nft_history
     add constraint nft_history__pk primary key (token_id, serial_number, timestamp_range);
+create index if not exists nft_history__timestamp_range on nft_history using gist (timestamp_range);
 
 -- nft_allowance
 alter table if exists nft_allowance

@@ -7,10 +7,7 @@ alter table if exists nft
   alter column timestamp_range set not null,
   drop column modified_timestamp;
 
-create table if not exists nft_history (
-  like nft including defaults,
-  primary key (token_id, serial_number, timestamp_range)
-);
+create table if not exists nft_history (like nft including defaults);
 
 -- add nft history row based on nft_transfer
 with full_history as (
@@ -33,5 +30,8 @@ select h.account_id, n.created_timestamp, false, n.metadata, h.serial_number, h.
 from full_history h
 join nft n on n.token_id = h.token_id and n.serial_number = h.serial_number
 where upper(h.timestamp_range) is not null;
+
+alter table nft_history add primary key (token_id, serial_number, timestamp_range);
+create index if not exists nft_history__timestamp_range on nft_history using gist (timestamp_range);
 
 drop table nft_transfer;
