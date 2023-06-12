@@ -54,23 +54,7 @@ import org.springframework.util.StreamUtils;
 @TestPropertySource(properties = "spring.flyway.target=1.80.1")
 class NestNftTransferMigrationTest extends IntegrationTest {
 
-    private static final String REVERT_DDL =
-            """
-            create table if not exists nft_transfer (
-              consensus_timestamp bigint not null,
-              receiver_account_id bigint,
-              sender_account_id   bigint,
-              serial_number       bigint not null,
-              token_id            bigint not null,
-              payer_account_id    bigint not null,
-              is_approval         boolean
-            );
-            create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
-            create index if not exists nft_transfer__token_id_serial_num_timestamp
-              on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
-
-            alter table transaction drop column if exists jsonb;
-            """;
+    private static final String REVERT_DDL = "alter table transaction drop column if exists nft_transfer";
 
     private final @Owner JdbcTemplate jdbcTemplate;
 

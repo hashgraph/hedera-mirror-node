@@ -35,13 +35,13 @@ class NftService extends BaseService {
 
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
-    ${Nft.tableAlias}.${Nft.CREATED_TIMESTAMP},
+    ${Nft.getFullName(Nft.CREATED_TIMESTAMP)},
     ${Nft.DELEGATING_SPENDER},
     ${Nft.tableAlias}.${Nft.DELETED} or coalesce(${Entity.tableAlias}.${Entity.DELETED}, false) as ${Nft.DELETED},
     ${Nft.METADATA},
-    ${Nft.MODIFIED_TIMESTAMP},
     ${Nft.SERIAL_NUMBER},
     ${Nft.SPENDER},
+    ${Nft.getFullName(Nft.TIMESTAMP_RANGE)},
     ${Nft.TOKEN_ID}
     from ${Nft.tableName}
     left join ${Entity.tableName} ${Entity.tableAlias} on
