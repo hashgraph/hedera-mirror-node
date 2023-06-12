@@ -39,7 +39,7 @@
     "long": "^5.2.3",
     "mathjs": "^11.8.0",
     "mem": "^9.0.2",
-    "parse-duration": "^1.0.3",
+    "parse-duration": "^1.1.0",
     "pg": "~8.11.0",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
