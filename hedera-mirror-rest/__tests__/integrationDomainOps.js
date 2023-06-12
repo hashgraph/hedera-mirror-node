@@ -495,6 +495,7 @@ const entityDefaults = {
   timestamp_range: '[0,)',
   type: constants.entityTypes.ACCOUNT,
 };
+
 const addEntity = async (defaults, custom) => {
   const insertFields = Object.keys(entityDefaults).sort();
   const entity = {
@@ -1425,41 +1426,35 @@ const addNetworkStake = async (networkStakeInput) => {
   await insertDomainObject('network_stake', insertFields, networkStake);
 };
 
-const addNft = async (nft) => {
-  // create nft account object
-  nft = {
-    account_id: '0.0.0',
-    created_timestamp: 0,
-    delegating_spender: null,
-    deleted: false,
-    metadata: '\\x',
-    modified_timestamp: 0,
-    serial_number: 0,
-    spender: null,
-    token_id: '0.0.0',
-    ...nft,
+const nftDefaults = {
+  account_id: '0.0.0',
+  created_timestamp: 0,
+  delegating_spender: null,
+  deleted: false,
+  metadata: '\\x',
+  serial_number: 0,
+  spender: null,
+  timestamp_range: null,
+  token_id: '0.0.0',
+};
+
+const addNft = async (custom) => {
+  const insertFields = Object.keys(nftDefaults).sort();
+  const nft = {
+    ...nftDefaults,
+    ...custom,
   };
 
-  if (!nft.modified_timestamp) {
-    nft.modified_timestamp = nft.created_timestamp;
+  if (!nft.timestamp_range) {
+    nft.timestamp_range = `[${nft.created_timestamp},)`;
   }
 
-  await pool.query(
-    `insert into nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata,
-                      serial_number, spender, token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
-    [
-      EntityId.parse(nft.account_id, {isNullable: true}).getEncodedId(),
-      nft.created_timestamp,
-      EntityId.parse(nft.delegating_spender, {isNullable: true}).getEncodedId(),
-      nft.deleted,
-      nft.modified_timestamp,
-      nft.metadata,
-      nft.serial_number,
-      EntityId.parse(nft.spender, {isNullable: true}).getEncodedId(),
-      EntityId.parse(nft.token_id).getEncodedId(),
-    ]
+  ['account_id', 'delegating_spender', 'spender'].forEach((key) =>
+    _.update(nft, key, (v) => EntityId.parse(v, {isNullable: true}).getEncodedId())
   );
+  nft.token_id = EntityId.parse(nft.token_id).getEncodedId();
+
+  await insertDomainObject(getTableName('nft', nft), insertFields, nft);
 };
 
 const addNodeStake = async (nodeStakeInput) => {

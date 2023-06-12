@@ -27,7 +27,7 @@ class NftViewModel {
     this.delegating_spender = EntityId.parse(nftModel.delegatingSpender, {isNullable: true}).toString();
     this.deleted = nftModel.deleted;
     this.metadata = encodeBase64(nftModel.metadata);
-    this.modified_timestamp = nsToSecNs(nftModel.modifiedTimestamp);
+    this.modified_timestamp = nsToSecNs(nftModel.timestampRange?.begin);
     this.serial_number = nftModel.serialNumber;
     this.spender = EntityId.parse(nftModel.spender, {isNullable: true}).toString();
     this.token_id = EntityId.parse(nftModel.tokenId).toString();

@@ -40,7 +40,6 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -1117,7 +1116,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // grant allowance
         var expectedNft = TestUtils.clone(nft);
         expectedNft.setDelegatingSpender(domainBuilder.entityId(ACCOUNT));
-        expectedNft.setModifiedTimestamp(domainBuilder.timestamp());
+        expectedNft.setTimestampLower(domainBuilder.timestamp());
         expectedNft.setSpender(domainBuilder.entityId(ACCOUNT));
 
         var nftUpdate = TestUtils.clone(expectedNft);
@@ -1133,7 +1132,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // revoke allowance
         expectedNft = TestUtils.clone(nft);
-        expectedNft.setModifiedTimestamp(domainBuilder.timestamp());
+        expectedNft.setTimestampLower(domainBuilder.timestamp());
 
         nftUpdate = TestUtils.clone(expectedNft);
         nftUpdate.setCreatedTimestamp(null);
@@ -1239,60 +1238,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onNft(nft2Combined);
 
         completeFileAndCommit();
-        assertEquals(2, nftRepository.count());
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1Combined, nft2Combined);
 
         Nft nft1Burn = getNft(tokenId1, 1L, EntityId.EMPTY, null, true, null, 5L); // mint/burn
-        Nft nft1BurnTransfer = getNft(tokenId1, 1L, null, null, null, null, 5L); // mint/burn transfer
-        sqlEntityListener.onNft(nft1Burn);
-        sqlEntityListener.onNft(nft1BurnTransfer);
-
-        Nft nft2Burn = getNft(tokenId1, 2L, EntityId.EMPTY, null, true, null, 6L); // mint/burn
-        Nft nft2BurnTransfer = getNft(tokenId1, 2L, null, null, null, null, 6L); // mint/burn transfer
-        sqlEntityListener.onNft(nft2Burn);
-        sqlEntityListener.onNft(nft2BurnTransfer);
-
-        completeFileAndCommit();
-
-        // expected nfts
-        Nft nft1 = getNft(tokenId1, 1L, null, 3L, true, metadata1, 5L); // transfer
-        Nft nft2 = getNft(tokenId1, 2L, null, 4L, true, metadata2, 6L); // transfer
-
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
-    }
-
-    @Test
-    void onNftTransferOwnershipAndDeleteOutOfOrder() {
-        // create token first
-        EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
-        EntityId accountId1 = EntityId.of("0.0.2", ACCOUNT);
-        EntityId accountId2 = EntityId.of("0.0.3", ACCOUNT);
-        EntityId treasury = EntityId.of("0.0.98", ACCOUNT);
-        String metadata1 = "nft1";
-        String metadata2 = "nft2";
-
-        // save token entities first
-        Token token1 = getToken(tokenId1, treasury, 1L, 1L);
-        sqlEntityListener.onToken(token1);
-        completeFileAndCommit();
-
-        // create nfts
-        Nft nft1Combined = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1, 3L); // mint transfer combined
-        Nft nft2Combined = getNft(tokenId1, 2L, accountId2, 4L, false, metadata2, 4L); // mint transfer combined
-
-        sqlEntityListener.onNft(nft1Combined);
-        sqlEntityListener.onNft(nft2Combined);
-
-        // nft 1 burn w transfer coming first
-        Nft nft1Burn = getNft(tokenId1, 1L, EntityId.EMPTY, null, true, null, 5L); // mint/burn
-        Nft nft1BurnTransfer = getNft(tokenId1, 1L, null, null, null, null, 5L); // mint/burn transfer
-        sqlEntityListener.onNft(nft1BurnTransfer);
         sqlEntityListener.onNft(nft1Burn);
 
-        // nft 2 burn w transfer coming first
         Nft nft2Burn = getNft(tokenId1, 2L, EntityId.EMPTY, null, true, null, 6L); // mint/burn
-        Nft nft2BurnTransfer = getNft(tokenId1, 2L, null, null, null, null, 6L); // mint/burn transfer
-        sqlEntityListener.onNft(nft2BurnTransfer);
         sqlEntityListener.onNft(nft2Burn);
+
         completeFileAndCommit();
 
         // expected nfts
@@ -2566,8 +2519,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
         nft.setMetadata(metadata == null ? null : metadata.getBytes(StandardCharsets.UTF_8));
-        nft.setId(new NftId(serialNumber, tokenId));
-        nft.setModifiedTimestamp(modifiedTimestamp);
+        nft.setSerialNumber(serialNumber);
+        nft.setTimestampLower(modifiedTimestamp);
+        nft.setTokenId(tokenId.getId());
 
         return nft;
     }

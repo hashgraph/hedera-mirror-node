@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
@@ -527,15 +528,18 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void transferNftOwnership(
-            long modifiedTimeStamp, long serialNumber, EntityId tokenId, EntityId receiverId) {
-        if (EntityId.isEmpty(receiverId)) {
-            // nfts in token burn / wipe transactions are handled in transaction handlers
+            long consensusTimeStamp, long serialNumber, EntityId tokenId, EntityId receiverId) {
+        if (EntityId.isEmpty(receiverId) || serialNumber == WILDCARD_SERIAL_NUMBER) {
+            // nfts in token burn / wipe transactions are handled in transaction handlers, also skip wildcard nft
             return;
         }
 
-        var nft = new Nft(serialNumber, tokenId);
-        nft.setAccountId(receiverId);
-        nft.setModifiedTimestamp(modifiedTimeStamp);
+        var nft = Nft.builder()
+                .accountId(receiverId)
+                .serialNumber(serialNumber)
+                .timestampRange(Range.atLeast(consensusTimeStamp))
+                .tokenId(tokenId.getId())
+                .build();
         entityListener.onNft(nft);
     }
 

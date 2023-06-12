@@ -362,14 +362,20 @@ create table if not exists nft
     account_id         bigint,
     created_timestamp  bigint,
     delegating_spender bigint default null,
-    deleted            boolean,
+    deleted            boolean default false,
     metadata           bytea,
-    modified_timestamp bigint not null,
     serial_number      bigint not null,
     spender            bigint default null,
+    timestamp_range    int8range not null,
     token_id           bigint not null
 ) partition by range (token_id);
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
+
+create table if not exists nft_history
+(
+    like nft including defaults
+) partition by range (token_id);
+comment on table nft_history is 'Non-Fungible Tokens (NFTs) history state';
 
 create table if not exists nft_allowance
 (
