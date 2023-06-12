@@ -34,7 +34,7 @@ extra.apply {
     set("protobufVersion", "3.23.2")
     set("reactorGrpcVersion", "1.2.4")
     set("testcontainersSpringBootVersion", "3.0.0-RC7")
-    set("vertxVersion", "4.4.2")
+    set("vertxVersion", "4.4.3")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
