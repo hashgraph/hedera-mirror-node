@@ -83,8 +83,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var ledgerId = properties.getNetwork().getLedgerId();
         final var nftEntity = nftOptional.get();
-        final var entityAddress =
-                evmAddressFromId(EntityId.of(nftEntity.getOwner().asGrpcAccount()));
+        final var entityAddress = nftEntity.getOwner() != null
+                ? evmAddressFromId(EntityId.of(nftEntity.getOwner().asGrpcAccount()))
+                : Address.ZERO;
         final var creationTime = nftEntity.getCreationTime();
         final var metadata = nftEntity.getMetadata();
         final var spender = nftEntity.getSpender() != null

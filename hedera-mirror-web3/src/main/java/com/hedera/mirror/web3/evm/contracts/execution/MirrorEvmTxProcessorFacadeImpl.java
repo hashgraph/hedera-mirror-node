@@ -50,18 +50,13 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;
-    private MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
-    private MirrorEvmContractAliases aliasManager;
-    private HederaEvmWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
     private final EntityAddressSequencer entityAddressSequencer;
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
     private final TraceProperties traceProperties;
-    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final PricesAndFeesProvider pricesAndFees;
-    private AbstractCodeCache codeCache;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
 
     @SuppressWarnings("java:S107")
@@ -84,28 +79,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
         this.databaseAccessors = databaseAccessors;
-
-        final int expirationCacheTime =
-                (int) evmProperties.getExpirationCacheTime().toSeconds();
-
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-        final var tokenAccessor = new TokenAccessorImpl(evmProperties, stackedStateFrames);
-        final var entityAccess =
-                new MirrorEntityAccess(contractStateRepository, contractRepository, stackedStateFrames);
-        final var accountAccessor = new AccountAccessorImpl(entityAccess, stackedStateFrames);
-        this.mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
-        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
-        this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-
-        this.worldState = new HederaEvmWorldState(
-                entityAccess,
-                evmProperties,
-                codeCache,
-                accountAccessor,
-                tokenAccessor,
-                entityAddressSequencer,
-                mirrorEvmContractAliases,
-                stackedStateFrames);
     }
 
     @Override
@@ -122,13 +95,14 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final var tokenAccessor = new TokenAccessorImpl(evmProperties, stackedStateFrames);
         final var entityAccess =
                 new MirrorEntityAccess(contractStateRepository, contractRepository, stackedStateFrames);
-        this.aliasManager = new MirrorEvmContractAliases(entityAccess);
-        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, aliasManager);
+        final var aliasManager = new MirrorEvmContractAliases(entityAccess);
+        final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, aliasManager);
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
-        this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
+        final var codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
         final var accountAccessor = new AccountAccessorImpl(entityAccess, stackedStateFrames);
-        this.worldState = new HederaEvmWorldState(
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
+        final var worldState = new HederaEvmWorldState(
                 entityAccess,
                 evmProperties,
                 codeCache,

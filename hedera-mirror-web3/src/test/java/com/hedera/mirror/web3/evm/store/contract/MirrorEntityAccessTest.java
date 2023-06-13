@@ -39,14 +39,17 @@ import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@TestInstance(Lifecycle.PER_CLASS)
 class MirrorEntityAccessTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
@@ -68,15 +71,20 @@ class MirrorEntityAccessTest {
     private ContractStateRepository contractStateRepository;
 
     @Mock
-    Entity entity;
+    private Entity entity;
 
-    final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+    private List<DatabaseAccessor<Object, ?>> accessors;
+    private StackedStateFrames<Object> stackedStateFrames;
 
-    @Spy
-    private StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
-
-    @InjectMocks
     private MirrorEntityAccess mirrorEntityAccess;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+        stackedStateFrames = new StackedStateFrames<>(accessors);
+        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, stackedStateFrames);
+    }
 
     @Test
     void isUsableWithPositiveBalance() {

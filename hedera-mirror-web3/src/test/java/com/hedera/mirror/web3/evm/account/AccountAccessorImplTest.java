@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
@@ -32,14 +31,17 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@TestInstance(Lifecycle.PER_CLASS)
 class AccountAccessorImplTest {
 
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
@@ -52,18 +54,25 @@ class AccountAccessorImplTest {
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
 
-    private EntityRepository entityRepository = mock(EntityRepository.class);
+    @Mock
+    private EntityRepository entityRepository;
 
     @Mock
     private Entity account;
 
-    private final List<DatabaseAccessor<Object, ?>> accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+    private List<DatabaseAccessor<Object, ?>> accessors;
 
-    @Spy
-    private StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
+    private StackedStateFrames<Object> stackedStateFrames;
 
-    @InjectMocks
     public AccountAccessorImpl accountAccessor;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        accessors = List.of(new EntityDatabaseAccessor(entityRepository));
+        stackedStateFrames = new StackedStateFrames<>(accessors);
+        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, stackedStateFrames);
+    }
 
     @Test
     void isTokenAddressTrue() {
