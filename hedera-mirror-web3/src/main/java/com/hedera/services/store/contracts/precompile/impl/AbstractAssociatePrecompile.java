@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract.precompile.impl;
+package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.contract.precompile.codec.EmptyRunResult;
-import com.hedera.mirror.web3.evm.store.contract.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
+import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.AssociateLogic;

@@ -19,11 +19,11 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.contract.precompile.codec.BodyParams;
-import com.hedera.mirror.web3.evm.store.contract.precompile.codec.EmptyRunResult;
-import com.hedera.mirror.web3.evm.store.contract.precompile.codec.RunResult;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
+import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract.precompile.codec;
+package com.hedera.services.store.contracts.precompile.codec;
 
-public interface BodyParams {}
+/**
+ * Marker interface for records that would contain results from the execution of the precompile run methods. We need to save the result in a record, so that
+ *  we achieve stateless behaviour of the precompiles.
+ *  */
+public interface RunResult {}

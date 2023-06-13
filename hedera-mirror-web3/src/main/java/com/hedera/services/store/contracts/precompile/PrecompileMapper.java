@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract.precompile;
+package com.hedera.services.store.contracts.precompile;
 
-import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.Precompile;
-import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-@Named
 public class PrecompileMapper {
 
     public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";

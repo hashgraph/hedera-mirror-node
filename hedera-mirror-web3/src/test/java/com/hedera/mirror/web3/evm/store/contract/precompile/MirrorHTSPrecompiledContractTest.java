@@ -31,11 +31,14 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -117,7 +120,13 @@ class MirrorHTSPrecompiledContractTest {
         messageFrameStack.push(messageFrame);
 
         precompileMapper = new PrecompileMapper(Set.of(mockPrecompile));
-        subject = new MirrorHTSPrecompiledContract(evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper);
+        subject = new MirrorHTSPrecompiledContract(
+                evmInfrastructureFactory,
+                new HTSPrecompiledContract(
+                        evmInfrastructureFactory,
+                        mirrorNodeEvmProperties,
+                        precompileMapper,
+                        new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
     }
 
     @Test

@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.store.contract.precompile.codec;
+package com.hedera.services.store.contracts.precompile.codec;
 
-public record EmptyRunResult() implements RunResult {}
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
+
+/**
+ * Record containing specific body arguments for HRC precompiles.
+ * */
+public record HrcParams(TokenID token, Address senderAddress) implements BodyParams {}

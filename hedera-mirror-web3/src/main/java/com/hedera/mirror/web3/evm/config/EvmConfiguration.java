@@ -18,13 +18,19 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
@@ -129,5 +135,22 @@ public class EvmConfiguration {
             final BasicFcfsUsagePrices basicFcfsUsagePrices) {
         return new PrecompilePricingUtils(
                 assetsLoader, basicHbarCentExchange, usageBasedFeeCalculator, basicFcfsUsagePrices);
+    }
+
+    @Bean
+    AssociatePrecompile associatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
+        return new AssociatePrecompile(precompilePricingUtils, properties);
+    }
+
+    @Bean
+    MultiAssociatePrecompile multiAssociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
+        return new MultiAssociatePrecompile(precompilePricingUtils, properties);
+    }
+
+    @Bean
+    PrecompileMapper precompileMapper(final Set<Precompile> precompiles) {
+        return new PrecompileMapper(precompiles);
     }
 }
