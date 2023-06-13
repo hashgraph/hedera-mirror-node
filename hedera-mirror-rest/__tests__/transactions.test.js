@@ -508,11 +508,11 @@ describe('createCryptoTransferList', () => {
 
 describe('createNftTransferList', () => {
   test('From null', () => {
-    expect(createNftTransferList(null)).toEqual(undefined);
+    expect(createNftTransferList(null)).toEqual([]);
   });
 
   test('From undefined', () => {
-    expect(createNftTransferList(undefined)).toEqual(undefined);
+    expect(createNftTransferList(undefined)).toEqual([]);
   });
 
   test('Simple createNftTransferList', () => {
@@ -685,7 +685,7 @@ describe('create transferLists', () => {
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -708,13 +708,14 @@ describe('create transferLists', () => {
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
+        nft_transfers: [],
         node: '0.0.2',
         nonce: 1,
         parent_consensus_timestamp: '0.000000001',
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
