@@ -207,8 +207,8 @@ class StoreImplTest {
 
     @Test
     void getTokenRelationshipThrowIfMissing() {
-        assertThatThrownBy(() ->
-                        subject.getTokenRelationship(new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), true))
+        final var tokenRelationshipKey = new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS);
+        assertThatThrownBy(() -> subject.getTokenRelationship(tokenRelationshipKey, true))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
