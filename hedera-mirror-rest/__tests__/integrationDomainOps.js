@@ -904,12 +904,6 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
   );
 };
 
-const contractDefaults = {
-  file_id: null,
-  id: null,
-  initcode: null,
-  runtime_bytecode: null,
-};
 const addContract = async (custom) => {
   const entity = await addEntity(
     {

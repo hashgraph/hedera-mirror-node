@@ -271,6 +271,7 @@
         "transaction_id": "0.0.8-1234567890-000000009",
         "receiver_account_id": null,
         "sender_account_id": "0.0.4001",
+        "token_transfers": [],
         "type": "TOKENWIPE",
         "is_approval": false
       },
@@ -281,6 +282,7 @@
         "transaction_id": "0.0.8-1234567890-000000008",
         "receiver_account_id": "0.0.4001",
         "sender_account_id": "0.0.3001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       },
@@ -291,6 +293,7 @@
         "transaction_id": "0.0.8-1234567890-000000007",
         "receiver_account_id": "0.0.3001",
         "sender_account_id": "0.0.2001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       },
@@ -301,6 +304,7 @@
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
         "sender_account_id": "0.0.1001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       }

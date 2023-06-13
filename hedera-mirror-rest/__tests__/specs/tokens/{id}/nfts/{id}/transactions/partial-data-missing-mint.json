@@ -280,37 +280,45 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000010",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.98-1234567890-000000010",
         "receiver_account_id": null,
         "sender_account_id": null,
+        "token_transfers": [],
         "type": "TOKENDELETION",
         "is_approval": false
       },
       {
         "consensus_timestamp": "1234567890.000000009",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000009",
         "receiver_account_id": null,
         "sender_account_id": "0.0.4001",
+        "token_transfers": [],
         "type": "TOKENWIPE",
         "is_approval": false
       },
       {
         "consensus_timestamp": "1234567890.000000008",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000008",
         "receiver_account_id": "0.0.4001",
         "sender_account_id": "0.0.3001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       },
       {
         "consensus_timestamp": "1234567890.000000007",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000007",
         "receiver_account_id": "0.0.3001",
         "sender_account_id": "0.0.2001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       },
@@ -320,6 +328,7 @@
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
         "sender_account_id": "0.0.1001",
+        "token_transfers": [],
         "type": "CRYPTOTRANSFER",
         "is_approval": true
       },
@@ -345,6 +354,7 @@
 =======
         "receiver_account_id": null,
         "sender_account_id": null,
+        "token_transfers": [],
         "transaction_id": "0.0.8-1234567890-000000004",
         "type": "CRYPTOAPPROVEALLOWANCE"
 >>>>>>> e4bea1209 (Change NFT history api to use nft table and nft_transfer jsonb column (#6198)):hedera-mirror-rest/__tests__/specs/tokens/{id}/nfts/{id}/transactions/partial-data-missing-mint.json

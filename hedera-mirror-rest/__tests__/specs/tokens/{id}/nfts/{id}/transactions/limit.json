@@ -248,27 +248,34 @@
           {
             "consensus_timestamp": "1234567890.000000010",
             "is_approval": false,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": null,
+            "token_transfers": [],
             "transaction_id": "0.0.98-1234567890-000000010",
             "type": "TOKENDELETION"
           },
           {
             "consensus_timestamp": "1234567890.000000009",
             "is_approval": false,
+	    "nft_transfers": [],
+            "is_approval": true,
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": "0.0.4001",
+            "token_transfers": [],
             "transaction_id": "0.0.8-1234567890-000000009",
             "type": "TOKENWIPE"
           },
           {
             "consensus_timestamp": "1234567890.000000008",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
+            "token_transfers": [],
             "transaction_id": "0.0.8-1234567890-000000008",
             "type": "CRYPTOTRANSFER"
           }
@@ -286,9 +293,11 @@
           {
             "consensus_timestamp": "1234567890.000000010",
             "is_approval": false,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": null,
+            "token_transfers": [],
             "transaction_id": "0.0.98-1234567890-000000010",
             "type": "TOKENDELETION"
           },
@@ -298,24 +307,29 @@
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": "0.0.4001",
+            "token_transfers": [],
             "transaction_id": "0.0.8-1234567890-000000009",
             "type": "TOKENWIPE"
           },
           {
             "consensus_timestamp": "1234567890.000000008",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
+            "token_transfers": [],
             "transaction_id": "0.0.8-1234567890-000000008",
             "type": "CRYPTOTRANSFER"
           },
           {
             "consensus_timestamp": "1234567890.000000007",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",
+            "token_transfers": [],
             "transaction_id": "0.0.8-1234567890-000000007",
             "type": "CRYPTOTRANSFER"
           }
