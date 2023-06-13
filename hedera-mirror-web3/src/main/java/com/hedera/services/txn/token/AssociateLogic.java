@@ -60,7 +60,7 @@ public class AssociateLogic {
 
         newTokenRelationships.forEach(store::updateTokenRelationship);
 
-        store.commit();
+        store.addPendingChanges();
     }
 
     private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {

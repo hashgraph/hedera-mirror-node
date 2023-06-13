@@ -32,11 +32,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueToken> {
+public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, UniqueToken> {
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull NftId nftId) {
+    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey) {
+        final var nftId = (NftId) nftKey;
         return nftRepository
                 .findActiveById(nftId.getTokenId().getId(), nftId.getSerialNumber())
                 .map(this::mapNftToUniqueToken);

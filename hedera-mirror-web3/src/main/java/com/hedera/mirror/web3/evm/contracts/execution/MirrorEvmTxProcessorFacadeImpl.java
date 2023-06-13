@@ -26,6 +26,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -81,7 +82,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        final var store = new StoreImpl(databaseAccessors);
 
         this.worldState = new HederaEvmWorldState(
                 entityAccess,
@@ -91,7 +92,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 tokenAccessor,
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
-                stackedStateFrames);
+                store);
     }
 
     @Override

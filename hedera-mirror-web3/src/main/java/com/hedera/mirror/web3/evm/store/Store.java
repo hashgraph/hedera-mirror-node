@@ -38,5 +38,9 @@ public interface Store {
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
+    void addPendingChanges();
+
     void commit();
+
+    void wrap();
 }
