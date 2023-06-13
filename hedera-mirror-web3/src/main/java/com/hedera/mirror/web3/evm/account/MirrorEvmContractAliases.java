@@ -18,11 +18,16 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -30,7 +35,9 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> aliases = new HashMap<>();
-    final Map<Address, Address> pendingChanges = new HashMap<>();
+    final Map<Address, Address> pendingAliases = new HashMap<>();
+    final Set<Address> pendingRemovals = new HashSet<>();
+
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
@@ -39,39 +46,58 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        if (pendingChanges.containsKey(addressOrAlias)) {
-            return pendingChanges.get(addressOrAlias);
-        }
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromEntityAccess(addressOrAlias));
+    }
 
-        if (aliases.containsKey(addressOrAlias)) {
-            return aliases.get(addressOrAlias);
+    private Optional<Address> resolveFromAliases(Address alias) {
+        if (pendingAliases.containsKey(alias)) {
+            return Optional.ofNullable(pendingAliases.get(alias));
         }
+        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
+            return Optional.ofNullable(aliases.get(alias));
+        }
+        return Optional.empty();
+    }
 
+    private Address resolveFromEntityAccess(Address addressOrAlias) {
         final var entity = mirrorEntityAccess
                 .findEntity(addressOrAlias)
                 .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
 
-        final var entityId = entity.toEntityId();
-        return Address.wrap(Bytes.wrap(toEvmAddress(entityId)));
+        if (entity.getType() != EntityType.TOKEN && entity.getType() != EntityType.CONTRACT) {
+            throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
+        }
+
+        final var resolvedAddress = Address.wrap(Bytes.wrap(toEvmAddress(entity.toEntityId())));
+        link(addressOrAlias, resolvedAddress);
+
+        return resolvedAddress;
     }
 
     public boolean isInUse(final Address address) {
-        return pendingChanges.containsKey(address) || aliases.containsKey(address);
+        return aliases.containsKey(address) && !pendingRemovals.contains(address)
+                || pendingAliases.containsKey(address);
     }
 
     public void link(final Address alias, final Address address) {
-        pendingChanges.put(alias, address);
+        pendingAliases.put(alias, address);
+        pendingRemovals.remove(alias);
     }
 
     public void unlink(Address alias) {
-        pendingChanges.remove(alias);
+        pendingRemovals.add(alias);
+        pendingAliases.remove(alias);
     }
 
     public void commit() {
-        aliases.putAll(pendingChanges);
+        aliases.putAll(pendingAliases);
+        aliases.keySet().removeAll(pendingRemovals);
+
+        resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        pendingChanges.clear();
+        pendingAliases.clear();
+        pendingRemovals.clear();
     }
 }

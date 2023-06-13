@@ -274,7 +274,7 @@ When connecting to an AWS S3 bucket that requires authentication (such as a requ
 the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access
 and secret keys in the config. This will also allow you to take advantage of alternative authorization modes such as
 [AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html). If the mirror node is configured
-to connect to an S3 bucket that requires authenticaion, and the static credentials are not provided in the config, the
+to connect to an S3 bucket that requires authentication, and the static credentials are not provided in the config, the
 mirror node will default to using this provider. For more information and to see how you can set up your environment to
 take advantage of this, see
 [the AWS Credentials Documentation](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html)
@@ -566,8 +566,6 @@ value, it is recommended to only populate overridden properties in the custom `a
  `hedera.mirror.web3.db.port`                           | 5432                                               | The port used to connect to the database                                                                                                                                                      
  `hedera.mirror.web3.db.sslMode`                        | DISABLE                                            | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. 
  `hedera.mirror.web3.db.username`                       | mirror_web3                                        | The username used to connect to the database                                                                                                                                                  
- `hedera.mirror.web3.evm.allowanceEnabled`              | false                                              | Flag enabling ERC approve precompile                                                                                                                                                          
- `hedera.mirror.web3.evm.approvedForAllEnabled`         | false                                              | Flag enabling ERC isApprovedForAll precompile                                                                                                                                                 
  `hedera.mirror.web3.evm.chainId`                       | TESTNET                                            | Which Hedera chainId to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`                                                                                                      
  `hedera.mirror.web3.evm.estimateGasIterationThreshold` | 4200                                               | The gas value difference between consecutive iterations in the binary search performed during gas estimation                                                                                  
  `hedera.mirror.web3.evm.directTokenCall`               | true                                               | Flag enabling contract like calls to tokens                                                                                                                                                   

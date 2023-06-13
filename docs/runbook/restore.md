@@ -40,7 +40,7 @@ Consensus nodes have produced invalid data and the Importer has persisted the da
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<img src="replicaConfig.png"/>](replicaConfig.png "Google Cloud Replica Config")   
 
 &nbsp;&nbsp;&nbsp;&nbsp;Here is a list of the values in particular that will be needed to recreate the Replica:
-- IP - Note the IP. If it is not the same after the Replica is recreated than any config using the old IP will need to be updated.
+- IP - Note the IP. If it is not the same after the Replica is recreated then any config using the old IP will need to be updated.
 - Region
 - Machine Type: vCPUs and Memory
 - Connections (Public IP checked or unchecked)
