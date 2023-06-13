@@ -88,7 +88,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -297,11 +296,12 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     @ParameterizedTest(name = "Download and verify files with path type: {0}")
-    @EnumSource(value = PathType.class, mode = Mode.EXCLUDE, names = "AUTO")
+    @EnumSource(PathType.class)
     void download(PathType pathType) {
         mirrorProperties.setStartBlockNumber(null);
         commonDownloaderProperties.setPathType(pathType);
 
+        commonDownloaderProperties.setPathRefreshInterval(Duration.ZERO);
         if (pathType == PathType.ACCOUNT_ID) {
             fileCopier.copy();
         } else {
