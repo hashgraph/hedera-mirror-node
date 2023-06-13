@@ -22,11 +22,10 @@ import * as utils from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {InvalidArgumentError, NotFoundError} from './errors';
-import Entity from './model/entity.js';
+import {Entity} from './model';
 import balances from './balances';
 import {opsMap, parseInteger} from './utils';
 import {filterKeys} from './constants';
-import Balances from './balances';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 

@@ -697,7 +697,6 @@ const extractTimestampRangeConditionFilters = (
   filters
     .filter((filter) => filter.key === filterKeys.TIMESTAMP)
     .forEach((filter) => {
-      // the first param is the contract id, the param for the current filter will be pushed later, so add 2
       const position = `$${params.length + offset + 1}`;
       let condition;
       let range;
@@ -1488,20 +1487,13 @@ const checkTimestampRange = (
       throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
     }
 
-    if (valuesByOp[opsMap.ne].length > 0 && valuesByOp[opsMap.eq].length > 0) {
-      throw new InvalidArgumentError('Cannot combine eq with ne timestamp param');
-    }
-
-    if (
-      (valuesByOp[opsMap.eq].length > 0 || valuesByOp[opsMap.ne].length > 0) &&
-      (gtGteLength > 0 || ltLteLength > 0)
-    ) {
+    if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0 || valuesByOp[opsMap.ne].length > 0)) {
       //Combined eq|neq with other operator
       throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
     }
   }
 
-  if (valuesByOp[opsMap.eq].length > 0 || valuesByOp[opsMap.ne].length > 0) {
+  if (valuesByOp[opsMap.eq].length > 0) {
     return [null, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
   }
 
@@ -1511,38 +1503,19 @@ const checkTimestampRange = (
   }
 
   // there should be exactly one gt/gte and/or one lt/lte at this point
-  const boundStart = '[';
-  const boundEnd = ']';
-  let earliest = null;
-  let latest = null;
-  if (valuesByOp[opsMap.gt].length) {
-    earliest = valuesByOp[opsMap.gt][0] + 1n;
-  } else if (valuesByOp[opsMap.gte].length) {
-    earliest = valuesByOp[opsMap.gte][0];
+  const earliest = valuesByOp[opsMap.gt].length ? valuesByOp[opsMap.gt][0] + 1n : valuesByOp[opsMap.gte][0];
+  const latest = valuesByOp[opsMap.lt].length ? valuesByOp[opsMap.lt][0] - 1n : valuesByOp[opsMap.lte][0];
+
+  const difference = latest && earliest ? latest - earliest + 1n : undefined;
+  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+
+  // If difference is undefined, we want to ignore because we allow open ranges and that is known to be true at this point
+  if (difference > maxTimestampRangeNs || difference <= 0n) {
+    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
   }
 
-  if (valuesByOp[opsMap.lt].length) {
-    latest = valuesByOp[opsMap.lt][0] - 1n;
-  } else if (valuesByOp[opsMap.lte].length) {
-    latest = valuesByOp[opsMap.lte][0];
-  }
-
-  if (!allowOpenRange) {
-    const difference = latest - earliest + 1n;
-    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
-
-    if (difference > maxTimestampRangeNs || difference <= 0n) {
-      throw new InvalidArgumentError(
-        `Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`
-      );
-    }
-  }
-
-  if (forceStrictChecks && earliest != null && latest != null && latest - earliest + 1n <= 0n) {
-    throw new InvalidArgumentError(`Timestamp lower bound ${earliest} must be less than the upper bound ${latest}`);
-  }
-
-  return [Range(earliest, latest, boundStart + boundEnd), valuesByOp[opsMap.ne], valuesByOp[opsMap.ne]];
+  const range = earliest >= 0 || latest >= 0 ? Range(earliest ?? null, latest ?? null, '[]') : null;
+  return [range, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
 };
 
 /**
