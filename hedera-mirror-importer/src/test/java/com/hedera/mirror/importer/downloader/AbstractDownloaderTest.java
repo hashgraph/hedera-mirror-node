@@ -295,18 +295,21 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                 .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
     }
 
-    @ParameterizedTest(name = "Download and verify files with path type: {0}")
-    @EnumSource(PathType.class)
-    void download(PathType pathType) {
-        mirrorProperties.setStartBlockNumber(null);
+    private void preparePathType(PathType pathType) {
         commonDownloaderProperties.setPathType(pathType);
-
         commonDownloaderProperties.setPathRefreshInterval(Duration.ZERO);
         if (pathType == PathType.ACCOUNT_ID) {
             fileCopier.copy();
         } else {
             fileCopier.copyAsNodeIdStructure(Path::getParent, mirrorProperties.getNetwork());
         }
+    }
+
+    @ParameterizedTest(name = "Download and verify files with path type: {0}")
+    @EnumSource(PathType.class)
+    void download(PathType pathType) {
+        mirrorProperties.setStartBlockNumber(null);
+        preparePathType(pathType);
 
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -418,11 +421,11 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         verifyUnsuccessful();
     }
 
-    @Test
-    @DisplayName("Write stream files")
-    void writeFiles() throws Exception {
+    @ParameterizedTest(name = "Write stream files with path type: {0}")
+    @EnumSource(PathType.class)
+    void writeFiles(PathType pathType) throws Exception {
         downloaderProperties.setWriteFiles(true);
-        fileCopier.copy();
+        preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getStreamPath()))
@@ -431,11 +434,11 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                 .allMatch(this::isStreamFile);
     }
 
-    @Test
-    @DisplayName("Write signature files")
-    void writeSignatureFiles() throws Exception {
+    @ParameterizedTest(name = "Write signature files with path type: {0}")
+    @EnumSource(PathType.class)
+    void writeSignatureFiles(PathType pathType) throws Exception {
         downloaderProperties.setWriteSignatures(true);
-        fileCopier.copy();
+        preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getStreamPath()))
