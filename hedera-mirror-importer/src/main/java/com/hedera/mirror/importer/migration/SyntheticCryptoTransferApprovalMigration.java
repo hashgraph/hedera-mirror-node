@@ -104,20 +104,17 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
             ), cryptoentities as (
               select ct.*, e.key
               from cryptotransfers ct
-              join entity e on lower(e.timestamp_range) <= ct.consensus_timestamp and
-                (upper(e.timestamp_range) > ct.consensus_timestamp or upper(e.timestamp_range) is null)
+              join entity e on e.timestamp_range @> ct.consensus_timestamp::bigint
               where e.id = ct.sender
             ), tokenentities as (
               select t.*, e.key
               from tokentransfers t
-              join entity e on lower(e.timestamp_range) <= t.consensus_timestamp and
-                (upper(e.timestamp_range) > t.consensus_timestamp or upper(e.timestamp_range) is null)
+              join entity e on e.timestamp_range @> t.consensus_timestamp::bigint
               where e.id = t.sender
             ), nftentities as (
               select nft.*, e.key
               from nfttransfers nft
-              join entity e on lower(e.timestamp_range) <= nft.consensus_timestamp and
-                (upper(e.timestamp_range) > nft.consensus_timestamp or upper(e.timestamp_range) is null)
+              join entity e on e.timestamp_range @> nft.consensus_timestamp::bigint
               where e.id = nft.receiver
             ) select * from cryptoentities
               union all
