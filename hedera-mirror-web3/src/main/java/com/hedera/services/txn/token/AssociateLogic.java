@@ -17,15 +17,13 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.Accessor;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -33,51 +31,36 @@ import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * Copied Logic type from hedera-services. Differences with the original:
+ *  1. Removed validations performed in UsageLimits, since they check global node limits,
+ *  while on Archive Node we are interested in transaction scope only
+ *  2. Use abstraction for the state by introducing {@link Store} interface
+ *  3. Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}
+ *  4. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
+ * */
 public class AssociateLogic {
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    private final Accessor<Object, Account> accountAccessor;
-    private final Accessor<Object, Token> tokenAccessor;
-    private final Accessor<Object, TokenRelationship> tokenRelationshipAccessor;
-
-    public AssociateLogic(
-            final StackedStateFrames<Object> stackedStateFrames,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        this.stackedStateFrames = stackedStateFrames;
+    public AssociateLogic(final StoreImpl store, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        this.store = store;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-        accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
-        tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
     }
 
     public void associate(final Address accountAddress, final List<Address> tokensAddresses) {
         /* Load the models */
-        final var account = loadAccount(accountAddress);
-        final var tokens = tokensAddresses.stream().map(this::loadToken).toList();
+        final var account = store.getAccount(accountAddress, true);
+        final var tokens =
+                tokensAddresses.stream().map(t -> store.getToken(t, true)).toList();
 
         /* Associate and commit the changes */
         final var newTokenRelationships = associateWith(account, tokens);
 
-        newTokenRelationships.forEach(
-                relationship -> tokenRelationshipAccessor.set(keyFromRelationship(relationship), relationship));
+        newTokenRelationships.forEach(store::updateTokenRelationship);
 
-        stackedStateFrames.top().commit();
-    }
-
-    private Account loadAccount(Address accountAddress) {
-        return accountAccessor
-                .get(accountAddress)
-                .orElseThrow(() -> failAssociationException("account", accountAddress));
-    }
-
-    private Token loadToken(Address tokenAddress) {
-        return tokenAccessor.get(tokenAddress).orElseThrow(() -> failAssociationException("token", tokenAddress));
-    }
-
-    private InvalidTransactionException failAssociationException(String type, Address address) {
-        return new InvalidTransactionException(
-                FAIL_INVALID, String.format("Association with %s %s failed", type, address), "");
+        store.commit();
     }
 
     private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {
@@ -101,7 +84,7 @@ public class AssociateLogic {
             newModelRels.add(newRel);
         }
 
-        accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
+        store.updateAccount(updatedAccount);
 
         return newModelRels;
     }
@@ -112,12 +95,10 @@ public class AssociateLogic {
     }
 
     private boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return tokenRelationshipAccessor.get(tokenRelationshipKey).isPresent();
-    }
-
-    private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {
-        final var tokenAddress = tokenRelationship.getToken().getId().asEvmAddress();
-        final var accountAddress = tokenRelationship.getAccount().getAccountAddress();
-        return new TokenRelationshipKey(tokenAddress, accountAddress);
+        return store.getTokenRelationship(tokenRelationshipKey, false)
+                        .getAccount()
+                        .getId()
+                        .num()
+                > 0;
     }
 }

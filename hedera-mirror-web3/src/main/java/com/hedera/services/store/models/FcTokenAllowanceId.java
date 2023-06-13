@@ -24,17 +24,19 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
- * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code MerkleAccountState}.
+ * Copied Id type from hedera-services.
+ *
+ * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in State.
  * It consists of the information about the token for which allowance is granted to and the spender who is granted the
  * allowance.
  *
  * <p>Having allowance on a token will grant the spender to transfer fungible or non-fungible token
  * units from the owner's account.
+ *
+ * Differences with the original:
+ *  1. Deleted unnecessary fields
  */
 public class FcTokenAllowanceId implements Comparable<FcTokenAllowanceId> {
-    static final int RELEASE_023X_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_023X_VERSION;
-    static final long RUNTIME_CONSTRUCTABLE_ID = 0xf55baa544950f139L;
 
     private EntityNum tokenNum;
     private EntityNum spenderNum;
@@ -46,6 +48,10 @@ public class FcTokenAllowanceId implements Comparable<FcTokenAllowanceId> {
     public FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
         this.tokenNum = tokenNum;
         this.spenderNum = spenderNum;
+    }
+
+    public static FcTokenAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
+        return new FcTokenAllowanceId(tokenNum, spenderNum);
     }
 
     @Override
@@ -84,10 +90,6 @@ public class FcTokenAllowanceId implements Comparable<FcTokenAllowanceId> {
 
     public EntityNum getSpenderNum() {
         return spenderNum;
-    }
-
-    public static FcTokenAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
-        return new FcTokenAllowanceId(tokenNum, spenderNum);
     }
 
     @Override
