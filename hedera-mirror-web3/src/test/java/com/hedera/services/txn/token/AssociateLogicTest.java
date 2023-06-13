@@ -16,19 +16,17 @@
 
 package com.hedera.services.txn.token;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.Accessor;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
@@ -36,7 +34,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import java.util.List;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,70 +44,63 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AssociateLogicTest {
 
+    private final Address accountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address tokenAddress = Address.fromHexString("0x0000000000000000000000000000000000000182");
+    private final List<Address> tokenAddresses = List.of(tokenAddress);
+
     @Mock
-    private CachingStateFrame<Object> cachingStateFrame;
+    Account.AccountBuilder accountBuilder;
 
     @Mock
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Mock
-    private Accessor<Object, Account> accountAccessor;
-
-    @Mock
-    private Accessor<Object, Token> tokenAccessor;
-
-    @Mock
-    private Accessor<Object, TokenRelationship> tokenRelationshipAccessor;
-
-    @Mock
-    private StackedStateFrames<Object> stackedStateFrames;
+    private StoreImpl store;
 
     @Mock
     private Account account;
 
     @Mock
-    Account.AccountBuilder accountBuilder;
+    private Id accountId;
+
+    @Mock
+    private TokenRelationship tokenRelationship;
 
     @Mock
     private Token token;
 
     private AssociateLogic associateLogic;
 
-    private final Address accountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
-
-    private final Address tokenAddress = Address.fromHexString("0x0000000000000000000000000000000000000182");
-
-    private final List<Address> tokenAddresses = List.of(tokenAddress);
-
     @BeforeEach
     public void setUp() {
-        when(stackedStateFrames.top()).thenReturn(cachingStateFrame);
-        when(cachingStateFrame.getAccessor(Account.class)).thenReturn(accountAccessor);
-        when(cachingStateFrame.getAccessor(Token.class)).thenReturn(tokenAccessor);
-        when(cachingStateFrame.getAccessor(TokenRelationship.class)).thenReturn(tokenRelationshipAccessor);
-        associateLogic = new AssociateLogic(stackedStateFrames, mirrorNodeEvmProperties);
+        associateLogic = new AssociateLogic(store, mirrorNodeEvmProperties);
     }
 
     @Test
     void throwErrorWhenAccountNotFound() {
+        when(store.getAccount(accountAddress, true)).thenThrow(getException(Account.class.getName(), accountAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
-                        "detail", String.format("Association with account %s failed", accountAddress));
+                        "detail",
+                        String.format(
+                                "Entity of type %s with id %s is missing", Account.class.getName(), accountAddress));
     }
 
     @Test
     void throwErrorWhenTokenNotFound() {
-        when(accountAccessor.get(any())).thenReturn(Optional.of(account));
+        when(store.getAccount(accountAddress, true)).thenReturn(account);
+        when(store.getToken(tokenAddress, true)).thenThrow(getException(Token.class.getName(), tokenAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
-                .hasFieldOrPropertyWithValue("detail", String.format("Association with token %s failed", tokenAddress));
+                .hasFieldOrPropertyWithValue(
+                        "detail",
+                        String.format("Entity of type %s with id %s is missing", Token.class.getName(), tokenAddress));
     }
 
     @Test
     void failsOnCrossingAssociationLimit() {
-        when(accountAccessor.get(accountAddress)).thenReturn(Optional.of(account));
-        when(tokenAccessor.get(tokenAddress)).thenReturn(Optional.of(token));
+        when(store.getAccount(accountAddress, true)).thenReturn(account);
         when(account.getNumAssociations()).thenReturn(5);
         when(mirrorNodeEvmProperties.isTokenAssociationsLimited()).thenReturn(true);
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
@@ -125,7 +115,11 @@ class AssociateLogicTest {
     void failsOnAssociatingWithAlreadyRelatedToken() {
         setupAccount();
         setupToken();
-        when(tokenRelationshipAccessor.get(any())).thenReturn(Optional.of(mock(TokenRelationship.class)));
+
+        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
+        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(tokenRelationship.getAccount()).thenReturn(account);
+        when(accountId.num()).thenReturn(1L);
 
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
@@ -135,28 +129,30 @@ class AssociateLogicTest {
     @Test
     void canAssociateWithNewToken() {
         final var modifiedAccount = setupAccount();
-        when(modifiedAccount.getAccountAddress()).thenReturn(accountAddress);
-
         setupToken();
 
+        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
+        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(tokenRelationship.getAccount()).thenReturn(account);
         associateLogic.associate(accountAddress, tokenAddresses);
 
-        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        final var tokenRelationship = new TokenRelationship(token, modifiedAccount);
-        verify(tokenRelationshipAccessor).set(tokenRelationShipKey, tokenRelationship);
+        verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount));
     }
 
     @Test
     void updatesAccount() {
         final var modifiedAccount = setupAccount();
-        when(modifiedAccount.getAccountAddress()).thenReturn(accountAddress);
         when(account.getNumAssociations()).thenReturn(5);
 
         setupToken();
 
+        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
+        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(tokenRelationship.getAccount()).thenReturn(account);
+
         associateLogic.associate(accountAddress, tokenAddresses);
 
-        verify(accountAccessor).set(accountAddress, modifiedAccount);
+        verify(store).updateAccount(modifiedAccount);
         verify(accountBuilder).numAssociations(6);
     }
 
@@ -165,13 +161,19 @@ class AssociateLogicTest {
         setupAccount();
         setupToken();
 
+        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
+        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(tokenRelationship.getAccount()).thenReturn(account);
+
         associateLogic.associate(accountAddress, tokenAddresses);
 
-        verify(stackedStateFrames.top()).commit();
+        verify(store).commit();
     }
 
     private Account setupAccount() {
-        when(accountAccessor.get(accountAddress)).thenReturn(Optional.of(account));
+        when(store.getAccount(accountAddress, true)).thenReturn(account);
+        when(account.getAccountAddress()).thenReturn(accountAddress);
+        when(account.getId()).thenReturn(accountId);
         when(account.toBuilder()).thenReturn(accountBuilder);
         when(accountBuilder.numAssociations(anyInt())).thenReturn(accountBuilder);
         Account modifiedAccount = mock(Account.class);
@@ -180,9 +182,14 @@ class AssociateLogicTest {
     }
 
     private void setupToken() {
-        when(tokenAccessor.get(tokenAddress)).thenReturn(Optional.of(token));
+        when(store.getToken(tokenAddress, true)).thenReturn(token);
         Id tokenId = mock(Id.class);
         when(token.getId()).thenReturn(tokenId);
         when(tokenId.asEvmAddress()).thenReturn(tokenAddress);
+    }
+
+    private InvalidTransactionException getException(final String type, Object id) {
+        return new InvalidTransactionException(
+                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
     }
 }
