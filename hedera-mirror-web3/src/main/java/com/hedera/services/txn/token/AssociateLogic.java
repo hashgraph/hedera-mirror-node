@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
@@ -44,7 +43,7 @@ public class AssociateLogic {
     private final Store store;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    public AssociateLogic(final StoreImpl store, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    public AssociateLogic(final Store store, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.store = store;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
@@ -60,7 +59,7 @@ public class AssociateLogic {
 
         newTokenRelationships.forEach(store::updateTokenRelationship);
 
-        store.commit();
+        store.addPendingChanges();
     }
 
     private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {

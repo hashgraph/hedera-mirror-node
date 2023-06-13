@@ -167,7 +167,7 @@ class AssociateLogicTest {
 
         associateLogic.associate(accountAddress, tokenAddresses);
 
-        verify(store).commit();
+        verify(store).addPendingChanges();
     }
 
     private Account setupAccount() {

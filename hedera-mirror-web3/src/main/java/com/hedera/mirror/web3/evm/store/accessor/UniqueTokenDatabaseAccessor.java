@@ -24,19 +24,20 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.UniqueToken;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<NftId, UniqueToken> {
+public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, UniqueToken> {
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull NftId nftId) {
+    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey) {
+        final var nftId = (NftId) nftKey;
         return nftRepository
                 .findActiveById(nftId.getTokenId().getId(), nftId.getSerialNumber())
                 .map(this::mapNftToUniqueToken);

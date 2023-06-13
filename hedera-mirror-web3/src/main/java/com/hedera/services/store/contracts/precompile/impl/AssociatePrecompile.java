@@ -28,7 +28,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -85,7 +85,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 
     // TODO fix pricing logic to include transactionBody into account
     @Override
-    public long getGasRequirement(final long blockTimestamp, final StackedStateFrames<Object> stackedStateFrames) {
+    public long getGasRequirement(final long blockTimestamp, final Store store) {
         //        return pricingUtils.computeGasRequirement(blockTimestamp, this, stackedStateFrames);
         return 0L;
     }

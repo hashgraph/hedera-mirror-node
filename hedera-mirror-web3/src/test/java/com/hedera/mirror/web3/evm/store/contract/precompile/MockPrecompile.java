@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -49,10 +49,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(
-            final MessageFrame frame,
-            final StackedStateFrames<Object> stackedStateFrames,
-            final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
         // Dummy logic to mimic invalid behaviour
         if (Address.ZERO.equals(frame.getSenderAddress())) {
             throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
@@ -64,7 +61,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(final long blockTimestamp, final StackedStateFrames<Object> stackedStateFrames) {
+    public long getGasRequirement(final long blockTimestamp, final Store store) {
         return 0;
     }
 

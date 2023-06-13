@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.Accessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -35,21 +34,14 @@ import org.hyperledger.besu.datatypes.Address;
 public class StoreImpl implements Store {
 
     private final StackedStateFrames<Object> stackedStateFrames;
-    private final Accessor<Object, Account> accountAccessor;
-    private final Accessor<Object, Token> tokenAccessor;
-    private final Accessor<Object, TokenRelationship> tokenRelationshipAccessor;
-    private final Accessor<Object, UniqueToken> uniqueTokenAccessor;
 
     public StoreImpl(final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-        this.accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        this.tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
-        this.tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        this.uniqueTokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
     }
 
     @Override
     public Account getAccount(final Address address, final boolean throwIfMissing) {
+        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         final var account = accountAccessor.get(address);
 
         if (throwIfMissing) {
@@ -61,6 +53,7 @@ public class StoreImpl implements Store {
 
     @Override
     public Token getToken(final Address address, final boolean throwIfMissing) {
+        final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 
         if (throwIfMissing) {
@@ -73,6 +66,7 @@ public class StoreImpl implements Store {
     @Override
     public TokenRelationship getTokenRelationship(
             final TokenRelationshipKey tokenRelationshipKey, final boolean throwIfMissing) {
+        final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
         final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
 
         if (throwIfMissing) {
@@ -85,6 +79,7 @@ public class StoreImpl implements Store {
 
     @Override
     public UniqueToken getUniqueToken(final NftId nftId, final boolean throwIfMissing) {
+        final var uniqueTokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
         final var uniqueToken = uniqueTokenAccessor.get(nftId);
 
         if (throwIfMissing) {
@@ -97,17 +92,33 @@ public class StoreImpl implements Store {
 
     @Override
     public void updateAccount(final Account updatedAccount) {
+        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
     }
 
     @Override
     public void updateTokenRelationship(final TokenRelationship updatedTokenRelationship) {
+        final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
         tokenRelationshipAccessor.set(keyFromRelationship(updatedTokenRelationship), updatedTokenRelationship);
     }
 
     @Override
-    public void commit() {
+    public void addPendingChanges() {
         stackedStateFrames.top().commit();
+    }
+
+    @Override
+    public void commit() {
+        final var topFrame = stackedStateFrames.top();
+        if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
+            topFrame.commit();
+            stackedStateFrames.pop();
+        }
+    }
+
+    @Override
+    public void wrap() {
+        stackedStateFrames.push();
     }
 
     private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {

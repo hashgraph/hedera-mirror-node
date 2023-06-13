@@ -22,6 +22,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Interface for the adapter that would be used to make a bridge between hedera-evm and the other libraries from services that would contain the precompile logic.
+ */
 public interface HTSPrecompiledContractAdapter {
 
     Pair<Long, Bytes> computeCosted(

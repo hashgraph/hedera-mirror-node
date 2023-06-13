@@ -19,7 +19,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
@@ -51,15 +51,12 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(
-            MessageFrame frame,
-            final StackedStateFrames<Object> stackedStateFrames,
-            final TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, final Store store, final TransactionBody transactionBody) {
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
 
         // --- Execute the transaction and capture its results ---
-        final var associateLogic = new AssociateLogic(stackedStateFrames, mirrorNodeEvmProperties);
+        final var associateLogic = new AssociateLogic(store, mirrorNodeEvmProperties);
 
         associateLogic.associate(
                 accountId.asEvmAddress(),

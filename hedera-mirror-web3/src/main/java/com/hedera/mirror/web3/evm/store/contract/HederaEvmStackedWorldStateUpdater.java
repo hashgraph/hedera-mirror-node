@@ -20,7 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -50,7 +50,7 @@ public class HederaEvmStackedWorldStateUpdater
     private final EvmProperties evmProperties;
     private final EntityAddressSequencer entityAddressSequencer;
     private final TokenAccessor tokenAccessor;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
@@ -60,26 +60,20 @@ public class HederaEvmStackedWorldStateUpdater
             final EvmProperties evmProperties,
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final StackedStateFrames<Object> stackedStateFrames) {
-        super(
-                updater,
-                accountAccessor,
-                tokenAccessor,
-                hederaEvmEntityAccess,
-                mirrorEvmContractAliases,
-                stackedStateFrames);
+            final Store store) {
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, mirrorEvmContractAliases, store);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.entityAddressSequencer = entityAddressSequencer;
-        this.stackedStateFrames = stackedStateFrames;
-        this.stackedStateFrames.push();
+        this.store = store;
+        this.store.wrap();
         this.tokenAccessor = tokenAccessor;
     }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        persistInStackedStateFrames(address, nonce, balance);
+        persistAccount(address, nonce, balance);
         final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
         account.setNonce(nonce);
         account.setBalance(balance);
@@ -105,9 +99,7 @@ public class HederaEvmStackedWorldStateUpdater
         return super.getAccount(address);
     }
 
-    private void persistInStackedStateFrames(Address address, long nonce, Wei balance) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+    private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
@@ -124,7 +116,7 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 0,
                 nonce);
-        accountAccessor.set(address, accountModel);
+        store.updateAccount(accountModel);
     }
 
     /**
@@ -182,17 +174,13 @@ public class HederaEvmStackedWorldStateUpdater
         return 0;
     }
 
-    public StackedStateFrames<Object> getStackedStateFrames() {
-        return stackedStateFrames;
+    public Store getStore() {
+        return store;
     }
 
     private boolean isMissingTarget(final Address alias) {
         final var target = mirrorEvmContractAliases.resolveForEvm(alias);
-        return stackedStateFrames
-                .top()
-                .getAccessor(com.hedera.services.store.models.Account.class)
-                .get(target)
-                .isEmpty();
+        return Id.DEFAULT.equals(store.getAccount(target, false).getId());
     }
 
     private boolean isTokenRedirect(final Address address) {

@@ -25,7 +25,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -51,8 +51,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final StaticBlockMetaSource blockMetaSource;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final PricesAndFeesImpl pricesAndFees;
-    //    private final AbstractCodeCache codeCache;
-    //    private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
     private final PrecompileMapper precompileMapper;
@@ -101,7 +99,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         final var codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        final var store = new StoreImpl(databaseAccessors);
 
         final var worldState = new HederaEvmWorldState(
                 entityAccess,
@@ -111,7 +109,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 tokenAccessor,
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
-                stackedStateFrames);
+                store);
 
         final var processor = new MirrorEvmTxProcessor(
                 worldState,

@@ -25,7 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -70,7 +70,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
     private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
     private Precompile precompile;
     private long gasRequirement = 0L;
     private TransactionBody.Builder transactionBody;
@@ -145,7 +145,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now, stackedStateFrames);
+        gasRequirement = precompile.getGasRequirement(now, store);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -185,11 +185,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, stackedStateFrames, transactionBody.build());
+            final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
 
-            stackedStateFrames.top().commit();
+            store.addPendingChanges();
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             result = precompile.getFailureResultFor(status);
@@ -243,7 +243,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-        this.stackedStateFrames = updater.getStackedStateFrames();
+        this.store = updater.getStore();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(

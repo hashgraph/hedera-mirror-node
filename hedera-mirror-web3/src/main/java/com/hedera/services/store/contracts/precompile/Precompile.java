@@ -20,7 +20,7 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -37,7 +37,11 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * Extracted from hedera-services
+ * Extracted interface from hedera-services
+ *
+ * Differences from the original:
+ *  1. Added record types for input arguments and return types, so that the Precompile implementation could achieve statless behaviour
+ *  2. Added dependency to a {@link Store} interface that will hide the details of the state used for read/write operations
  */
 public interface Precompile {
 
@@ -48,9 +52,9 @@ public interface Precompile {
     long getMinimumFeeInTinybars(Timestamp consensusTime);
 
     // Change the world state through the given frame
-    RunResult run(MessageFrame frame, StackedStateFrames<Object> stackedStateFrames, TransactionBody transactionBody);
+    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
 
-    long getGasRequirement(long blockTimestamp, StackedStateFrames<Object> stackedStateFrames);
+    long getGasRequirement(long blockTimestamp, Store store);
 
     Set<Integer> getFunctionSelectors();
 

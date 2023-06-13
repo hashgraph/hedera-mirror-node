@@ -20,14 +20,14 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompi
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import lombok.CustomLog;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-/*This class would serve as a bridge between hedera-evm and the other libraries from services that would contain the precompile logic.
-Currently, the adapter implementation resides in com.hedera.services package but would be removed once we start depending on the new modules from services.*/
-@CustomLog
+/**
+ * This class would serve as a bridge between hedera-evm and the other libraries from services that would contain the precompile logic.
+ * Currently, the adapter implementation resides in com.hedera.services package but would be removed once we start depending on the new modules from services.
+ */
 public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     private final HTSPrecompiledContractAdapter htsPrecompiledContractAdapter;

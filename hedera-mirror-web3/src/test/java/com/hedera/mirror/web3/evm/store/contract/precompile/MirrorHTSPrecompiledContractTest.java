@@ -27,7 +27,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -100,7 +101,7 @@ class MirrorHTSPrecompiledContractTest {
     private MockPrecompile mockPrecompile;
 
     private PrecompileMapper precompileMapper;
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
 
     @InjectMocks
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -110,11 +111,11 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        stackedStateFrames = new StackedStateFrames<>(accessors);
+        store = new StoreImpl(accessors);
 
         // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
-        stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
-        stackedStateFrames.push(); // Create second precompile specific RWCachingStateFrame
+        store.wrap(); // Create first top-level RWCachingStateFrame
+        store.wrap(); // Create second precompile specific RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
@@ -206,7 +207,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
-        given(worldUpdater.getStackedStateFrames()).willReturn(stackedStateFrames);
+        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -309,7 +310,7 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(worldUpdater.getStackedStateFrames()).willReturn(stackedStateFrames);
+        given(worldUpdater.getStore()).willReturn(store);
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
@@ -331,7 +332,7 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(worldUpdater.getStackedStateFrames()).willReturn(stackedStateFrames);
+        given(worldUpdater.getStore()).willReturn(store);
 
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
