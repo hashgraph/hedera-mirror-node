@@ -757,6 +757,12 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.valid_duration_seconds,
       t.valid_start_ns,
       t.index,
+      jsonb_agg(jsonb_build_object(
+                                 'receiver_account_id', receiver_account_id,
+                                 'sender_account_id', sender_account_id,
+                                 'serial_number', serial_number,
+                                 'token_id', token_id, 'is_approval', is_approval
+                             ) ) as nft_transfer_list,
       (
           select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
           from crypto_transfer ctr
@@ -769,17 +775,6 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           from token_transfer tk_tr
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
-      (
-          select jsonb_agg(
-              jsonb_build_object(
-                  'receiver_account_id', receiver_account_id,
-                  'sender_account_id', sender_account_id,
-                  'serial_number', serial_number,
-                  'token_id', token_id, 'is_approval', is_approval
-                  ) order by token_id, serial_number)
-          from nft_transfer nft_tr
-          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
-      ) as nft_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object(

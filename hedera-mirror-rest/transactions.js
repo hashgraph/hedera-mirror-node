@@ -83,7 +83,7 @@ const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
     '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
     '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
+  ))`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -704,6 +704,7 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
   return `
     select
     ${transactionFullFields},
+    ${nftTransferJsonAgg} as nft_transfer_list,
     (
       select ${cryptoTransferJsonAgg}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
@@ -714,11 +715,6 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
-    (
-      select ${nftTransferJsonAgg}
-      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
-    ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
