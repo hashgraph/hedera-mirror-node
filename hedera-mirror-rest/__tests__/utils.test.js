@@ -1336,7 +1336,6 @@ describe('Utils test - utils.checkTimestampRange', () => {
   describe('valid', () => {
     const testSpecs = [
       {
-        range: null,
         filters: [makeTimestampFilter(utils.opsMap.eq, '1638921702000000000')],
         expected: [null, [1638921702000000000n], []],
       },

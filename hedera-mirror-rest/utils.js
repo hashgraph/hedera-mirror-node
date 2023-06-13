@@ -1488,7 +1488,7 @@ const checkTimestampRange = (
     }
 
     if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0 || valuesByOp[opsMap.ne].length > 0)) {
-      //Combined eq|neq with other operator
+      //Combined eq with other operator
       throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
     }
   }
