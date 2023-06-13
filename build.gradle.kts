@@ -33,8 +33,9 @@ extra.apply {
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.23.2")
     set("reactorGrpcVersion", "1.2.4")
+    set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.0-RC7")
-    set("vertxVersion", "4.4.2")
+    set("vertxVersion", "4.4.3")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -51,9 +52,9 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.3.1")
-        api("com.google.guava:guava:32.0.0-jre")
+        api("com.google.guava:guava:32.0.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.0")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.1")
         api("com.graphql-java:graphql-java-extended-scalars:20.2")
         api("com.graphql-java:graphql-java-extended-validation:20.0")
         api("com.hedera.evm:hedera-evm:0.38.0")
@@ -65,7 +66,7 @@ dependencies {
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.12.0")
+        api("commons-io:commons-io:2.13.0")
         api("io.cucumber:cucumber-bom:7.12.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.55.1")
@@ -92,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.78")
+        api("software.amazon.awssdk:bom:2.20.83")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

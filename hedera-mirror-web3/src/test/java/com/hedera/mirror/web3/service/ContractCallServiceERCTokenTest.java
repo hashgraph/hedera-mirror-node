@@ -35,9 +35,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractReadOnlyFunctions.class)
     void ercReadOnlyPrecompileOperationsTest(ErcContractReadOnlyFunctions ercFunction) {
-        properties.setAllowanceEnabled(true);
-        properties.setApprovedForAllEnabled(true);
-
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForEthCall(functionHash);
@@ -50,9 +47,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractModificationFunctions.class)
     void ercModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
-        properties.setAllowanceEnabled(true);
-        properties.setApprovedForAllEnabled(true);
-
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
@@ -77,32 +71,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForEthCall(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(Bytes.EMPTY.toHexString());
-    }
-
-    @Test
-    void unsupportedApprovePrecompileTest() {
-        properties.setAllowanceEnabled(false);
-
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "allowance", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("allowance(address owner, address spender) is not supported.");
-    }
-
-    @Test
-    void unsupportedIsApprovedForAllPrecompileTest() {
-        properties.setApprovedForAllEnabled(false);
-
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "isApprovedForAll", ERC_ABI_PATH, NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("isApprovedForAll(address owner, address operator) is not supported.");
     }
 
     private CallServiceParameters serviceParametersForEthCall(final Bytes callData) {

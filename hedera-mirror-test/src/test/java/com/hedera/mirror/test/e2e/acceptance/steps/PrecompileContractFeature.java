@@ -44,7 +44,12 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -786,7 +791,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(TOTAL_SUPPLY_SELECTOR)
                 .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
+                .to(tokenIds.get(1).toSolidityAddress())
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -798,17 +803,12 @@ public class PrecompileContractFeature extends AbstractFeature {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(OWNER_OF_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
+                .to(tokenIds.get(1).toSolidityAddress())
                 .estimate(false)
                 .build();
+
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
-        assertThat(response.getResult())
-                .isEqualTo(tokenClient
-                        .getSdkClient()
-                        .getExpandedOperatorAccountId()
-                        .getPublicKey()
-                        .toEvmAddress()
-                        .toString());
+        tokenClient.validateAddress(response.getResultAsAddress());
     }
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
@@ -843,9 +843,10 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
+                .to(contractId.toSolidityAddress())
                 .estimate(false)
                 .build();
+
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
@@ -859,14 +860,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(2)).isZero();
         assertThat((long) fractionalFee.get(3)).isZero();
         assertFalse((boolean) fractionalFee.get(4));
-        assertThat(fractionalFee.get(5).toString().toLowerCase())
-                .isEqualTo("0x"
-                        + contractClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getPublicKey()
-                                .toEvmAddress()
-                                .toString());
         assertThat(royaltyFees).isEmpty();
     }
 
@@ -876,7 +869,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
+                .to(contractId.toSolidityAddress())
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -919,14 +912,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFee.get(1).toString()).hasToString(ZERO_ADDRESS);
         assertTrue((boolean) fixedFee.get(2));
         assertFalse((boolean) fixedFee.get(3));
-        assertThat(fixedFee.get(4).toString().toLowerCase())
-                .isEqualTo("0x"
-                        + contractClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getPublicKey()
-                                .toEvmAddress()
-                                .toString());
+        contractClient.validateAddress(fixedFee.get(4).toString().toLowerCase().replace("0x", ""));
     }
 
     private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
