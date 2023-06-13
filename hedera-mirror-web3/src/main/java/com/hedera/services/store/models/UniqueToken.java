@@ -22,11 +22,16 @@ import com.hedera.services.state.submerkle.RichInstant;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
+ * Copied model from hedera-services.
+ *
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
+ *
+ * Differences from the original:
+ *  1. Added address field for convenience
  */
 public class UniqueToken {
     private final Id tokenId;

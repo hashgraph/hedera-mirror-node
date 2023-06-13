@@ -30,9 +30,17 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
+ * Copied Account model from hedera-services.
  *
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences with the original:
+ *     1. Missing fields like memo, key, isReceiverSigRequired, isSmartContract
+ *     2. Added field accountAddress for convenience
+ *     3. Changed collection types to SortedMap and SortedSet
+ *     4. Added constructors for creating new instances and achieve immutability
+ *     5. Added Lombok builder to facilitate creation of new objects
  */
 public class Account extends HederaEvmAccount {
     private final Id id;
@@ -40,7 +48,6 @@ public class Account extends HederaEvmAccount {
     private final long balance;
     private final boolean deleted;
     private final long ownedNfts;
-
     private final long autoRenewSecs;
     private final Id proxy;
     private final Address accountAddress;
