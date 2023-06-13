@@ -58,7 +58,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.1001",
             "sender_account_id": null,
@@ -79,7 +79,7 @@
         "nonce": 1,
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.2001",
             "sender_account_id": "0.0.1001",
@@ -98,7 +98,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",
@@ -117,7 +117,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
@@ -136,7 +136,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": null,
             "sender_account_id": "0.0.4001",
@@ -156,7 +156,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [],
+        "nft_transfer": [],
         "entity_id": "0.0.1500"
       }
     ],
@@ -196,6 +196,7 @@
           {
             "consensus_timestamp": "1234567890.000000010",
             "is_approval": false,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": null,
@@ -204,6 +205,7 @@
           },
           {
             "consensus_timestamp": "1234567890.000000009",
+	    "nft_transfers": [],
             "is_approval": true,
             "nonce": 0,
             "receiver_account_id": null,
@@ -214,6 +216,7 @@
           {
             "consensus_timestamp": "1234567890.000000008",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
@@ -234,6 +237,7 @@
           {
             "consensus_timestamp": "1234567890.000000010",
             "is_approval": false,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": null,
@@ -243,6 +247,7 @@
           {
             "consensus_timestamp": "1234567890.000000009",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": null,
             "sender_account_id": "0.0.4001",
@@ -252,6 +257,7 @@
           {
             "consensus_timestamp": "1234567890.000000008",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
@@ -261,6 +267,7 @@
           {
             "consensus_timestamp": "1234567890.000000007",
             "is_approval": true,
+            "nft_transfers": [],
             "nonce": 0,
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",

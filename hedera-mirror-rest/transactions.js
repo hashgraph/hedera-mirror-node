@@ -45,6 +45,7 @@ const transactionFields = [
   Transaction.ENTITY_ID,
   Transaction.MAX_FEE,
   Transaction.MEMO,
+  Transaction.NFT_TRANSFER,
   Transaction.NODE_ACCOUNT_ID,
   Transaction.NONCE,
   Transaction.PARENT_CONSENSUS_TIMESTAMP,
@@ -76,8 +77,6 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
-
-const nftTransferJsonAgg = `jsonb_agg(value)`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -238,13 +237,11 @@ const createTokenTransferList = (tokenTransferList) => {
  */
 const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
-    return undefined;
+    return [];
   }
 
-  return nftTransferList.map((transfer) => {
-    const nftTransfer = new NftTransfer(transfer);
-    return new NftTransferViewModel(nftTransfer);
-  });
+  return Array.isArray(nftTransferList) ?
+    nftTransferList.map(transfer => new NftTransferViewModel(new NftTransfer(transfer))) : nftTransferList;
 };
 
 /**
@@ -267,7 +264,7 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: createNftTransferList(row.nft_transfer_list),
+      nft_transfers: createNftTransferList(row.nft_transfer),
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
@@ -708,12 +705,6 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
-    (
-      select ${nftTransferJsonAgg}
-      from ${Transaction.tableName}
-      cross join jsonb_array_elements( ${Transaction.NFT_TRANSFER} )
-      where ${subQueryCondition}
-    ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}

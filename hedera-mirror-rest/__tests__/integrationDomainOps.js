@@ -898,31 +898,6 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
     return;
   }
 
-  // the following query is the new code.  I believe (possibly with some tweaking) it is what we should be doing, and
-  // not the "old" version, which follows it.  But doing (just) the new code makes several tests fail due to only
-  // one transaction appearing, and not a list of multiple transactions.
-
-  // TO DO: See if it makes sense to try to combine multiple transfers sharing the same consensus time into one update
-  for (const transfer of nftTransferList) {
-    await pool.query(
-      `update transaction set nft_transfer = COALESCE(nft_transfer, '[]'::jsonb) ||
-        jsonb_build_object(
-          'receiver_account_id', ${EntityId.parse(transfer.receiver_account_id, {isNullable: true}).getEncodedId()},
-          'sender_account_id', ${EntityId.parse(transfer.sender_account_id, {isNullable: true}).getEncodedId()},
-          'serial_number', ${transfer.serial_number},
-          'token_id', ${EntityId.parse(transfer.token_id).getEncodedId().toString()},
-          'is_approval', ${transfer.is_approval})
-        where consensus_timestamp = ${consensusTimestamp}`
-    );
-  };
-
-  // NOTE TO DRAFT PR REVIEWERS:
-  // the following is the "old" version of the code.  Currently retaining it so that the tests pass, but I really do
-  // think we would be better off once we can entirely remove it.  I want to make the code only need to update the
-  // nft_transfer column of the transaction table (the "new" version above), and not the nft_transfer table (which
-  // is supposed to eventually go away).  But, currently, without this query, many of the transactions spec tests
-  // only return one transaction instead of many.
-
   const nftTransfers = nftTransferList.map((transfer) => {
     return [
       `${consensusTimestamp}`,
