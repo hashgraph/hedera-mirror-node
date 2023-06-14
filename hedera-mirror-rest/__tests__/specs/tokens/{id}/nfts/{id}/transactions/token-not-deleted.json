@@ -262,6 +262,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000006",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
@@ -283,6 +284,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000004",
+        "nft_transfers": [],
         "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000003",
         "receiver_account_id": "0.0.1001",
