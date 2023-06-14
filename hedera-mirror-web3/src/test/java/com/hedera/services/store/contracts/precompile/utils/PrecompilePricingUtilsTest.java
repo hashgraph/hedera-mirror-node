@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -30,7 +29,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import jakarta.inject.Provider;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -58,7 +56,7 @@ class PrecompilePricingUtilsTest {
     private ExchangeRate exchangeRate;
 
     @Mock
-    private Provider<FeeCalculator> feeCalculator;
+    private FeeCalculator feeCalculator;
 
     @Mock
     private BasicFcfsUsagePrices resourceCosts;
@@ -66,16 +64,12 @@ class PrecompilePricingUtilsTest {
     @Mock
     private AccessorFactory accessorFactory;
 
-    @Mock
-    private StackedStateFrames<Object> stackedStateFrames;
-
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () -> new PrecompilePricingUtils(
-                        assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, stackedStateFrames));
+                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory));
     }
 
     @Test
@@ -89,8 +83,8 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, stackedStateFrames);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

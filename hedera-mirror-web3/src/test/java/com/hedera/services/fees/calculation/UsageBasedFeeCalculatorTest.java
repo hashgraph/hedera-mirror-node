@@ -32,7 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
@@ -162,7 +162,7 @@ class UsageBasedFeeCalculatorTest {
     private final AtomicLong suggestedMultiplier = new AtomicLong(1L);
 
     @Mock
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
 
     private UsageBasedFeeCalculator subject;
 
@@ -217,8 +217,7 @@ class UsageBasedFeeCalculatorTest {
 
         // when:
 
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, stackedStateFrames, at));
+        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, store, at));
     }
 
     @Test
@@ -227,13 +226,12 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
-        given(correctQueryEstimator.usageGivenType(query, stackedStateFrames, ANSWER_ONLY))
-                .willReturn(resourceUsage);
+        given(correctQueryEstimator.usageGivenType(query, store)).willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
 
         // when:
         final FeeObject fees =
-                subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), stackedStateFrames, at, ANSWER_ONLY);
+                subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), store, at, ANSWER_ONLY);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -256,7 +254,7 @@ class UsageBasedFeeCalculatorTest {
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
 
         // when:
-        final FeeObject fees = subject.computeFee(accessor, payerKey, stackedStateFrames, at);
+        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());

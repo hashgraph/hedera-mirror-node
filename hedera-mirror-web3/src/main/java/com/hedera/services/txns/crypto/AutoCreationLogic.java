@@ -17,25 +17,22 @@
 package com.hedera.services.txns.crypto;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Responsible for creating accounts during a crypto transfer that sends hbar to a previously unused alias.
+ *
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
  */
-@Singleton
 public class AutoCreationLogic extends AbstractAutoCreationLogic {
 
-    @Inject
     public AutoCreationLogic(
-            final EntityIdSource ids,
-            final StackedStateFrames<Object> stackedStateFrames,
-            MirrorEvmContractAliases mirrorEvmContractAliases) {
-        super(ids, stackedStateFrames, mirrorEvmContractAliases);
+            final EntityIdSource ids, final Store store, MirrorEvmContractAliases mirrorEvmContractAliases) {
+        super(ids, store, mirrorEvmContractAliases);
     }
 
     @Override

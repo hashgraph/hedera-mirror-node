@@ -39,7 +39,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * of type {@code FUNGIBLE_COMMON}; the analogous signature for a {@code NON_FUNGIBLE_UNIQUE} is
  * {@code getOwnershipChanges())}, returning a type that is structurally equivalent to a {@code Pair<long[], long[]>} of
  * acquired and relinquished serial numbers.
- *
+ * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
  */
@@ -77,9 +77,22 @@ public class TokenRelationship {
         this.balanceChange = balanceChange;
     }
 
+    public TokenRelationship(Token token, Account account) {
+        this(
+                token,
+                account,
+                0,
+                token.isFrozenByDefault() && token.hasFreezeKey(),
+                !token.hasKycKey(),
+                false,
+                true,
+                false,
+                0);
+    }
+
     /**
-     * Creates new instance of {@link TokenRelationship} with updated balance in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated balance in order to keep the object's immutability
+     * and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @param balanceChange
@@ -101,8 +114,8 @@ public class TokenRelationship {
     }
 
     /**
-     * Creates new instance of {@link TokenRelationship} with updated destroyed field in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated destroyed field in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @return new instance of {@link TokenRelationship}
@@ -121,8 +134,8 @@ public class TokenRelationship {
     }
 
     /**
-     * Creates new instance of {@link TokenRelationship} with updated treasury in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated treasury in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @param newAccount
@@ -143,8 +156,8 @@ public class TokenRelationship {
     }
 
     /**
-     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the
+     * object's immutability and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @param notYetPersisted
@@ -165,8 +178,8 @@ public class TokenRelationship {
     }
 
     /**
-     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated notYetPersisted field in order to keep the
+     * object's immutability and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @param newToken
@@ -184,9 +197,10 @@ public class TokenRelationship {
                 oldTokenRel.automaticAssociation,
                 oldTokenRel.balanceChange);
     }
+
     /**
-     * Creates new instance of {@link TokenRelationship} with updated frozen field in order to keep the object's immutability and avoid
-     * entry points for changing the state.
+     * Creates new instance of {@link TokenRelationship} with updated frozen field in order to keep the object's
+     * immutability and avoid entry points for changing the state.
      *
      * @param oldTokenRel
      * @param frozen

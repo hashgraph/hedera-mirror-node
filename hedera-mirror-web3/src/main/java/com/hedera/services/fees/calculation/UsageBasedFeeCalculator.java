@@ -20,7 +20,7 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -54,6 +54,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and collections of estimators
  * which can infer the resource usage of various transactions and queries.
+ *
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
  */
 @Singleton
 public class UsageBasedFeeCalculator implements FeeCalculator {
@@ -104,9 +107,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject estimatePayment(
-            Query query, FeeData usagePrices, StackedStateFrames<Object> state, Timestamp at, ResponseType type) {
-        return compute(query, usagePrices, at, estimator -> estimator.usageGivenType(query, state, type));
+    public FeeObject estimatePayment(Query query, FeeData usagePrices, Store store, Timestamp at, ResponseType type) {
+        return compute(query, usagePrices, at, estimator -> estimator.usageGivenType(query, store));
     }
 
     @Override
@@ -117,10 +119,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject computeFee(
-            TxnAccessor accessor, JKey payerKey, StackedStateFrames<Object> stackedStateFrames, Timestamp at) {
-        return feeGiven(
-                accessor, payerKey, stackedStateFrames, usagePrices.activePrices(accessor), exchange.rate(at), true);
+    public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, Store store, Timestamp at) {
+        return feeGiven(accessor, payerKey, store, usagePrices.activePrices(accessor), exchange.rate(at), true);
     }
 
     private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
@@ -132,7 +132,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private FeeObject feeGiven(
             final TxnAccessor accessor,
             final JKey payerKey,
-            final StackedStateFrames<Object> stackedStateFrames,
+            final Store store,
             final Map<SubType, FeeData> prices,
             final ExchangeRate rate,
             final boolean inHandle) {
@@ -146,7 +146,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
-                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, stackedStateFrames);
+                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, store);
                 final var applicablePrices = prices.get(usage.getSubType());
                 return getFeeObject(usage, applicablePrices, rate);
             } catch (Exception e) {

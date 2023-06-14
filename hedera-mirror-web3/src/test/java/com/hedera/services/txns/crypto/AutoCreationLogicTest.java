@@ -30,7 +30,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
@@ -39,7 +40,6 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -62,7 +62,7 @@ class AutoCreationLogicTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
 
     @Mock
     private EntityIdSource ids;
@@ -82,9 +82,9 @@ class AutoCreationLogicTest {
         aliasManager = new MirrorEvmContractAliases(mirrorEntityAccess);
         List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
-        stackedStateFrames.push();
-        subject = new AutoCreationLogic(ids, stackedStateFrames, aliasManager);
+        store = new StoreImpl(accessors);
+        store.wrap();
+        subject = new AutoCreationLogic(ids, store, aliasManager);
 
         subject.setFeeCalculator(feeCalculator);
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
@@ -100,9 +100,7 @@ class AutoCreationLogicTest {
                         .setAccountID(payer)
                         .build(),
                 payer);
-        final var changes = List.of(input);
-
-        final var result = assertThrows(IllegalStateException.class, () -> subject.create(input, changes, at));
+        final var result = assertThrows(IllegalStateException.class, () -> subject.create(input, at));
         assertTrue(result.getMessage().contains("Cannot auto-create an account from unaliased change"));
     }
 
@@ -110,21 +108,17 @@ class AutoCreationLogicTest {
     void createsAsExpected() {
         // given
         given(ids.newAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(stackedStateFrames), eq(at)))
-                .willReturn(fees);
+        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
 
         // when
         final var input1 = wellKnownTokenChange(edKeyAlias);
-        final var input2 = anotherTokenChange();
-        final var changes = List.of(input1, input2);
-        final var result = subject.create(input1, changes, at);
+        final var result = subject.create(input1, at);
 
         // then
         final var expected = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
-        final var addressAccessor = stackedStateFrames.top().getAccessor(Account.class);
         assertEquals(16L, input1.getAggregatedUnits());
         assertTrue(aliasManager.isInUse(expected));
-        assertNotNull(addressAccessor.get(expected));
+        assertNotNull(store.getAccount(expected, false));
 
         assertEquals(Pair.of(OK, totalFee), result);
     }

@@ -24,7 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
@@ -41,22 +41,27 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
-import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
+ *  3. Remove SyntheticTxnFactory
+ *  4. Remove UsageLimits and GlobalDynamicProperties
+ *  5. trackAliases consumes 2 Addresses
+ */
 public abstract class AbstractAutoCreationLogic {
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
     protected final EntityIdSource ids;
     protected FeeCalculator feeCalculator;
     final MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractAutoCreationLogic(
-            final EntityIdSource ids,
-            final StackedStateFrames<Object> stackedStateFrames,
-            MirrorEvmContractAliases mirrorEvmContractAliases) {
+            final EntityIdSource ids, final Store store, MirrorEvmContractAliases mirrorEvmContractAliases) {
         this.ids = ids;
-        this.stackedStateFrames = stackedStateFrames;
+        this.store = store;
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
@@ -74,22 +79,18 @@ public abstract class AbstractAutoCreationLogic {
      * after those changes are applied atomically, the returned fee must be given to the funding account!
      *
      * @param change  a triggering change with unique alias
-     * @param changes list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
-    public Pair<ResponseCodeEnum, Long> create(
-            final BalanceChange change, final List<BalanceChange> changes, final Timestamp timestamp) {
+    public Pair<ResponseCodeEnum, Long> create(final BalanceChange change, final Timestamp timestamp) {
         final var alias = change.getNonEmptyAliasIfPresent();
         if (alias == null) {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
         final var key = asPrimitiveKeyUnchecked(alias);
         final JKey jKey = asFcKeyUnchecked(key);
-        var fee = autoCreationFeeFor(jKey, stackedStateFrames, timestamp);
+        var fee = autoCreationFeeFor(jKey, store, timestamp);
 
         final var newId = ids.newAccountId();
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(Account.class);
         final var account = new Account(
                 Id.fromGrpcAccount(newId),
                 0L,
@@ -106,7 +107,7 @@ public abstract class AbstractAutoCreationLogic {
                 0,
                 0,
                 0L);
-        accountAccessor.set(account.getAccountAddress(), account);
+        store.updateAccount(account);
         replaceAliasAndSetBalanceOnChange(change, newId);
         trackAlias(jKey, account.getAccountAddress());
         return Pair.of(OK, fee);
@@ -121,8 +122,7 @@ public abstract class AbstractAutoCreationLogic {
         change.replaceNonEmptyAliasWith(fromAccountId(newAccountId));
     }
 
-    private long autoCreationFeeFor(
-            final JKey payerKey, final StackedStateFrames<Object> stackedStateFrames, Timestamp timestamp) {
+    private long autoCreationFeeFor(final JKey payerKey, final Store store, Timestamp timestamp) {
         final var updateTxnBody =
                 CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
         final var cryptoCreateTxn = TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody);
@@ -134,7 +134,7 @@ public abstract class AbstractAutoCreationLogic {
                 .setSignedTransactionBytes(signedTxn.toByteString())
                 .build();
         final var accessor = uncheckedFrom(txn);
-        final var fees = feeCalculator.computeFee(accessor, payerKey, stackedStateFrames, timestamp);
+        final var fees = feeCalculator.computeFee(accessor, payerKey, store, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 }

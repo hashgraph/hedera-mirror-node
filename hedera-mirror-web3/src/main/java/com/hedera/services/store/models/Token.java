@@ -88,6 +88,41 @@ public class Token {
     private final long lastUsedSerialNumber;
     private final List<CustomFee> customFees;
 
+    public Token(Id id) {
+        this(
+                id,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                new HashMap<>(),
+                false,
+                null,
+                null,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                false,
+                false,
+                false,
+                0,
+                false,
+                null,
+                null,
+                null,
+                0,
+                0,
+                0,
+                Collections.emptyList());
+    }
+
     @SuppressWarnings("java:S107")
     public Token(
             Id id,
