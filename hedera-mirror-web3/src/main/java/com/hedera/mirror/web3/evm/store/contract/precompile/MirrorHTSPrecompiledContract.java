@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -55,7 +54,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
-    private Store store;
     private Precompile precompile;
     private long gasRequirement = 0L;
     private HederaEvmStackedWorldStateUpdater updater;
@@ -200,7 +198,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         this.updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
-        this.store = updater.getStore();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
