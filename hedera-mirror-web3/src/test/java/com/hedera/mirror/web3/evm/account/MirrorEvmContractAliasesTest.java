@@ -243,7 +243,7 @@ class MirrorEvmContractAliasesTest {
         Address recoveredAddress = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
         Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         JKey jKey = JKey.mapKey(key);
-        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, ADDRESS2);
+        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, ADDRESS);
 
         try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
             utilities
@@ -255,6 +255,6 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void ignoresNullKeys() {
-        assertFalse(mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS2));
+        assertFalse(mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS));
     }
 }
