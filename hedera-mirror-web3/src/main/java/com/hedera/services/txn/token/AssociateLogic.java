@@ -66,8 +66,7 @@ public class AssociateLogic {
 
         validateFalse(exceedsTokenAssociationLimit(proposedTotalAssociations), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-        Account updatedAccount =
-                account.toBuilder().numAssociations(proposedTotalAssociations).build();
+        final var updatedAccount = account.setNumAssociations(proposedTotalAssociations);
 
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
@@ -87,8 +86,7 @@ public class AssociateLogic {
     }
 
     private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
-        return mirrorNodeEvmProperties.isTokenAssociationsLimited()
-                && totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
+        return totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
     }
 
     private boolean hasAssociation(final TokenRelationshipKey tokenRelationshipKey, final Store store) {

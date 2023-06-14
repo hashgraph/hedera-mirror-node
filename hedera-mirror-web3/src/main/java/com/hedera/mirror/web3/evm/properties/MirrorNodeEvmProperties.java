@@ -75,6 +75,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
+    @Min(1)
     private int maxTokensPerAccount = 1000;
 
     @Getter
@@ -85,9 +86,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
-
-    @Getter
-    private boolean tokenAssociationsLimited = true;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
