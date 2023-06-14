@@ -27,7 +27,7 @@ public interface NftHistoryRepository extends CrudRepository<NftHistory, Abstrac
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from nft_history where upper(timestamp_range) <= ?1")
+    @Query(nativeQuery = true, value = "delete from nft_history where timestamp_range << int8range(?1, null)")
     @Transactional
     int prune(long consensusTimestamp);
 }
