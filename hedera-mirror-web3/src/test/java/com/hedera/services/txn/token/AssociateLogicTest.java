@@ -74,14 +74,14 @@ class AssociateLogicTest {
 
     @BeforeEach
     public void setUp() {
-        associateLogic = new AssociateLogic(store, mirrorNodeEvmProperties);
+        associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
     }
 
     @Test
     void throwErrorWhenAccountNotFound() {
         when(store.getAccount(accountAddress, OnMissing.THROW))
                 .thenThrow(getException(Account.class.getName(), accountAddress));
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
@@ -94,7 +94,7 @@ class AssociateLogicTest {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(store.getFungibleToken(tokenAddress, OnMissing.THROW))
                 .thenThrow(getException(Token.class.getName(), tokenAddress));
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
@@ -109,7 +109,7 @@ class AssociateLogicTest {
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
 
         // expect:
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED.name());
     }
@@ -125,7 +125,7 @@ class AssociateLogicTest {
         when(tokenRelationship.getAccount()).thenReturn(account);
         when(accountId.num()).thenReturn(1L);
 
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.name());
     }
@@ -139,7 +139,7 @@ class AssociateLogicTest {
         when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
                 .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
-        associateLogic.associate(accountAddress, tokenAddresses);
+        associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount));
     }
@@ -156,7 +156,7 @@ class AssociateLogicTest {
                 .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
 
-        associateLogic.associate(accountAddress, tokenAddresses);
+        associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateAccount(modifiedAccount);
         verify(accountBuilder).numAssociations(6);
