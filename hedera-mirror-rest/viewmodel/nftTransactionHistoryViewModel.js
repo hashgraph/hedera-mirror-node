@@ -37,6 +37,11 @@ class NftTransactionHistoryViewModel {
     );
     this.type = TransactionType.getName(transactionModel.type);
 
+    // transactionModel is for a specific NFT in a single transaction, the nftTransfer array should contain at most
+    // one such nft transfer. However, per ticket https://github.com/hashgraph/hedera-mirror-node/issues/3815, services
+    // in the past externalizes multiple transfers for an NFT in the record if it's transferred between multiple
+    // parties, e.g., there could be two NFT transfers if it's first from Alice to Bob, then from Bob to Carol,
+    // instead of a single flattened transfer from Alice to Carol.
     const nftTransfer = transactionModel.nftTransfer[0] ?? defaultNftTransfer;
     this.is_approval = nftTransfer.isApproval;
     this.receiver_account_id = EntityId.parse(nftTransfer.receiverAccountId, {isNullable: true}).toString();

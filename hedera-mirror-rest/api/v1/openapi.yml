@@ -2799,6 +2799,14 @@ components:
         sender_account_id: "0.0.10"
         transaction_id: "0.0.19789-1618591023-997420021"
         type: "CRYPTOTRANSFER"
+      required:
+        - consensus_timestamp
+        - is_approval
+        - nonce
+        - receiver_account_id
+        - sender_account_id
+        - transaction_id
+        - type
     Block:
       type: object
       properties:
@@ -2863,6 +2871,9 @@ components:
             $ref: "#/components/schemas/NftTransactionTransfer"
         links:
           $ref: "#/components/schemas/Links"
+      required:
+        - transactions
+        - links
     Schedule:
       type: object
       properties:
