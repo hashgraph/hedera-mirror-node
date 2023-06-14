@@ -24,23 +24,40 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * An interface which serves as a facade over the mirror-node specific in-memory state. This interface is used by components
+ * inside com.hedera.services package, would be deleted and having this facade would make this task easier.
+ *
+ * Common methods that are used for interaction with the state are defined here.
+ * */
 public interface Store {
 
-    Account getAccount(Address address, boolean throwIfMissing);
+    Account getAccount(Address address, OnMissing throwIfMissing);
 
-    Token getToken(Address address, boolean throwIfMissing);
+    Token getFungibleToken(Address address, OnMissing throwIfMissing);
 
-    TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, boolean throwIfMissing);
+    TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
-    UniqueToken getUniqueToken(NftId nftId, boolean throwIfMissing);
+    UniqueToken getUniqueToken(NftId nftId, OnMissing throwIfMissing);
 
     void updateAccount(Account updatedAccount);
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
-    void addPendingChanges();
+    void updateFungibleToken(Token fungibleToken);
 
+    /**
+     * Updating the in-memory state with current pending changes that are part of the current transaction.
+     * */
     void commit();
 
+    /**
+     * Adding a safe layer on top of the in-memory state to write to, while still using the database as a backup.
+     * */
     void wrap();
+
+    enum OnMissing {
+        THROW,
+        DONT_THROW
+    }
 }

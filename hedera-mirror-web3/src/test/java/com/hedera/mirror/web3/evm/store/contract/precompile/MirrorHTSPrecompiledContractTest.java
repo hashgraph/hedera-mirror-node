@@ -27,7 +27,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -92,6 +93,7 @@ class MirrorHTSPrecompiledContractTest {
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
+    private Store store;
 
     @InjectMocks
     private PrecompileMapper precompileMapper;
@@ -104,18 +106,15 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        final StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
-
-        // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
-        stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
-        stackedStateFrames.push(); // Create second precompile specific RWCachingStateFrame
+        store = new StoreImpl(accessors);
+        store.wrap(); // Create first top-level RWCachingStateFrame
+        store.wrap(); // Create second precompile specific RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
         precompileMapper.setSupportedPrecompiles(Set.of(new MockPrecompile()));
-        subject = new MirrorHTSPrecompiledContract(
-                evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper);
+        subject = new MirrorHTSPrecompiledContract(evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper);
     }
 
     @Test
@@ -193,6 +192,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -289,6 +289,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(account.getNonce()).willReturn(-1L);
@@ -310,6 +311,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(account.getNonce()).willReturn(-1L);

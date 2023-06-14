@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -208,7 +209,7 @@ class HederaEvmWorldStateTest {
                 0L);
         store.updateAccount(accountModel);
         actualSubject.commit();
-        final var accountFromTopFrame = store.getAccount(address, false);
+        final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertThat(accountFromTopFrame).isEqualTo(accountModel);
     }
 

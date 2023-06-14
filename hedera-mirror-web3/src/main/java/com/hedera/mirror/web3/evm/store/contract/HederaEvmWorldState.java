@@ -165,11 +165,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
-        public void commit() {
-            store.commit();
-        }
-
-        @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
                     this,

@@ -32,6 +32,7 @@ import org.hyperledger.besu.datatypes.Address;
  *
  * Differences from the original:
  *  1. Added address field for convenience
+ *  2. Added factory method that returns empty instance
  */
 public class UniqueToken {
     private final Id tokenId;
@@ -53,6 +54,10 @@ public class UniqueToken {
         this.spender = spender;
         this.metadata = metadata;
         this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+    }
+
+    public static UniqueToken getEmptyUniqueToken() {
+        return new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]);
     }
 
     public NftId getNftId() {

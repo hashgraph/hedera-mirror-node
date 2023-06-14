@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
@@ -51,16 +52,15 @@ public class AssociateLogic {
 
     public void associate(final Address accountAddress, final List<Address> tokensAddresses) {
         /* Load the models */
-        final var account = store.getAccount(accountAddress, true);
-        final var tokens =
-                tokensAddresses.stream().map(t -> store.getToken(t, true)).toList();
+        final var account = store.getAccount(accountAddress, OnMissing.THROW);
+        final var tokens = tokensAddresses.stream()
+                .map(t -> store.getFungibleToken(t, OnMissing.THROW))
+                .toList();
 
         /* Associate and commit the changes */
         final var newTokenRelationships = associateWith(account, tokens);
 
         newTokenRelationships.forEach(store::updateTokenRelationship);
-
-        store.addPendingChanges();
     }
 
     private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {
@@ -95,7 +95,7 @@ public class AssociateLogic {
     }
 
     private boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return store.getTokenRelationship(tokenRelationshipKey, false)
+        return store.getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
                         .getAccount()
                         .getId()
                         .num()

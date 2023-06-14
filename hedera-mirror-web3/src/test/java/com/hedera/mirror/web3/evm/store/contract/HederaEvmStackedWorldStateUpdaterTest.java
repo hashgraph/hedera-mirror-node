@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -89,6 +90,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         store = new StoreImpl(accessors);
+        store.wrap();
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
@@ -104,7 +106,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
-        final var accountFromTopFrame = store.getAccount(address, false);
+        final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(address);
     }
 

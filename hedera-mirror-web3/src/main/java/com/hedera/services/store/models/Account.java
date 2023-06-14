@@ -36,11 +36,12 @@ import org.hyperledger.besu.datatypes.Address;
  * immutability is required for this model in order to be used seamlessly in the state.
  *
  * Differences with the original:
- *     1. Missing fields like memo, key, isReceiverSigRequired, isSmartContract
+ *     1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract
  *     2. Added field accountAddress for convenience
  *     3. Changed collection types to SortedMap and SortedSet
  *     4. Added constructors for creating new instances and achieve immutability
  *     5. Added Lombok builder to facilitate creation of new objects
+ *     6. Added factory method that returns empty instance
  */
 public class Account extends HederaEvmAccount {
     private final Id id;
@@ -103,6 +104,10 @@ public class Account extends HederaEvmAccount {
      */
     public Account(Id id, long balance) {
         this(id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L);
+    }
+
+    public static Account getEmptyAccount() {
+        return new Account(Id.DEFAULT, 0L);
     }
 
     /**
