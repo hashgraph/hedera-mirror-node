@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.converter;
+package com.hedera.mirror.common.domain.token;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import jakarta.persistence.Converter;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@Converter
-@ConfigurationPropertiesBinding
-public class UnknownIdConverter extends AbstractEntityIdConverter {
-
-    public UnknownIdConverter() {
-        super(EntityType.UNKNOWN);
-    }
+@Data
+@Entity
+@NoArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class NftHistory extends AbstractNft {
+    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }
