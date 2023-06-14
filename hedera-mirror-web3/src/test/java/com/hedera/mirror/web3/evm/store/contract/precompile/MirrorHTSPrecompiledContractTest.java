@@ -107,8 +107,7 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         store = new StoreImpl(accessors);
-        store.wrap(); // Create first top-level RWCachingStateFrame
-        store.wrap(); // Create second precompile specific RWCachingStateFrame
+        store.wrap(); // Create top-level RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
@@ -192,7 +191,6 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -289,7 +287,6 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(account.getNonce()).willReturn(-1L);
@@ -311,7 +308,6 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(account.getNonce()).willReturn(-1L);
