@@ -38,4 +38,3 @@ rosetta:
 stackgres:
   enabled: true
   podAntiAffinity: false
-
