@@ -31,7 +31,8 @@ from full_history h
 join nft n on n.token_id = h.token_id and n.serial_number = h.serial_number
 where upper(h.timestamp_range) is not null;
 
-alter table nft_history add primary key (token_id, serial_number, timestamp_range);
+create index if not exists nft_history__token_serial_lower_timestamp
+  on nft_history (token_id, serial_number, lower(timestamp_range));
 create index if not exists nft_history__timestamp_range on nft_history using gist (timestamp_range);
 
 drop table nft_transfer;
