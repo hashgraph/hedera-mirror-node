@@ -176,14 +176,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         var getOwnerOfResponse = mirrorClient.contractsCall(contractCallGetOwnerOf);
-
-        assertThat(getOwnerOfResponse.getResultAsAddress())
-                .isEqualTo(tokenClient
-                        .getSdkClient()
-                        .getExpandedOperatorAccountId()
-                        .getPublicKey()
-                        .toEvmAddress()
-                        .toString());
+        tokenClient.validateAddress(getOwnerOfResponse.getResultAsAddress());
     }
 
     @RetryAsserts
