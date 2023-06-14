@@ -77,7 +77,7 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
 
-const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
+const nftTransferJsonAgg = `jsonb_build_array(jsonb_build_object(
     '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
     '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
     '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
@@ -273,12 +273,12 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: createNftTransferList(row.nft_transfer_list),
+      nft_transfers: createNftTransferList(row.nft_transfer),
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),
-      scheduled: row.scheduled,
+      scheduled: row.s7cheduled,
       staking_reward_transfers: stakingRewardMap.get(row.consensus_timestamp) || [],
       token_transfers: createTokenTransferList(row.token_transfer_list),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
@@ -704,7 +704,7 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
   return `
     select
     ${transactionFullFields},
-    ${nftTransferJsonAgg} as nft_transfer_list,
+    ${nftTransferJsonAgg} as nft_transfer,
     (
       select ${cryptoTransferJsonAgg}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}

@@ -620,7 +620,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 98, is_approval: true}],
-        nft_transfer_list: nftTransfersFromDb,
+        nft_transfer: nftTransfersFromDb,
       },
       {
         consensus_timestamp: 2,
@@ -641,7 +641,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
-        nft_transfer_list: undefined,
+        nft_transfer: [],
       },
     ];
 
@@ -758,12 +758,12 @@ describe.skip('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.valid_duration_seconds,
       t.valid_start_ns,
       t.index,
-      jsonb_agg(jsonb_build_object(
+      jsonb_build_array(jsonb_build_object(
                                  'receiver_account_id', receiver_account_id,
                                  'sender_account_id', sender_account_id,
                                  'serial_number', serial_number,
                                  'token_id', token_id, 'is_approval', is_approval
-                             ) ) as nft_transfer_list,
+                             ) ) as nft_transfers,
       (
           select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
           from crypto_transfer ctr
