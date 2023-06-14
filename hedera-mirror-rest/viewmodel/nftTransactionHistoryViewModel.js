@@ -14,27 +14,33 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 import EntityId from '../entityId';
 import {createTransactionId, nsToSecNs} from '../utils';
 import {TransactionType} from '../model';
+
+const defaultNftTransfer = {
+  isApproval: false,
+  receiverAccountId: null,
+  senderAccountId: null,
+};
 
 /**
  * Nft transaction history transfer view model
  */
 class NftTransactionHistoryViewModel {
-  constructor(nftTransferModel, transactionModel) {
-    this.consensus_timestamp = nsToSecNs(nftTransferModel.consensusTimestamp);
-    this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
+  constructor(transactionModel) {
+    this.consensus_timestamp = nsToSecNs(transactionModel.consensusTimestamp);
     this.nonce = transactionModel.nonce;
-    this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, {isNullable: true}).toString();
-    this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, {isNullable: true}).toString();
     this.transaction_id = createTransactionId(
       EntityId.parse(transactionModel.payerAccountId).toString(),
       transactionModel.validStartNs
     );
     this.type = TransactionType.getName(transactionModel.type);
+
+    const nftTransfer = transactionModel.nftTransfer[0] ?? defaultNftTransfer;
+    this.is_approval = nftTransfer.isApproval;
+    this.receiver_account_id = EntityId.parse(nftTransfer.receiverAccountId, {isNullable: true}).toString();
+    this.sender_account_id = EntityId.parse(nftTransfer.senderAccountId, {isNullable: true}).toString();
   }
 }
 
