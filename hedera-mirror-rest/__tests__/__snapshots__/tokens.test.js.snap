@@ -42,36 +42,6 @@ exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam 
 ]
 `;
 
-exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid  1`] = `
-[
-  "Invalid parameter: tokenid",
-]
-`;
-
-exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid -1 1`] = `
-[
-  "Invalid parameter: tokenid",
-]
-`;
-
-exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid end 1`] = `
-[
-  "Invalid parameter: tokenid",
-]
-`;
-
-exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid null 1`] = `
-[
-  "Invalid parameter: tokenid",
-]
-`;
-
-exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid undefined 1`] = `
-[
-  "Invalid parameter: tokenid",
-]
-`;
-
 exports[`utils buildAndValidateFilters serialnumbers tests Verify buildAndValidateFilters for invalid {"serialnumber":"-1"} 1`] = `
 [
   "Invalid parameter: serialnumber",
