@@ -78,14 +78,6 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
 
-const nftTransferJsonAgg = `jsonb_build_array(jsonb_build_object(
-    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ))`;
-
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
     '${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
