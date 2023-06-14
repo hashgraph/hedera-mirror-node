@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 
 /**
- * Copied Id type from hedera-services.
+ * Copied NftId type from hedera-services.
  *
  * Represents the id of a UniqueToken model
  */

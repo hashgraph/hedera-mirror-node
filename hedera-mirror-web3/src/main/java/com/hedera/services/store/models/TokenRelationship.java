@@ -44,6 +44,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences from the original:
+ *  1. Added factory method that returns empty instance
  */
 public class TokenRelationship {
     private final Token token;
@@ -90,6 +93,10 @@ public class TokenRelationship {
                 true,
                 false,
                 0);
+    }
+
+    public static TokenRelationship getEmptyTokenRelationship() {
+        return new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L));
     }
 
     /**

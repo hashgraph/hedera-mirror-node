@@ -75,7 +75,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
-    private int maxTokensPerAccount = 10_000_000;
+    private int maxTokensPerAccount = 1000;
 
     @Getter
     @NotNull

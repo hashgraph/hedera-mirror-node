@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.*;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -55,10 +55,10 @@ public class PrecompilePricingUtils {
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
     }
 
-    private final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
     private final BasicHbarCentExchange exchange;
     private final FeeCalculator feeCalculator;
     private final BasicFcfsUsagePrices resourceCosts;
+    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
@@ -99,18 +99,16 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(final Timestamp timestamp, final StackedStateFrames<Object> state) {
-        final var fees = feeCalculator.computeFee(EMPTY_KEY, state, timestamp);
+    public long gasFeeInTinybars(final Timestamp timestamp, final Store store) {
+        final var fees = feeCalculator.computeFee(EMPTY_KEY, store, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(
-            final Timestamp now, final long minimumTinybarCost, final StackedStateFrames<Object> state) {
-        final var calculator = feeCalculator;
+    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost, final Store store) {
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
-        final var fees = calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, state, now, ANSWER_ONLY);
+        final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, store, now, ANSWER_ONLY);
 
-        final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
+        final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, now);
         final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
         final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
@@ -121,13 +119,12 @@ public class PrecompilePricingUtils {
         return baseGasCost + (baseGasCost / 5L);
     }
 
-    public long computeGasRequirement(
-            final long blockTimestamp, final Precompile precompile, final StackedStateFrames<Object> state) {
+    public long computeGasRequirement(final long blockTimestamp, final Precompile precompile, final Store store) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp, state);
+        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp, store);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);

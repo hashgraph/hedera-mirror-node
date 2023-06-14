@@ -56,6 +56,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences from the original:
+ *     1. Added factory method that returns empty instance
+ *     2. Added mapToDomain method from TokenTypesManager
  */
 public class Token {
     private final Id id;
@@ -191,6 +195,10 @@ public class Token {
         this.customFees = customFees;
     }
 
+    public static Token getEmptyToken() {
+        return new Token(Id.DEFAULT);
+    }
+
     /**
      * Creates a new instance of the model token, which is later persisted in state.
      *
@@ -256,8 +264,9 @@ public class Token {
     private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
             return TokenType.NON_FUNGIBLE_UNIQUE;
+        } else {
+            return TokenType.FUNGIBLE_COMMON;
         }
-        return TokenType.FUNGIBLE_COMMON;
     }
 
     /**

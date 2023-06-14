@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -50,7 +51,6 @@ public class HederaEvmStackedWorldStateUpdater
     private final EvmProperties evmProperties;
     private final EntityAddressSequencer entityAddressSequencer;
     private final TokenAccessor tokenAccessor;
-    private final Store store;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
@@ -65,8 +65,6 @@ public class HederaEvmStackedWorldStateUpdater
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.entityAddressSequencer = entityAddressSequencer;
-        this.store = store;
-        this.store.wrap();
         this.tokenAccessor = tokenAccessor;
     }
 
@@ -180,7 +178,7 @@ public class HederaEvmStackedWorldStateUpdater
 
     private boolean isMissingTarget(final Address alias) {
         final var target = mirrorEvmContractAliases.resolveForEvm(alias);
-        return Id.DEFAULT.equals(store.getAccount(target, false).getId());
+        return Id.DEFAULT.equals(store.getAccount(target, OnMissing.DONT_THROW).getId());
     }
 
     private boolean isTokenRedirect(final Address address) {

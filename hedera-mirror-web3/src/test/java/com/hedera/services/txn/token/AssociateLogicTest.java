@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -78,7 +79,8 @@ class AssociateLogicTest {
 
     @Test
     void throwErrorWhenAccountNotFound() {
-        when(store.getAccount(accountAddress, true)).thenThrow(getException(Account.class.getName(), accountAddress));
+        when(store.getAccount(accountAddress, OnMissing.THROW))
+                .thenThrow(getException(Account.class.getName(), accountAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
@@ -89,8 +91,9 @@ class AssociateLogicTest {
 
     @Test
     void throwErrorWhenTokenNotFound() {
-        when(store.getAccount(accountAddress, true)).thenReturn(account);
-        when(store.getToken(tokenAddress, true)).thenThrow(getException(Token.class.getName(), tokenAddress));
+        when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
+        when(store.getFungibleToken(tokenAddress, OnMissing.THROW))
+                .thenThrow(getException(Token.class.getName(), tokenAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
@@ -100,7 +103,7 @@ class AssociateLogicTest {
 
     @Test
     void failsOnCrossingAssociationLimit() {
-        when(store.getAccount(accountAddress, true)).thenReturn(account);
+        when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getNumAssociations()).thenReturn(5);
         when(mirrorNodeEvmProperties.isTokenAssociationsLimited()).thenReturn(true);
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
@@ -117,7 +120,8 @@ class AssociateLogicTest {
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
+                .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
         when(accountId.num()).thenReturn(1L);
 
@@ -132,7 +136,8 @@ class AssociateLogicTest {
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
+                .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
         associateLogic.associate(accountAddress, tokenAddresses);
 
@@ -147,7 +152,8 @@ class AssociateLogicTest {
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
+        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
+                .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
 
         associateLogic.associate(accountAddress, tokenAddresses);
@@ -156,22 +162,8 @@ class AssociateLogicTest {
         verify(accountBuilder).numAssociations(6);
     }
 
-    @Test
-    void commitsOnSuccess() {
-        setupAccount();
-        setupToken();
-
-        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, false)).thenReturn(tokenRelationship);
-        when(tokenRelationship.getAccount()).thenReturn(account);
-
-        associateLogic.associate(accountAddress, tokenAddresses);
-
-        verify(store).addPendingChanges();
-    }
-
     private Account setupAccount() {
-        when(store.getAccount(accountAddress, true)).thenReturn(account);
+        when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getAccountAddress()).thenReturn(accountAddress);
         when(account.getId()).thenReturn(accountId);
         when(account.toBuilder()).thenReturn(accountBuilder);
@@ -182,7 +174,7 @@ class AssociateLogicTest {
     }
 
     private void setupToken() {
-        when(store.getToken(tokenAddress, true)).thenReturn(token);
+        when(store.getFungibleToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
         Id tokenId = mock(Id.class);
         when(token.getId()).thenReturn(tokenId);
         when(tokenId.asEvmAddress()).thenReturn(tokenAddress);

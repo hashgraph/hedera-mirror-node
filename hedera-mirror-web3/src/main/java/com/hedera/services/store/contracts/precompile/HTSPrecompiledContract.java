@@ -188,8 +188,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
-
-            store.addPendingChanges();
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             result = precompile.getFailureResultFor(status);

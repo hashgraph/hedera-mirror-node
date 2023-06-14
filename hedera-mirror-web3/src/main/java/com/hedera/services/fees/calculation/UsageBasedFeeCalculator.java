@@ -16,7 +16,7 @@
 
 package com.hedera.services.fees.calculation;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
@@ -36,8 +36,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
     @Override
-    public FeeObject estimatePayment(
-            Query query, FeeData usagePrices, StackedStateFrames<?> state, Timestamp at, ResponseType type) {
+    public FeeObject estimatePayment(Query query, FeeData usagePrices, Store store, Timestamp at, ResponseType type) {
         return null;
     }
 
@@ -47,7 +46,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject computeFee(JKey payerKey, StackedStateFrames<?> state, Timestamp at) {
+    public FeeObject computeFee(JKey payerKey, Store store, Timestamp at) {
         return null;
     }
 }

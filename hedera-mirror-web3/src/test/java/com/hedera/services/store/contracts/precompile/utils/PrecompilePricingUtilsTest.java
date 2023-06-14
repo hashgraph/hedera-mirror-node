@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -59,9 +58,6 @@ class PrecompilePricingUtilsTest {
 
     @Mock
     private BasicFcfsUsagePrices resourceCosts;
-
-    @Mock
-    private StackedStateFrames<Object> state;
 
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
