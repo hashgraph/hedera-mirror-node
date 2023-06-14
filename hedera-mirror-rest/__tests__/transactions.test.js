@@ -732,8 +732,7 @@ describe('create transferLists', () => {
   });
 });
 
-// TODO: fix the tests in transactions by id REST api PR
-describe.skip('extractSqlFromTransactionsByIdOrHashRequest', () => {
+describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
     const defaultParams = [200, '123456789987654321', 123458889987654321n];
