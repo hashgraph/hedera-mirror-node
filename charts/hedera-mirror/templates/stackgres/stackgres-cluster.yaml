@@ -19,7 +19,7 @@ spec:
     sgInstanceProfile: {{ include "hedera-mirror.stackgres" . }}-coordinator
   database: {{ .Values.db.name }}
   nonProductionOptions:
-    disableClusterPodAntiAffinity: true
+    disableClusterPodAntiAffinity: {{ not .Values.stackgres.podAntiAffinity }}
   postgres:
     extensions: {{ .Values.stackgres.extensions | toYaml | nindent 6 }}
     version: {{ .Values.stackgres.postgresVersion }}
