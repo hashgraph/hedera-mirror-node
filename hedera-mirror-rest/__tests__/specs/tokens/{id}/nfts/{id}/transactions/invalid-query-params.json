@@ -1,13 +1,6 @@
 {
   "description": "NFT token history",
-  "setup": {
-    "entities": [],
-    "tokens": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "nfts": []
-  },
+  "setup": {},
   "urls": [
     "/api/v1/tokens/1500/nfts/2/transactions?timestamp=now&order=down&limit=alot&result=success"
   ],

@@ -37,15 +37,12 @@
         "type": "NON_FUNGIBLE_UNIQUE"
       }
     ],
-    "balances": [],
-    "cryptotransfers": [],
     "nfts": [
       {
         "account_id": "0.0.4001",
         "created_timestamp": "1234567890000000005",
         "deleted": true,
         "metadata": "m1",
-        "modified_timestamp": "1234567890000000009",
         "serial_number": 1,
         "token_id": "0.0.1500"
       },
@@ -67,7 +64,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.1001",
             "sender_account_id": null,
@@ -86,7 +83,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.2001",
             "sender_account_id": "0.0.1001",
@@ -105,7 +102,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",
@@ -124,7 +121,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
