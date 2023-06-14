@@ -2795,6 +2795,7 @@ components:
       example:
         consensus_timestamp: "1618591023.997420021"
         is_approval: false
+        nonce: 0
         receiver_account_id: "0.0.11"
         sender_account_id: "0.0.10"
         transaction_id: "0.0.19789-1618591023-997420021"
