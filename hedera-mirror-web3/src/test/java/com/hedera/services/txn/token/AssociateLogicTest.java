@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,9 +47,6 @@ class AssociateLogicTest {
     private final Address accountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private final Address tokenAddress = Address.fromHexString("0x0000000000000000000000000000000000000182");
     private final List<Address> tokenAddresses = List.of(tokenAddress);
-
-    @Mock
-    Account.AccountBuilder accountBuilder;
 
     @Mock
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -105,7 +101,6 @@ class AssociateLogicTest {
     void failsOnCrossingAssociationLimit() {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getNumAssociations()).thenReturn(5);
-        when(mirrorNodeEvmProperties.isTokenAssociationsLimited()).thenReturn(true);
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
 
         // expect:
@@ -116,7 +111,8 @@ class AssociateLogicTest {
 
     @Test
     void failsOnAssociatingWithAlreadyRelatedToken() {
-        setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        setupAccount(1);
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
@@ -132,7 +128,8 @@ class AssociateLogicTest {
 
     @Test
     void canAssociateWithNewToken() {
-        final var modifiedAccount = setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        final var modifiedAccount = setupAccount(1);
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
@@ -146,7 +143,8 @@ class AssociateLogicTest {
 
     @Test
     void updatesAccount() {
-        final var modifiedAccount = setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        final var modifiedAccount = setupAccount(6);
         when(account.getNumAssociations()).thenReturn(5);
 
         setupToken();
@@ -159,17 +157,15 @@ class AssociateLogicTest {
         associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateAccount(modifiedAccount);
-        verify(accountBuilder).numAssociations(6);
+        verify(account).setNumAssociations(6);
     }
 
-    private Account setupAccount() {
+    private Account setupAccount(int numOfAssociations) {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getAccountAddress()).thenReturn(accountAddress);
         when(account.getId()).thenReturn(accountId);
-        when(account.toBuilder()).thenReturn(accountBuilder);
-        when(accountBuilder.numAssociations(anyInt())).thenReturn(accountBuilder);
         Account modifiedAccount = mock(Account.class);
-        when(accountBuilder.build()).thenReturn(modifiedAccount);
+        when(account.setNumAssociations(numOfAssociations)).thenReturn(modifiedAccount);
         return modifiedAccount;
     }
 
