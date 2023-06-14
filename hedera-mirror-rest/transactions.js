@@ -45,6 +45,7 @@ const transactionFields = [
   Transaction.ENTITY_ID,
   Transaction.MAX_FEE,
   Transaction.MEMO,
+  Transaction.NFT_TRANSFER,
   Transaction.NODE_ACCOUNT_ID,
   Transaction.NONCE,
   Transaction.PARENT_CONSENSUS_TIMESTAMP,
@@ -242,15 +243,12 @@ const createTokenTransferList = (tokenTransferList) => {
  * @param nftTransferList nft transfer list
  * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
-const createNftTransferList = (nftTransferList) => {
+const getNftTransfers = (nftTransferList) => {
   if (!nftTransferList) {
     return [];
   }
 
-  return nftTransferList.map((transfer) => {
-    const nftTransfer = new NftTransfer(transfer);
-    return new NftTransferViewModel(nftTransfer);
-  });
+  return nftTransferList;
 };
 
 /**
@@ -273,12 +271,12 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: createNftTransferList(row.nft_transfer),
+      nft_transfers: row.nft_transfer || [],
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),
-      scheduled: row.s7cheduled,
+      scheduled: row.scheduled,
       staking_reward_transfers: stakingRewardMap.get(row.consensus_timestamp) || [],
       token_transfers: createTokenTransferList(row.token_transfer_list),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
@@ -704,7 +702,6 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
   return `
     select
     ${transactionFullFields},
-    ${nftTransferJsonAgg} as nft_transfer,
     (
       select ${cryptoTransferJsonAgg}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
@@ -868,7 +865,7 @@ if (utils.isTestEnv()) {
     convertStakingRewardTransfers,
     createAssessedCustomFeeList,
     createCryptoTransferList,
-    createNftTransferList,
+    getNftTransfers: getNftTransfers,
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,
