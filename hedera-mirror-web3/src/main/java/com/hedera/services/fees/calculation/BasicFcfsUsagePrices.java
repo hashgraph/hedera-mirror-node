@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -44,6 +45,10 @@ import org.apache.logging.log4j.Logger;
  * Temporary extracted class from services.
  * </p>
  * Loads the required fee schedules from the Hedera "file system".
+ *
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove unused methods: loadPriceSchedules, activePricingSequence
+ *  2. Use RatesAndFeesLoader for the calculations
  */
 @Named
 @RequiredArgsConstructor
@@ -80,6 +85,20 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
         final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
         return pricesGiven(function, at, feeSchedules).get(DEFAULT);
+    }
+
+    @Override
+    public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
+        try {
+            final var at = accessor.getTxnId().getTransactionValidStart();
+            return pricesGiven(
+                    accessor.getFunction(),
+                    at,
+                    ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at)));
+        } catch (final Exception e) {
+            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+        }
+        return DEFAULT_RESOURCE_PRICES;
     }
 
     @Override

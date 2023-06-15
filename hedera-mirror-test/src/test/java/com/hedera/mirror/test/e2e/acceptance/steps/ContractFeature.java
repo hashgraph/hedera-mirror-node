@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -38,6 +42,12 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.HexFormat;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,18 +55,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.HexFormat;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
-
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
@@ -340,7 +338,7 @@ public class ContractFeature extends AbstractFeature {
 
     private FileId persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[]{});
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -554,6 +552,5 @@ public class ContractFeature extends AbstractFeature {
      * Static state to persist across contract Cucumber scenarios.
      */
     private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {
-    }
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

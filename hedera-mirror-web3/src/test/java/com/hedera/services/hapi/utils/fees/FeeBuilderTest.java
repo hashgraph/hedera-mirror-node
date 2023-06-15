@@ -88,7 +88,7 @@ class FeeBuilderTest {
             SignaturePair.newBuilder().setEd25519(CANONICAL_SIG).build();
     private final SignatureMap signatureMap =
             SignatureMap.newBuilder().addSigPair(signPair).build();
-    private final Transaction signedTxn = Transaction.newBuilder()
+    private final Transaction signed = Transaction.newBuilder()
             .setSignedTransactionBytes(SignedTransaction.newBuilder()
                     .setSigMap(signatureMap)
                     .setBodyBytes(bodyBytes)

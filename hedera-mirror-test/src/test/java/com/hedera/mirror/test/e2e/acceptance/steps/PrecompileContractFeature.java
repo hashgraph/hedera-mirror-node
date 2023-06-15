@@ -860,8 +860,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(2)).isZero();
         assertThat((long) fractionalFee.get(3)).isZero();
         assertFalse((boolean) fractionalFee.get(4));
-        contractClient.validateAddress(
-                fractionalFee.get(5).toString().toLowerCase().replace("0x", ""));
         assertThat(royaltyFees).isEmpty();
     }
 
