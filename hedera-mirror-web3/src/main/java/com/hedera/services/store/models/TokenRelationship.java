@@ -29,6 +29,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
+ * Copied model from hedera-services.
+ *
  * Encapsulates the state and operations of a Hedera account-token relationship.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -42,6 +44,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences from the original:
+ *  1. Added factory method that returns empty instance
  */
 public class TokenRelationship {
     private final Token token;
@@ -75,6 +80,23 @@ public class TokenRelationship {
         this.notYetPersisted = notYetPersisted;
         this.automaticAssociation = automaticAssociation;
         this.balanceChange = balanceChange;
+    }
+
+    public TokenRelationship(Token token, Account account) {
+        this(
+                token,
+                account,
+                0,
+                token.isFrozenByDefault() && token.hasFreezeKey(),
+                !token.hasKycKey(),
+                false,
+                true,
+                false,
+                0);
+    }
+
+    public static TokenRelationship getEmptyTokenRelationship() {
+        return new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L));
     }
 
     /**

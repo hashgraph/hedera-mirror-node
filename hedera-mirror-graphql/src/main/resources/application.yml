@@ -7,6 +7,7 @@ hedera:
         password: mirror_graphql_pass
         port: 5432
         sslMode: DISABLE
+        statementTimeout: 10000
         username: mirror_graphql
 logging:
   level:
@@ -54,14 +55,13 @@ spring:
   datasource:
     name: ${hedera.mirror.graphql.db.name}
     password: ${hedera.mirror.graphql.db.password}
-    url: jdbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}
+    url: jdbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}?options=-c%20statement_timeout=${hedera.mirror.graphql.db.statementTimeout}
     username: ${hedera.mirror.graphql.db.username}
     hikari:
       connection-timeout: 3000
       data-source-properties:
         idle_in_transaction_session_timeout: "30000"
         lock_timeout: "10000"
-        statement_timeout: "60000"
         sslmode: ${hedera.mirror.graphql.db.sslMode}
         tcpKeepAlive: true
       maximum-pool-size: 50
