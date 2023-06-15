@@ -74,7 +74,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     @Test
     void empty() {
-        migration.doMigrate();
+        migration.migrateAsync();
         assertThat(cryptoTransferRepository.findAll()).isEmpty();
         assertThat(transactionRepository.findAll()).isEmpty();
         assertThat(tokenTransferRepository.findAll()).isEmpty();
@@ -132,7 +132,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 thresholdTwoKeyEntity);
 
         // when
-        migration.doMigrate();
+        migration.migrateAsync();
 
         // then
         var expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
@@ -163,7 +163,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         var firstPassTokenTransfers = tokenTransferRepository.findAll();
 
         // when
-        migration.doMigrate();
+        migration.migrateAsync();
 
         var secondPassCryptoTransfers = cryptoTransferRepository.findAll();
         var secondPassNftTransfers = transactionRepository.findAll();

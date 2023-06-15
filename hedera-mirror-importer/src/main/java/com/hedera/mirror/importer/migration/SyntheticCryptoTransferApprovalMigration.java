@@ -16,15 +16,16 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.db.DBProperties;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -32,18 +33,15 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigration {
+public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long> {
 
     private static final Long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
     private static final Long UPPER_BOUND_TIMESTAMP = 1686243920981874003L;
-
-    private static final Map<String, Long> MIGRATION_BOUNDARY_TIMESTAMPS = Map.of(
-            "lower_bound", LOWER_BOUND_TIMESTAMP,
-            "upper_bound", UPPER_BOUND_TIMESTAMP);
-
+    private static final Long TIMESTAMP_INCREMENT =
+            86_400_000_000_000L; // 1 day in nanoseconds which will yield 69 async iterations
     private static final String TRANSFER_SQL =
             """
             with cryptotransfers as (
@@ -147,18 +145,17 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
 
     private final MirrorProperties mirrorProperties;
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final TransactionTemplate transactionTemplate;
     private final TransferMapper transferMapper = new TransferMapper();
 
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
+            DBProperties dbProperties,
             NamedParameterJdbcTemplate jdbcTemplate,
             MirrorProperties mirrorProperties,
-            TransactionTemplate transactionTemplate) {
-        super(mirrorProperties.getMigration());
+            TransactionOperations transactionOperations) {
+        super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
         this.jdbcTemplate = jdbcTemplate;
         this.mirrorProperties = mirrorProperties;
-        this.transactionTemplate = transactionTemplate;
     }
 
     @Override
@@ -173,46 +170,61 @@ public class SyntheticCryptoTransferApprovalMigration extends RepeatableMigratio
     }
 
     @Override
-    protected void doMigrate() {
+    protected Long getInitial() {
+        return LOWER_BOUND_TIMESTAMP;
+    }
+
+    @Override
+    protected int getSuccessChecksum() {
+        return 1;
+    }
+
+    @Override
+    protected Optional<Long> migratePartial(Long lastUpperBound) {
         if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
             log.info("Skipping migration since it only applies to mainnet");
-            return;
+            return Optional.empty();
         }
 
         AtomicLong count = new AtomicLong(0L);
         var migrationErrors = new ArrayList<String>();
-        var stopwatch = Stopwatch.createStarted();
+        long upperBound = getUpperBound(lastUpperBound);
+        Map<String, Long> boundaryTimestamps = Map.of("lower_bound", lastUpperBound, "upper_bound", upperBound);
         try {
-            transactionTemplate.executeWithoutResult(status -> {
-                var transfers = jdbcTemplate.query(TRANSFER_SQL, MIGRATION_BOUNDARY_TIMESTAMPS, transferMapper);
-                for (ApprovalTransfer transfer : transfers) {
-                    if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
-                        // set is_approval to true
-                        String updateSql = UPDATE_TOKEN_TRANSFER_SQL;
-                        if (transfer.transferType == TRANSFER_TYPE.CRYPTO_TRANSFER) {
-                            updateSql = UPDATE_CRYPTO_TRANSFER_SQL;
-                        } else if (transfer.transferType == TRANSFER_TYPE.NFT_TRANSFER) {
-                            updateSql = UPDATE_NFT_TRANSFER_SQL;
-                        }
-
-                        var updateMap = Map.of(
-                                "amount", transfer.amount,
-                                "consensus_timestamp", transfer.consensusTimestamp,
-                                "index", transfer.index,
-                                "sender", transfer.sender,
-                                "token_id", transfer.tokenId);
-                        jdbcTemplate.update(updateSql, updateMap);
-                        count.incrementAndGet();
+            var transfers = jdbcTemplate.query(TRANSFER_SQL, boundaryTimestamps, transferMapper);
+            for (ApprovalTransfer transfer : transfers) {
+                if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
+                    // set is_approval to true
+                    String updateSql = UPDATE_TOKEN_TRANSFER_SQL;
+                    if (transfer.transferType == TRANSFER_TYPE.CRYPTO_TRANSFER) {
+                        updateSql = UPDATE_CRYPTO_TRANSFER_SQL;
+                    } else if (transfer.transferType == TRANSFER_TYPE.NFT_TRANSFER) {
+                        updateSql = UPDATE_NFT_TRANSFER_SQL;
                     }
+
+                    var updateMap = Map.of(
+                            "amount", transfer.amount,
+                            "consensus_timestamp", transfer.consensusTimestamp,
+                            "index", transfer.index,
+                            "sender", transfer.sender,
+                            "token_id", transfer.tokenId);
+                    jdbcTemplate.update(updateSql, updateMap);
+                    count.incrementAndGet();
                 }
-            });
+            }
         } catch (Exception e) {
             log.error("Error migrating transfer approvals", e);
-            return;
+            return Optional.empty();
         }
 
-        log.info("Updated {} crypto transfer approvals in {}", count, stopwatch);
+        log.info("Updated {} crypto transfer approvals", count);
         migrationErrors.forEach(log::error);
+        return upperBound == UPPER_BOUND_TIMESTAMP ? Optional.empty() : Optional.of(upperBound);
+    }
+
+    private Long getUpperBound(long lastUpperBound) {
+        long nextIncrement = Math.addExact(lastUpperBound, TIMESTAMP_INCREMENT);
+        return nextIncrement >= UPPER_BOUND_TIMESTAMP ? UPPER_BOUND_TIMESTAMP : nextIncrement;
     }
 
     /**
