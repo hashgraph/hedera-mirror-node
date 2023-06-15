@@ -39,13 +39,14 @@ spec:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_THREADS: "35"
       resources:
         limits:
-          cpu: 4000m
-          memory: 8Gi
+          cpu: 2000m
+          memory: 4Gi
         requests:
-          cpu: 4000m
-          memory: 8Gi
+          cpu: 2000m
+          memory: 4Gi
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
