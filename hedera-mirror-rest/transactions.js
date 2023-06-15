@@ -45,6 +45,7 @@ const transactionFields = [
   Transaction.ENTITY_ID,
   Transaction.MAX_FEE,
   Transaction.MEMO,
+  Transaction.NFT_TRANSFER,
   Transaction.NODE_ACCOUNT_ID,
   Transaction.NONCE,
   Transaction.PARENT_CONSENSUS_TIMESTAMP,
@@ -76,14 +77,6 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
-
-const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
-    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -215,14 +208,15 @@ const createCryptoTransferList = (cryptoTransferList) => {
 };
 
 /**
- * Creates token transfer list from aggregated array of JSON objects in the query result
+ * Creates token transfer list from aggregated array of JSON objects in the query result.
+ * Note if the tokenTransferList is undefined, an empty array is returned.
  *
  * @param tokenTransferList token transfer list
- * @return {undefined|{amount: Number, account: string, token_id: string}[]}
+ * @return {{amount: Number, account: string, token_id: string}[]}
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
-    return undefined;
+    return [];
   }
 
   return tokenTransferList.map((transfer) => {
@@ -237,20 +231,19 @@ const createTokenTransferList = (tokenTransferList) => {
 };
 
 /**
- * Creates an nft transfer list from aggregated array of JSON objects in the query result
+ * Creates an nft transfer list from aggregated array of JSON objects in the query result.
+ * Note if the nftTransferList is undefined, an empty array is returned.
  *
  * @param nftTransferList nft transfer list
- * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
+ * @return {{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
 const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
-    return undefined;
+    return [];
   }
 
-  return nftTransferList.map((transfer) => {
-    const nftTransfer = new NftTransfer(transfer);
-    return new NftTransferViewModel(nftTransfer);
-  });
+  return Array.isArray(nftTransferList) ?
+    nftTransferList.map(transfer => new NftTransferViewModel(new NftTransfer(transfer))) : nftTransferList;
 };
 
 /**
@@ -273,7 +266,7 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: createNftTransferList(row.nft_transfer_list),
+      nft_transfers: createNftTransferList(row.nft_transfer),
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
@@ -715,9 +708,8 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
-      select ${nftTransferJsonAgg}
-      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
+      select ${Transaction.NFT_TRANSFER} from ${Transaction.tableName}
+      where ${subQueryCondition}
     ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
