@@ -144,17 +144,17 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     }
 
     private final MirrorProperties mirrorProperties;
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate transferJdbcTemplate;
     private final TransferMapper transferMapper = new TransferMapper();
 
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
-            NamedParameterJdbcTemplate jdbcTemplate,
+            NamedParameterJdbcTemplate transferJdbcTemplate,
             MirrorProperties mirrorProperties,
             TransactionOperations transactionOperations) {
-        super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
-        this.jdbcTemplate = jdbcTemplate;
+        super(transferJdbcTemplate, dbProperties.getSchema(), transactionOperations);
+        this.transferJdbcTemplate = transferJdbcTemplate;
         this.mirrorProperties = mirrorProperties;
     }
 
@@ -191,7 +191,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         long upperBound = getUpperBound(lastUpperBound);
         Map<String, Long> boundaryTimestamps = Map.of("lower_bound", lastUpperBound, "upper_bound", upperBound);
         try {
-            var transfers = jdbcTemplate.query(TRANSFER_SQL, boundaryTimestamps, transferMapper);
+            var transfers = transferJdbcTemplate.query(TRANSFER_SQL, boundaryTimestamps, transferMapper);
             for (ApprovalTransfer transfer : transfers) {
                 if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
                     // set is_approval to true
@@ -208,7 +208,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
                             "index", transfer.index,
                             "sender", transfer.sender,
                             "token_id", transfer.tokenId);
-                    jdbcTemplate.update(updateSql, updateMap);
+                    transferJdbcTemplate.update(updateSql, updateMap);
                     count.incrementAndGet();
                 }
             }
