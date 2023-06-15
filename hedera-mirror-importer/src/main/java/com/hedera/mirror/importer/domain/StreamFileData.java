@@ -93,6 +93,10 @@ public class StreamFileData {
         return streamFilename.getFilename();
     }
 
+    public String getFilePath() {
+        return streamFilename.getFilePath();
+    }
+
     @Override
     public String toString() {
         return streamFilename.toString();

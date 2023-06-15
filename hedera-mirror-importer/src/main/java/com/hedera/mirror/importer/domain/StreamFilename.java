@@ -23,8 +23,8 @@ import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import java.io.File;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
@@ -123,7 +123,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     }
 
     public static StreamFilename from(String filePath) {
-        return from(filePath, File.separator);
+        return from(filePath, S3StreamFileProvider.SEPARATOR);
     }
 
     public static StreamFilename from(@NonNull String filePath, @NonNull String pathSeparator) {
@@ -143,7 +143,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
     }
 
     public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
-
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
         String suffix = streamType.getSuffix();
         String extension;
