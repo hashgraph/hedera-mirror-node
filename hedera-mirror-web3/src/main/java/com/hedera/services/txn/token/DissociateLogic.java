@@ -39,23 +39,20 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class DissociateLogic {
 
-    private final Store store;
-
-    public DissociateLogic(final Store store) {
-        this.store = store;
+    public DissociateLogic() {
     }
 
-    public void dissociate(final Address address, final List<Address> tokenAddresses) {
+    public void dissociate(final Address address, final List<Address> tokenAddresses, final Store store) {
 
         final var account = store.getAccount(address, OnMissing.THROW);
         final var tokens = tokenAddresses.stream()
                 .map(t -> store.getFungibleToken(t, OnMissing.THROW))
                 .toList();
 
-        dissociateUsing(account, tokens);
+        dissociateUsing(account, tokens, store);
     }
 
-    private void dissociateUsing(final Account account, final List<Token> tokens) {
+    private void dissociateUsing(final Account account, final List<Token> tokens, final Store store) {
 
         tokens.forEach(token -> {
             final var tokenRelationshipKey =
@@ -63,7 +60,7 @@ public class DissociateLogic {
             validateTrue(hasAssociation(tokenRelationshipKey, store), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             var tokenRelationship =
                     store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
-            final var updatedRelationship = updateRelationship(tokenRelationship);
+            final var updatedRelationship = updateRelationship(tokenRelationship, store);
             Account updatedAccount = null;
             final var oldAccount = updatedRelationship.getAccount();
             if (updatedRelationship.isAutomaticAssociation()) {
@@ -86,13 +83,13 @@ public class DissociateLogic {
         store.updateAccount(updatedAccount);
     }
 
-    private TokenRelationship updateRelationship(TokenRelationship tokenRelationship) {
+    private TokenRelationship updateRelationship(TokenRelationship tokenRelationship, final Store store) {
 
         final var token = tokenRelationship.getToken();
         if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
             updateRelationshipForDeletedOrRemovedToken(tokenRelationship);
         } else {
-            updateModelsForDissociationFromActiveToken(tokenRelationship);
+            updateModelsForDissociationFromActiveToken(tokenRelationship, store);
         }
 
         return tokenRelationship.markAsDestroyed();
@@ -109,7 +106,7 @@ public class DissociateLogic {
         }
     }
 
-    private void updateModelsForDissociationFromActiveToken(TokenRelationship tokenRelationship) {
+    private void updateModelsForDissociationFromActiveToken(TokenRelationship tokenRelationship, final Store store) {
         final var token = tokenRelationship.getToken();
         final var isAccountTreasuryOfDissociatedToken =
                 tokenRelationship.getAccount().getId().equals(token.getTreasury().getId());
