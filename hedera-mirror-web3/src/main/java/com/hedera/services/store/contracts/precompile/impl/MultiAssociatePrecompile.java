@@ -62,8 +62,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 
     @Override
     public long getGasRequirement(final long blockTimestamp, final Store store) {
-        //        return pricingUtils.computeGasRequirement(blockTimestamp, this);
-        return 0L;
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, store);
     }
 
     @Override

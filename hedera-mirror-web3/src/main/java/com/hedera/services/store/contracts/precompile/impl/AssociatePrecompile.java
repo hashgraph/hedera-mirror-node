@@ -83,11 +83,9 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
         return createAssociate(associateOp);
     }
 
-    // TODO fix pricing logic to include transactionBody into account
     @Override
     public long getGasRequirement(final long blockTimestamp, final Store store) {
-        //        return pricingUtils.computeGasRequirement(blockTimestamp, this, stackedStateFrames);
-        return 0L;
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, store);
     }
 
     @Override
