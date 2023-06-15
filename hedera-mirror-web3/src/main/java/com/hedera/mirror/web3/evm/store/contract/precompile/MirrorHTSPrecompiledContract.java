@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -54,7 +53,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
-    private final StackedStateFrames<Object> stackedStateFrames;
     private final PrecompileMapper precompileMapper;
     private Precompile precompile;
     private long gasRequirement = 0L;
@@ -65,12 +63,10 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
-            final StackedStateFrames<Object> stackedStateFrames,
             final PrecompileMapper precompileMapper) {
         super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
-        this.stackedStateFrames = stackedStateFrames;
         this.precompileMapper = precompileMapper;
     }
 
@@ -176,8 +172,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             precompile.run(frame);
 
             result = precompile.getSuccessResultFor();
-
-            stackedStateFrames.top().commit();
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             result = precompile.getFailureResultFor(status);
@@ -203,7 +197,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-        updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+        this.updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
