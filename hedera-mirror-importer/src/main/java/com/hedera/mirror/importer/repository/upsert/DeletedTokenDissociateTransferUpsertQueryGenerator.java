@@ -26,8 +26,28 @@ public class DeletedTokenDissociateTransferUpsertQueryGenerator implements Upser
 
     private static final String INSERT_SQL = MessageFormat.format(
             """
-            with dissociated_nft as (
-              update nft set deleted = true, modified_timestamp = tdt.consensus_timestamp
+            with nft_history as (
+              insert into nft_history (account_id, created_timestamp, delegating_spender, deleted, metadata,
+                serial_number, spender, token_id, timestamp_range)
+              select
+                n.account_id,
+                created_timestamp,
+                delegating_spender,
+                deleted,
+                metadata,
+                serial_number,
+                spender,
+                n.token_id,
+                int8range(lower(timestamp_range), tdt.consensus_timestamp)
+              from nft n
+              join {0} tdt on tdt.account_id = n.account_id and tdt.token_id = n.token_id
+            ), dissociated_nft as (
+              update nft
+                set account_id = null,
+                    delegating_spender = null,
+                    deleted = true,
+                    spender = null,
+                    timestamp_range = int8range(tdt.consensus_timestamp, null)
               from {0} tdt
               where nft.token_id = tdt.token_id and nft.account_id = tdt.account_id and nft.deleted is false
               returning nft.token_id

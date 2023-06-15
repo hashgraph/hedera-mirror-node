@@ -16,37 +16,41 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
 
 @Transactional
-public interface NftRepository extends CrudRepository<Nft, NftId> {
-
-    @Modifying
-    @Query("update Nft set accountId = :accountId, modifiedTimestamp = :timestamp where id = :id")
-    void transferNftOwnership(
-            @Param("id") NftId nftId,
-            @Param("accountId") EntityId newAccountId,
-            @Param("timestamp") long modifiedTimestamp);
-
-    @Modifying
-    @Query("update Nft set deleted = true, modifiedTimestamp = :timestamp where id = :id")
-    void burnOrWipeNft(@Param("id") NftId nftId, @Param("timestamp") long modifiedTimestamp);
+public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
 
     @Modifying
     @Query(
             value =
                     """
-            with nft_updated as (
+            with nft_history as (
+              insert into nft_history (account_id, created_timestamp, delegating_spender, deleted, metadata,
+                serial_number, spender, token_id, timestamp_range)
+              select
+                account_id,
+                created_timestamp,
+                delegating_spender,
+                deleted,
+                metadata,
+                serial_number,
+                spender,
+                token_id,
+                int8range(lower(timestamp_range), :consensusTimestamp)
+              from nft
+              where token_id = :tokenId and account_id = :previousTreasury
+            ), nft_updated as (
               update nft
                 set account_id = :newTreasury,
-                    modified_timestamp = :consensusTimestamp
+                    delegating_spender = null,
+                    spender = null,
+                    timestamp_range = int8range(:consensusTimestamp, null)
               where token_id = :tokenId and account_id = :previousTreasury
               returning serial_number
             ), updated_count as (

@@ -37,9 +37,9 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -77,14 +77,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.extern.log4j.Log4j2;
+import java.util.Objects;
+import lombok.CustomLog;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.CollectionUtils;
 
-@Log4j2
+@CustomLog
 @Named
 @Order(0)
 @ConditionOnEntityRecordParser
@@ -117,6 +118,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<LiveHash> liveHashes;
     private final Collection<NetworkStake> networkStakes;
     private final Collection<NftAllowance> nftAllowances;
+    private final Collection<Nft> nfts;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
@@ -133,7 +135,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
-    private final Map<NftId, Nft> nfts;
+    private final Map<AbstractNft.Id, Nft> nftState;
     private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
@@ -181,6 +183,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
+        nfts = new ArrayList<>();
         networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
@@ -197,7 +200,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
-        nfts = new HashMap<>();
+        nftState = new HashMap<>();
         nftAllowanceState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
@@ -334,7 +337,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        nfts.merge(nft.getId(), nft, this::mergeNft);
+        var merged = nftState.merge(nft.getId(), nft, this::mergeNft);
+        if (merged == nft) {
+            // only add the merged object to the collection if the state is replaced with the new nft object, i.e.,
+            // attributes only in the previous state are merged into the new nft object
+            nfts.add(nft);
+        }
     }
 
     @Override
@@ -476,6 +484,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             fileData.clear();
             liveHashes.clear();
             networkStakes.clear();
+            nftState.clear();
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
@@ -537,7 +546,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
             batchPersister.persist(tokenAccounts);
             batchPersister.persist(tokenAllowances);
-            batchPersister.persist(nfts.values()); // persist nft after token entity
+            batchPersister.persist(nfts); // persist nft after token entity
             batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
@@ -563,7 +572,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
             batchPersister.persist(tokens.values());
             batchPersister.persist(tokenAccounts);
-            batchPersister.persist(nfts.values());
+            batchPersister.persist(nfts);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
@@ -571,6 +580,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             tokens.clear();
             tokenAccounts.clear();
+            nftState.clear();
             nfts.clear();
         }
     }
@@ -704,29 +714,48 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {
-        if (newNft.getAccountId() != null) { // only domains generated by NftTransfers should set account
-            cachedNft.setAccountId(newNft.getAccountId());
+        var dest = newNft;
+        var src = cachedNft;
+        if (Objects.equals(cachedNft.getTimestampLower(), newNft.getTimestampLower())) {
+            // Two NFT updates for the same nft can have the same lower timestamp in 3 cases
+            // - token mint, the NFT object built in the transaction handler has everything but accountId, the NFT
+            //   object built in EntityRecordItemListener has accountId for ownership transfer
+            // - duplicate NFT objects due to possible duplicate nft transfers in record
+            // - same NFT with multiple transfers in record
+            // We should merge updates from newNft to cachedNft instead
+            if (newNft.getAccountId() != null) {
+                // If the same nft is transferred from Alice to Bob, and from Bob to Carol at the same time, set the
+                // owner account to Carol
+                cachedNft.setAccountId(newNft.getAccountId());
+            }
+
+            dest = cachedNft;
+            src = newNft;
         }
 
-        if (cachedNft.getCreatedTimestamp() == null && newNft.getCreatedTimestamp() != null) {
-            cachedNft.setCreatedTimestamp(newNft.getCreatedTimestamp());
+        // Never merge delegatingSpender and spender since any change to the same nft afterward should clear them
+        if (dest.getAccountId() == null) {
+            dest.setAccountId(src.getAccountId());
         }
 
-        if (newNft.getDeleted() != null) {
-            cachedNft.setDeleted(newNft.getDeleted());
+        if (dest.getCreatedTimestamp() == null) {
+            dest.setCreatedTimestamp(src.getCreatedTimestamp());
         }
 
-        if (newNft.getMetadata() != null) {
-            cachedNft.setMetadata(newNft.getMetadata());
+        if (dest.getDeleted() == null) {
+            dest.setDeleted(src.getDeleted());
         }
 
-        cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
+        if (dest.getMetadata() == null) {
+            dest.setMetadata(src.getMetadata());
+        }
 
-        // copy allowance related fields
-        cachedNft.setDelegatingSpender(newNft.getDelegatingSpender());
-        cachedNft.setSpender(newNft.getSpender());
+        if (dest.getTimestampLower() > src.getTimestampLower()) {
+            // Only close the source NFT timestamp range when the dest timestamp is after the src
+            src.setTimestampUpper(dest.getTimestampLower());
+        }
 
-        return cachedNft;
+        return dest;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {

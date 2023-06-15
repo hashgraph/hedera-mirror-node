@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -61,9 +62,12 @@ class TokenWipeTransactionHandler implements TransactionHandler {
         entityListener.onToken(token);
 
         transactionBody.getSerialNumbersList().forEach(serialNumber -> {
-            var nft = new Nft(serialNumber, tokenId);
-            nft.setDeleted(true);
-            nft.setModifiedTimestamp(consensusTimestamp);
+            var nft = Nft.builder()
+                    .deleted(true)
+                    .serialNumber(serialNumber)
+                    .timestampRange(Range.atLeast(consensusTimestamp))
+                    .tokenId(tokenId.getId())
+                    .build();
             entityListener.onNft(nft);
         });
     }
