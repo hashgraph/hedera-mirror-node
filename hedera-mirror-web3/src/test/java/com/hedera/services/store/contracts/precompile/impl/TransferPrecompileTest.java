@@ -53,12 +53,14 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -133,6 +135,12 @@ class TransferPrecompileTest {
     @Mock
     private PrecompilePricingUtils pricingUtils;
 
+    @Mock
+    private TransactionBody.Builder transactionBodyBuilder;
+
+    @Mock
+    private Store store;
+
     @BeforeEach
     void setup() {
         staticTransferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
@@ -152,11 +160,11 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferToken(eq(input), any()))
                 .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
-        when(pricingUtils.computeGasRequirement(anyLong(), any())).thenReturn(EXPECTED_GAS_PRICE);
+        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any())).thenReturn(EXPECTED_GAS_PRICE);
 
         transferPrecompile.body(input, a -> a);
 
-        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -225,7 +233,6 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any()))
                 .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        ;
 
         transferPrecompile.body(input, a -> a);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
