@@ -715,9 +715,8 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
-      select ${nftTransferJsonAgg}
-      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
+      select ${Transaction.NFT_TRANSFER} from ${Transaction.tableName}
+      where ${subQueryCondition}
     ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
