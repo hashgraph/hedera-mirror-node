@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -59,6 +61,8 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     private HederaEvmStackedWorldStateUpdater updater;
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
+    private TransactionBody.Builder transactionBody;
+    private Store store;
 
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -129,7 +133,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now);
+        gasRequirement = precompile.getGasRequirement(now, transactionBody, store);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -198,6 +202,7 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
     void prepareFields(final MessageFrame frame) {
         this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         this.updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+        this.store = updater.getStore();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(

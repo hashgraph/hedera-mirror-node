@@ -45,6 +45,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,11 +85,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             new Function("transferNFT(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
-
-    protected CryptoTransferWrapper transferOp;
     private final int functionId;
-
     private final boolean isLazyCreationEnabled;
+    protected CryptoTransferWrapper transferOp;
     private ImpliedTransfers impliedTransfers;
     private int numLazyCreates;
 
@@ -96,65 +95,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         super(pricingUtils);
         this.functionId = functionId;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
-    }
-
-    @Override
-    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        transferOp = switch (functionId) {
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
-            default -> null;};
-        Objects.requireNonNull(transferOp, "Unable to decode function input");
-    }
-
-    @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        long accumulatedCost = 0;
-        final boolean customFees = impliedTransfers != null && impliedTransfers.hasAssessedCustomFees();
-        // For fungible there are always at least two operations, so only charge half for each
-        // operation
-        final long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
-                        customFees
-                                ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES
-                                : PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
-                        consensusTime)
-                / 2;
-        // NFTs are atomic, one line can do it.
-        final long nonFungibleTxCost = pricingUtils.getMinimumPriceInTinybars(
-                customFees
-                        ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES
-                        : PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
-                consensusTime);
-        for (final var transfer : transferOp.tokenTransferWrappers()) {
-            accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
-            accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
-        }
-
-        // add the cost for transferring hbars
-        // Hbar transfer is similar to fungible tokens so only charge half for each operation
-        final long hbarTxCost =
-                pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
-                        / 2;
-        accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
-        if (isLazyCreationEnabled && numLazyCreates > 0) {
-            final var lazyCreationFee = pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
-                    + pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_UPDATE, consensusTime);
-            accumulatedCost += numLazyCreates * lazyCreationFee;
-        }
-        return accumulatedCost;
-    }
-
-    @Override
-    public void run(MessageFrame frame) {}
-
-    @Override
-    public Set<Integer> getFunctionSelectors() {
-        return Set.of(functionId);
     }
 
     /**
@@ -344,5 +284,66 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
+    }
+
+    @Override
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        transferOp = switch (functionId) {
+            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
+            case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
+            case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
+            case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
+            case AbiConstants.ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
+            case AbiConstants.ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
+            default -> null;};
+        Objects.requireNonNull(transferOp, "Unable to decode function input");
+
+        return TransactionBody.newBuilder();
+    }
+
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        long accumulatedCost = 0;
+        final boolean customFees = impliedTransfers != null && impliedTransfers.hasAssessedCustomFees();
+        // For fungible there are always at least two operations, so only charge half for each
+        // operation
+        final long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
+                        customFees
+                                ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES
+                                : PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
+                        consensusTime)
+                / 2;
+        // NFTs are atomic, one line can do it.
+        final long nonFungibleTxCost = pricingUtils.getMinimumPriceInTinybars(
+                customFees
+                        ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES
+                        : PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
+                consensusTime);
+        for (final var transfer : transferOp.tokenTransferWrappers()) {
+            accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
+            accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
+        }
+
+        // add the cost for transferring hbars
+        // Hbar transfer is similar to fungible tokens so only charge half for each operation
+        final long hbarTxCost =
+                pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
+                        / 2;
+        accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
+        if (isLazyCreationEnabled && numLazyCreates > 0) {
+            final var lazyCreationFee = pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
+                    + pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_UPDATE, consensusTime);
+            accumulatedCost += numLazyCreates * lazyCreationFee;
+        }
+        return accumulatedCost;
+    }
+
+    @Override
+    public void run(MessageFrame frame) {}
+
+    @Override
+    public Set<Integer> getFunctionSelectors() {
+        return Set.of(functionId);
     }
 }

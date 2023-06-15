@@ -18,10 +18,12 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -33,8 +35,10 @@ public class MockPrecompile implements Precompile {
     private Bytes input;
 
     @Override
-    public void body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         this.input = input;
+
+        return TransactionBody.newBuilder();
     }
 
     @Override
@@ -51,7 +55,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) {
+    public long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store) {
         return 0;
     }
 
