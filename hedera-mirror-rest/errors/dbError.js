@@ -14,27 +14,10 @@
  * limitations under the License.
  */
 
-const DbErrorMessage = 'Unable to connect to database. Please retry later';
-
 class DbError extends Error {
   constructor(errorMessage) {
     super();
-    this.message = DbErrorMessage;
-    this.dbErrorMessage = errorMessage;
-    this.isConnectionError = this.isDbConnectionError(errorMessage);
-  }
-
-  /**
-   * Match known db error connection messages
-   * @param errorMessage
-   * @returns {boolean}
-   */
-  isDbConnectionError(errorMessage) {
-    return (
-      /ECONNREFUSED/.test(errorMessage) ||
-      /Connection terminated unexpectedly/.test(errorMessage) ||
-      /unable to read data from DB/.test(errorMessage)
-    );
+    this.message = errorMessage;
   }
 }
 

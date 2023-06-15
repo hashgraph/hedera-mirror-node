@@ -1,34 +1,29 @@
 apiVersion: v2
 appVersion: 0.83.0-SNAPSHOT
 dependencies:
-  - alias: citus
-    condition: citus.enabled
-    name: postgresql
-    repository: https://charts.bitnami.com/bitnami
-    version: 12.4.2
   - alias: grpc
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    tags:
-      - api
+    tags: [api, java]
     version: ">=0.18.0-0"
   - alias: graphql
     condition: graphql.enabled
     name: hedera-mirror-graphql
     repository: file://../hedera-mirror-graphql
-    tags:
-      - api
+    tags: [api, java]
     version: ">=0.18.0-0"
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
+    tags: [java]
     version: ">=0.18.0-0"
   - alias: monitor
     condition: monitor.enabled
     name: hedera-mirror-monitor
     repository: file://../hedera-mirror-monitor
+    tags: [java]
     version: ">=0.18.0-0"
   - alias: postgresql
     condition: postgresql.enabled
@@ -43,22 +38,19 @@ dependencies:
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    tags:
-      - api
+    tags: [api, javascript]
     version: ">=0.18.0-0"
   - alias: rosetta
     condition: rosetta.enabled
     name: hedera-mirror-rosetta
     repository: file://../hedera-mirror-rosetta
-    tags:
-      - api
+    tags: [api, go]
     version: ">=0.18.0-0"
   - alias: web3
     condition: web3.enabled
     name: hedera-mirror-web3
     repository: file://../hedera-mirror-web3
-    tags:
-      - api
+    tags: [api, java]
     version: ">=0.18.0-0"
 description: Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API
 home: https://github.com/hashgraph/hedera-mirror-node

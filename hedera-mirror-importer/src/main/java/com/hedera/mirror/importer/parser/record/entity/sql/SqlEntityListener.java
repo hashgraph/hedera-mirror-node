@@ -222,9 +222,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         flush();
         if (recordFile != null) {
+            var sidecars = recordFile.getSidecars();
             recordFileRepository.save(recordFile);
-            sidecarFileRepository.saveAll(recordFile.getSidecars());
-            log.info("Processed {} sidecars", recordFile.getSidecars().size());
+
+            if (!sidecars.isEmpty()) {
+                sidecarFileRepository.saveAll(sidecars);
+                log.info("Processed {} sidecars", sidecars.size());
+            }
         }
     }
 
