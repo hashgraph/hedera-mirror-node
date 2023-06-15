@@ -60,7 +60,7 @@ public abstract class AbstractAutoCreationLogic {
     private final FeeCalculator feeCalculator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    public AbstractAutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.feeCalculator = feeCalculator;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }

@@ -19,6 +19,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.services.store.models.Id.fromGrpcToken;
 import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -94,6 +95,16 @@ class AutoCreationLogicTest {
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         aPrimitiveKey = key;
         edKeyAlias = aPrimitiveKey.toByteString();
+    }
+
+    @Test
+    void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
+        given(mirrorNodeEvmProperties.isLazyCreationEnabled()).willReturn(false);
+
+        final var input = wellKnownTokenChange(edKeyAlias);
+
+        final var result = subject.create(input, at, store, ids, aliasManager);
+        assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
     @Test
