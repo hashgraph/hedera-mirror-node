@@ -1,0 +1,141 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.txn.token;
+
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.txn.token.utils.TokenUtils.hasAssociation;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
+import java.time.Instant;
+import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
+
+
+public class DissociateLogic {
+
+    private final Store store;
+
+    public DissociateLogic(final Store store) {
+        this.store = store;
+    }
+
+    public void dissociate(final Address address, final List<Address> tokenAddresses) {
+
+        final var account = store.getAccount(address, OnMissing.THROW);
+        final var tokens = tokenAddresses.stream()
+                .map(t -> store.getFungibleToken(t, OnMissing.THROW))
+                .toList();
+
+        dissociateUsing(account, tokens);
+    }
+
+    private void dissociateUsing(final Account account, final List<Token> tokens) {
+
+        tokens.forEach(token -> {
+            final var tokenRelationshipKey =
+                    new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
+            validateTrue(hasAssociation(tokenRelationshipKey, store), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            var tokenRelationship =
+                    store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
+            final var updatedRelationship = updateRelationship(tokenRelationship);
+            Account updatedAccount = null;
+            final var oldAccount = updatedRelationship.getAccount();
+            if (updatedRelationship.isAutomaticAssociation()) {
+                updatedAccount = oldAccount.decrementUsedAutomaticAssociations();
+            }
+            if (updatedRelationship.getBalanceChange() != 0) {
+                var newBalance = account.getNumPositiveBalances();
+                updatedAccount = oldAccount.setNumPositiveBalances(--newBalance);
+            }
+            if (updatedAccount != null) {
+                store.updateAccount(updatedAccount);
+            }
+
+            store.updateTokenRelationship(updatedRelationship);
+        });
+
+        var numAssociations = account.getNumAssociations();
+        final var updatedAccount = account.setNumAssociations(numAssociations - tokens.size());
+
+        store.updateAccount(updatedAccount);
+    }
+
+    private TokenRelationship updateRelationship(TokenRelationship tokenRelationship) {
+
+        final var token = tokenRelationship.getToken();
+        if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
+            updateRelationshipForDeletedOrRemovedToken(tokenRelationship);
+        } else {
+            updateModelsForDissociationFromActiveToken(tokenRelationship);
+        }
+
+        return tokenRelationship.markAsDestroyed();
+    }
+
+    private void updateRelationshipForDeletedOrRemovedToken(TokenRelationship tokenRelationship) {
+        final var disappearingUnits = tokenRelationship.getBalance();
+        tokenRelationship.setBalance(0L);
+        final var token = tokenRelationship.getToken();
+        if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+            final var account = tokenRelationship.getAccount();
+            final var currentOwnedNfts = account.getOwnedNfts();
+            account.setOwnedNfts(currentOwnedNfts - disappearingUnits);
+        }
+    }
+
+    private void updateModelsForDissociationFromActiveToken(TokenRelationship tokenRelationship) {
+        final var token = tokenRelationship.getToken();
+        final var isAccountTreasuryOfDissociatedToken =
+                tokenRelationship.getAccount().getId().equals(token.getTreasury().getId());
+        validateFalse(isAccountTreasuryOfDissociatedToken, ACCOUNT_IS_TREASURY);
+        validateFalse(tokenRelationship.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+        final var balance = tokenRelationship.getBalance();
+        if (balance > 0L) {
+            validateFalse(token.getType() == NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+
+            validateTokenExpiration(token);
+
+            /* If the fungible common token is expired, we automatically transfer the
+            dissociating account's balance back to the treasury. */
+            tokenRelationship.setBalance(0L);
+            final var treasury = token.getTreasury();
+            final var newTreasuryBalance = treasury.getBalance() + balance;
+            final var updatedTreasury = treasury.setBalance(newTreasuryBalance);
+            store.updateAccount(updatedTreasury);
+        }
+    }
+
+    private void validateTokenExpiration(Token token) {
+        final var isTokenExpired = Instant.now().getEpochSecond() > token.getExpiry();
+        validateTrue(isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+    }
+
+
+}
