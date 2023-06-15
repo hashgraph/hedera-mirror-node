@@ -134,7 +134,7 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, stackedStateFrames, evmProperties, precompileMapper),
+                mcps(gasCalculator, evmProperties, precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

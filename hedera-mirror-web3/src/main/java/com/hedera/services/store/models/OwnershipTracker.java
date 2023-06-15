@@ -16,13 +16,27 @@
 
 package com.hedera.services.store.models;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
+ * Copied type from hedera-services.
+ *
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
  */
 public class OwnershipTracker {
-    private Map<Id, List<Change>> changes = new HashMap<>();
+    private final Map<Id, List<Change>> changes = new HashMap<>();
+
+    public static Change forMinting(final Id treasury, final long serialNumber) {
+        return new Change(Id.DEFAULT, treasury, serialNumber);
+    }
+
+    public static Change forRemoving(final Id accountId, final long serialNumber) {
+        return new Change(accountId, Id.DEFAULT, serialNumber);
+    }
 
     public void add(final Id token, final Change change) {
         if (changes.containsKey(token)) {
@@ -42,19 +56,11 @@ public class OwnershipTracker {
         return changes.isEmpty();
     }
 
-    public static Change forMinting(final Id treasury, final long serialNumber) {
-        return new Change(Id.DEFAULT, treasury, serialNumber);
-    }
-
-    public static Change forRemoving(final Id accountId, final long serialNumber) {
-        return new Change(accountId, Id.DEFAULT, serialNumber);
-    }
-
     /** Encapsulates one set of Change of a given {@link UniqueToken} */
     public static class Change {
-        private Id previousOwner;
-        private Id newOwner;
-        private long serialNumber;
+        private final Id previousOwner;
+        private final Id newOwner;
+        private final long serialNumber;
 
         public Change(final Id previousOwner, final Id newOwner, final long serialNumber) {
             this.previousOwner = previousOwner;

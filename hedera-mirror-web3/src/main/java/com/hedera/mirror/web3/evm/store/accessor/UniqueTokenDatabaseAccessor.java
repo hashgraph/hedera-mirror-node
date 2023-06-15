@@ -18,12 +18,11 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
 import java.time.Instant;
 import java.util.Optional;
@@ -33,18 +32,19 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<AbstractNft.Id, UniqueToken> {
+public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, UniqueToken> {
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull AbstractNft.Id nftId) {
+    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey) {
+        final var nftId = (NftId) nftKey;
         return nftRepository
-                .findActiveById(nftId.getTokenId(), nftId.getSerialNumber())
+                .findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo())
                 .map(this::mapNftToUniqueToken);
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
-        var tokenId = idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN));
+        Id tokenId = idFromEntityId(nft.getId().getTokenId());
         return new UniqueToken(
                 tokenId,
                 nft.getId().getSerialNumber(),

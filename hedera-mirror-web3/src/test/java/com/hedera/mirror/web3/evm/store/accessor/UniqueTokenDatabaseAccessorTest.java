@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -37,13 +38,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueTokenDatabaseAccessorTest {
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+
     @InjectMocks
     private UniqueTokenDatabaseAccessor uniqueTokenDatabaseAccessor;
 
     @Mock
     private NftRepository nftRepository;
-
-    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
     void get() {
@@ -58,7 +59,7 @@ class UniqueTokenDatabaseAccessorTest {
         when(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
                 .thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(nft.getId())).hasValueSatisfying(uniqueToken -> assertThat(
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
                         uniqueToken)
                 .returns(idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN)), UniqueToken::getTokenId)
                 .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
@@ -74,8 +75,14 @@ class UniqueTokenDatabaseAccessorTest {
 
         when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(nft.getId()))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft)))
                 .hasValueSatisfying(uniqueToken ->
                         assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
+    }
+
+    private NftId getNftKey(final Nft nft) {
+        final var nftId = nft.getId();
+        final var tokenId = nftId.getTokenId();
+        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getEntityNum(), nftId.getSerialNumber());
     }
 }
