@@ -24,6 +24,10 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Map;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove unused methods: loadPriceSchedules, activePricingSequence
+ */
 public interface UsagePricesProvider {
     /**
      * Returns the prices in tinyCents that are likely to be required to consume various resources while processing the

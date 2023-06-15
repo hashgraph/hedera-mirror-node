@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.*;
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
  *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
 public interface FeeCalculator {
 

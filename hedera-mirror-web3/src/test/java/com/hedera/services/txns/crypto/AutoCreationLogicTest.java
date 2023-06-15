@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -118,7 +119,7 @@ class AutoCreationLogicTest {
         final var expected = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
         assertEquals(16L, input1.getAggregatedUnits());
         assertTrue(aliasManager.isInUse(expected));
-        assertNotNull(store.getAccount(expected, false));
+        assertNotNull(store.getAccount(expected, OnMissing.DONT_THROW));
 
         assertEquals(Pair.of(OK, totalFee), result);
     }
@@ -134,18 +135,6 @@ class AutoCreationLogicTest {
                 payer);
     }
 
-    private BalanceChange anotherTokenChange() {
-        return BalanceChange.changingFtUnits(
-                fromGrpcToken(token1),
-                token1,
-                AccountAmount.newBuilder()
-                        .setAmount(initialTransfer)
-                        .setAccountID(
-                                AccountID.newBuilder().setAlias(edKeyAlias).build())
-                        .build(),
-                payer);
-    }
-
     private static final long initialTransfer = 16L;
     private static Key aPrimitiveKey;
 
@@ -157,7 +146,6 @@ class AutoCreationLogicTest {
     private static final long totalFee = 6L;
 
     public static final TokenID token = asToken("0.0.23456");
-    public static final TokenID token1 = asToken("0.0.123456");
     private static final byte[] ECDSA_PUBLIC_KEY =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
 }

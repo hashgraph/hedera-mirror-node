@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,8 +47,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,8 +56,10 @@ import org.apache.logging.log4j.Logger;
  *
  *  Copied Logic type from hedera-services. Differences with the original:
  *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Hardcode the FeeMultiplierSource
+ *  3. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
-@Singleton
+@Named
 public class UsageBasedFeeCalculator implements FeeCalculator {
     private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
@@ -68,7 +69,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private final PricedUsageCalculator pricedUsageCalculator;
     private final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
-    @Inject
     public UsageBasedFeeCalculator(
             final HbarCentExchange exchange,
             final AutoCreationLogic autoCreationLogic,
