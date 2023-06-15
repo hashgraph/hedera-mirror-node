@@ -92,7 +92,7 @@ const validateAccNumRange = function (transactions, low, high) {
 
     if (!ret) {
       logger.warn(
-        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
+        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${utils.JSONStringify(
           tx
         )}`
       );
@@ -395,7 +395,7 @@ describe('buildWhereClause', () => {
 
   testSpecs.forEach((testSpec) => {
     const {conditions, expected} = testSpec;
-    test(JSON.stringify(conditions), () => {
+    test(utils.JSONStringify(conditions), () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
@@ -682,7 +682,7 @@ describe('create transferLists', () => {
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -697,6 +697,7 @@ describe('create transferLists', () => {
         valid_start_timestamp: '1623787159.737799966',
       },
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000002',
         charged_tx_fee: 5,
@@ -710,7 +711,7 @@ describe('create transferLists', () => {
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -766,6 +767,10 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           from token_transfer tk_tr
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
+      (
+          select nft_transfer from transaction
+          where payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
+      ) as nft_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object(

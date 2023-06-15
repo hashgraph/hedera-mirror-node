@@ -208,14 +208,15 @@ const createCryptoTransferList = (cryptoTransferList) => {
 };
 
 /**
- * Creates token transfer list from aggregated array of JSON objects in the query result
+ * Creates token transfer list from aggregated array of JSON objects in the query result.
+ * Note if the tokenTransferList is undefined, an empty array is returned.
  *
  * @param tokenTransferList token transfer list
- * @return {undefined|{amount: Number, account: string, token_id: string}[]}
+ * @return {{amount: Number, account: string, token_id: string}[]}
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
-    return undefined;
+    return [];
   }
 
   return tokenTransferList.map((transfer) => {
@@ -230,10 +231,11 @@ const createTokenTransferList = (tokenTransferList) => {
 };
 
 /**
- * Creates an nft transfer list from aggregated array of JSON objects in the query result
+ * Creates an nft transfer list from aggregated array of JSON objects in the query result.
+ * Note if the nftTransferList is undefined, an empty array is returned.
  *
  * @param nftTransferList nft transfer list
- * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
+ * @return {{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
 const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
@@ -705,6 +707,10 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
+    (
+      select ${Transaction.NFT_TRANSFER} from ${Transaction.tableName}
+      where ${subQueryCondition}
+    ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
