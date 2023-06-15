@@ -61,7 +61,8 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(final long blockTimestamp, final Store store) {
+    public long getGasRequirement(
+            final long blockTimestamp, final TransactionBody.Builder transactionBody, final Store store) {
         return 0;
     }
 

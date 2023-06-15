@@ -17,13 +17,23 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.GetTxnRecordResourceUsage;
+import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -31,6 +41,11 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -124,8 +139,51 @@ public class EvmConfiguration {
     }
 
     @Bean
-    UsageBasedFeeCalculator usageBasedFeeCalculator() {
-        return new UsageBasedFeeCalculator();
+    AccessorBasedUsages accessorBasedUsages() {
+        return new AccessorBasedUsages();
+    }
+
+    @Bean
+    OverflowCheckingCalc overflowCheckingCalc() {
+        return new OverflowCheckingCalc();
+    }
+
+    @Bean
+    PricedUsageCalculator pricedUsageCalculator(
+            AccessorBasedUsages accessorBasedUsages, OverflowCheckingCalc overflowCheckingCalc) {
+        return new PricedUsageCalculator(accessorBasedUsages, overflowCheckingCalc);
+    }
+
+    @Bean
+    QueryResourceUsageEstimator queryResourceUsageEstimator() {
+        return new GetTxnRecordResourceUsage();
+    }
+
+    @Bean
+    TxnResourceUsageEstimator txnResourceUsageEstimator() {
+        return new TokenAssociateResourceUsage();
+    }
+
+    @Bean
+    UsageBasedFeeCalculator usageBasedFeeCalculator(
+            final HbarCentExchange exchange,
+            final AutoCreationLogic autoCreationLogic,
+            final UsagePricesProvider usagePrices,
+            final PricedUsageCalculator pricedUsageCalculator,
+            final Set<QueryResourceUsageEstimator> queryUsageEstimators,
+            final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators) {
+        return new UsageBasedFeeCalculator(
+                exchange,
+                autoCreationLogic,
+                usagePrices,
+                pricedUsageCalculator,
+                queryUsageEstimators,
+                txnUsageEstimators);
+    }
+
+    @Bean
+    AccessorFactory assetAccessorFactory() {
+        return new AccessorFactory();
     }
 
     @Bean
@@ -133,9 +191,10 @@ public class EvmConfiguration {
             final AssetsLoader assetsLoader,
             final BasicHbarCentExchange basicHbarCentExchange,
             final UsageBasedFeeCalculator usageBasedFeeCalculator,
-            final BasicFcfsUsagePrices basicFcfsUsagePrices) {
+            final BasicFcfsUsagePrices basicFcfsUsagePrices,
+            final AccessorFactory accessorFactory) {
         return new PrecompilePricingUtils(
-                assetsLoader, basicHbarCentExchange, usageBasedFeeCalculator, basicFcfsUsagePrices);
+                assetsLoader, basicHbarCentExchange, usageBasedFeeCalculator, basicFcfsUsagePrices, accessorFactory);
     }
 
     @Bean
@@ -158,5 +217,10 @@ public class EvmConfiguration {
     @Bean
     AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    AutoCreationLogic autoCreationLogic(final MirrorEvmContractAliases mirrorEvmContractAliase) {
+        return new AutoCreationLogic(mirrorEvmContractAliase);
     }
 }
