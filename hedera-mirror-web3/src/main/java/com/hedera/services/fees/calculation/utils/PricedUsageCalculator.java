@@ -23,9 +23,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
 public class PricedUsageCalculator {
     private final UsageAccumulator handleScopedAccumulator = new UsageAccumulator();
 

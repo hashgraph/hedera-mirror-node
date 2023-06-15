@@ -31,7 +31,6 @@ import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
@@ -41,7 +40,6 @@ import java.util.Map;
  * Copied Logic type from hedera-services. Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
  */
-@Named
 public class PrecompilePricingUtils {
 
     public static final JKey EMPTY_KEY;
@@ -73,7 +71,7 @@ public class PrecompilePricingUtils {
     private final FeeCalculator feeCalculator;
     private final BasicFcfsUsagePrices resourceCosts;
     private final AccessorFactory accessorFactory;
-    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,

@@ -30,6 +30,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -76,6 +77,9 @@ class AutoCreationLogicTest {
     @Mock
     private FeeCalculator feeCalculator;
 
+    @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     private AutoCreationLogic subject;
 
     @BeforeEach
@@ -85,9 +89,8 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         store = new StoreImpl(accessors);
         store.wrap();
-        subject = new AutoCreationLogic(ids, store, aliasManager);
+        subject = new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
 
-        subject.setFeeCalculator(feeCalculator);
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         aPrimitiveKey = key;
         edKeyAlias = aPrimitiveKey.toByteString();
@@ -101,7 +104,8 @@ class AutoCreationLogicTest {
                         .setAccountID(payer)
                         .build(),
                 payer);
-        final var result = assertThrows(IllegalStateException.class, () -> subject.create(input, at));
+        final var result =
+                assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids, aliasManager));
         assertTrue(result.getMessage().contains("Cannot auto-create an account from unaliased change"));
     }
 
@@ -110,10 +114,11 @@ class AutoCreationLogicTest {
         // given
         given(ids.newAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
+        given(mirrorNodeEvmProperties.isLazyCreationEnabled()).willReturn(true);
 
         // when
         final var input1 = wellKnownTokenChange(edKeyAlias);
-        final var result = subject.create(input1, at);
+        final var result = subject.create(input1, at, store, ids, aliasManager);
 
         // then
         final var expected = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");

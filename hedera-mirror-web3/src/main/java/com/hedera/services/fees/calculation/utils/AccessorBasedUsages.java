@@ -32,9 +32,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
-import javax.inject.Singleton;
 
-@Singleton
 public class AccessorBasedUsages {
     private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
             CryptoTransfer,
