@@ -26,7 +26,6 @@ import * as utils from './utils';
 import {
   AssessedCustomFee,
   CryptoTransfer,
-  NftTransfer,
   StakingRewardTransfer,
   TokenTransfer,
   Transaction,
@@ -35,7 +34,7 @@ import {
   TransactionType,
 } from './model';
 
-import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
+import {AssessedCustomFeeViewModel} from './viewmodel';
 
 const {maxTransactionConsensusTimestampRangeNs} = config.query;
 
@@ -45,6 +44,7 @@ const transactionFields = [
   Transaction.ENTITY_ID,
   Transaction.MAX_FEE,
   Transaction.MEMO,
+  Transaction.NFT_TRANSFER,
   Transaction.NODE_ACCOUNT_ID,
   Transaction.NONCE,
   Transaction.PARENT_CONSENSUS_TIMESTAMP,
@@ -76,14 +76,6 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
-
-const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
-    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -222,7 +214,7 @@ const createCryptoTransferList = (cryptoTransferList) => {
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
-    return undefined;
+    return [];
   }
 
   return tokenTransferList.map((transfer) => {
@@ -242,15 +234,12 @@ const createTokenTransferList = (tokenTransferList) => {
  * @param nftTransferList nft transfer list
  * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
-const createNftTransferList = (nftTransferList) => {
+const getNftTransfers = (nftTransferList) => {
   if (!nftTransferList) {
-    return undefined;
+    return [];
   }
 
-  return nftTransferList.map((transfer) => {
-    const nftTransfer = new NftTransfer(transfer);
-    return new NftTransferViewModel(nftTransfer);
-  });
+  return nftTransferList;
 };
 
 /**
@@ -273,7 +262,7 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: createNftTransferList(row.nft_transfer_list),
+      nft_transfers: row.nft_transfer || [],
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
@@ -715,11 +704,6 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
-      select ${nftTransferJsonAgg}
-      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
-    ) as nft_transfer_list,
-    (
       select ${assessedCustomFeeJsonAgg}
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
       where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
@@ -872,7 +856,7 @@ if (utils.isTestEnv()) {
     convertStakingRewardTransfers,
     createAssessedCustomFeeList,
     createCryptoTransferList,
-    createNftTransferList,
+    getNftTransfers: getNftTransfers,
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,

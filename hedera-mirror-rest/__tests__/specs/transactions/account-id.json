@@ -27,7 +27,8 @@
         "consensus_timestamp": "1565779444711927001",
         "name": "CRYPTOUPDATEACCOUNT",
         "type": "15",
-        "entity_id": "0.0.8"
+        "entity_id": "0.0.8",
+        "nft_transfer": []
       },
       {
         "charged_tx_fee": 0,
@@ -38,7 +39,8 @@
         "nonce": 1,
         "type": 22,
         "valid_start_timestamp": "1565779444711927000",
-        "entity_id": "0.0.200"
+        "entity_id": "0.0.200",
+        "nft_transfer": []
       }
     ],
     "cryptotransfers": [
@@ -191,6 +193,7 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,

@@ -3337,6 +3337,23 @@ components:
           type: string
         name:
           $ref: "#/components/schemas/TransactionTypes"
+        nft_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              is_approval:
+                type: boolean
+              receiver_account_id:
+                $ref: "#/components/schemas/EntityId"
+              sender_account_id:
+                $ref: "#/components/schemas/EntityId"
+              serial_number:
+                example: 1
+                format: int64
+                type: integer
+              token_id:
+                $ref: "#/components/schemas/EntityId"
         node:
           $ref: "#/components/schemas/EntityId"
         nonce:
