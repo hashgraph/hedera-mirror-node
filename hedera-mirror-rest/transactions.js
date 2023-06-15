@@ -77,13 +77,8 @@ const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
   ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
 
-const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
-    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
+const nftTransferJsonAgg = `jsonb_agg(elems) as ${Transaction.NFT_TRANSFER} from ${Transaction.tableName},
+    jsonb_array_elements(${Transaction.NFT_TRANSFER}) as elems`;
 
 const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
@@ -715,7 +710,7 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
-      select ${Transaction.NFT_TRANSFER} from ${Transaction.tableName}
+      select ${nftTransferJsonAgg}
       where ${subQueryCondition}
     ) as nft_transfer_list,
     (
@@ -830,9 +825,11 @@ const getTransactionsByIdOrHash = async (req, res) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
   }
+  logger.warn(`MYK: getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
 
   // Execute query
   const {rows} = await pool.queryQuietly(query, params);
+  logger.warn(`MYK: got back ${rows.length} results.`);
   if (rows.length === 0) {
     throw new NotFoundError();
   }

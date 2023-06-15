@@ -73,7 +73,7 @@
             "amount": 1200
           }
         ],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.12500",
             "sender_account_id": "0.0.11200",

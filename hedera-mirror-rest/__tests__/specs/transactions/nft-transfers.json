@@ -30,7 +30,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
