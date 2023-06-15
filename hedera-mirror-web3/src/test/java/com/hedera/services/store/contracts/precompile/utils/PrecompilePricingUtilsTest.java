@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -41,11 +40,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PrecompilePricingUtilsTest {
 
+    public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
     private static final long COST = 36;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-
-    public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
     @Mock
     private AssetsLoader assetLoader;
@@ -62,15 +60,12 @@ class PrecompilePricingUtilsTest {
     @Mock
     private BasicFcfsUsagePrices resourceCosts;
 
-    @Mock
-    private StackedStateFrames<?> state;
-
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, state));
+                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts));
     }
 
     @Test
@@ -85,7 +80,7 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
         final PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, state);
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

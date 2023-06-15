@@ -18,10 +18,12 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.txn.token.AssociateLogic;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
@@ -36,14 +38,13 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
-    private final CacheProperties cacheProperties;
-
     public static final String CACHE_MANAGER_FEE = "cacheManagerFee";
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
     public static final String CACHE_MANAGER_STATE = "cacheManagerState";
     public static final String CACHE_MANAGER_ENTITY = "cacheManagerEntity";
     public static final String CACHE_MANAGER_TOKEN = "cacheManagerToken";
+    private final CacheProperties cacheProperties;
 
     @Bean(CACHE_MANAGER_STATE)
     CacheManager cacheManagerState() {
@@ -107,5 +108,10 @@ public class EvmConfiguration {
     @Bean
     BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
+    }
+
+    @Bean
+    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new AssociateLogic(mirrorNodeEvmProperties);
     }
 }

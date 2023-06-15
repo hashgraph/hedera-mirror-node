@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -31,7 +31,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    private final StackedStateFrames<Object> stackedStateFrames;
+    protected final Store store;
     protected MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractEvmStackedLedgerUpdater(
@@ -40,11 +40,11 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
             final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final StackedStateFrames<Object> stackedStateFrames) {
+            final Store store) {
         super(world, accountAccessor, tokenAccessor, entityAccess);
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
         this.mirrorEvmContractAliases.resetPendingChanges();
-        this.stackedStateFrames = stackedStateFrames;
+        this.store = store;
     }
 
     @Override
@@ -56,12 +56,7 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
 
     @Override
     public void commit() {
-        final var topFrame = stackedStateFrames.top();
-        if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
-            topFrame.commit();
-            stackedStateFrames.pop();
-        }
-
+        store.commit();
         mirrorEvmContractAliases.commit();
 
         // partially copied from services
