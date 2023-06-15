@@ -1,0 +1,9 @@
+{{- if .Values.stackgres.enabled -}}
+apiVersion: stackgres.io/v1
+kind: SGInstanceProfile
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}-worker
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec: {{ .Values.stackgres.worker.resources | toYaml | nindent 2 }}
+{{- end -}}

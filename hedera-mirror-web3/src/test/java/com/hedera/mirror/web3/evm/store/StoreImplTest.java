@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -163,13 +164,13 @@ class StoreImplTest {
         when(accountModel.getNum()).thenReturn(12L);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
-        final var account = subject.getAccount(ACCOUNT_ADDRESS, false);
+        final var account = subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW);
         assertThat(account.getId()).isEqualTo(new Id(0, 0, 12));
     }
 
     @Test
     void getAccountThrowIfMissing() {
-        assertThatThrownBy(() -> subject.getAccount(ACCOUNT_ADDRESS, true))
+        assertThatThrownBy(() -> subject.getAccount(ACCOUNT_ADDRESS, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
@@ -179,13 +180,14 @@ class StoreImplTest {
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        final var token = subject.getToken(TOKEN_ADDRESS, false);
+        final var token = subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
         assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
     }
 
     @Test
     void getTokenThrowIfMissing() {
-        assertThatThrownBy(() -> subject.getToken(TOKEN_ADDRESS, true)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.THROW))
+                .isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test
@@ -199,8 +201,8 @@ class StoreImplTest {
         when(accountModel.getNum()).thenReturn(12L);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
-        final var tokenRelationship =
-                subject.getTokenRelationship(new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), false);
+        final var tokenRelationship = subject.getTokenRelationship(
+                new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
         assertThat(tokenRelationship.getAccount().getId()).isEqualTo(new Id(0, 0, 12));
         assertThat(tokenRelationship.getToken().getId()).isEqualTo(new Id(0, 0, 6));
     }
@@ -208,7 +210,7 @@ class StoreImplTest {
     @Test
     void getTokenRelationshipThrowIfMissing() {
         final var tokenRelationshipKey = new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS);
-        assertThatThrownBy(() -> subject.getTokenRelationship(tokenRelationshipKey, true))
+        assertThatThrownBy(() -> subject.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
@@ -219,13 +221,14 @@ class StoreImplTest {
         when(nft.getId())
                 .thenReturn(
                         new com.hedera.mirror.common.domain.token.NftId(1, new EntityId(0L, 0L, 6L, EntityType.TOKEN)));
-        final var uniqueToken = subject.getUniqueToken(nftId, false);
+        final var uniqueToken = subject.getUniqueToken(nftId, OnMissing.DONT_THROW);
         assertThat(uniqueToken.getNftId()).isEqualTo(nftId);
     }
 
     @Test
     void getUniqueTokenThrowIfMissing() {
         final var nftId = new NftId(0, 0, 6, 1);
-        assertThatThrownBy(() -> subject.getUniqueToken(nftId, true)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> subject.getUniqueToken(nftId, OnMissing.THROW))
+                .isInstanceOf(InvalidTransactionException.class);
     }
 }

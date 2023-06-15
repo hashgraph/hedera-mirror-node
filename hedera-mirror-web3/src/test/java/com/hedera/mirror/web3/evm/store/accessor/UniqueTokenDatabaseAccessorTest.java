@@ -36,13 +36,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueTokenDatabaseAccessorTest {
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+
     @InjectMocks
     private UniqueTokenDatabaseAccessor uniqueTokenDatabaseAccessor;
 
     @Mock
     private NftRepository nftRepository;
-
-    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
     void get() {

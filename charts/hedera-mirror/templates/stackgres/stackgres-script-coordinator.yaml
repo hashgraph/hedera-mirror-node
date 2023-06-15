@@ -1,0 +1,52 @@
+{{- if .Values.stackgres.enabled -}}
+apiVersion: stackgres.io/v1
+kind: SGScript
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}-coordinator
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  continueOnError: false
+  managedVersions: true
+  scripts:
+    - database: postgres
+      name: all-postgres
+      retryOnError: true
+      scriptFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: all-postgres.sql
+      storeStatusInDatabase: true
+      user: postgres
+      wrapInTransaction: serializable
+    - database: {{ .Values.db.name }}
+      name: all-db
+      retryOnError: true
+      scriptFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: all-db.sql
+      storeStatusInDatabase: true
+      user: postgres
+      wrapInTransaction: serializable
+    - database: {{ .Values.db.name }}
+      name: coordinator-owner
+      retryOnError: true
+      scriptFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: coordinator-owner.sql
+      storeStatusInDatabase: true
+      user: {{ .Values.db.owner.username }}
+      wrapInTransaction: serializable
+    - database: {{ .Values.db.name }}
+      name: coordinator-superuser
+      retryOnError: true
+      scriptFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: coordinator-superuser.sql
+      storeStatusInDatabase: true
+      user: postgres
+      wrapInTransaction: serializable
+{{- end -}}

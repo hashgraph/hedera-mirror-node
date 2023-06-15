@@ -27,7 +27,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -92,6 +93,7 @@ class MirrorHTSPrecompiledContractTest {
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
+    private Store store;
 
     @InjectMocks
     private PrecompileMapper precompileMapper;
@@ -104,18 +106,14 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        final StackedStateFrames<Object> stackedStateFrames = new StackedStateFrames<>(accessors);
-
-        // This push logic would be replaced, when we fully integrate StackedStateFrames into the Updater components
-        stackedStateFrames.push(); // Create first top-level RWCachingStateFrame
-        stackedStateFrames.push(); // Create second precompile specific RWCachingStateFrame
+        store = new StoreImpl(accessors);
+        store.wrap(); // Create top-level RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
         precompileMapper.setSupportedPrecompiles(Set.of(new MockPrecompile()));
-        subject = new MirrorHTSPrecompiledContract(
-                evmInfrastructureFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper);
+        subject = new MirrorHTSPrecompiledContract(evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper);
     }
 
     @Test

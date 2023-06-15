@@ -21,9 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -40,53 +38,52 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Account getAccount(final Address address, final boolean throwIfMissing) {
+    public Account getAccount(final Address address, final OnMissing throwIfMissing) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         final var account = accountAccessor.get(address);
 
-        if (throwIfMissing) {
-            return account.orElseThrow(() -> missingEntityException(Account.class.getName(), address));
+        if (OnMissing.THROW.equals(throwIfMissing)) {
+            return account.orElseThrow(() -> missingEntityException(Account.class, address));
         } else {
-            return account.orElse(new Account(Id.DEFAULT, 0L));
+            return account.orElse(Account.getEmptyAccount());
         }
     }
 
     @Override
-    public Token getToken(final Address address, final boolean throwIfMissing) {
+    public Token getFungibleToken(final Address address, final OnMissing throwIfMissing) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 
-        if (throwIfMissing) {
-            return token.orElseThrow(() -> missingEntityException(Token.class.getName(), address));
+        if (OnMissing.THROW.equals(throwIfMissing)) {
+            return token.orElseThrow(() -> missingEntityException(Token.class, address));
         } else {
-            return token.orElse(new Token(Id.DEFAULT));
+            return token.orElse(Token.getEmptyToken());
         }
     }
 
     @Override
     public TokenRelationship getTokenRelationship(
-            final TokenRelationshipKey tokenRelationshipKey, final boolean throwIfMissing) {
+            final TokenRelationshipKey tokenRelationshipKey, final OnMissing throwIfMissing) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
         final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
 
-        if (throwIfMissing) {
+        if (OnMissing.THROW.equals(throwIfMissing)) {
             return tokenRelationship.orElseThrow(
-                    () -> missingEntityException(TokenRelationship.class.getName(), tokenRelationshipKey));
+                    () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
         } else {
-            return tokenRelationship.orElse(new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L)));
+            return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
         }
     }
 
     @Override
-    public UniqueToken getUniqueToken(final NftId nftId, final boolean throwIfMissing) {
+    public UniqueToken getUniqueToken(final NftId nftId, final OnMissing throwIfMissing) {
         final var uniqueTokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
         final var uniqueToken = uniqueTokenAccessor.get(nftId);
 
-        if (throwIfMissing) {
-            return uniqueToken.orElseThrow(() -> missingEntityException(UniqueToken.class.getName(), nftId));
+        if (OnMissing.THROW.equals(throwIfMissing)) {
+            return uniqueToken.orElseThrow(() -> missingEntityException(UniqueToken.class, nftId));
         } else {
-            return uniqueToken.orElse(
-                    new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]));
+            return uniqueToken.orElse(UniqueToken.getEmptyUniqueToken());
         }
     }
 
@@ -103,16 +100,15 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void addPendingChanges() {
-        stackedStateFrames.top().commit();
+    public void updateFungibleToken(final Token fungibleToken) {
+        final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
+        tokenAccessor.set(fungibleToken.getId().asEvmAddress(), fungibleToken);
     }
 
     @Override
     public void commit() {
-        final var topFrame = stackedStateFrames.top();
         if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
-            topFrame.commit();
-            stackedStateFrames.pop();
+            stackedStateFrames.top().commit();
         }
     }
 
@@ -127,8 +123,8 @@ public class StoreImpl implements Store {
         return new TokenRelationshipKey(tokenAddress, accountAddress);
     }
 
-    private InvalidTransactionException missingEntityException(final String type, Object id) {
+    private InvalidTransactionException missingEntityException(final Class<?> type, Object id) {
         return new InvalidTransactionException(
-                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
+                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type.getName(), id), "");
     }
 }
