@@ -69,6 +69,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private int maxGasEstimateRetriesCount = 20;
 
+    private int maxCustomFeesAllowed = 10;
+
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)
@@ -121,6 +123,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
+    }
+
+    public int maxCustomFeesAllowed() {
+        return maxCustomFeesAllowed;
     }
 
     @Getter
