@@ -41,6 +41,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -229,5 +230,10 @@ public class EvmConfiguration {
     @Bean
     AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    DissociateLogic dissociateLogic() {
+        return new DissociateLogic();
     }
 }
