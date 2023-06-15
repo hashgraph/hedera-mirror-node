@@ -1624,7 +1624,7 @@ const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) =
   }
   if (neValues.length) {
     neValues.forEach((value) => {
-      conditions.push(`not ${column} @> ?`);
+      conditions.push(`not ${column} @> ?::bigint`);
       params.push(value);
     });
   }
