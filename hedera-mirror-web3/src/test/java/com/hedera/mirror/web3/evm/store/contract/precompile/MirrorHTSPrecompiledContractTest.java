@@ -112,8 +112,7 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         store = new StoreImpl(accessors);
-        store.wrap(); // Create first top-level RWCachingStateFrame
-        store.wrap(); // Create second precompile specific RWCachingStateFrame
+        store.wrap(); // Create top-level RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);

@@ -30,6 +30,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.AssociateLogic;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -152,5 +153,10 @@ public class EvmConfiguration {
     @Bean
     PrecompileMapper precompileMapper(final Set<Precompile> precompiles) {
         return new PrecompileMapper(precompiles);
+    }
+
+    @Bean
+    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new AssociateLogic(mirrorNodeEvmProperties);
     }
 }

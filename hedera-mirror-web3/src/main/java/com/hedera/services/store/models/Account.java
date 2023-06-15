@@ -39,8 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
  *     1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract
  *     2. Added field accountAddress for convenience
  *     3. Changed collection types to SortedMap and SortedSet
- *     4. Added constructors for creating new instances and achieve immutability
- *     5. Added Lombok builder to facilitate creation of new objects
+ *     4. Added constructors and set methods for creating new instances and achieve immutability
  *     6. Added factory method that returns empty instance
  */
 public class Account extends HederaEvmAccount {
@@ -118,7 +117,7 @@ public class Account extends HederaEvmAccount {
      * @param ownedNfts
      * @return the new instance of {@link Account} with updated {@link #ownedNfts} property
      */
-    private Account createNewAccountWithNewOwnedNfts(Account oldAccount, long ownedNfts) {
+    private Account createNewAccountWithNewOwnedNfts(final Account oldAccount, final long ownedNfts) {
         return new Account(
                 oldAccount.id,
                 oldAccount.expiry,
@@ -132,6 +131,33 @@ public class Account extends HederaEvmAccount {
                 oldAccount.fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated numAssociations in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param numAssociations
+     * @return the new instance of {@link Account} with updated {@link #numAssociations} property
+     */
+    private Account createNewAccountWithNumAssociations(final Account oldAccount, final int numAssociations) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                numAssociations,
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce);
@@ -223,6 +249,10 @@ public class Account extends HederaEvmAccount {
 
     public int getNumAssociations() {
         return numAssociations;
+    }
+
+    public Account setNumAssociations(int numAssociations) {
+        return createNewAccountWithNumAssociations(this, numAssociations);
     }
 
     public int getNumTreasuryTitles() {

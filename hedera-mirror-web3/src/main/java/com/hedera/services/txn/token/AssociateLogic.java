@@ -41,15 +41,13 @@ import org.hyperledger.besu.datatypes.Address;
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
  * */
 public class AssociateLogic {
-    private final Store store;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    public AssociateLogic(final Store store, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        this.store = store;
+    public AssociateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
-    public void associate(final Address accountAddress, final List<Address> tokensAddresses) {
+    public void associate(final Address accountAddress, final List<Address> tokensAddresses, final Store store) {
         /* Load the models */
         final var account = store.getAccount(accountAddress, OnMissing.THROW);
         final var tokens = tokensAddresses.stream()
@@ -57,26 +55,25 @@ public class AssociateLogic {
                 .toList();
 
         /* Associate and commit the changes */
-        final var newTokenRelationships = associateWith(account, tokens);
+        final var newTokenRelationships = associateWith(account, tokens, store);
 
         newTokenRelationships.forEach(store::updateTokenRelationship);
     }
 
-    private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens) {
+    private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
         int numAssociations = account.getNumAssociations();
         final var proposedTotalAssociations = tokens.size() + numAssociations;
 
         validateFalse(exceedsTokenAssociationLimit(proposedTotalAssociations), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
-        Account updatedAccount =
-                account.toBuilder().numAssociations(proposedTotalAssociations).build();
+        final var updatedAccount = account.setNumAssociations(proposedTotalAssociations);
 
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
             TokenRelationshipKey tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
-            validateFalse(hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            validateFalse(hasAssociation(tokenRelationshipKey, store), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
             final var newRel = new TokenRelationship(token, updatedAccount);
             numAssociations++;
@@ -88,12 +85,11 @@ public class AssociateLogic {
         return newModelRels;
     }
 
-    private boolean exceedsTokenAssociationLimit(int totalAssociations) {
-        return mirrorNodeEvmProperties.isTokenAssociationsLimited()
-                && totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
+    private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
+        return totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
     }
 
-    private boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
+    private boolean hasAssociation(final TokenRelationshipKey tokenRelationshipKey, final Store store) {
         return store.getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
                         .getAccount()
                         .getId()

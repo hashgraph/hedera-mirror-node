@@ -56,13 +56,14 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
 
         // --- Execute the transaction and capture its results ---
-        final var associateLogic = new AssociateLogic(store, mirrorNodeEvmProperties);
+        final var associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
 
         associateLogic.associate(
                 accountId.asEvmAddress(),
                 transactionBody.getTokenAssociate().getTokensList().stream()
                         .map(EntityIdUtils::asTypedEvmAddress)
-                        .toList());
+                        .toList(),
+                store);
 
         return new EmptyRunResult();
     }

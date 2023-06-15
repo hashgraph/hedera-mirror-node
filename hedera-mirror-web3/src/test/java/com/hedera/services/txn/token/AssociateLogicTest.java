@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,9 +49,6 @@ class AssociateLogicTest {
     private final List<Address> tokenAddresses = List.of(tokenAddress);
 
     @Mock
-    Account.AccountBuilder accountBuilder;
-
-    @Mock
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Mock
@@ -74,14 +70,14 @@ class AssociateLogicTest {
 
     @BeforeEach
     public void setUp() {
-        associateLogic = new AssociateLogic(store, mirrorNodeEvmProperties);
+        associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
     }
 
     @Test
     void throwErrorWhenAccountNotFound() {
         when(store.getAccount(accountAddress, OnMissing.THROW))
                 .thenThrow(getException(Account.class.getName(), accountAddress));
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
@@ -94,7 +90,7 @@ class AssociateLogicTest {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(store.getFungibleToken(tokenAddress, OnMissing.THROW))
                 .thenThrow(getException(Token.class.getName(), tokenAddress));
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
@@ -105,18 +101,18 @@ class AssociateLogicTest {
     void failsOnCrossingAssociationLimit() {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getNumAssociations()).thenReturn(5);
-        when(mirrorNodeEvmProperties.isTokenAssociationsLimited()).thenReturn(true);
         when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(3);
 
         // expect:
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED.name());
     }
 
     @Test
     void failsOnAssociatingWithAlreadyRelatedToken() {
-        setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        setupAccount(1);
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
@@ -125,28 +121,30 @@ class AssociateLogicTest {
         when(tokenRelationship.getAccount()).thenReturn(account);
         when(accountId.num()).thenReturn(1L);
 
-        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses))
+        assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.name());
     }
 
     @Test
     void canAssociateWithNewToken() {
-        final var modifiedAccount = setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        final var modifiedAccount = setupAccount(1);
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
         when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
                 .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
-        associateLogic.associate(accountAddress, tokenAddresses);
+        associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount));
     }
 
     @Test
     void updatesAccount() {
-        final var modifiedAccount = setupAccount();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        final var modifiedAccount = setupAccount(6);
         when(account.getNumAssociations()).thenReturn(5);
 
         setupToken();
@@ -156,20 +154,18 @@ class AssociateLogicTest {
                 .thenReturn(tokenRelationship);
         when(tokenRelationship.getAccount()).thenReturn(account);
 
-        associateLogic.associate(accountAddress, tokenAddresses);
+        associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateAccount(modifiedAccount);
-        verify(accountBuilder).numAssociations(6);
+        verify(account).setNumAssociations(6);
     }
 
-    private Account setupAccount() {
+    private Account setupAccount(int numOfAssociations) {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getAccountAddress()).thenReturn(accountAddress);
         when(account.getId()).thenReturn(accountId);
-        when(account.toBuilder()).thenReturn(accountBuilder);
-        when(accountBuilder.numAssociations(anyInt())).thenReturn(accountBuilder);
         Account modifiedAccount = mock(Account.class);
-        when(accountBuilder.build()).thenReturn(modifiedAccount);
+        when(account.setNumAssociations(numOfAssociations)).thenReturn(modifiedAccount);
         return modifiedAccount;
     }
 
