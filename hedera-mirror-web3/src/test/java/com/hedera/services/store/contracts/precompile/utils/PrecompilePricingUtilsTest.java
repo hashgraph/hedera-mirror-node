@@ -24,6 +24,7 @@ import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -39,10 +40,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PrecompilePricingUtilsTest {
 
-    public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
     private static final long COST = 36;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+
+    public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
     @Mock
     private AssetsLoader assetLoader;
@@ -59,12 +61,15 @@ class PrecompilePricingUtilsTest {
     @Mock
     private BasicFcfsUsagePrices resourceCosts;
 
+    @Mock
+    private AccessorFactory accessorFactory;
+
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts));
+                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory));
     }
 
     @Test
@@ -79,7 +84,7 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
         final PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts);
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

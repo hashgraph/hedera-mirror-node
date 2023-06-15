@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.services.ledger.ids;
 
-import lombok.*;
+import com.hederahashgraph.api.proto.java.AccountID;
 
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ContractCallRequest {
+/** Defines a type able to create ids of various entities under various conditions. */
+public interface EntityIdSource {
 
-    @Builder.Default
-    private String block = "latest";
-
-    private String data;
-
-    private boolean estimate;
-
-    @Builder.Default
-    private long gas = 15000000;
-
-    @Builder.Default
-    private long gasPrice = 100000000;
-
-    private String from;
-
-    private String to;
-
-    @Builder.Default
-    private long value = 0;
+    /**
+     * Returns the {@link AccountID} to use for a new account
+     *
+     * @return an appropriate id to use
+     */
+    AccountID newAccountId();
 }
