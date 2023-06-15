@@ -1506,7 +1506,7 @@ const checkTimestampRange = (
   const earliest = valuesByOp[opsMap.gt].length ? valuesByOp[opsMap.gt][0] + 1n : valuesByOp[opsMap.gte][0];
   const latest = valuesByOp[opsMap.lt].length ? valuesByOp[opsMap.lt][0] - 1n : valuesByOp[opsMap.lte][0];
 
-  const difference = latest && earliest ? latest - earliest + 1n : undefined;
+  const difference = latest !== undefined && earliest !== undefined ? latest - earliest + 1n : undefined;
   const {maxTimestampRange, maxTimestampRangeNs} = config.query;
 
   // If difference is undefined, we want to ignore because we allow open ranges and that is known to be true at this point
@@ -1583,11 +1583,8 @@ const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildA
 
   if (range) {
     const bounds = [...range.bounds];
-    if (bounds.length !== 2) {
-      return ['', []];
-    }
     if (range.begin) {
-      conditions.push(`${column}${boundToOp[bounds[0]]} ?`);
+      conditions.push(`${column} ${boundToOp[bounds[0]]} ?`);
       params.push(range.begin);
     }
     if (range.end) {
@@ -1628,7 +1625,7 @@ const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) =
   if (neValues.length) {
     neValues.forEach((value) => {
       conditions.push(`not ${column} @> ?`);
-      params.push(Range(value, value, '[]'));
+      params.push(value);
     });
   }
 
