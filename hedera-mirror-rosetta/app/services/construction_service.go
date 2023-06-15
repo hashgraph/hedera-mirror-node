@@ -559,7 +559,7 @@ func NewConstructionAPIService(
 	} else if hederaClient, err = hedera.ClientForName(network); err != nil {
 		return nil, err
 	}
-	
+
 	hederaClient.CancelScheduledNetworkUpdate()
 
 	// disable SDK auto retry
