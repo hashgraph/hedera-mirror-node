@@ -413,7 +413,8 @@ const getOneAccount = async (req, res) => {
       balanceFileTsParams,
       order
     );
-    const timestampExcluded = neValues.reduce((prev, curr) => prev || curr === accountBalanceTs, false);
+    //Allow type coercion as the neValues will always be bigint and accountBalanceTs may be a number
+    const timestampExcluded = neValues.some((value) => value == accountBalanceTs);
 
     if (timestampExcluded) {
       throw new NotFoundError('Not found');
