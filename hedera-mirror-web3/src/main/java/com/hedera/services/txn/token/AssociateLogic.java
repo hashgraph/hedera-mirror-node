@@ -17,6 +17,7 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.services.txn.token.utils.TokenUtils.hasAssociation;
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -105,13 +106,5 @@ public class AssociateLogic {
 
     private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
         return totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
-    }
-
-    private boolean hasAssociation(final TokenRelationshipKey tokenRelationshipKey, final Store store) {
-        return store.getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
-                        .getAccount()
-                        .getId()
-                        .num()
-                > 0;
     }
 }
