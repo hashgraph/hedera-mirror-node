@@ -71,7 +71,7 @@ public class PrecompilePricingUtils {
     private final FeeCalculator feeCalculator;
     private final BasicFcfsUsagePrices resourceCosts;
     private final AccessorFactory accessorFactory;
-    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,

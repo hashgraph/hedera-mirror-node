@@ -25,8 +25,6 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 /**
  * A specialized fee calculator that throws an exception if any step of the fee calculation
@@ -35,15 +33,9 @@ import jakarta.inject.Singleton;
  * <p>(Because all prices and usage estimates are known to be non-negative, checking for an overflow
  * means just checking for a number less than zero.)
  */
-@Singleton
 public final class OverflowCheckingCalc {
     private static final String OVERFLOW_ERROR =
             "A fee calculation step overflowed; " + "the operation cannot be priced, and therefore cannot be performed";
-
-    @Inject
-    public OverflowCheckingCalc() {
-        /* No-op */
-    }
 
     /**
      * Returns the network, node, and services fees for an operation given four inputs.

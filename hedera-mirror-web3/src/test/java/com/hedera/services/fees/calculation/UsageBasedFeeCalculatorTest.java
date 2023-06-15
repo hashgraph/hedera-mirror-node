@@ -37,7 +37,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -186,7 +185,6 @@ class UsageBasedFeeCalculatorTest {
 
         subject = new UsageBasedFeeCalculator(
                 exchange,
-                mock(AutoCreationLogic.class),
                 usagePrices,
                 pricedUsageCalculator,
                 Set.of(incorrectQueryEstimator, correctQueryEstimator),

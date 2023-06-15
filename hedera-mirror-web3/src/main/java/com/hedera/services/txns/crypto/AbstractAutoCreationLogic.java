@@ -20,10 +20,12 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
@@ -52,17 +54,15 @@ import org.hyperledger.besu.datatypes.Address;
  *  3. Remove SyntheticTxnFactory
  *  4. Remove UsageLimits and GlobalDynamicProperties
  *  5. trackAliases consumes 2 Addresses
+ *  6. The class is stateless and the arguments are passed into the functions
  */
 public abstract class AbstractAutoCreationLogic {
-    final MirrorEvmContractAliases mirrorEvmContractAliases;
-    protected FeeCalculator feeCalculator;
+    private final FeeCalculator feeCalculator;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    protected AbstractAutoCreationLogic(MirrorEvmContractAliases mirrorEvmContractAliases) {
-        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
-    }
-
-    public void setFeeCalculator(final FeeCalculator feeCalculator) {
+    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.feeCalculator = feeCalculator;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     /**
@@ -78,11 +78,19 @@ public abstract class AbstractAutoCreationLogic {
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
-            final BalanceChange change, final Timestamp timestamp, final EntityIdSource ids, final Store store) {
+            final BalanceChange change,
+            final Timestamp timestamp,
+            final Store store,
+            final EntityIdSource ids,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        if (change.isForToken() && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
+            return Pair.of(NOT_SUPPORTED, 0L);
+        }
         final var alias = change.getNonEmptyAliasIfPresent();
         if (alias == null) {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
+
         final var key = asPrimitiveKeyUnchecked(alias);
         final JKey jKey = asFcKeyUnchecked(key);
         var fee = autoCreationFeeFor(jKey, store, timestamp);
@@ -106,11 +114,12 @@ public abstract class AbstractAutoCreationLogic {
                 0L);
         store.updateAccount(account);
         replaceAliasAndSetBalanceOnChange(change, newId);
-        trackAlias(jKey, account.getAccountAddress());
+        trackAlias(jKey, account.getAccountAddress(), mirrorEvmContractAliases);
         return Pair.of(OK, fee);
     }
 
-    protected abstract void trackAlias(final JKey jKey, final Address alias);
+    protected abstract void trackAlias(
+            final JKey jKey, final Address alias, final MirrorEvmContractAliases mirrorEvmContractAliases);
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {

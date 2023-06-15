@@ -27,7 +27,6 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.hapi.utils.fees.SigValueObj;
 import com.hedera.services.jproto.JKey;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -52,9 +51,12 @@ import org.apache.logging.log4j.Logger;
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and collections of estimators
  * which can infer the resource usage of various transactions and queries.
+ * <p>
+ * Copied Logic type from hedera-services.
  *
- *  Copied Logic type from hedera-services. Differences with the original:
- *  1. Use abstraction for the state by introducing {@link Store} interface
+ * Differences with the original:
+ *  1. Use abstraction for the state by
+ * introducing {@link Store} interface
  *  2. Hardcode the FeeMultiplierSource
  *  3. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
@@ -69,18 +71,15 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     public UsageBasedFeeCalculator(
             final HbarCentExchange exchange,
-            final AutoCreationLogic autoCreationLogic,
             final UsagePricesProvider usagePrices,
             final PricedUsageCalculator pricedUsageCalculator,
             final Set<QueryResourceUsageEstimator> queryUsageEstimators,
             final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators) {
         this.exchange = exchange;
         this.usagePrices = usagePrices;
-        this.txnUsageEstimators = txnUsageEstimators;
-        this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
         this.pricedUsageCalculator = pricedUsageCalculator;
-
-        autoCreationLogic.setFeeCalculator(this);
+        this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
+        this.txnUsageEstimators = txnUsageEstimators;
     }
 
     private FeeObject compute(
