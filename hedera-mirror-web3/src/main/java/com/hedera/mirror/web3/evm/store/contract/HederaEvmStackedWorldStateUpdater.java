@@ -17,29 +17,40 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+@SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
-        extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account> {
+        extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>
+        implements HederaEvmWorldUpdater, HederaEvmStackedWorldUpdater {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
+
+    private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     private final EvmProperties evmProperties;
+    private final EntityAddressSequencer entityAddressSequencer;
+    private final TokenAccessor tokenAccessor;
     private final StackedStateFrames<Object> stackedStateFrames;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -48,12 +59,22 @@ public class HederaEvmStackedWorldStateUpdater
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StackedStateFrames<Object> stackedStateFrames) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
+        super(
+                updater,
+                accountAccessor,
+                tokenAccessor,
+                hederaEvmEntityAccess,
+                mirrorEvmContractAliases,
+                stackedStateFrames);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
+        this.entityAddressSequencer = entityAddressSequencer;
         this.stackedStateFrames = stackedStateFrames;
         this.stackedStateFrames.push();
+        this.tokenAccessor = tokenAccessor;
     }
 
     @Override
@@ -107,7 +128,71 @@ public class HederaEvmStackedWorldStateUpdater
         accountAccessor.set(address, accountModel);
     }
 
+    /**
+     * Returns the mirror form of the given EVM address.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form
+     */
+    public byte[] permissivelyUnaliased(final byte[] evmAddress) {
+        return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+    }
+
+    /**
+     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
+     * the given address is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based address value of a given account.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
+     *     this account
+     */
+    public byte[] unaliased(final byte[] evmAddress) {
+        final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
+            return NON_CANONICAL_REFERENCE;
+        }
+        return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
+    }
+
     private boolean isTokenRedirect(final Address address) {
         return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
+    }
+
+    @Override
+    public Address priorityAddress(Address addressOrAlias) {
+        return accountAccessor.canonicalAddress(addressOrAlias);
+    }
+
+    @Override
+    public Address newAliasedContractAddress(Address sponsor, Address alias) {
+        final var mirrorAddress = newContractAddress(sponsor);
+        // Only link the alias if it's not already in use, or if the target of the alleged link
+        // doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
+        // alias address is going to fail in short order; in the second case, the existing link
+        // must have been created by an inline create2 that failed, but didn't revert us---we are
+        // free to re-use this alias).
+        if (!mirrorEvmContractAliases.isInUse(alias) || isMissingTarget(alias)) {
+            mirrorEvmContractAliases.link(alias, mirrorAddress);
+        }
+        return mirrorAddress;
+    }
+
+    @Override
+    public Address newContractAddress(Address sponsor) {
+        return asTypedEvmAddress(entityAddressSequencer.getNewContractId(sponsor));
+    }
+
+    @Override
+    public long getSbhRefund() {
+        return 0;
+    }
+
+    private boolean isMissingTarget(final Address alias) {
+        final var target = mirrorEvmContractAliases.resolveForEvm(alias);
+        return stackedStateFrames
+                .top()
+                .getAccessor(com.hedera.services.store.models.Account.class)
+                .get(target)
+                .isEmpty();
     }
 }

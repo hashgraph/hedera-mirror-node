@@ -1,0 +1,11 @@
+{{- if .Values.stackgres.enabled -}}
+apiVersion: stackgres.io/v1
+kind: SGPostgresConfig
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}-worker
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  postgresql.conf: {{ tpl (toYaml .Values.stackgres.worker.config) . | nindent 4 }}
+  postgresVersion: {{ .Values.stackgres.postgresVersion | quote }}
+{{- end -}}

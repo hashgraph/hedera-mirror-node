@@ -3,10 +3,6 @@ alertmanager:
   inhibitRules:
     enabled: true
 
-citus:
-  readReplicas:
-    replicaCount: 3
-
 global:
   middleware: true
 
@@ -113,6 +109,23 @@ rosetta:
     enabled: true
   serviceMonitor:
     enabled: true
+
+stackgres:
+  coordinator:
+    instances: 3
+    resources:
+      cpu: 4000m
+      memory: 26Gi
+    persistentVolume:
+      size: 256Gi
+  worker:
+    instances: 3
+    replicasPerInstance: 2
+    resources:
+      cpu: 4000m
+      memory: 26Gi
+    persistentVolume:
+      size: 256Gi
 
 web3:
   alertmanager:

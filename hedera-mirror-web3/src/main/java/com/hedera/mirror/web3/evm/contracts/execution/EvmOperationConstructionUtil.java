@@ -19,10 +19,14 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
+import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
+import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
@@ -30,10 +34,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
@@ -60,8 +61,9 @@ public class EvmOperationConstructionUtil {
     private static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION = EVM_VERSION_0_34;
 
-    public static Map<String, Provider<ContractCreationProcessor>> ccps(GasCalculator gasCalculator) {
-        final var evm = constructEvm(gasCalculator);
+    public static Map<String, Provider<ContractCreationProcessor>> ccps(
+            GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1),
@@ -69,25 +71,38 @@ public class EvmOperationConstructionUtil {
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1));
     }
 
-    public static Map<String, Provider<MessageCallProcessor>> mcps(GasCalculator gasCalculator) {
-        final var evm = constructEvm(gasCalculator);
+    public static Map<String, Provider<MessageCallProcessor>> mcps(
+            final GasCalculator gasCalculator,
+            final StackedStateFrames<Object> stackedStateFrames,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper) {
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new MessageCallProcessor(evm, new PrecompileContractRegistry()),
                 EVM_VERSION_0_34,
-                () -> new HederaEvmMessageCallProcessor(evm, new PrecompileContractRegistry(), precompiles()));
+                () -> new MirrorEvmMessageCallProcessor(
+                        evm,
+                        new PrecompileContractRegistry(),
+                        precompiles(stackedStateFrames, mirrorNodeEvmProperties, precompileMapper)));
     }
 
-    private static Map<String, PrecompiledContract> precompiles() {
+    private static Map<String, PrecompiledContract> precompiles(
+            final StackedStateFrames<Object> stackedStateFrames,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
-        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, new MirrorHTSPrecompiledContract(evmFactory));
+        hederaPrecompiles.put(
+                EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
+                new MirrorHTSPrecompiledContract(
+                        evmFactory, mirrorNodeEvmProperties, stackedStateFrames, precompileMapper));
 
         return hederaPrecompiles;
     }
 
-    private static EVM constructEvm(GasCalculator gasCalculator) {
+    private static EVM constructEvm(GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         var operationRegistry = new OperationRegistry();
         BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
@@ -98,9 +113,25 @@ public class EvmOperationConstructionUtil {
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        new HederaEvmSLoadOperation(gasCalculator))
+                        new HederaEvmSLoadOperation(gasCalculator),
+                        new HederaEvmCreate2Operation(
+                                gasCalculator, mirrorNodeEvmProperties, getDefaultCreateOperationExternalizer()))
                 .forEach(operationRegistry::put);
 
         return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
+    }
+
+    private static CreateOperationExternalizer getDefaultCreateOperationExternalizer() {
+        return new CreateOperationExternalizer() {
+            @Override
+            public void externalize(MessageFrame frame, MessageFrame childFrame) {
+                // do nothing
+            }
+
+            @Override
+            public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
+                return false;
+            }
+        };
     }
 }

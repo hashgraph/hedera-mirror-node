@@ -1,0 +1,31 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockContract",
+  "sourceName": "contracts/EstimateGasContract.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "destroy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b5060878061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806338cc483114603757806383197ef014604a575b600080fd5b6040805130815290519081900360200190f35b604f33ff5b00fea2646970667358221220cfc308e9de819aedcdb7067ebe905ab94bddd10968317b879e45bd36e315b5ae64736f6c63430008090033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806338cc483114603757806383197ef014604a575b600080fd5b6040805130815290519081900360200190f35b604f33ff5b00fea2646970667358221220cfc308e9de819aedcdb7067ebe905ab94bddd10968317b879e45bd36e315b5ae64736f6c63430008090033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

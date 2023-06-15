@@ -32,6 +32,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import java.time.Instant;
 import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -110,6 +111,7 @@ public class ContractCallService {
                     params.isEstimate() ? estimatedGas : params.getGas(),
                     params.getValue(),
                     params.getCallData(),
+                    Instant.now(),
                     params.isStatic());
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);

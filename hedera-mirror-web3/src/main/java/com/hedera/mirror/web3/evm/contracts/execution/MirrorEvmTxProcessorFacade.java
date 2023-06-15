@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import java.time.Instant;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -28,5 +29,6 @@ public interface MirrorEvmTxProcessorFacade {
             final long providedGasLimit,
             final long value,
             final Bytes callData,
+            final Instant consensusTimestamp,
             final boolean isStatic);
 }

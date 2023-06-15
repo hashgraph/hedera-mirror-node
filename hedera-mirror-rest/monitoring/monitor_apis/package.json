@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "0.82.0-SNAPSHOT",
+  "version": "0.83.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "type": "module",
   "main": "server.js",
@@ -27,7 +27,7 @@
     "log4js": "^6.9.1",
     "mathjs": "^11.8.0",
     "node-fetch": "^3.3.1",
-    "parse-duration": "^1.0.3",
+    "parse-duration": "^1.1.0",
     "pretty-ms": "^8.0.0"
   },
   "devDependencies": {
@@ -39,8 +39,5 @@
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
     "outputName": "TEST-jest.xml"
-  },
-  "overrides": {
-    "json5": "2.2.3"
   }
 }

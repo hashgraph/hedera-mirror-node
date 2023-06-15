@@ -53,8 +53,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
 /**
- * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database/README.md#errata
- * for more detail.
+ * Adds errata information to the database to workaround older, incorrect data on mainnet. See
+ * docs/database/README.md#errata for more detail.
  */
 @Named
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
@@ -152,17 +152,17 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         // Adjusts the balance file's consensus timestamp by -1 for use when querying transfers.
         String sql =
                 """
-                update account_balance_file set time_offset = -1
-                where consensus_timestamp in (:timestamps) and time_offset <> -1
-                """;
+                        update account_balance_file set time_offset = -1
+                        where consensus_timestamp in (:timestamps) and time_offset <> -1
+                        """;
         int count = jdbcOperations.update(sql, new MapSqlParameterSource("timestamps", getTimestamps()));
 
         // Set the fixed time offset for account balance files in the applicable range
         sql =
                 """
-                update account_balance_file set time_offset = :fixedTimeOffset
-                where consensus_timestamp >= :firstTimestamp and consensus_timestamp <= :lastTimestamp
-                """;
+                        update account_balance_file set time_offset = :fixedTimeOffset
+                        where consensus_timestamp >= :firstTimestamp and consensus_timestamp <= :lastTimestamp
+                        """;
         var paramSource = new MapSqlParameterSource("fixedTimeOffset", ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET)
                 .addValue("firstTimestamp", FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP)
                 .addValue("lastTimestamp", LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP);
@@ -182,23 +182,23 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     private void spuriousTransfers() {
         String sql =
                 """
-                with spurious_transfer as (
-                  update crypto_transfer ct
-                  set errata = 'DELETE'
-                  from transaction t
-                  where t.consensus_timestamp = ct.consensus_timestamp and t.payer_account_id = ct.payer_account_id and
-                    t.type = 14 and t.result <> 22 and
-                    t.consensus_timestamp < 1577836799000000000 and amount > 0 and ct.entity_id <> 98 and
-                    (ct.entity_id < 3 or ct.entity_id > 27) and ((ct.entity_id <> ct.payer_account_id) or
-                      (ct.consensus_timestamp in (1570118944399195000, 1570120372315307000)
-                        and ct.entity_id = ct.payer_account_id))
-                  returning ct.*
-                )
-                update crypto_transfer ct
-                set errata = 'DELETE'
-                from spurious_transfer st
-                where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1
-                """;
+                        with spurious_transfer as (
+                          update crypto_transfer ct
+                          set errata = 'DELETE'
+                          from transaction t
+                          where t.consensus_timestamp = ct.consensus_timestamp and t.payer_account_id = ct.payer_account_id and
+                            t.type = 14 and t.result <> 22 and
+                            t.consensus_timestamp < 1577836799000000000 and amount > 0 and ct.entity_id <> 98 and
+                            (ct.entity_id < 3 or ct.entity_id > 27) and ((ct.entity_id <> ct.payer_account_id) or
+                              (ct.consensus_timestamp in (1570118944399195000, 1570120372315307000)
+                                and ct.entity_id = ct.payer_account_id))
+                          returning ct.*
+                        )
+                        update crypto_transfer ct
+                        set errata = 'DELETE'
+                        from spurious_transfer st
+                        where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1
+                        """;
         int count = jdbcOperations.getJdbcOperations().update(sql);
         log.info("Updated {} spurious transfers", count * 2);
     }
@@ -319,7 +319,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     }
 
     private boolean isMainnet() {
-        return mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET;
+        return MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork());
     }
 
     private boolean shouldApplyFixedTimeOffset(long consensusTimestamp) {

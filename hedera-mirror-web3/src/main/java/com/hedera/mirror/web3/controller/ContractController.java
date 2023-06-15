@@ -24,6 +24,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
@@ -44,6 +45,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,6 +66,7 @@ class ContractController {
     private final ContractCallService contractCallService;
     private final Bucket bucket;
 
+    @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
 
@@ -154,11 +158,18 @@ class ContractController {
         return errorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getReason(), StringUtils.EMPTY);
     }
 
-    @ExceptionHandler()
+    @ExceptionHandler
     @ResponseStatus(INTERNAL_SERVER_ERROR)
     private Mono<GenericErrorResponse> genericError(final Exception e) {
         log.error("Generic error: ", e);
         return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(SERVICE_UNAVAILABLE)
+    private Mono<GenericErrorResponse> queryTimeout(final QueryTimeoutException e) {
+        log.error("Query timed out: {}", e.getMessage());
+        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
     }
 
     private Mono<GenericErrorResponse> errorResponse(final String errorMessage) {
