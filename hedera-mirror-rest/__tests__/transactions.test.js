@@ -27,7 +27,7 @@ const {
   convertStakingRewardTransfers,
   createAssessedCustomFeeList,
   createCryptoTransferList,
-  getNftTransfers,
+  createNftTransferList,
   createTransferLists,
   extractSqlFromTransactionsByIdOrHashRequest,
   getStakingRewardTimestamps,
@@ -508,14 +508,14 @@ describe('createCryptoTransferList', () => {
 
 describe('createNftTransferList', () => {
   test('From null', () => {
-    expect(getNftTransfers(null)).toEqual([]);
+    expect(createNftTransferList(null)).toEqual([]);
   });
 
   test('From undefined', () => {
-    expect(getNftTransfers(undefined)).toEqual([]);
+    expect(createNftTransferList(undefined)).toEqual([]);
   });
 
-  test('Simple getNftTransfers', () => {
+  test('Simple createNftTransferList', () => {
     const rowsFromDb = [
       {
         receiver_account_id: '0.0.1000',
@@ -564,7 +564,7 @@ describe('createNftTransferList', () => {
       },
     ];
 
-    expect(getNftTransfers(rowsFromDb)).toEqual(expectedFormat);
+    expect(createNftTransferList(rowsFromDb)).toEqual(expectedFormat);
   });
 });
 
@@ -691,7 +691,7 @@ describe('create transferLists', () => {
             is_approval: true,
           },
         ],
-        nft_transfers: expectedNftTransfersList,
+        nft_transfers: expectedNftTransfers,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737799966',
       },
