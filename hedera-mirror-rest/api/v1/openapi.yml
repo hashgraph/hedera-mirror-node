@@ -3355,6 +3355,9 @@ components:
               token_id:
                 $ref: "#/components/schemas/EntityId"
             required:
+              - is_approval
+              - receiver_account_id
+              - sender_account_id
               - token_id
               - serial_number
         node:
