@@ -22,8 +22,10 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -37,7 +39,15 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
@@ -49,6 +59,42 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
+
+    protected static final long expiry = 1_234_567_890L;
+    protected static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(1)
+                    .setHbarEquiv(12)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(2)
+                    .setHbarEquiv(31)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                    .build())
+            .build();
+    protected static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+            .setCurrentFeeSchedule(FeeSchedule.newBuilder()
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build())))
+            .setNextFeeSchedule(FeeSchedule.newBuilder()
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build()))))
+            .build();
+    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
+    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
+
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
@@ -145,6 +191,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
+        exchangeRatesPersist();
+        feeSchedulesPersist();
     }
 
     private void nftCustomFeePersist(EntityId senderEntityId, EntityId nftEntityId) {
@@ -529,5 +577,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .denominatingTokenId(tokenEntityId))
                     .persist();
         }
+    }
+
+    protected void exchangeRatesPersist() {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(expiry))
+                .persist();
+    }
+
+    protected void feeSchedulesPersist() {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(feeSchedules.toByteArray())
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(expiry + 1))
+                .persist();
     }
 }
