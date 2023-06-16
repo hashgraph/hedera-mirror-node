@@ -239,7 +239,22 @@ const getNftTransfers = (nftTransferList) => {
     return [];
   }
 
-  return nftTransferList;
+  return nftTransferList.map((transfer) => {
+    const {
+      receiver_account_id: receiver_account_id,
+      sender_account_id: sender_account_id,
+      serial_number,
+      token_id: token_id,
+      is_approval,
+    } = transfer;
+    return {
+      receiver_account_id: EntityId.parse(receiver_account_id).toString(),
+      sender_account_id: EntityId.parse(sender_account_id).toString(),
+      token_id: EntityId.parse(token_id).toString(),
+      serial_number,
+      is_approval,
+    };
+  });
 };
 
 /**

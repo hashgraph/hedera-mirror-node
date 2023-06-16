@@ -32,21 +32,18 @@
         "transfers": [],
         "nft_transfer": [
           {
-            "is_approval": true,
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
             "token_id": "0.0.90000"
           },
           {
-            "is_approval": false,
             "receiver_account_id": null,
             "sender_account_id": "0.0.3",
             "serial_number": 2,
             "token_id": "0.0.90000"
           },
           {
-            "is_approval": false,
             "receiver_account_id": "0.0.10",
             "sender_account_id": null,
             "serial_number": 3,
@@ -102,7 +99,7 @@
             "sender_account_id": "0.0.3",
             "serial_number": 1,
             "token_id": "0.0.90000",
-            "is_approval": true
+            "is_approval": false
           },
           {
             "receiver_account_id": null,
