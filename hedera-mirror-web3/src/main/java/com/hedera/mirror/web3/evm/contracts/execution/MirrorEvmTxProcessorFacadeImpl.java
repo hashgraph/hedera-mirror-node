@@ -37,7 +37,6 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -71,7 +70,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
-            final FeeCalculator feeCalculator,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
