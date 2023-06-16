@@ -235,7 +235,7 @@ const createTokenTransferList = (tokenTransferList) => {
  * @param nftTransferList nft transfer list
  * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
-const getNftTransfers = (nftTransferList) => {
+const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
     return [];
   }
@@ -266,7 +266,7 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: getNftTransfers(row.nft_transfer),
+      nft_transfers: createNftTransferList(row.nft_transfer),
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
