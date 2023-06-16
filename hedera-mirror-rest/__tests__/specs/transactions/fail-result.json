@@ -71,6 +71,7 @@
         "result": "FAIL_BALANCE",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "name": "CRYPTOTRANSFER",
         "nft_transfers": [],

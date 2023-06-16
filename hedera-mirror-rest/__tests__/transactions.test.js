@@ -92,7 +92,7 @@ const validateAccNumRange = function (transactions, low, high) {
 
     if (!ret) {
       logger.warn(
-        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
+        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${utils.JSONStringify(
           tx
         )}`
       );
@@ -395,7 +395,7 @@ describe('buildWhereClause', () => {
 
   testSpecs.forEach((testSpec) => {
     const {conditions, expected} = testSpec;
-    test(JSON.stringify(conditions), () => {
+    test(utils.JSONStringify(conditions), () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
@@ -665,11 +665,11 @@ describe('create transferLists', () => {
 
     const expectedFormat = [
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000001',
         charged_tx_fee: 5,
         entity_id: '0.0.98',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
@@ -689,16 +689,16 @@ describe('create transferLists', () => {
             is_approval: true,
           },
         ],
-        nft_transfers: expectedNftTransfers,
+        nft_transfers: expectedNftTransfersList,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737799966',
       },
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000002',
         charged_tx_fee: 5,
         entity_id: '0.0.100',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
@@ -727,7 +727,7 @@ describe('create transferLists', () => {
   });
 });
 
-describe.skip('extractSqlFromTransactionsByIdOrHashRequest', () => {
+describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
     const defaultParams = [200, '123456789987654321', 123458889987654321n];
@@ -751,12 +751,6 @@ describe.skip('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.valid_duration_seconds,
       t.valid_start_ns,
       t.index,
-      jsonb_build_array(jsonb_build_object(
-                                 'receiver_account_id', receiver_account_id,
-                                 'sender_account_id', sender_account_id,
-                                 'serial_number', serial_number,
-                                 'token_id', token_id, 'is_approval', is_approval
-                             ) ) as nft_transfers,
       (
           select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
           from crypto_transfer ctr
