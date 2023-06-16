@@ -3354,6 +3354,11 @@ components:
                 type: integer
               token_id:
                 $ref: "#/components/schemas/EntityId"
+            required:
+              - token_id
+              - receiver_account_id
+              - sender_account_id
+              - serial_number
         node:
           $ref: "#/components/schemas/EntityId"
         nonce:
