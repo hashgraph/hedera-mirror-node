@@ -28,6 +28,8 @@ paths:
       summary: Get account by alias, id, or evm address
       description: |
         Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
+        When the timestamp parameter is supplied, we will return transactions and account state for the relevant timestamp query. Balance information will be accurate to within 15 minutes of the provided timestamp query.
+        Historical stake and reward information is not currently available so these fields contain current data. Historical ethereum nonce information is also currently not available and may not be the exact value at a provided timestamp.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"

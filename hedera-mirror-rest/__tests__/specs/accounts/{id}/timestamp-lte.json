@@ -1,5 +1,5 @@
 {
-  "description": "Account api calls for specific account using path and transaction timestamp filter",
+  "description": "Account api calls for specific account using path and transaction timestamp lte filter",
   "setup": {
     "accounts": [
       {
@@ -33,6 +33,19 @@
         "num": 98
       }
     ],
+    "balances": [
+      {
+        "timestamp": "1234567890000000004",
+        "id": 8,
+        "balance": 555
+      },
+
+      {
+        "timestamp": "1234567880000000004",
+        "id": 8,
+        "balance": 444
+      }
+    ],
     "recordFiles": [
       {
         "consensus_start": 2000,
@@ -44,7 +57,7 @@
         "token_id": "0.0.99998",
         "account_id": "0.0.7",
         "balance": 7,
-        "created_timestamp": "1234567890000000007"
+        "created_timestamp": "1234567890000000006"
       },
       {
         "token_id": "0.0.99999",
@@ -94,7 +107,7 @@
     ],
     "cryptotransfers": [
       {
-        "consensus_timestamp": "1234567890000000007",
+        "consensus_timestamp": "1234567880000000006",
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
@@ -114,7 +127,7 @@
         ]
       },
       {
-        "consensus_timestamp": "1234567890300000007",
+        "consensus_timestamp": "1234567870000000006",
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
@@ -136,8 +149,8 @@
     ]
   },
   "urls": [
-    "/api/v1/accounts/0.0.8?timestamp=gt:1234567890.000000006",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=gt:1234567890.000000006"
+    "/api/v1/accounts/0.0.8?timestamp=lte:1234567890.000000006",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567890.000000006"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -145,57 +158,7 @@
       {
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
-        "consensus_timestamp": "1234567890.300000007",
-        "entity_id": null,
-        "max_fee": "33",
-        "memo_base64": null,
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "nonce": 0,
-        "parent_consensus_timestamp": null,
-        "result": "SUCCESS",
-        "scheduled": false,
-        "staking_reward_transfers": [],
-        "token_transfers": [
-          {
-            "account": "0.0.8",
-            "amount": -200,
-            "token_id": "0.0.90000",
-            "is_approval": true
-          },
-          {
-            "account": "0.0.1679",
-            "amount": 200,
-            "token_id": "0.0.90000",
-            "is_approval": true
-          }
-        ],
-        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
-        "transaction_id": "0.0.8-1234567890-300000006",
-        "transfers": [
-          {
-            "account": "0.0.3",
-            "amount": 2,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.8",
-            "amount": -3,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1,
-            "is_approval": false
-          }
-        ],
-        "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.300000006"
-      },
-      {
-        "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 7,
-        "consensus_timestamp": "1234567890.000000007",
+        "consensus_timestamp": "1234567880.000000006",
         "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
@@ -207,7 +170,7 @@
         "scheduled": false,
         "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
-        "transaction_id": "0.0.8-1234567890-000000006",
+        "transaction_id": "0.0.8-1234567880-000000005",
         "transfers": [
           {
             "account": "0.0.3",
@@ -240,16 +203,66 @@
           }
         ],
         "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.000000006"
+        "valid_start_timestamp": "1234567880.000000005"
+      },
+      {
+        "bytes": "Ynl0ZXM=",
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567870.000000006",
+        "entity_id": null,
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [
+          {
+            "account": "0.0.8",
+            "amount": -200,
+            "token_id": "0.0.90000",
+            "is_approval": true
+          },
+          {
+            "account": "0.0.1679",
+            "amount": 200,
+            "token_id": "0.0.90000",
+            "is_approval": true
+          }
+        ],
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "transaction_id": "0.0.8-1234567870-000000005",
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567870.000000005"
       }
     ],
     "balance": {
-      "timestamp": "0.000002345",
-      "balance": 80,
+      "timestamp": "1234567890.000000004",
+      "balance": 555,
       "tokens": [
         {
-          "token_id": "0.0.99998",
-          "balance": 8
+          "token_id": "0.0.99999",
+          "balance": 88
         }
       ]
     },
@@ -267,8 +280,8 @@
     "memo": "entity memo",
     "pending_reward": 0,
     "receiver_sig_required": false,
-    "staked_account_id": "0.0.1",
-    "staked_node_id": 1,
+    "staked_account_id": "0.0.2",
+    "staked_node_id": 2,
     "stake_period_start": null,
     "links": {
       "next": null

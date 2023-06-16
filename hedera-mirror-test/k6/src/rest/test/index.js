@@ -26,6 +26,7 @@ import * as accountsBalanceNe from './accountsBalanceNe.js';
 import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
 import * as accountsId from './accountsId.js';
+import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 import * as accountsIdNe from './accountsIdNe.js';
 import * as accountsNfts from './accountsNfts.js';
 import * as accountsTokens from './accountsTokens.js';
@@ -85,6 +86,7 @@ const tests = {
   accountsCryptoAllowanceSpender,
   accountsId,
   accountsIdNe,
+  accountsIdTimestampLte,
   accountsNfts,
   accountsTokens,
   accountsTokenAllowance,
