@@ -26,6 +26,7 @@ import * as utils from './utils';
 import {
   AssessedCustomFee,
   CryptoTransfer,
+  NftTransfer,
   StakingRewardTransfer,
   TokenTransfer,
   Transaction,
@@ -34,7 +35,7 @@ import {
   TransactionType,
 } from './model';
 
-import {AssessedCustomFeeViewModel} from './viewmodel';
+import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
 const {maxTransactionConsensusTimestampRangeNs} = config.query;
 
@@ -240,20 +241,8 @@ const getNftTransfers = (nftTransferList) => {
   }
 
   return nftTransferList.map((transfer) => {
-    const {
-      receiver_account_id: receiver_account_id,
-      sender_account_id: sender_account_id,
-      serial_number,
-      token_id: token_id,
-      is_approval,
-    } = transfer;
-    return {
-      receiver_account_id: EntityId.parse(receiver_account_id).toString(),
-      sender_account_id: EntityId.parse(sender_account_id).toString(),
-      token_id: EntityId.parse(token_id).toString(),
-      serial_number,
-      is_approval,
-    };
+    const nftTransfer = new NftTransfer(transfer);
+    return new NftTransferViewModel(nftTransfer);
   });
 };
 
