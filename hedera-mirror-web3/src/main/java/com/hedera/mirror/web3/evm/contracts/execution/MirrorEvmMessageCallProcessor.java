@@ -66,7 +66,7 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final EntityIdSource ids = new SeqNoEntityIdSource(() -> new SequenceNumber());
+        final EntityIdSource ids = new SeqNoEntityIdSource(SequenceNumber::new);
         final var lazyCreateResult = autoCreationLogic.create(
                 syntheticBalanceChange, timestamp, updater.getStore(), ids, mirrorEvmContractAliases);
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {

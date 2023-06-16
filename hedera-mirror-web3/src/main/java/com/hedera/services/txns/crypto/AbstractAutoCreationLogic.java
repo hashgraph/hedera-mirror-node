@@ -49,11 +49,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Copied Logic type from hedera-services. Differences with the original: 1. Use abstraction for the state by
- * introducing {@link Store} interface 2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases}
- * instead thus removing the List<BalanceChange> changes argument from create 3. Remove SyntheticTxnFactory 4. Remove
- * UsageLimits and GlobalDynamicProperties 5. trackAliases consumes 2 Addresses 6. The class is stateless and the
- * arguments are passed into the functions
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
+ *     thus removing the List<BalanceChange> changes argument from create
+ *  3. Remove SyntheticTxnFactory
+ *  4. Remove UsageLimits and GlobalDynamicProperties
+ *  5. trackAliases consumes 2 Addresses
+ *  6. The class is stateless and the arguments are passed into the functions
  */
 public abstract class AbstractAutoCreationLogic {
 
@@ -158,19 +161,13 @@ public abstract class AbstractAutoCreationLogic {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+    private TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
-    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
-        return CryptoCreateTransactionBody.newBuilder()
-                .setInitialBalance(balance)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
-    }
-
-    public TransactionBody.Builder createAccount(
+    private TransactionBody.Builder createAccount(
             final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
@@ -179,5 +176,11 @@ public abstract class AbstractAutoCreationLogic {
             baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
         }
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 }
