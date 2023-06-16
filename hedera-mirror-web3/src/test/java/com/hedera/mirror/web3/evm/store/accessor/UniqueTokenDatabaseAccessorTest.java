@@ -56,7 +56,7 @@ class UniqueTokenDatabaseAccessorTest {
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
 
-        when(nftRepository.findActiveById(nft.getTokenId(), nft.getId().getSerialNumber()))
+        when(nftRepository.findActiveById(nft.getTokenId(), nft.getSerialNumber()))
                 .thenReturn(Optional.of(nft));
 
         assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
@@ -82,7 +82,7 @@ class UniqueTokenDatabaseAccessorTest {
 
     private NftId getNftKey(final Nft nft) {
         final var nftId = nft.getId();
-        final var tokenId = nftId.getTokenId();
+        final var tokenId = EntityId.of(nftId.getTokenId(), EntityType.TOKEN);
         return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getEntityNum(), nftId.getSerialNumber());
     }
 }

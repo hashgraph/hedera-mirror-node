@@ -48,7 +48,7 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
         var tokenId = idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN));
         return new UniqueToken(
                 tokenId,
-                nft.getId().getSerialNumber(),
+                nft.getSerialNumber(),
                 mapNanosToRichInstant(nft.getCreatedTimestamp()),
                 idFromEntityId(nft.getAccountId()),
                 idFromEntityId(nft.getSpender()),
