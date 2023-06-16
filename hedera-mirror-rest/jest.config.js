@@ -28,7 +28,6 @@ const config = {
   globalSetup: './__tests__/globalSetup.js',
   globalTeardown: './__tests__/globalTeardown.js',
   maxWorkers,
-  workerThreads: true,
   reporters: ['jest-standard-reporter', 'jest-junit'],
   setupFilesAfterEnv: ['./__tests__/jestSetup.js'],
   testEnvironment: 'node',
