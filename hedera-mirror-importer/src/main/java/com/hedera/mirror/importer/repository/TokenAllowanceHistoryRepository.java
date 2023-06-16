@@ -27,6 +27,6 @@ public interface TokenAllowanceHistoryRepository
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from token_allowance_history where upper(timestamp_range) <= ?1")
+    @Query(nativeQuery = true, value = "delete from token_allowance_history where timestamp_range << int8range (?1, null)")
     int prune(long consensusTimestamp);
 }
