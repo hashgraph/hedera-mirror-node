@@ -647,7 +647,7 @@ describe('create transferLists', () => {
       },
     ];
 
-    const expectedNftTransfersList = [
+    const expectedNftTransfers = [
       {
         receiver_account_id: '0.0.1000',
         sender_account_id: '0.0.98',
@@ -681,7 +681,6 @@ describe('create transferLists', () => {
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
-        nft_transfers: expectedNftTransfersList,
         node: '0.0.2',
         nonce: 0,
         parent_consensus_timestamp: null,
@@ -698,6 +697,7 @@ describe('create transferLists', () => {
             is_approval: true,
           },
         ],
+        nft_transfers: expectedNftTransfers,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737799966',
       },
