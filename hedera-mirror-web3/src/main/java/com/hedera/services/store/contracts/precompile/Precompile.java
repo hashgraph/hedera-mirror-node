@@ -54,7 +54,7 @@ public interface Precompile {
     // Change the world state through the given frame
     RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
 
-    long getGasRequirement(long blockTimestamp, final TransactionBody.Builder transactionBody, Store store);
+    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
 
     Set<Integer> getFunctionSelectors();
 
