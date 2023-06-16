@@ -92,7 +92,7 @@ const validateAccNumRange = function (transactions, low, high) {
 
     if (!ret) {
       logger.warn(
-        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${utils.JSONStringify(
+        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
           tx
         )}`
       );
@@ -395,7 +395,7 @@ describe('buildWhereClause', () => {
 
   testSpecs.forEach((testSpec) => {
     const {conditions, expected} = testSpec;
-    test(utils.JSONStringify(conditions), () => {
+    test(JSON.stringify(conditions), () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
