@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transaction using transaction id and scheduled is true",
+  "description": "Transaction api calls for using transaction id and nonce",
   "setup": {
     "accounts": [
       {
@@ -20,31 +20,11 @@
       {
         "charged_tx_fee": 7,
         "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.3",
-        "consensus_timestamp": "1234567890000000002",
-        "valid_start_timestamp": "1234567890000000001",
-        "name": "SCHEDULECREATE",
-        "type": "42",
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 10
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ],
-        "entity_id": "0.0.1000"
-      },
-      {
-        "charged_tx_fee": 7,
-        "payerAccountId": "0.0.10",
         "nodeAccountId": "0.0.4",
         "consensus_timestamp": "1234567890000000040",
         "valid_start_timestamp": "1234567890000000001",
         "name": "CRYPTOTRANSFER",
-        "result": 11,
+        "nonce": 0,
         "type": 14,
         "transfers": [
           {
@@ -56,55 +36,84 @@
             "amount": 1
           }
         ]
-      }
-    ],
-    "cryptotransfers": [
+      },
       {
-        "consensus_timestamp": "1234567890000000003",
-        "valid_start_timestamp": "1234567890000000001",
+        "charged_tx_fee": 8,
         "payerAccountId": "0.0.10",
-        "recipientAccountId": "0.0.9",
-        "amount": 10,
-        "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98",
-        "scheduled": true
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000045",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "nonce": 1,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 101
+          },
+          {
+            "account": "0.0.98",
+            "amount": 2
+          }
+        ]
+      },
+      {
+        "charged_tx_fee": 9,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000050",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "nonce": 2,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 102
+          },
+          {
+            "account": "0.0.98",
+            "amount": 3
+          }
+        ]
       }
     ]
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true",
+  "urls": [
+    "/api/v1/transactions/0.0.10-1234567890-000000001?nonce=1",
+    "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=false&nonce=1",
+    "/api/v1/transactions/0.0.10-1234567890-000000001?nonce=2&nonce=1"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 7,
-        "consensus_timestamp": "1234567890.000000003",
+        "charged_tx_fee": 8,
+        "consensus_timestamp": "1234567890.000000045",
         "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "nonce": 0,
+        "nft_transfers": [],
+        "node": "0.0.4",
+        "nonce": 1,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
-        "scheduled": true,
+        "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 10,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.10",
-            "amount": -11,
+            "amount": 101,
             "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 1,
+            "amount": 2,
             "is_approval": false
           }
         ],

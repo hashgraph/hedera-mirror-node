@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for single transaction with nft transfers",
+  "description": "Transaction api calls for single transaction with nft transfers across multiple tokens",
   "setup": {
     "accounts": [
       {
@@ -30,25 +30,38 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
+            "token_id": "0.0.90000"
+          },
+          {
+            "receiver_account_id": null,
+            "sender_account_id": "0.0.3",
+            "serial_number": 2,
             "token_id": "0.0.90000",
             "is_approval": true
           },
           {
-            "receiver_account_id": "0.0.9",
-            "sender_account_id": "0.0.3",
-            "serial_number": 2,
+            "receiver_account_id": "0.0.10",
+            "sender_account_id": null,
+            "serial_number": 3,
             "token_id": "0.0.90000"
           },
           {
-            "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
-            "serial_number": 9223372036847275807,
-            "token_id": "0.0.90000"
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000",
+            "is_approval": true
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000"
           }
         ]
       }
@@ -72,6 +85,7 @@
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000000",
         "valid_duration_seconds": "11",
@@ -99,20 +113,34 @@
             "sender_account_id": "0.0.3",
             "serial_number": 1,
             "token_id": "0.0.90000",
+            "is_approval": false
+          },
+          {
+            "receiver_account_id": null,
+            "sender_account_id": "0.0.3",
+            "serial_number": 2,
+            "token_id": "0.0.90000",
             "is_approval": true
           },
           {
-            "receiver_account_id": "0.0.9",
-            "sender_account_id": "0.0.3",
-            "serial_number": 2,
+            "receiver_account_id": "0.0.10",
+            "sender_account_id": null,
+            "serial_number": 3,
             "token_id": "0.0.90000",
             "is_approval": false
           },
           {
-            "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
-            "serial_number": 9223372036847275807,
-            "token_id": "0.0.90000",
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000",
+            "is_approval": true
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000",
             "is_approval": false
           }
         ]
