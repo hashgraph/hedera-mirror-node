@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   pull_request:
-    branches: [ main, release/**, 4099-nested-nft-transfers ]
+    branches: [ main, release/** ]
     paths: [ hedera-mirror-rosetta/** ]
   push:
     branches: [ main, release/** ]
