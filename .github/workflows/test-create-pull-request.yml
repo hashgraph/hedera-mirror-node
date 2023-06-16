@@ -13,6 +13,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Reset main to test branch
+        run: |
+          git fetch origin test-create-pull-request-v5:test-create-pull-request-v5
+          git reset --hard test-create-pull-request-v5
 
       - name: Import GPG Key
         id: gpg_importer
