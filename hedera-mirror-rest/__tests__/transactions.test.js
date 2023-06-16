@@ -518,24 +518,27 @@ describe('createNftTransferList', () => {
   test('Simple createNftTransferList', () => {
     const rowsFromDb = [
       {
-        receiver_account_id: '0.0.1000',
-        sender_account_id: '0.0.98',
+        consensus_timestamp: 1,
+        receiver_account_id: 1000,
+        sender_account_id: 98,
         serial_number: 1,
-        token_id: '0.0.2000',
+        token_id: 2000,
+        is_approval: null,
+      },
+      {
+        consensus_timestamp: 10,
+        receiver_account_id: 1005,
+        sender_account_id: 98,
+        serial_number: 2,
+        token_id: 2000,
         is_approval: false,
       },
       {
-        receiver_account_id: '0.0.1005',
-        sender_account_id: '0.0.98',
+        consensus_timestamp: 100,
+        receiver_account_id: 98,
+        sender_account_id: 1005,
         serial_number: 2,
-        token_id: '0.0.2000',
-        is_approval: false,
-      },
-      {
-        receiver_account_id: '0.0.98',
-        sender_account_id: '0.0.1005',
-        serial_number: 2,
-        token_id: '0.0.2000',
+        token_id: 2000,
         is_approval: true,
       },
     ];
@@ -572,24 +575,27 @@ describe('create transferLists', () => {
   test('Simple nftTransferList', async () => {
     const nftTransfersFromDb = [
       {
-        receiver_account_id: '0.0.1000',
-        sender_account_id: '0.0.98',
+        consensus_timestamp: 1,
+        receiver_account_id: 1000,
+        sender_account_id: 98,
         serial_number: 1,
-        token_id: '0.0.2000',
-        is_approval: false,
+        token_id: 2000,
+        is_approval: null,
       },
       {
-        receiver_account_id: '0.0.1005',
-        sender_account_id: '0.0.98',
+        consensus_timestamp: 10,
+        receiver_account_id: 1005,
+        sender_account_id: 98,
         serial_number: 2,
-        token_id: '0.0.2000',
-        is_approval: false,
+        token_id: 2000,
+        is_approval: true,
       },
       {
-        receiver_account_id: '0.0.98',
-        sender_account_id: '0.0.1005',
+        consensus_timestamp: 100,
+        receiver_account_id: 98,
+        sender_account_id: 1005,
         serial_number: 2,
-        token_id: '0.0.2000',
+        token_id: 2000,
         is_approval: true,
       },
     ];
@@ -654,7 +660,7 @@ describe('create transferLists', () => {
         sender_account_id: '0.0.98',
         serial_number: 2,
         token_id: '0.0.2000',
-        is_approval: false,
+        is_approval: true,
       },
       {
         receiver_account_id: '0.0.98',
