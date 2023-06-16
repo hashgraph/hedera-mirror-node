@@ -98,6 +98,7 @@
         "name": "CRYPTOTRANSFER",
         "nft_transfers": [
           {
+            "is_approval": false,
             "receiver_account_id": "0.0.12500",
             "sender_account_id": "0.0.11200",
             "serial_number": 1,
