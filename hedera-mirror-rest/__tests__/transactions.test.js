@@ -508,11 +508,11 @@ describe('createCryptoTransferList', () => {
 
 describe('createNftTransferList', () => {
   test('From null', () => {
-    expect(createNftTransferList(null)).toEqual(undefined);
+    expect(createNftTransferList(null)).toEqual([]);
   });
 
   test('From undefined', () => {
-    expect(createNftTransferList(undefined)).toEqual(undefined);
+    expect(createNftTransferList(undefined)).toEqual([]);
   });
 
   test('Simple createNftTransferList', () => {
@@ -610,6 +610,7 @@ describe('create transferLists', () => {
         non_fee_transfers: [],
         nonce: 0,
         parent_consensus_timestamp: null,
+        token_transfers: [],
         transfers: [],
         result: 22,
         scheduled: false,
@@ -631,6 +632,7 @@ describe('create transferLists', () => {
         non_fee_transfers: [],
         nonce: 1,
         parent_consensus_timestamp: 1,
+        token_transfers: [],
         transfers: [],
         result: 22,
         scheduled: false,
@@ -641,7 +643,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
-        nft_transfer: undefined,
+        nft_transfer: [],
       },
     ];
 
@@ -671,21 +673,22 @@ describe('create transferLists', () => {
 
     const expectedFormat = [
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000001',
         charged_tx_fee: 5,
         entity_id: '0.0.98',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
+        nft_transfers: expectedNftTransfersList,
         node: '0.0.2',
         nonce: 0,
         parent_consensus_timestamp: null,
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -695,26 +698,26 @@ describe('create transferLists', () => {
             is_approval: true,
           },
         ],
-        nft_transfers: expectedNftTransfersList,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737799966',
       },
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000002',
         charged_tx_fee: 5,
         entity_id: '0.0.100',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
+        nft_transfers: [],
         node: '0.0.2',
         nonce: 1,
         parent_consensus_timestamp: '0.000000001',
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [

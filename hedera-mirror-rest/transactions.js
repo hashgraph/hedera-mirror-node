@@ -215,7 +215,7 @@ const createCryptoTransferList = (cryptoTransferList) => {
  */
 const createTokenTransferList = (tokenTransferList) => {
   if (!tokenTransferList) {
-    return undefined;
+    return [];
   }
 
   return tokenTransferList.map((transfer) => {
@@ -237,7 +237,7 @@ const createTokenTransferList = (tokenTransferList) => {
  */
 const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
-    return undefined;
+    return [];
   }
 
   return nftTransferList.map((transfer) => {
