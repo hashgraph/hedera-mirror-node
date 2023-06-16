@@ -188,7 +188,7 @@ class StreamFilenameTest {
         assertThat(streamFilename.getPathSeparator()).isEqualTo(pathSeparator);
         assertThat(streamFilename.getFilePath()).isEqualTo(expectedFilePath);
 
-        if (!expectedFilePath.contains("sidecar")) {
+        if (streamFilename.getFileType() != SIDECAR) {
             StreamFilename streamFilenameFromPath = StreamFilename.from(expectedFilePath, pathSeparator);
             assertThat(streamFilenameFromPath.getFilename()).isEqualTo(filename);
             assertThat(streamFilenameFromPath.getPath()).isEqualTo(path);
