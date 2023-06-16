@@ -50,6 +50,7 @@ jobs:
           cache-to: type=gha,mode=max
           context: ./hedera-mirror-rosetta/container
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
+          provenance: false
           tags: ${{ env.MODULE }}:latest
 
       - name: Upload Artifact
