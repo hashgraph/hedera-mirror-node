@@ -25,8 +25,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
@@ -58,11 +58,11 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public abstract class AbstractAutoCreationLogic {
     private final FeeCalculator feeCalculator;
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private final EvmProperties evmProperties;
 
-    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
         this.feeCalculator = feeCalculator;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.evmProperties = evmProperties;
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class AbstractAutoCreationLogic {
             final Store store,
             final EntityIdSource ids,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        if (change.isForToken() && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
+        if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
         }
         final var alias = change.getNonEmptyAliasIfPresent();

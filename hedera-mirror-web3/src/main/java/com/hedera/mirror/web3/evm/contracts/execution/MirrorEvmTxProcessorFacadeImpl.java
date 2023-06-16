@@ -37,6 +37,8 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +49,7 @@ import org.hyperledger.besu.datatypes.Address;
 @SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
+    private final AbstractAutoCreationLogic autoCreationLogic;
     private final MirrorNodeEvmProperties evmProperties;
     private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
@@ -58,6 +61,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
+            final AbstractAutoCreationLogic autoCreationLogic,
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
             final TraceProperties traceProperties,
@@ -67,6 +71,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
+            final FeeCalculator feeCalculator,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
@@ -74,6 +79,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
+        this.autoCreationLogic = autoCreationLogic;
 
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
@@ -106,7 +112,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, evmProperties, new PrecompileMapper()),
+                mcps(gasCalculator, autoCreationLogic, mirrorEvmContractAliases, evmProperties, new PrecompileMapper()),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
@@ -42,6 +41,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -113,10 +113,13 @@ class MirrorEvmTxProcessorTest {
     private BlockMetaSource blockMetaSource;
 
     @Mock
-    private StackedStateFrames<Object> stackedStateFrames;
+    private PrecompileMapper precompileMapper;
 
     @Mock
-    private PrecompileMapper precompileMapper;
+    private AbstractAutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
@@ -134,7 +137,7 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, evmProperties, precompileMapper),
+                mcps(gasCalculator, autoCreationLogic, mirrorEvmContractAliases, evmProperties, precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
