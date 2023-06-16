@@ -91,6 +91,7 @@
         "transaction_id": "0.0.10-1565779209-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
+        "token_transfers": [],
         "transfers": [
           {
             "account": "0.0.9",
