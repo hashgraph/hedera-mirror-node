@@ -262,7 +262,7 @@ const createTransferLists = async (rows) => {
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
-      nft_transfers: row.nft_transfer || [],
+      nft_transfers: getNftTransfers(row.nft_transfer),
       node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
