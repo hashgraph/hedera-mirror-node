@@ -620,7 +620,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 98, is_approval: true}],
-        nft_transfer_list: nftTransfersFromDb,
+        nft_transfer: nftTransfersFromDb,
       },
       {
         consensus_timestamp: 2,
@@ -641,7 +641,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
-        nft_transfer_list: undefined,
+        nft_transfer: undefined,
       },
     ];
 
@@ -744,6 +744,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.entity_id,
       t.max_fee,
       t.memo,
+      t.nft_transfer,
       t.node_account_id,
       t.nonce,
       t.parent_consensus_timestamp,
@@ -768,10 +769,6 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           from token_transfer tk_tr
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
-      (
-          select jsonb_agg(elems) as nft_transfer from transaction,jsonb_array_elements(nft_transfer) as elems 
-          where payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
-      ) as nft_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object(
