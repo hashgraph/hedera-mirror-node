@@ -53,7 +53,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build and push images
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           build-args: VERSION=${{env.VERSION}}
           cache-from: type=gha

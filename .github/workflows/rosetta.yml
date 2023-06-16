@@ -43,7 +43,7 @@ jobs:
           echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
           cache-from: type=gha
