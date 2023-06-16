@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions with nft transfers",
+  "description": "Transaction api calls for specific tokenwipe transaction with token_transfer_list populated",
   "setup": {
     "accounts": [
       {
@@ -10,50 +10,30 @@
       },
       {
         "num": 9
-      },
-      {
-        "num": 10
-      },
-      {
-        "num": 98
       }
     ],
     "balances": [],
     "transactions": [
       {
-        "name": "CRYPTOTRANSFER",
-        "type": "14",
+        "type": "39",
         "charged_tx_fee": 7,
-        "valid_start_timestamp": "1234567890000000000",
         "consensus_timestamp": "1234567890000000001",
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "token_transfer_list": [
           {
-            "receiver_account_id": "0.0.8",
-            "sender_account_id": "0.0.3",
-            "serial_number": 1,
-            "token_id": "0.0.90000"
-          },
-          {
-            "receiver_account_id": null,
-            "sender_account_id": "0.0.3",
-            "serial_number": 2,
-            "token_id": "0.0.90000"
-          },
-          {
-            "receiver_account_id": "0.0.10",
-            "sender_account_id": null,
-            "serial_number": 3,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "account": "0.0.9",
+            "amount": -20
           }
-        ]
+        ],
+        "name": "TOKENWIPE",
+        "entity_id": "0.0.90000"
       }
     ]
   },
-  "urls": ["/api/v1/transactions"],
+  "urls": ["/api/v1/transactions/0.0.8-1234567890-000000000"],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -61,10 +41,11 @@
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000001",
-        "entity_id": null,
+        "entity_id": "0.0.90000",
         "max_fee": "33",
         "memo_base64": null,
-        "name": "CRYPTOTRANSFER",
+        "name": "TOKENWIPE",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
@@ -91,11 +72,16 @@
             "amount": 1,
             "is_approval": false
           }
+        ],
+        "token_transfers": [
+          {
+            "account": "0.0.9",
+            "amount": -20,
+            "token_id": "0.0.90000",
+            "is_approval": false
+          }
         ]
       }
-    ],
-    "links": {
-      "next": null
-    }
+    ]
   }
 }

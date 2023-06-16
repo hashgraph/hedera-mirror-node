@@ -92,7 +92,7 @@ const validateAccNumRange = function (transactions, low, high) {
 
     if (!ret) {
       logger.warn(
-        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
+        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${utils.JSONStringify(
           tx
         )}`
       );
@@ -395,7 +395,7 @@ describe('buildWhereClause', () => {
 
   testSpecs.forEach((testSpec) => {
     const {conditions, expected} = testSpec;
-    test(JSON.stringify(conditions), () => {
+    test(utils.JSONStringify(conditions), () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
@@ -508,11 +508,11 @@ describe('createCryptoTransferList', () => {
 
 describe('createNftTransferList', () => {
   test('From null', () => {
-    expect(createNftTransferList(null)).toEqual(undefined);
+    expect(createNftTransferList(null)).toEqual([]);
   });
 
   test('From undefined', () => {
-    expect(createNftTransferList(undefined)).toEqual(undefined);
+    expect(createNftTransferList(undefined)).toEqual([]);
   });
 
   test('Simple createNftTransferList', () => {
@@ -610,6 +610,7 @@ describe('create transferLists', () => {
         non_fee_transfers: [],
         nonce: 0,
         parent_consensus_timestamp: null,
+        token_transfers: [],
         transfers: [],
         result: 22,
         scheduled: false,
@@ -620,7 +621,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 98, is_approval: true}],
-        nft_transfer_list: nftTransfersFromDb,
+        nft_transfer: nftTransfersFromDb,
       },
       {
         consensus_timestamp: 2,
@@ -631,6 +632,7 @@ describe('create transferLists', () => {
         non_fee_transfers: [],
         nonce: 1,
         parent_consensus_timestamp: 1,
+        token_transfers: [],
         transfers: [],
         result: 22,
         scheduled: false,
@@ -641,7 +643,7 @@ describe('create transferLists', () => {
         node_account_id: 2,
         payer_account_id: 3,
         crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
-        nft_transfer_list: undefined,
+        nft_transfer: [],
       },
     ];
 
@@ -671,21 +673,22 @@ describe('create transferLists', () => {
 
     const expectedFormat = [
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000001',
         charged_tx_fee: 5,
         entity_id: '0.0.98',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
+        nft_transfers: expectedNftTransfersList,
         node: '0.0.2',
         nonce: 0,
         parent_consensus_timestamp: null,
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -695,26 +698,26 @@ describe('create transferLists', () => {
             is_approval: true,
           },
         ],
-        nft_transfers: expectedNftTransfersList,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737799966',
       },
       {
+        assessed_custom_fees: undefined,
         bytes: 'bytes',
         consensus_timestamp: '0.000000002',
         charged_tx_fee: 5,
         entity_id: '0.0.100',
-        id: undefined,
         max_fee: '33',
         memo_base64: null,
         name: 'CRYPTOTRANSFER',
+        nft_transfers: [],
         node: '0.0.2',
         nonce: 1,
         parent_consensus_timestamp: '0.000000001',
         result: 'SUCCESS',
         scheduled: false,
         staking_reward_transfers: [],
-        token_transfers: undefined,
+        token_transfers: [],
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
         transfers: [
@@ -744,6 +747,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.entity_id,
       t.max_fee,
       t.memo,
+      t.nft_transfer,
       t.node_account_id,
       t.nonce,
       t.parent_consensus_timestamp,
@@ -768,17 +772,6 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           from token_transfer tk_tr
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
-      (
-          select jsonb_agg(
-              jsonb_build_object(
-                  'receiver_account_id', receiver_account_id,
-                  'sender_account_id', sender_account_id,
-                  'serial_number', serial_number,
-                  'token_id', token_id, 'is_approval', is_approval
-                  ) order by token_id, serial_number)
-          from nft_transfer nft_tr
-          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
-      ) as nft_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object(
