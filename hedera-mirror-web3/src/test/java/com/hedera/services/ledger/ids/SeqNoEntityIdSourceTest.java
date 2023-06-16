@@ -16,27 +16,34 @@
 
 package com.hedera.services.ledger.ids;
 
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class SeqNoEntityIdSource implements EntityIdSource {
-    private final Supplier<SequenceNumber> seqNo;
+class SeqNoEntityIdSourceTest {
+    SequenceNumber seqNo;
+    SeqNoEntityIdSource subject;
 
-    public SeqNoEntityIdSource(Supplier<SequenceNumber> seqNo) {
-        this.seqNo = seqNo;
+    @BeforeEach
+    void setup() {
+        seqNo = mock(SequenceNumber.class);
+        subject = new SeqNoEntityIdSource(() -> seqNo);
     }
 
-    @Override
-    public AccountID newAccountId() {
-        return AccountID.newBuilder()
-                .setRealmNum(0)
-                .setShardNum(0)
-                .setAccountNum(newAccountNumber())
-                .build();
-    }
+    @Test
+    void returnsExpectedAccountId() {
+        given(seqNo.getAndIncrement()).willReturn(555L);
 
-    private long newAccountNumber() {
-        return seqNo.get().getAndIncrement();
+        // when:
+        AccountID newId = subject.newAccountId();
+
+        // then:
+        assertEquals(asAccount("0.0.555"), newId);
     }
 }

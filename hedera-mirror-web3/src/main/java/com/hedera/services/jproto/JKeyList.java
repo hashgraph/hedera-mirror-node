@@ -67,4 +67,13 @@ public class JKeyList extends JKey {
             return true;
         }
     }
+
+    public List<JKey> getKeysList() {
+        return keys;
+    }
+
+    @Override
+    public JKeyList getKeyList() {
+        return this;
+    }
 }

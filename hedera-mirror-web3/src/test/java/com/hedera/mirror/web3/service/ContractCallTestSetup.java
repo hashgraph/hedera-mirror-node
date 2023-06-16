@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -36,6 +37,9 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
@@ -114,6 +118,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         precompileContractPersist();
         modificationContractPersist();
         ercContractPersist();
+        fileDataPersist();
+
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
         final var tokenEntityId = fungibleTokenPersist(senderEntityId, KEY_PROTO);
@@ -131,6 +137,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .id(new CustomFee.Id(2L, nftEntityId))
                         .royaltyDenominator(0L)
                         .denominatingTokenId(nftEntityId))
+                .persist();
+    }
+
+    private void fileDataPersist() {
+        final long nanos = 1_234_567_890L;
+        final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
+                .setCurrentRate(ExchangeRate.newBuilder()
+                        .setCentEquiv(1)
+                        .setHbarEquiv(12)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(nanos))
+                        .build())
+                .setNextRate(ExchangeRate.newBuilder()
+                        .setCentEquiv(2)
+                        .setHbarEquiv(31)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                        .build())
+                .build();
+        var timeStamp = System.currentTimeMillis();
+        var entityId = new EntityId(0L, 0L, 112L, EntityType.FILE);
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
+                        .entityId(entityId)
+                        .consensusTimestamp(timeStamp))
                 .persist();
     }
 

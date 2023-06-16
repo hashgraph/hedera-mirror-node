@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
@@ -178,7 +179,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        return new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
+    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+        return new AutoCreationLogic(feeCalculator, evmProperties);
     }
 }

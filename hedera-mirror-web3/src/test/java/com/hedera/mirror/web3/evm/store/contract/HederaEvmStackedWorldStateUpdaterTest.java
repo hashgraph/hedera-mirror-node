@@ -18,6 +18,9 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -194,6 +197,18 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void getAccountForRedirect() {
         givenForRedirect();
         assertThat(subject.getAccount(address).getAddress()).isEqualTo(updatedHederaEvmAccount.getAddress());
+    }
+
+    @Test
+    void tracksLazyCreateAccountAsExpected() {
+        subject.trackLazilyCreatedAccount(Address.ALTBN128_MUL);
+
+        final var lazyAccount = subject.getUpdatedAccounts().get(Address.ALTBN128_MUL);
+        assertNotNull(lazyAccount);
+        assertEquals(Wei.ZERO, lazyAccount.getBalance());
+        assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
+        final var accountFromTopFrame = store.getAccount(Address.ALTBN128_MUL, OnMissing.DONT_THROW);
+        assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(Address.ALTBN128_MUL);
     }
 
     @Test

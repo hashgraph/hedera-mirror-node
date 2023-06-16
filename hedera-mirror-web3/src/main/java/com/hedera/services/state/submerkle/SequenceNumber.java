@@ -19,6 +19,12 @@ package com.hedera.services.state.submerkle;
 public class SequenceNumber {
     volatile long i;
 
+    public SequenceNumber() {}
+
+    public SequenceNumber(long i) {
+        this.i = i;
+    }
+
     public synchronized long getAndIncrement() {
         return i++;
     }
