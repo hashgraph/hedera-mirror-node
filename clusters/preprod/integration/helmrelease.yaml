@@ -35,7 +35,7 @@ spec:
       image:
         pullPolicy: Always
       podAnnotations:
-        git.commit: dad1439f9fb065ac6f9d8568afa299e7f2909711
+        git.commit: e807071192cfee2a557484371de1cbcb639379a4
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
