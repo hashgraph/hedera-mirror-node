@@ -213,7 +213,7 @@ alter table if exists token_account_history
 create index if not exists token_account_history__timestamp_range
     on token_account_history using gist (timestamp_range);
 create index if not exists token_account_history__account_token_lower_timestamp
-    on token_account_history__pk (account_id, token_id, lower(timestamp_range));
+    on token_account_history (account_id, token_id, lower(timestamp_range));
 
 -- token_allowance
 alter table if exists token_allowance
