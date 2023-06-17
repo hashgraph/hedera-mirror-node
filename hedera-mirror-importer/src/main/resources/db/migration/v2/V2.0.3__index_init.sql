@@ -75,9 +75,11 @@ create index if not exists contract_state_change__id_slot_timestamp
 alter table if exists crypto_allowance
     add constraint crypto_allowance__pk primary key (owner, spender);
 alter table if exists crypto_allowance_history
-    add constraint crypto_allowance_history__pk primary key (owner, spender, lower(timestamp_range));
+    add constraint crypto_allowance_history__pk primary key (owner, spender, timestamp_range);
 create index if not exists crypto_allowance_history__timestamp_range
     on crypto_allowance_history using gist (timestamp_range);
+create index if not exists crypto_allowance_history_owner_spender_lower_timestamp
+    on crypto_allowance_history (owner, spender, lower(timestamp_range));
 
 -- crypto_transfer
 create index if not exists crypto_transfer__consensus_timestamp
@@ -104,10 +106,11 @@ create index if not exists entity__evm_address on entity (evm_address) where evm
 
 -- entity_history
 alter table if exists entity_history
-    add constraint entity_history__pk primary key (id, lower(timestamp_range));
+    add constraint entity_history__pk primary key (id, timestamp_range);
 create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
+create index if not exists entity_history__id_lower_timestamp on entity_history (id, lower(timestamp_range));
 
 -- entity_stake
 alter table if exists entity_stake
@@ -149,8 +152,10 @@ create index if not exists nft__allowance on nft (account_id, spender, token_id,
 alter table if exists nft_allowance
     add constraint nft_allowance__pk primary key (owner, spender, token_id);
 alter table if exists nft_allowance_history
-    add constraint nft_allowance_history__pk primary key (owner, spender, token_id, lower(timestamp_range));
+    add constraint nft_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
 create index if not exists nft_allowance_history__timestamp_range on nft_allowance_history using gist (timestamp_range);
+create index if not exists nft_allowance_history__owner_spender_token_lower_timestamp
+    on nft_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
 -- nft_transfer
 create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
@@ -204,15 +209,19 @@ alter table token
 alter table token_account
     add constraint token_account__pk primary key (account_id, token_id);
 alter table if exists token_account_history
-    add constraint token_account_history__pk primary key (account_id, token_id, lower(timestamp_range));
+    add constraint token_account_history__pk primary key (account_id, token_id, timestamp_range);
 create index if not exists token_account_history__timestamp_range
     on token_account_history using gist (timestamp_range);
+create index if not exists token_account_history__account_token_lower_timestamp
+    on token_account_history__pk (account_id, token_id, lower(timestamp_range));
 
 -- token_allowance
 alter table if exists token_allowance
     add constraint token_allowance__pk primary key (owner, spender, token_id);
 alter table if exists token_allowance_history
-    add constraint token_allowance_history__pk primary key (owner, spender, token_id, lower(timestamp_range));
+    add constraint token_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
+create index if not exists token_allowance_history__owner_spender_token_lower_timestamp
+    on token_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
 -- token_balance
 alter table token_balance
