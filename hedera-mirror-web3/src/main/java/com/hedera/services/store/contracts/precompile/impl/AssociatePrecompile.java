@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -43,6 +44,14 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * This class is a modified copy of AssociatePrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
+ */
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", INT);
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());

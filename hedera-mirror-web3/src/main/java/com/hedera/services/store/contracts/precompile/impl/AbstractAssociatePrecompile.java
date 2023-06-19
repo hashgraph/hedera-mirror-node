@@ -16,7 +16,9 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -34,6 +36,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This class is a modified copy of AssociatePrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Run method is modified to return {@link RunResult}, so that getSuccessResultFor is based on this record
+ *  4. Run method is modified to accept {@link Store} as a parameter, so that we abstract from the internal state that is used for the execution
+ *  4. Run method does not handle signature verification and has a logic based on modified {@link AssociateLogic} that accepts the {@link Store} as a parameter
+ */
 public abstract class AbstractAssociatePrecompile implements Precompile {
 
     protected final PrecompilePricingUtils pricingUtils;
@@ -57,6 +69,9 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
         // --- Execute the transaction and capture its results ---
         final var associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
+
+        final var validity = associateLogic.validateSyntax(transactionBody);
+        validateTrue(validity == OK, validity);
 
         associateLogic.associate(
                 accountId.asEvmAddress(),
