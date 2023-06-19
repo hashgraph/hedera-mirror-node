@@ -66,7 +66,7 @@ public class StreamFileData {
     }
 
     public static StreamFileData from(@NonNull File file) {
-        return readStreamFileData(file, StreamFilename.from(file.getPath()));
+        return readStreamFileData(file, StreamFilename.from(file.getPath(), File.separator));
     }
 
     public static StreamFileData from(@NonNull Path basePath, @NonNull StreamFilename streamFilename) {

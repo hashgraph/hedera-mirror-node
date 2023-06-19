@@ -85,7 +85,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
                 .sort()
                 .take(batchSize)
                 .map(file -> StreamFilename.from(prefixPathRef.get().toString(), file.getName(), File.separator))
-                .flatMapSequential(streamFilename -> get(node, streamFilename))
+                .map(streamFilename -> StreamFileData.from(basePath, streamFilename))
                 .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
     }
 

@@ -78,10 +78,6 @@ public class StreamFileSignature implements Comparable<StreamFileSignature> {
         return StreamFilename.from(filename, dataFilename);
     }
 
-    public String getFilePath() {
-        return filename.getFilePath();
-    }
-
     public String getFileHashAsHex() {
         return DomainUtils.bytesToHex(fileHash);
     }

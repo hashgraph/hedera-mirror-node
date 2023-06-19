@@ -108,6 +108,6 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 }

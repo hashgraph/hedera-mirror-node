@@ -315,7 +315,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -428,7 +428,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+        assertThat(Files.walk(mirrorProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isStreamFile);
@@ -441,7 +441,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+        assertThat(Files.walk(mirrorProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isSigFile);
@@ -493,7 +493,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -624,7 +624,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).isEmptyDirectory();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @SneakyThrows
