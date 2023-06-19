@@ -37,12 +37,12 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -68,7 +68,7 @@ class AutoCreationLogicTest {
     private Store store;
 
     @Mock
-    private EntityIdSource ids;
+    private EntityAddressSequencer ids;
 
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
@@ -123,7 +123,7 @@ class AutoCreationLogicTest {
     @Test
     void createsAsExpected() {
         // given
-        given(ids.newAccountId()).willReturn(created);
+        given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
 

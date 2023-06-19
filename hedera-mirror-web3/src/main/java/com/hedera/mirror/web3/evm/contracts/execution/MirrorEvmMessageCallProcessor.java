@@ -22,12 +22,10 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -66,7 +64,7 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final EntityIdSource ids = new SeqNoEntityIdSource(SequenceNumber::new);
+        final EntityAddressSequencer ids = new EntityAddressSequencer();
         final var lazyCreateResult = autoCreationLogic.create(
                 syntheticBalanceChange, timestamp, updater.getStore(), ids, mirrorEvmContractAliases);
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {

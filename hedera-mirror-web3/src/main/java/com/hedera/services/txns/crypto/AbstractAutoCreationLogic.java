@@ -29,11 +29,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,6 +57,7 @@ import org.hyperledger.besu.datatypes.Address;
  *  4. Remove UsageLimits and GlobalDynamicProperties
  *  5. trackAliases consumes 2 Addresses
  *  6. The class is stateless and the arguments are passed into the functions
+ *  7. Use {@link EntityAddressSequencer} in place of EntityIdSource
  */
 public abstract class AbstractAutoCreationLogic {
 
@@ -87,7 +88,7 @@ public abstract class AbstractAutoCreationLogic {
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
-            final EntityIdSource ids,
+            final EntityAddressSequencer ids,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
         if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
@@ -112,7 +113,7 @@ public abstract class AbstractAutoCreationLogic {
             fee += getLazyCreationFinalizationFee(store, timestamp);
         }
 
-        final var newId = ids.newAccountId();
+        final var newId = ids.getNewAccountId();
         final var account = new Account(
                 Id.fromGrpcAccount(newId),
                 0L,
