@@ -22,8 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -56,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -128,7 +128,7 @@ class StoreImplTest {
     @Mock
     private TokenAccount tokenAccount;
 
-    @Mock
+    @Mock(strictness = Strictness.LENIENT)
     private Nft nft;
 
     private StoreImpl subject;
@@ -218,9 +218,9 @@ class StoreImplTest {
     void getUniqueTokenWithoutThrow() {
         final var nftId = new NftId(0, 0, 6, 1);
         when(nftRepository.findActiveById(6, 1)).thenReturn(Optional.of(nft));
-        when(nft.getId())
-                .thenReturn(
-                        new com.hedera.mirror.common.domain.token.NftId(1, new EntityId(0L, 0L, 6L, EntityType.TOKEN)));
+        when(nft.getId()).thenReturn(new AbstractNft.Id(1, 6));
+        when(nft.getSerialNumber()).thenReturn(1L);
+        when(nft.getTokenId()).thenReturn(6L);
         final var uniqueToken = subject.getUniqueToken(nftId, OnMissing.DONT_THROW);
         assertThat(uniqueToken.getNftId()).isEqualTo(nftId);
     }
