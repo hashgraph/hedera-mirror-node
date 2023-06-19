@@ -23,6 +23,9 @@ import com.hedera.services.hapi.fees.usage.TxnUsage;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
     static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
 

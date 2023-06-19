@@ -22,6 +22,9 @@ import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
     private long currentExpiry;
 

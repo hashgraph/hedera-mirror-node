@@ -23,6 +23,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public interface EstimatorUtils {
 
     /* A century of seconds */
