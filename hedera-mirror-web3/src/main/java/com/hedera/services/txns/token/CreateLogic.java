@@ -18,6 +18,7 @@ package com.hedera.services.txns.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.models.Token.fromGrpcOpAndMeta;
+import static com.hedera.services.utils.NewRels.listFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -56,13 +57,13 @@ public class CreateLogic {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public void create(final long now, final Address activePayer, final TokenCreateTransactionBody op) {
+    public void create(final long now, final Address activePayer) {
 
         // --- Create the model objects ---
         loadModelsWith(activePayer);
 
         // --- Do the business logic ---
-        doProvisionallyWith(now, RELS_LISTING);
+        doProvisionallyWith(now);
 
         // --- Persist the created model ---
         persist();
@@ -83,15 +84,13 @@ public class CreateLogic {
         //        provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
     }
 
-    public void doProvisionallyWith(final long now, final NewRelsListing listing) {
+    public void doProvisionallyWith(final long now) {
         final var maxCustomFees = dynamicProperties.maxCustomFeesAllowed();
         validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
         provisionalToken = fromGrpcOpAndMeta(provisionalId, op, treasury, autoRenew, now);
-        provisionalToken
-                .getCustomFees()
-                .forEach(fee -> validateAndFinalizeWith(provisionalToken, accountStore, tokenStore, fee));
-        newRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
+        provisionalToken.getCustomFees().forEach(fee -> validateAndFinalizeWith(provisionalToken, fee));
+        newRels = listFrom(provisionalToken, store, dynamicProperties);
         if (op.getInitialSupply() > 0) {
             // Treasury relationship is always first
             provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
