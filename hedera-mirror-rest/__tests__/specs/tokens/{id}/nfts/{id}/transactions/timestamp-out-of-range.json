@@ -39,7 +39,6 @@
         "type": "NON_FUNGIBLE_UNIQUE"
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "name": "TOKENMINT",
@@ -50,12 +49,13 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.1001",
             "sender_account_id": null,
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ],
         "entity_id": "0.0.1500"
@@ -74,7 +74,8 @@
             "receiver_account_id": "0.0.2001",
             "sender_account_id": "0.0.1001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ]
       },
@@ -92,7 +93,8 @@
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ]
       },
@@ -105,12 +107,13 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ]
       },
@@ -123,11 +126,10 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [],
+        "nft_transfer": [],
         "entity_id": "0.0.1500"
       }
     ],
-    "cryptotransfers": [],
     "nfts": [
       {
         "account_id": "0.0.4001",

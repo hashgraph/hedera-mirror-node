@@ -77,7 +77,6 @@ public class ERCContractFeature extends AbstractFeature {
 
     private CompiledSolidityArtifact compiledSolidityArtifact;
     private ContractId contractId;
-
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;

@@ -23,9 +23,9 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -313,12 +313,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder
                 .nft()
-                .customize(n -> n.id(new NftId(1L, nftEntityId))
-                        .accountId(EntityId.of(0, 0, senderEntityId.getId(), ACCOUNT))
+                .customize(n -> n.accountId(senderEntityId)
                         .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1)
                         .spender(spenderEntityId)
                         .metadata(new byte[] {1, 2, 3})
-                        .modifiedTimestamp(1475067194949034022L))
+                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntityId.getId()))
                 .persist();
         return nftEntityId;
     }

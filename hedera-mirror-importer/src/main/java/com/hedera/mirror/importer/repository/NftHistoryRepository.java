@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.AbstractNft;
+import com.hedera.mirror.common.domain.token.NftHistory;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface NftTransferRepository extends CrudRepository<NftTransfer, NftTransferId>, RetentionRepository {
+public interface NftHistoryRepository extends CrudRepository<NftHistory, AbstractNft.Id>, RetentionRepository {
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from nft_transfer where consensus_timestamp <= ?1")
+    @Query(nativeQuery = true, value = "delete from nft_history where timestamp_range << int8range(?1, null)")
+    @Transactional
     int prune(long consensusTimestamp);
 }

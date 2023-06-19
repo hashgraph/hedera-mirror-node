@@ -27,7 +27,6 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_allowance';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_allowance_history';
-update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.nft_transfer';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.non_fee_transfer';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.record_file';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.schedule';
