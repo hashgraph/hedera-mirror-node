@@ -50,7 +50,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Token getFungibleToken(final Address address, final OnMissing throwIfMissing) {
+    public Token getToken(final Address address, final OnMissing throwIfMissing) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 
@@ -100,7 +100,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void updateFungibleToken(final Token fungibleToken) {
+    public void updateToken(final Token fungibleToken) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         tokenAccessor.set(fungibleToken.getId().asEvmAddress(), fungibleToken);
     }
