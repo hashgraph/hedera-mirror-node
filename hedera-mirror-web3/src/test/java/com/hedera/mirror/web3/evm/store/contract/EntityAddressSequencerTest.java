@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,18 @@ class EntityAddressSequencerTest {
                 .returns(shardNum, ContractID::getShardNum)
                 .returns(realmNum, ContractID::getRealmNum)
                 .returns(contractNum, ContractID::getContractNum);
+    }
+
+    @Test
+    void getNewAccountId() {
+        assertThat(entityAddressSequencer.getNewAccountId())
+                .returns(0L, AccountID::getRealmNum)
+                .returns(0L, AccountID::getShardNum)
+                .returns(0L, AccountID::getAccountNum);
+        assertThat(entityAddressSequencer.getNewAccountId())
+                .returns(0L, AccountID::getRealmNum)
+                .returns(0L, AccountID::getShardNum)
+                .returns(1L, AccountID::getAccountNum);
     }
 
     @Test
