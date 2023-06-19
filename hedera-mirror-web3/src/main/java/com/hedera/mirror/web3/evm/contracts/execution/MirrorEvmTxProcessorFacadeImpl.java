@@ -47,9 +47,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;
-    private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
-    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final PricesAndFeesImpl pricesAndFees;
     private final GasCalculatorHederaV22 gasCalculator;
     private final PrecompileMapper precompileMapper;
@@ -58,6 +56,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final EntityAddressSequencer entityAddressSequencer;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
     private final MirrorEntityAccess entityAccess;
+    private final TraceProperties traceProperties;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -74,8 +73,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
-        this.mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
-        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+        this.traceProperties = traceProperties;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
         this.precompileMapper = precompileMapper;
@@ -100,6 +98,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         final var codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
         final var store = new StoreImpl(databaseAccessors);
+
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
+        final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
         final var worldState = new HederaEvmWorldState(
                 entityAccess,
