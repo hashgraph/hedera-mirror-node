@@ -26,4 +26,6 @@ public interface OptionValidator {
     ResponseCodeEnum nftMetadataCheck(byte[] metadata);
 
     ResponseCodeEnum maxBatchSizeMintCheck(int length);
+
+    ResponseCodeEnum maxBatchSizeBurnCheck(int length);
 }

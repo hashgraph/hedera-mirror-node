@@ -44,6 +44,11 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
+    public ResponseCodeEnum maxBatchSizeBurnCheck(final int length) {
+        return batchSizeCheck(length, mirrorNodeEvmProperties.getMaxBatchSizeBurn());
+    }
+
+    @Override
     public ResponseCodeEnum maxBatchSizeMintCheck(final int length) {
         return batchSizeCheck(length, mirrorNodeEvmProperties.getMaxBatchSizeMint());
     }

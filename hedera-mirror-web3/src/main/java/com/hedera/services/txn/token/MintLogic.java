@@ -22,15 +22,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -46,10 +45,9 @@ import java.util.List;
  *  1. Removed validations performed in UsageLimits, since they check global node limits,
  *  while on Archive Node we are interested in transaction scope only
  *  2. Use abstraction for the state by introducing {@link Store} interface
- *  3. Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}
- *  4. Use copied models from hedera-services which are enhanced with additional constructors for easier setup,
+ *  3. Use copied models from hedera-services which are enhanced with additional constructors for easier setup,
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
- *  5. validateSyntax method uses default value of true for areNftsEnabled property
+ *  4. validateSyntax method uses default value of true for areNftsEnabled property
  * */
 public class MintLogic {
 
@@ -73,20 +71,18 @@ public class MintLogic {
                 token.getId().asEvmAddress(), token.getTreasury().getAccountAddress());
         final var treasuryRel = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
 
-        /* --- Instantiate change trackers --- */
-        final var ownershipTracker = new OwnershipTracker();
-
+        TokenModificationResult tokenModificationResult;
         /* --- Do the business logic --- */
         if (token.getType() == TokenType.FUNGIBLE_COMMON) {
-            token.mint(treasuryRel, amount, false);
+            tokenModificationResult = token.mint(treasuryRel, amount, false);
         } else {
-            token.mint(ownershipTracker, treasuryRel, metaDataList, fromJava(consensusTime));
+            tokenModificationResult = token.mint(treasuryRel, metaDataList, fromJava(consensusTime));
         }
 
         /* --- Persist the updated models --- */
-        store.updateToken(token);
-        store.updateTokenRelationship(treasuryRel);
-        store.updateAccount(token.getTreasury());
+        store.updateToken(tokenModificationResult.token());
+        store.updateTokenRelationship(tokenModificationResult.tokenRelationship());
+        store.updateAccount(tokenModificationResult.token().getTreasury());
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {

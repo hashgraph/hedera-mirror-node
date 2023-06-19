@@ -16,31 +16,29 @@
 
 package com.hedera.services.txn.token;
 
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,44 +47,52 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MintLogicTest {
-
+class BurnLogicTest {
     private final long amount = 123L;
     private final Id id = new Id(1, 2, 3);
     private final TokenID grpcId = id.asGrpcToken();
     private final Id treasuryId = new Id(2, 4, 6);
-    private final Account treasury = new Account(treasuryId, 0L);
+    private final Account treasury = new Account(treasuryId, 0);
+    private TokenRelationship treasuryRel;
 
     @Mock
     private Token token;
 
     @Mock
-    private Store store;
+    private OptionValidator validator;
 
     @Mock
-    private OptionValidator validator;
+    private Store store;
 
     @Mock
     private TokenModificationResult tokenModificationResult;
 
     @Mock
-    private Token tokenAfterMint;
+    private Token updatedToken;
 
     @Mock
-    private TokenRelationship treasuryRelAfterMint;
+    private TokenRelationship modifiedTreasuryRel;
 
-    private TokenRelationship treasuryRel;
-    private TransactionBody tokenMintTxn;
+    @Mock
+    private UniqueToken uniqueToken;
 
-    private MintLogic subject;
+    @Mock
+    private Token tokenAfterBurn;
+
+    @Mock
+    private TokenRelationship treasuryRelAfterBurn;
+
+    private TransactionBody tokenBurnTxn;
+
+    private BurnLogic subject;
 
     @BeforeEach
     void setup() {
-        subject = new MintLogic(validator);
+        subject = new BurnLogic(validator);
     }
 
     @Test
-    void followsHappyPath() {
+    void followsHappyPathForCommon() {
         // setup:
         treasuryRel = new TokenRelationship(token, treasury);
 
@@ -99,23 +105,25 @@ class MintLogicTest {
                         OnMissing.THROW))
                 .willReturn(treasuryRel);
         given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(token.mint(treasuryRel, amount, false)).willReturn(tokenModificationResult);
-        given(tokenModificationResult.token()).willReturn(tokenAfterMint);
-        given(tokenModificationResult.tokenRelationship()).willReturn(treasuryRelAfterMint);
-
+        given(token.burn(treasuryRel, amount)).willReturn(tokenModificationResult);
+        given(tokenModificationResult.token()).willReturn(updatedToken);
+        given(tokenModificationResult.tokenRelationship()).willReturn(modifiedTreasuryRel);
         // when:
-        subject.mint(token.getId(), amount, new ArrayList<>(), Instant.now(), store);
+        subject.burn(id, amount, Collections.emptyList(), store);
 
         // then:
-        verify(token).mint(treasuryRel, amount, false);
-        verify(store).updateToken(tokenAfterMint);
-        verify(store).updateTokenRelationship(treasuryRelAfterMint);
+        verify(token).burn(treasuryRel, amount);
+        verify(store).updateToken(updatedToken);
+        verify(store).updateTokenRelationship(modifiedTreasuryRel);
     }
 
     @Test
-    void followsUniqueHappyPath() {
+    void followsHappyPathForUnique() {
+        // setup:
+        final var serials = List.of(1L, 2L);
+        final var firstNftId = new NftId(id.shard(), id.realm(), id.num(), 1);
+        final var secondNftId = new NftId(id.shard(), id.realm(), id.num(), 2);
         treasuryRel = new TokenRelationship(token, treasury);
-        final var consensusTimestamp = Instant.now();
 
         givenValidUniqueTxnCtx();
         given(token.getTreasury()).willReturn(treasury);
@@ -126,64 +134,63 @@ class MintLogicTest {
                         new TokenRelationshipKey(token.getId().asEvmAddress(), treasury.getAccountAddress()),
                         OnMissing.THROW))
                 .willReturn(treasuryRel);
+        given(store.getUniqueToken(firstNftId, OnMissing.THROW)).willReturn(uniqueToken);
+        given(store.getUniqueToken(secondNftId, OnMissing.THROW)).willReturn(uniqueToken);
         given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(token.setLoadedUniqueTokens(anyMap())).willReturn(updatedToken);
+        given(tokenAfterBurn.getTreasury()).willReturn(treasury);
+        given(updatedToken.burn(treasuryRel, serials)).willReturn(tokenModificationResult);
+        given(tokenModificationResult.token()).willReturn(tokenAfterBurn);
+        given(tokenModificationResult.tokenRelationship()).willReturn(treasuryRelAfterBurn);
 
-        final var metadataList = List.of(
-                ByteString.fromHex(
-                        "00000004000000001000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000004000000000000000000000000000000000000000000000040000000000000000000000000000000001000000000000000000000000000000000000000000000001000000000000100000080000000000000000000000000000000000000000000000000000000000000000000000000"));
-        given(token.mint(treasuryRel, metadataList, fromJava(consensusTimestamp)))
-                .willReturn(tokenModificationResult);
-        given(tokenModificationResult.token()).willReturn(tokenAfterMint);
-        given(tokenModificationResult.tokenRelationship()).willReturn(treasuryRelAfterMint);
-        given(tokenAfterMint.getTreasury()).willReturn(treasury);
         // when:
-        subject.mint(token.getId(), 0, metadataList, consensusTimestamp, store);
+        subject.burn(id, amount, serials, store);
 
         // then:
-        verify(token).mint(eq(treasuryRel), eq(metadataList), any(RichInstant.class));
-        verify(store).updateToken(tokenAfterMint);
-        verify(store).updateTokenRelationship(treasuryRelAfterMint);
+        verify(token).getType();
+        verify(updatedToken).burn(treasuryRel, serials);
+        verify(store).updateToken(tokenAfterBurn);
+        verify(store).updateTokenRelationship(treasuryRelAfterBurn);
         verify(store).updateAccount(any(Account.class));
     }
 
     @Test
     void precheckWorksForZeroFungibleAmount() {
         givenValidTxnCtxWithZeroAmount();
-        assertEquals(OK, subject.validateSyntax(tokenMintTxn));
+        assertEquals(OK, subject.validateSyntax(tokenBurnTxn));
     }
 
     @Test
     void precheckWorksForNonZeroFungibleAmount() {
         givenUniqueTxnCtxWithNoSerials();
-        assertEquals(OK, subject.validateSyntax(tokenMintTxn));
-    }
-
-    private void givenValidUniqueTxnCtx() {
-        tokenMintTxn = TransactionBody.newBuilder()
-                .setTokenMint(TokenMintTransactionBody.newBuilder()
-                        .setToken(grpcId)
-                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
-                .build();
+        assertEquals(OK, subject.validateSyntax(tokenBurnTxn));
     }
 
     private void givenValidTxnCtx() {
-        tokenMintTxn = TransactionBody.newBuilder()
-                .setTokenMint(
-                        TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
                 .build();
     }
 
     private void givenValidTxnCtxWithZeroAmount() {
-        tokenMintTxn = TransactionBody.newBuilder()
-                .setTokenMint(
-                        TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
                 .build();
     }
 
     private void givenUniqueTxnCtxWithNoSerials() {
-        tokenMintTxn = TransactionBody.newBuilder()
-                .setTokenMint(
-                        TokenMintTransactionBody.newBuilder().setToken(grpcId).addAllMetadata(List.of()))
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).addAllSerialNumbers(List.of()))
+                .build();
+    }
+
+    private void givenValidUniqueTxnCtx() {
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).addAllSerialNumbers(List.of(1L)))
                 .build();
     }
 }
