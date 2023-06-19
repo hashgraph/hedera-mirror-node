@@ -32,11 +32,14 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,6 +99,8 @@ class MirrorHTSPrecompiledContractTest {
     private Store store;
 
     @InjectMocks
+    private MockPrecompile mockPrecompile;
+
     private PrecompileMapper precompileMapper;
 
     @InjectMocks
@@ -112,8 +117,14 @@ class MirrorHTSPrecompiledContractTest {
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
-        precompileMapper.setSupportedPrecompiles(Set.of(new MockPrecompile()));
-        subject = new MirrorHTSPrecompiledContract(evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper);
+        precompileMapper = new PrecompileMapper(Set.of(mockPrecompile));
+        subject = new MirrorHTSPrecompiledContract(
+                evmInfrastructureFactory,
+                new HTSPrecompiledContract(
+                        evmInfrastructureFactory,
+                        mirrorNodeEvmProperties,
+                        precompileMapper,
+                        new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
     }
 
     @Test
@@ -191,8 +202,10 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
+        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -284,9 +297,10 @@ class MirrorHTSPrecompiledContractTest {
 
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
-        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
+        given(messageFrame.getSenderAddress()).willReturn(Address.ECREC);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(account.getNonce()).willReturn(-1L);
@@ -295,6 +309,7 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
@@ -308,6 +323,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(account.getNonce()).willReturn(-1L);
@@ -316,6 +332,7 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
 
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);

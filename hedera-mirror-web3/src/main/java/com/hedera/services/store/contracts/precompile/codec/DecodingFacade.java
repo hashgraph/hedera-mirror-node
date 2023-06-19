@@ -55,7 +55,6 @@ public class DecodingFacade {
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
-
     public static final String HEDERA_TOKEN_STRUCT_V2 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
@@ -201,6 +200,14 @@ public class DecodingFacade {
         } else {
             hbarTransfers.add(new HbarTransfer(-amount, isApproval, accountID, null));
         }
+    }
+
+    public static List<TokenID> decodeTokenIDsFromBytesArray(@NonNull final byte[][] accountBytesArray) {
+        final List<TokenID> accountIDs = new ArrayList<>();
+        for (final var account : accountBytesArray) {
+            accountIDs.add(convertAddressBytesToTokenID(account));
+        }
+        return accountIDs;
     }
 
     public static AccountID convertLeftPaddedAddressToAccountId(

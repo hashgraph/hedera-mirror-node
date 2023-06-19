@@ -32,6 +32,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
@@ -39,7 +40,10 @@ import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.TransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
+import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -287,7 +291,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         transferOp = switch (functionId) {
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
@@ -340,7 +344,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public void run(MessageFrame frame) {}
+    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+        return new EmptyRunResult();
+    }
 
     @Override
     public Set<Integer> getFunctionSelectors() {

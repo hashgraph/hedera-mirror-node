@@ -50,8 +50,8 @@ public class CallFeature extends AbstractFeature {
 
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
-    private static final ObjectMapper MAPPER = new ObjectMapper().configure(
-                    DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static DeployedContract deployedContract;
     private final ContractClient contractClient;
@@ -65,6 +65,7 @@ public class CallFeature extends AbstractFeature {
     private CompiledSolidityArtifact precompileArtifacts;
     private String ercContractAddress;
     private String precompileContractAddress;
+
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Resource ercTestContract;
 
@@ -113,13 +114,13 @@ public class CallFeature extends AbstractFeature {
                 Collections.emptyList());
     }
 
-    //ETHCALL-017
+    // ETHCALL-017
     @RetryAsserts
     @Then("I call function with IERC721Metadata token name")
     public void IERC721MetadataTokenName() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IERC721_TOKEN_NAME_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.IERC721_TOKEN_NAME_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
@@ -130,13 +131,13 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsText()).isEqualTo(nonFungibleTokenName + "_name");
     }
 
-    //ETHCALL-018
+    // ETHCALL-018
     @RetryAsserts
     @Then("I call function with IERC721Metadata token symbol")
     public void IERC721MetadataTokenSymbol() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
@@ -146,13 +147,13 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsText()).isEqualTo(nonFungibleTokenName);
     }
 
-    //ETHCALL-019
+    // ETHCALL-019
     @RetryAsserts
     @Then("I call function with IERC721Metadata token totalSupply")
     public void IERC721MetadataTokenTotalSupply() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
@@ -162,7 +163,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsNumber()).isZero();
     }
 
-    //ETHCALL-020
+    // ETHCALL-020
     @RetryAsserts
     @Then("I call function with IERC721 token balanceOf owner")
     public void IERC721MetadataTokenBalanceOf() {
@@ -179,7 +180,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsNumber()).isZero();
     }
 
-    //ETHCALL-025
+    // ETHCALL-025
     @RetryAsserts
     @Then("I call function with HederaTokenService isToken token")
     public void HTSIsToken() {
@@ -195,7 +196,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsBoolean()).isTrue();
     }
 
-    //ETHCALL-026
+    // ETHCALL-026
     @RetryAsserts
     @Then("I call function with HederaTokenService isFrozen token, account")
     public void HTSIsFrozen() {
@@ -212,7 +213,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
-    //ETHCALL-027
+    // ETHCALL-027
     @RetryAsserts
     @Then("I call function with HederaTokenService isKyc token, account")
     public void HTSIsKyc() {
@@ -229,7 +230,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
-    //ETHCALL-028
+    // ETHCALL-028
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token")
     public void HTSgetTokenDefaultFreezeStatus() {
@@ -245,7 +246,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
-    //ETHCALL-029
+    // ETHCALL-029
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultKycStatus token")
     public void HTSgetTokenDefaultKycStatus() {
@@ -263,8 +264,12 @@ public class CallFeature extends AbstractFeature {
 
     private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact) {
         var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(fileId,
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 null,
                 null);
@@ -283,7 +288,7 @@ public class CallFeature extends AbstractFeature {
 
     private FileId persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[]{});
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -338,7 +343,6 @@ public class CallFeature extends AbstractFeature {
         private final String selector;
     }
 
-    private record DeployedContract(FileId fileId, ContractId contractId,
-                                    CompiledSolidityArtifact compiledSolidityArtifact) {
-    }
+    private record DeployedContract(
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

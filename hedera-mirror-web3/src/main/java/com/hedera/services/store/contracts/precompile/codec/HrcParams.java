@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.services.hapi.fees.usage;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
- *  Exact copy from hedera-services
- */
-@FunctionalInterface
-public interface EstimatorFactory {
-    TxnUsageEstimator get(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils);
-}
+ * Record containing specific body arguments for HRC precompiles.
+ * */
+public record HrcParams(TokenID token, Address senderAddress) implements BodyParams {}

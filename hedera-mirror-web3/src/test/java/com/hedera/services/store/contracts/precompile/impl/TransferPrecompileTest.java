@@ -162,7 +162,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
         when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any())).thenReturn(EXPECTED_GAS_PRICE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
 
         final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store);
 
@@ -177,7 +177,7 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferTokens(eq(transferTokensInput), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
-        transferPrecompile.body(transferTokensInput, a -> a);
+        transferPrecompile.body(transferTokensInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER, transferPrecompile.transferOp);
 
         transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER, false);
@@ -185,7 +185,7 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransfer(eq(cryptoTransferInput), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
-        transferPrecompile.body(cryptoTransferInput, a -> a);
+        transferPrecompile.body(cryptoTransferInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER, transferPrecompile.transferOp);
 
         transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFTS, false);
@@ -193,7 +193,7 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferNFTs(eq(transferNftsInput), any()))
                 .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER);
-        transferPrecompile.body(transferNftsInput, a -> a);
+        transferPrecompile.body(transferNftsInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_NFTS_WRAPPER, transferPrecompile.transferOp);
 
         transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFT, false);
@@ -201,7 +201,7 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferNFT(eq(transferNftInput), any()))
                 .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
-        transferPrecompile.body(transferNftInput, a -> a);
+        transferPrecompile.body(transferNftInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_NFT_WRAPPER, transferPrecompile.transferOp);
     }
 
@@ -215,7 +215,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
 
         // then
@@ -234,7 +234,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
 
         // then
@@ -254,7 +254,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
 
         // then
@@ -273,7 +273,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
 
         // then
@@ -291,7 +291,7 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a);
+        transferPrecompile.body(input, a -> a, null);
         final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
 
         // then
