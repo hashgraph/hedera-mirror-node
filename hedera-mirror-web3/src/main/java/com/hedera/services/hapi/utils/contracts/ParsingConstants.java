@@ -21,15 +21,16 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import com.esaulpaugh.headlong.abi.TupleType;
 
 public final class ParsingConstants {
-    private ParsingConstants() {
-        throw new UnsupportedOperationException("Utility class");
-    }
-
+    public static final String INT = "(int)";
     public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType intAddressTuple = TupleType.parse("(int32,address)");
     public static final TupleType intTuple = TupleType.parse(INT32);
+
+    private ParsingConstants() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
     public enum FunctionType {
         HAPI_CREATE,

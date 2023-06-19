@@ -37,6 +37,20 @@ public class BinaryGasEstimator {
         int iterationsMade = 0;
         long totalGasUsed = 0;
 
+        // Now that we also support gas estimates for precompile calls, the default threshold is too low, since
+        // it does not take into account the minimum threshold of 5% higher estimate than the actual gas used.
+        // The default value is working with some calls but that is not the case for precompile calls which have higher
+        // gas consumption.
+        // Thus, we need to increase the iteration threshold for precompile calls by comparing the minimum possible
+        // threshold with the default threshold value and use the higher one.
+        // A little tolerance of 8% over 5% is used, since the algorithm fails when using 5%, producing too narrow
+        // threshold.
+        // This value might be adapted or removed in the future, when we have the support of more precompiles and adjust
+        // the binary search algorithm accordingly.
+        long minimumThreshold = (long) (lo * 0.08);
+        final long estimateIterationThreshold =
+                Math.max(minimumThreshold, properties.getEstimateGasIterationThreshold());
+
         while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {
             long mid = (hi + lo) / 2;
             HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
@@ -49,12 +63,13 @@ public class BinaryGasEstimator {
                 lo = mid;
             } else {
                 hi = mid;
-                if (Math.abs(prevGasLimit - mid) < properties.getEstimateGasIterationThreshold()) {
+                if (Math.abs(prevGasLimit - mid) < estimateIterationThreshold) {
                     lo = hi;
                 }
             }
             prevGasLimit = mid;
         }
+
         metricUpdater.accept(totalGasUsed, iterationsMade);
         return hi;
     }
