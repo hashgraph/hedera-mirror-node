@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.batch;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -25,14 +24,12 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -42,74 +39,47 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomUtils;
-import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BatchInserterTest extends IntegrationTest {
 
-    @Resource
-    private BatchPersister batchInserter;
-
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private JdbcTemplate jdbcTemplate;
-
-    @Resource
-    private TopicMessageRepository topicMessageRepository;
-
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
+    private final BatchPersister batchInserter;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final TopicMessageRepository topicMessageRepository;
+    private final TokenTransferRepository tokenTransferRepository;
+    private final TransactionRepository transactionRepository;
 
     @Test
     void persist() {
-        var cryptoTransfers = new HashSet<CryptoTransfer>();
-        cryptoTransfers.add(cryptoTransfer(1));
-        cryptoTransfers.add(cryptoTransfer(2));
-        cryptoTransfers.add(cryptoTransfer(3));
+        var cryptoTransfers = new ArrayList<CryptoTransfer>();
+        cryptoTransfers.add(domainBuilder.cryptoTransfer().get());
+        cryptoTransfers.add(domainBuilder.cryptoTransfer().get());
+        cryptoTransfers.add(domainBuilder.cryptoTransfer().get());
 
-        var tokenTransfers = new HashSet<TokenTransfer>();
-        tokenTransfers.add(tokenTransfer(1));
-        tokenTransfers.add(tokenTransfer(2));
-        tokenTransfers.add(tokenTransfer(3));
+        var tokenTransfers = new ArrayList<TokenTransfer>();
+        tokenTransfers.add(domainBuilder.tokenTransfer().get());
+        tokenTransfers.add(domainBuilder.tokenTransfer().get());
+        tokenTransfers.add(domainBuilder.tokenTransfer().get());
 
         batchInserter.persist(cryptoTransfers);
         batchInserter.persist(tokenTransfers);
 
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenTransfers);
-    }
-
-    @Test
-    void persistDuplicates() {
-        var transactions = new HashSet<Transaction>();
-        transactions.add(transaction(1));
-        transactions.add(transaction(2));
-        transactions.add(transaction(2)); // duplicate transaction to be ignored with no error on attempted copy
-        transactions.add(transaction(3));
-
-        batchInserter.persist(transactions);
-
-        assertThat(transactionRepository.findAll()).hasSize(3).containsExactlyInAnyOrderElementsOf(transactions);
     }
 
     @Test
@@ -126,7 +96,7 @@ class BatchInserterTest extends IntegrationTest {
         var cryptoTransferBatchInserter2 = new BatchInserter(
                 CryptoTransfer.class, dataSource, new SimpleMeterRegistry(), new CommonParserProperties());
         var cryptoTransfers = new HashSet<CryptoTransfer>();
-        cryptoTransfers.add(cryptoTransfer(1));
+        cryptoTransfers.add(domainBuilder.cryptoTransfer().get());
 
         // when
         assertThatThrownBy(() -> cryptoTransferBatchInserter2.persist(cryptoTransfers))
@@ -142,10 +112,10 @@ class BatchInserterTest extends IntegrationTest {
     @Test
     void largeConsensusSubmitMessage() {
         var topicMessages = new HashSet<TopicMessage>();
-        topicMessages.add(topicMessage(1, 6000)); // max 6KiB
-        topicMessages.add(topicMessage(2, 6000));
-        topicMessages.add(topicMessage(3, 6000));
-        topicMessages.add(topicMessage(4, 6000));
+        topicMessages.add(topicMessage(6000)); // max 6KiB
+        topicMessages.add(topicMessage(6000));
+        topicMessages.add(topicMessage(6000));
+        topicMessages.add(topicMessage(6000));
 
         batchInserter.persist(topicMessages);
 
@@ -189,65 +159,16 @@ class BatchInserterTest extends IntegrationTest {
         batchInserter.persist(assessedCustomFees);
 
         // then
-        List<AssessedCustomFeeWrapper> actual =
-                jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
+        var actual = jdbcOperations.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
         assertThat(actual)
                 .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
                 .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
     }
 
-    private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
-        return CryptoTransfer.builder()
-                .amount(1L)
-                .consensusTimestamp(consensusTimestamp)
-                .entityId(EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT).getId())
-                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
-                .build();
-    }
-
-    private TokenTransfer tokenTransfer(long consensusTimestamp) {
+    private TopicMessage topicMessage(int messageSize) {
         return domainBuilder
-                .tokenTransfer()
-                .customize(t -> t.amount(1L)
-                        .id(new TokenTransfer.Id(
-                                consensusTimestamp,
-                                EntityId.of(0L, 1L, 4L, EntityType.TOKEN),
-                                EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT)))
-                        .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
-                        .deletedTokenDissociate(false))
+                .topicMessage()
+                .customize(t -> t.message(RandomUtils.nextBytes(messageSize)))
                 .get();
-    }
-
-    private Transaction transaction(long consensusNs) {
-        EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
-        Transaction transaction = new Transaction();
-        transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(entityId);
-        transaction.setNodeAccountId(entityId);
-        transaction.setMemo("memo".getBytes());
-        transaction.setNonce(0);
-        transaction.setType(14);
-        transaction.setResult(22);
-        transaction.setTransactionHash("transaction hash".getBytes());
-        transaction.setTransactionBytes("transaction bytes".getBytes());
-        transaction.setPayerAccountId(entityId);
-        transaction.setValidStartNs(1L);
-        transaction.setValidDurationSeconds(1L);
-        transaction.setMaxFee(1L);
-        transaction.setChargedTxFee(1L);
-        transaction.setInitialBalance(0L);
-        return transaction;
-    }
-
-    private TopicMessage topicMessage(long consensusNs, int messageSize) {
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setConsensusTimestamp(consensusNs);
-        topicMessage.setPayerAccountId(EntityId.of("0.0.1002", ACCOUNT));
-        topicMessage.setMessage(RandomUtils.nextBytes(messageSize)); // Just exceeds 8000B
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(consensusNs);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
-        return topicMessage;
     }
 }

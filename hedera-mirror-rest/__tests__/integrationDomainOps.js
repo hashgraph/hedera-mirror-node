@@ -1223,27 +1223,34 @@ const addTransactionSignature = async (transactionSignature) => {
   );
 };
 
-const addToken = async (token) => {
-  // create token object and insert into 'token' table
-  token = {
-    token_id: '0.0.0',
-    created_timestamp: 0,
-    decimals: 1000,
-    fee_schedule_key: null,
-    freeze_default: false,
-    initial_supply: 1000000,
-    kyc_key: null,
-    max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
-    name: 'Token name',
-    pause_key: null,
-    pause_status: 'NOT_APPLICABLE',
-    supply_key: null,
-    supply_type: 'INFINITE',
-    symbol: 'YBTJBOAZ',
-    total_supply: 1000000,
-    treasury_account_id: '0.0.98',
-    wipe_key: null,
-    ...token,
+const tokenDefaults = {
+  created_timestamp: 0,
+  decimals: 1000,
+  fee_schedule_key: null,
+  freeze_default: false,
+  freeze_key: null,
+  initial_supply: 1000000,
+  kyc_key: null,
+  max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
+  name: 'Token name',
+  pause_key: null,
+  pause_status: 'NOT_APPLICABLE',
+  supply_key: null,
+  supply_type: 'INFINITE',
+  symbol: 'YBTJBOAZ',
+  timestamp_range: null,
+  token_id: '0.0.0',
+  total_supply: 1000000,
+  treasury_account_id: '0.0.98',
+  type: 'FUNGIBLE_COMMON',
+  wipe_key: null,
+};
+
+const addToken = async (custom) => {
+  const insertFields = Object.keys(tokenDefaults).sort();
+  const token = {
+    ...tokenDefaults,
+    ...custom,
   };
 
   if (token.type === 'NON_FUNGIBLE_UNIQUE') {
@@ -1251,53 +1258,15 @@ const addToken = async (token) => {
     token.initial_supply = 0;
   }
 
-  if (!token.modified_timestamp) {
-    token.modified_timestamp = token.created_timestamp;
+  if (!token.timestamp_range) {
+    token.timestamp_range = `[${token.created_timestamp},)`;
   }
 
-  await pool.query(
-    `insert into token (token_id,
-                        created_timestamp,
-                        decimals,
-                        fee_schedule_key,
-                        freeze_default,
-                        initial_supply,
-                        kyc_key,
-                        max_supply,
-                        modified_timestamp,
-                        name,
-                        pause_key,
-                        pause_status,
-                        supply_key,
-                        supply_type,
-                        symbol,
-                        total_supply,
-                        treasury_account_id,
-                        type,
-                        wipe_key)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`,
-    [
-      EntityId.parse(token.token_id).getEncodedId(),
-      token.created_timestamp,
-      token.decimals,
-      token.fee_schedule_key,
-      token.freeze_default,
-      token.initial_supply,
-      token.kyc_key,
-      token.max_supply,
-      token.modified_timestamp,
-      token.name,
-      token.pause_key,
-      token.pause_status,
-      token.supply_key,
-      token.supply_type,
-      token.symbol,
-      token.total_supply,
-      EntityId.parse(token.treasury_account_id).getEncodedId(),
-      token.type,
-      token.wipe_key,
-    ]
-  );
+  token.token_id = EntityId.parse(token.token_id).getEncodedId();
+  token.treasury_account_id = EntityId.parse(token.treasury_account_id).getEncodedId();
+
+  const table = getTableName('token', token);
+  await insertDomainObject(table, insertFields, token);
 
   if (!token.custom_fees) {
     // if there is no custom fees schedule for the token, add the default empty fee schedule at created_timestamp

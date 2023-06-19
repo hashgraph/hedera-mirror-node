@@ -22,8 +22,13 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.Range;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.IOException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RangeToStringSerializer extends JsonSerializer<Range<?>> {
+
+    public static final RangeToStringSerializer INSTANCE = new RangeToStringSerializer();
 
     @Override
     public void serialize(Range<?> range, JsonGenerator gen, SerializerProvider serializers) throws IOException {

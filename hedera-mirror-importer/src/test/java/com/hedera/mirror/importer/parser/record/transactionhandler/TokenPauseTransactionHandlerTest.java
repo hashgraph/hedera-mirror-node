@@ -62,8 +62,8 @@ class TokenPauseTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(TokenPauseStatusEnum.PAUSED, Token::getPauseStatus)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
     }
 
     @Test

@@ -37,4 +37,11 @@ public @interface Upsertable {
      * @return whether history is enabled
      */
     boolean history() default false;
+
+    /**
+     * Controls whether an update transaction without an existing create transaction should be skipped or not.
+     *
+     * @return whether partial updates are enabled
+     */
+    boolean skipPartialUpdate() default false;
 }

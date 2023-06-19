@@ -73,8 +73,8 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
     }
 
     @Test
@@ -95,8 +95,8 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
 
         assertThat(nft.getValue())
                 .returns(true, Nft::getDeleted)

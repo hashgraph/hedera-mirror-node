@@ -18,28 +18,38 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.token.Token;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class TokenRepositoryTest extends AbstractRepositoryTest {
+class TokenHistoryRepositoryTest extends AbstractRepositoryTest {
 
+    private static final RowMapper<Token> ROW_MAPPER = rowMapper(Token.class);
+    private final TokenHistoryRepository tokenHistoryRepository;
     private final TokenRepository tokenRepository;
 
     @Test
     void save() {
-        var token = domainBuilder.token().persist();
-        assertThat(tokenRepository.findById(token.getTokenId())).get().isEqualTo(token);
+        var tokenHistory = domainBuilder.tokenHistory().persist();
+        assertThat(tokenHistoryRepository.findById(tokenHistory.getTokenId()))
+                .get()
+                .isEqualTo(tokenHistory);
     }
 
+    /**
+     * This test verifies that the domain object and table definition are in sync with the history table.
+     */
     @Test
-    void nullCharacter() {
-        var stringNullChar = "abc" + (char) 0;
-        var token = domainBuilder.token().get();
-        token.setName(stringNullChar);
-        token.setSymbol(stringNullChar);
-        tokenRepository.save(token);
-        assertThat(tokenRepository.findById(token.getTokenId())).get().isEqualTo(token);
+    void history() {
+        var token = domainBuilder.token().persist();
+
+        jdbcOperations.update("insert into token_history select * from token");
+        var tokenHistory = jdbcOperations.query("select * from token_history", ROW_MAPPER);
+
+        assertThat(tokenRepository.findAll()).containsExactly(token);
+        assertThat(tokenHistory).containsExactly(token);
     }
 }
