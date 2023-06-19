@@ -70,7 +70,7 @@ public class MintLogic {
         final var token = store.getToken(targetId.asEvmAddress(), OnMissing.THROW);
 
         final var tokenRelationshipKey = new TokenRelationshipKey(
-                token.getId().asEvmAddress(), token.getTreasury().getId().asEvmAddress());
+                token.getId().asEvmAddress(), token.getTreasury().getAccountAddress());
         final var treasuryRel = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
 
         /* --- Instantiate change trackers --- */
