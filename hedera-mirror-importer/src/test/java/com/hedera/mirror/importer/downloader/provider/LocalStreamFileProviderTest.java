@@ -21,16 +21,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import reactor.test.StepVerifier;
 
 class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
+
+    @Override
+    protected String getProviderPathSeparator() {
+        return File.separator;
+    }
+
+    @Override
+    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
+        return Path.of(
+                        StreamType.RECORD.getPath(),
+                        StreamType.RECORD.getNodePrefix() + node.getNodeAccountId(),
+                        fileName)
+                .toString();
+    }
 
     @BeforeEach
     void setup() throws Exception {
@@ -50,7 +69,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         var accountId = "0.0.3";
         var node = node(accountId);
         getFileCopier(node).copy();
-        var lastFilename = new StreamFilename(Instant.now().toString().replace(':', '_') + ".rcd.gz");
+        var lastFilename = StreamFilename.from(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))
                 .expectNextCount(0)
@@ -61,5 +80,29 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                         .filter(p -> !p.toString().contains("sidecar"))
                         .noneMatch(p -> p.toFile().isFile()))
                 .isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(PathType.class)
+    void listAllPathTypes(PathType pathType) {
+        properties.setPathType(pathType);
+
+        if (pathType == PathType.ACCOUNT_ID) {
+            fileCopier.copy();
+        } else {
+            fileCopier.copyAsNodeIdStructure(
+                    Path::getParent, properties.getMirrorProperties().getNetwork());
+        }
+
+        var accountId = "0.0.3";
+        var node = node(accountId);
+        var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(data1)
+                .expectNext(data2)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 }
