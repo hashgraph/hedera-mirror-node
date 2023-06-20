@@ -31,13 +31,11 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,8 +48,6 @@ import org.apache.logging.log4j.Logger;
  *  1. Remove unused methods: loadPriceSchedules, activePricingSequence
  *  2. Use RatesAndFeesLoader for the calculations
  */
-@Named
-@RequiredArgsConstructor
 @SuppressWarnings("deprecation")
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
@@ -80,6 +76,10 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                     .build());
 
     private final RatesAndFeesLoader ratesAndFeesLoader;
+
+    public BasicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
+        this.ratesAndFeesLoader = ratesAndFeesLoader;
+    }
 
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {

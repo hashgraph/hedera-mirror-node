@@ -17,8 +17,12 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -27,6 +31,8 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
@@ -83,6 +89,18 @@ public class AssociateLogic {
         store.updateAccount(updatedAccount);
 
         return newModelRels;
+    }
+
+    public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+        final var op = txn.getTokenAssociate();
+        if (!op.hasAccount()) {
+            return INVALID_ACCOUNT_ID;
+        }
+        if (repeatsItself(op.getTokensList())) {
+            return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+        }
+
+        return OK;
     }
 
     private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
