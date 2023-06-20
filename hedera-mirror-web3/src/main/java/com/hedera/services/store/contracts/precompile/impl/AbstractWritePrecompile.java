@@ -23,6 +23,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
+    protected TransactionBody.Builder transactionBody;
 
     protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils) {
         this.pricingUtils = pricingUtils;

@@ -63,6 +63,23 @@ public class SyntheticTxnFactory {
     }
 
     /**
+     * Given a {@link TransferWrapper},
+     *
+     * <p>returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
+     * consolidates the wrappers which embodies hbar transfers between accounts.
+     *
+     * @param wrapper the wrappers to consolidate in a synthetic transaction
+     * @return the synthetic transaction
+     */
+    public TransactionBody createCryptoTransferForHbar(final TransferWrapper wrapper) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+        if (!wrapper.hbarTransfers().isEmpty()) {
+            opBuilder.setTransfers(wrapper.asGrpcBuilder());
+        }
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder).build();
+    }
+
+    /**
      * Merges the fungible and non-fungible exchanges from one token transfer list into another. (Of
      * course, at most one of these merges can be sensible; a token cannot be both fungible _and_
      * non-fungible.)

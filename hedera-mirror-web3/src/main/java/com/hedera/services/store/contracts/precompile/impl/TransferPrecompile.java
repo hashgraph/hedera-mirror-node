@@ -18,8 +18,12 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.bindFungibleTransfersFrom;
@@ -29,40 +33,50 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
@@ -100,11 +114,17 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     protected CryptoTransferWrapper transferOp;
     private ImpliedTransfers impliedTransfers;
     private int numLazyCreates;
+    private ResponseCodeEnum impliedValidity;
 
-    public TransferPrecompile(PrecompilePricingUtils pricingUtils, int functionId, boolean isLazyCreationEnabled) {
+    private final Address senderAddress;
+    protected final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
+
+    public TransferPrecompile(
+            PrecompilePricingUtils pricingUtils, int functionId, boolean isLazyCreationEnabled, Address senderAddress) {
         super(pricingUtils);
         this.functionId = functionId;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
+        this.senderAddress = senderAddress;
     }
 
     /**
@@ -299,16 +319,29 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         transferOp = switch (functionId) {
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
+            case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
+            case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
+            case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
+            case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
+            case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
+            case ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
             default -> null;};
         Objects.requireNonNull(transferOp, "Unable to decode function input");
 
-        return TransactionBody.newBuilder();
+        transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
+        if (!transferOp.transferWrapper().hbarTransfers().isEmpty()) {
+            transactionBody.mergeFrom(syntheticTxnFactory.createCryptoTransferForHbar(transferOp.transferWrapper()));
+        }
+
+        extrapolateDetailsFromSyntheticTxn();
+
+        initializeHederaTokenStore();
+        return transactionBody;
+    }
+
+    private void initializeHederaTokenStore() {
+        //        hederaTokenStore = infrastructureFactory.newHederaTokenStore(
+        //                sideEffects, store);
     }
 
     @Override
@@ -355,14 +388,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             extrapolateDetailsFromSyntheticTxn();
         }
         if (impliedValidity != ResponseCodeEnum.OK) {
-            throw new InvalidTransactionException(impliedValidity);
+            throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        final var assessmentStatus = impliedTransfers.getMeta().code();
-        validateTrue(assessmentStatus == OK, assessmentStatus);
+        //        final var assessmentStatus = impliedTransfers.getMeta().code();
+        //        validateTrue(assessmentStatus == OK, assessmentStatus);
         final var changes = impliedTransfers.getAllBalanceChanges();
 
-        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
+        //        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
 
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
@@ -376,9 +409,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var isCredit = units > 0;
 
             if (change.isForCustomFee() && isDebit) {
-                if (change.includesFallbackFee())
-                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty fee");
-                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
+                if (change.includesFallbackFee()) {} // delete
+                //                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty
+                // fee");
+                //                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
             }
 
             if (change.isForNft() || isDebit) {
@@ -394,11 +428,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         // track auto-creation child records if needed
-        if (autoCreationLogic != null) {
-            autoCreationLogic.submitRecords(infrastructureFactory.newRecordSubmissionsScopedTo(updater));
-        }
-
-        transferLogic.doZeroSum(changes);
+        //        if (autoCreationLogic != null) {
+        //            autoCreationLogic.submitRecords(infrastructureFactory.newRecordSubmissionsScopedTo(updater));
+        //        }
+        //
+        //        transferLogic.doZeroSum(changes);
+        return new EmptyRunResult();
     }
 
     private void replaceAliasWithId(
@@ -406,16 +441,17 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final List<BalanceChange> changes,
             final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
-        validateTrueOrRevert(
-                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))), INVALID_ALIAS_KEY);
+        //        validateTrueOrRevert(
+        //                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))),
+        // INVALID_ALIAS_KEY);
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
-            if (autoCreationLogic == null) {
-                autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
-            }
-            final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
-            validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
+            //            if (autoCreationLogic == null) {
+            //                autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
+            //            }
+            //            final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
+            //            validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
             completedLazyCreates.put(
                     receiverAlias,
                     EntityNum.fromAccountId(
@@ -430,7 +466,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 transferOp, "`body` method should be called before `extrapolateDetailsFromSyntheticTxn`");
 
         final var op = transactionBody.getCryptoTransfer();
-        //        impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
+        //                impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
         if (impliedValidity != ResponseCodeEnum.OK) {
             return;
         }
@@ -529,6 +565,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(functionId);
+        return Set.of(
+                ABI_ID_CRYPTO_TRANSFER,
+                ABI_ID_CRYPTO_TRANSFER_V2,
+                ABI_ID_TRANSFER_TOKENS,
+                ABI_ID_TRANSFER_TOKEN,
+                ABI_ID_TRANSFER_NFTS,
+                ABI_ID_TRANSFER_NFT);
     }
 }
