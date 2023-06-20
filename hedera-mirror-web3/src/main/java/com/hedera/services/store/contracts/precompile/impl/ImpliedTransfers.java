@@ -16,18 +16,25 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.AssessedCustomFeeWrapper;
 import java.util.List;
 
 public class ImpliedTransfers {
 
     private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper;
+    private final List<BalanceChange> changes;
 
-    public ImpliedTransfers(List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper) {
+    public ImpliedTransfers(List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper, List<BalanceChange> changes) {
         this.assessedCustomFeesWrapper = assessedCustomFeesWrapper;
+        this.changes = changes;
     }
 
     public boolean hasAssessedCustomFees() {
         return assessedCustomFeesWrapper != null && !assessedCustomFeesWrapper.isEmpty();
+    }
+
+    public List<BalanceChange> getAllBalanceChanges() {
+        return changes;
     }
 }
