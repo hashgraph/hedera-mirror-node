@@ -161,8 +161,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        //        final var assessmentStatus = impliedTransfers.getMeta().code();
-        //        validateTrue(assessmentStatus == OK, assessmentStatus);
         final var changes = impliedTransfers.getAllBalanceChanges();
 
         //        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
@@ -177,13 +175,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             final var isDebit = units < 0;
             final var isCredit = units > 0;
-
-            if (change.isForCustomFee() && isDebit) {
-                if (change.includesFallbackFee()) {} // delete
-                //                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty
-                // fee");
-                //                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
-            }
 
             if (change.isForNft() || isDebit) {
                 // The receiver signature is enforced for a transfer of NFT with a royalty fallback
