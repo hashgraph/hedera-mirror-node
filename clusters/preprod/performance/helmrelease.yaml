@@ -42,10 +42,10 @@ spec:
         HEDERA_MIRROR_IMPORTER_DOWNLOADER_THREADS: "35"
       resources:
         limits:
-          cpu: 2000m
+          cpu: 3000m
           memory: 6Gi
         requests:
-          cpu: 2000m
+          cpu: 3000m
           memory: 6Gi
     monitor:
       env:
