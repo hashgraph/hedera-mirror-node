@@ -227,7 +227,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .treasuryAccountId(EntityId.of(0, 0, senderEntityId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .kycKey(key)
-                        .freezeDefault(true)
+                        .freezeDefault(false)
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)

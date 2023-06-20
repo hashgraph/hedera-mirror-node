@@ -1,0 +1,168 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.store.contracts.precompile.impl;
+
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.hapi.utils.ByteStringUtils;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
+import com.hedera.services.store.contracts.precompile.codec.MintResult;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.RunResult;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.TokenModificationResult;
+import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
+public class MintPrecompile extends AbstractWritePrecompile {
+
+    private static final List<ByteString> NO_METADATA = Collections.emptyList();
+    private final EncodingFacade encoder;
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    private final OptionValidator optionValidator;
+
+    public MintPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final OptionValidator optionValidator) {
+        super(pricingUtils);
+        this.encoder = encoder;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.optionValidator = optionValidator;
+    }
+
+    public static MintWrapper getMintWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
+        final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var fungibleAmount = SystemContractAbis.toLongSafely(decodedArguments.get(1));
+        final var metadataList = (byte[][]) decodedArguments.get(2);
+        final List<ByteString> wrappedMetadata = new ArrayList<>();
+        for (final var meta : metadataList) {
+            wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
+        }
+        // We allow zero unit operations on fungible tokens
+        if (fungibleAmount > 0 || (fungibleAmount == 0 && wrappedMetadata.isEmpty())) {
+            return MintWrapper.forFungible(tokenID, fungibleAmount);
+        } else {
+            return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
+        }
+    }
+
+    @Override
+    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
+        final var functionId = ((FunctionParam) bodyParams).functionId();
+        final var mintAbi =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_V1;
+                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_V2;
+                    default -> throw new IllegalArgumentException("invalid selector to mint precompile");
+                };
+        final var mintOp = getMintWrapper(input, mintAbi);
+        return syntheticTxnFactory.createMint(mintOp);
+    }
+
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+        final var isNftMint = transactionBody.getTokenMint().getMetadataCount() > 0;
+        return pricingUtils.getMinimumPriceInTinybars(isNftMint ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
+    }
+
+    @Override
+    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+        Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
+
+        final var mintBody = transactionBody.getTokenMint();
+        final var tokenId = mintBody.getToken();
+
+        /* --- Build the necessary infrastructure to execute the transaction --- */
+        final var mintLogic = new MintLogic(optionValidator);
+
+        final var validity = mintLogic.validateSyntax(transactionBody);
+        validateTrue(validity == OK, validity);
+
+        /* --- Execute the transaction and capture its results --- */
+        final TokenModificationResult tokenModificationResult;
+        if (mintBody.getMetadataCount() > 0) {
+            final var newMeta = mintBody.getMetadataList();
+            tokenModificationResult = mintLogic.mint(Id.fromGrpcToken(tokenId), 0, newMeta, Instant.now(), store);
+        } else {
+            tokenModificationResult =
+                    mintLogic.mint(Id.fromGrpcToken(tokenId), mintBody.getAmount(), NO_METADATA, Instant.EPOCH, store);
+        }
+
+        final var modifiedToken = tokenModificationResult.token();
+        return new MintResult(
+                modifiedToken.getTotalSupply(),
+                modifiedToken.mintedUniqueTokens().stream()
+                        .map(UniqueToken::getSerialNumber)
+                        .toList());
+    }
+
+    @Override
+    public Set<Integer> getFunctionSelectors() {
+        return Set.of(AbiConstants.ABI_ID_MINT_TOKEN, AbiConstants.ABI_ID_MINT_TOKEN_V2);
+    }
+
+    @Override
+    public Bytes getSuccessResultFor(final RunResult runResult) {
+        final var mintResult = (MintResult) runResult;
+        return encoder.encodeMintSuccess(mintResult.totalSupply(), convertArrayToLong(mintResult.serialNumbers()));
+    }
+
+    @Override
+    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+        return encoder.encodeMintFailure(status);
+    }
+
+    private long[] convertArrayToLong(final List<Long> list) {
+        final var result = new long[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            result[i] = list.get(i);
+        }
+        return result;
+    }
+}

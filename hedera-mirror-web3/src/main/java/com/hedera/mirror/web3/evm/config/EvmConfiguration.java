@@ -37,11 +37,17 @@ import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
+import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Collections;
@@ -222,6 +228,21 @@ public class EvmConfiguration {
     }
 
     @Bean
+    OptionValidator optionValidator(final MirrorNodeEvmProperties properties) {
+        return new ContextOptionValidator(properties);
+    }
+
+    @Bean
+    EncodingFacade encodingFacade() {
+        return new EncodingFacade();
+    }
+
+    @Bean
+    SyntheticTxnFactory syntheticTxnFactory() {
+        return new SyntheticTxnFactory();
+    }
+
+    @Bean
     AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
@@ -229,5 +250,19 @@ public class EvmConfiguration {
     @Bean
     AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    MintLogic mintLogic(OptionValidator optionValidator) {
+        return new MintLogic(optionValidator);
+    }
+
+    @Bean
+    MintPrecompile mintPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            OptionValidator optionValidator) {
+        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, optionValidator);
     }
 }

@@ -317,7 +317,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
             new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
         }),
-        MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
         BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
         DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
@@ -359,7 +358,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     enum SupportedContractModificationFunctions {
         ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKENS(
-                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}});
+                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
+        MINT_TOKEN("mintTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]});
 
         private final String name;
         private final Object[] functionParameters;
