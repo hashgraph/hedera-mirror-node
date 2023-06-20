@@ -1,0 +1,24 @@
+-- truncate tables not needed by rosetta
+truncate assessed_custom_fee;
+truncate contract;
+truncate contract_action;
+truncate contract_log;
+truncate contract_result;
+truncate contract_state;
+truncate contract_state_change;
+truncate custom_fee;
+truncate ethereum_transaction;
+truncate file_data;
+truncate nft_allowance;
+truncate nft_allowance_history;
+truncate nft_transfer;
+truncate schedule;
+truncate token;
+truncate token_account;
+truncate token_account_history;
+truncate token_allowance;
+truncate token_allowance_history;
+truncate token_balance;
+truncate token_transfer;
+truncate topic_message;
+truncate transaction_signature;
