@@ -17,8 +17,9 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -140,16 +141,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 properties,
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
-                stackedStateFrames);
+                store);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
         subject.commit();
         assertThat(subject.getDeletedAccountAddresses()).hasSize(1);
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        var accountFromTopFrame = accountAccessor.get(address);
-        assertTrue(accountFromTopFrame.isEmpty());
+        var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        assertEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
     }
 
     @Test
@@ -159,16 +158,13 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();
         assertThat(subject.getDeletedAccountAddresses()).isEmpty();
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        var accountFromTopFrame = accountAccessor.get(address);
-        assertFalse(accountFromTopFrame.isEmpty());
-        assertThat(accountFromTopFrame.get().getAccountAddress()).isEqualTo(address);
+        var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        assertNotEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
         subject.commit();
         subject.revert();
         subject.deleteAccount(address);
-        accountFromTopFrame = accountAccessor.get(address);
-        assertTrue(accountFromTopFrame.isEmpty());
+        accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        assertEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
     }
 
     @Test

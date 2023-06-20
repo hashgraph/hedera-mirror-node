@@ -96,6 +96,38 @@ public class HederaEvmStackedWorldStateUpdater
         return super.getAccount(address);
     }
 
+    @Override
+    public void commit() {
+        store.commit();
+        mirrorEvmContractAliases.commit();
+
+        // partially copied from services
+        final var wrapped = wrappedWorldView();
+        getDeletedAccounts().forEach(wrapped.getUpdatedAccounts()::remove);
+        wrapped.getDeletedAccounts().addAll(getDeletedAccounts());
+        for (final var updatedAccount : getUpdatedAccounts().values()) {
+            var mutable = wrapped.getUpdatedAccounts().get(updatedAccount.getAddress());
+            if (mutable == null) {
+                mutable = updatedAccount.getWrappedAccount();
+                if (mutable == null) {
+                    mutable = new UpdateTrackingAccount<>(updatedAccount.getAddress(), null);
+                }
+                wrapped.getUpdatedAccounts().put(mutable.getAddress(), mutable);
+            }
+            mutable.setNonce(updatedAccount.getNonce());
+            if (!updatedAccount.wrappedAccountIsTokenProxy()) {
+                mutable.setBalance(updatedAccount.getBalance());
+            }
+            if (updatedAccount.codeWasUpdated()) {
+                mutable.setCode(updatedAccount.getCode());
+            }
+            if (updatedAccount.getStorageWasCleared()) {
+                mutable.clearStorage();
+            }
+            updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
+        }
+    }
+
     private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),

@@ -16,34 +16,24 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.store.models.Id;
 import java.util.Collection;
-import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldView;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<W, A> {
 
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
 
-    protected AbstractLedgerWorldUpdater(
-            W world, AccountAccessor accountAccessor, StackedStateFrames<Object> stackedStateFrames) {
+    protected AbstractLedgerWorldUpdater(W world, AccountAccessor accountAccessor, Store store) {
         super(world, accountAccessor);
-        this.stackedStateFrames = stackedStateFrames;
+        this.store = store;
     }
 
     protected AbstractLedgerWorldUpdater(
@@ -51,103 +41,16 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             AccountAccessor accountAccessor,
             TokenAccessor tokenAccessor,
             HederaEvmEntityAccess hederaEvmEntityAccess,
-            StackedStateFrames<Object> stackedStateFrames) {
+            Store store) {
         super(world, accountAccessor, tokenAccessor, hederaEvmEntityAccess);
-        this.stackedStateFrames = stackedStateFrames;
-    }
-
-    @Override
-    public Account get(final Address addressOrAlias) {
-        if (!addressOrAlias.equals(accountAccessor.canonicalAddress(addressOrAlias))) {
-            return null;
-        }
-
-        final var address = addressOrAlias;
-
-        final var extantMutable = this.updatedAccounts.get(address);
-        if (extantMutable != null) {
-            return extantMutable;
-        } else {
-            if (this.deletedAccounts.contains(address)) {
-                return null;
-            }
-            if (this.world.getClass() == HederaEvmWorldState.class) {
-                return this.world.get(address);
-            }
-            return this.world.get(addressOrAlias);
-        }
-    }
-
-    @Override
-    public EvmAccount getAccount(final Address address) {
-        final var extantMutable = updatedAccounts.get(address);
-        if (extantMutable != null) {
-            return new WrappedEvmAccount(extantMutable);
-        } else if (deletedAccounts.contains(address)) {
-            return null;
-        } else {
-            final var origin = getForMutation(address);
-            if (origin == null) {
-                return null;
-            }
-            final var newMutable = new UpdateTrackingAccount<>(origin, null);
-            return new WrappedEvmAccount(track(newMutable));
-        }
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        persistInStackedStateFrames(address, nonce, balance);
-        final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
-        account.setNonce(nonce);
-        account.setBalance(balance);
-        return new WrappedEvmAccount(track(account));
+        this.store = store;
     }
 
     @Override
     public void deleteAccount(Address address) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        try {
-            accountAccessor.delete(address);
-        } catch (UpdatableCacheUsageException ex) {
-            // ignore, value has been deleted
-        }
+        store.deleteAccount(address);
         deletedAccounts.add(address);
         updatedAccounts.remove(address);
-    }
-
-    @Override
-    public void revert() {
-        getDeletedAccounts().clear();
-        getUpdatedAccountsCollection().clear();
-    }
-
-    protected Collection<UpdateTrackingAccount<A>> getUpdatedAccountsCollection() {
-        return updatedAccounts.values();
-    }
-
-    private void persistInStackedStateFrames(Address address, long nonce, Wei balance) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        final var accountModel = new com.hedera.services.store.models.Account(
-                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
-                0L,
-                balance.toLong(),
-                false,
-                0L,
-                0L,
-                null,
-                0,
-                Collections.emptySortedMap(),
-                Collections.emptySortedMap(),
-                Collections.emptySortedSet(),
-                0,
-                0,
-                0,
-                nonce);
-        accountAccessor.set(address, accountModel);
     }
 
     protected Collection<Address> getDeletedAccounts() {
