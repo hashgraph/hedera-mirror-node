@@ -66,4 +66,13 @@ class JEd25519KeyTest {
         forceEquals = key1.equals(null);
         assertFalse(forceEquals);
     }
+
+    @Test
+    void canGetPrimitiveKeyForEd25519OrSecp256k1() {
+        final var mockEd25519 = new JEd25519Key("01234578901234578901234578901".getBytes());
+        final var mockSecp256k1 = new JECDSASecp256k1Key("012345789012345789012345789012".getBytes());
+
+        assertEquals(0, mockEd25519.getECDSASecp256k1Key().length);
+        assertEquals(0, mockSecp256k1.getEd25519().length);
+    }
 }

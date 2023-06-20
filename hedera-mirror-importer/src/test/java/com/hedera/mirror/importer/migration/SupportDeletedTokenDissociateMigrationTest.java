@@ -22,11 +22,11 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -46,6 +46,9 @@ import java.io.File;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -162,8 +165,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 nft(account2, 45L, false, 45L, 2L, nftId3)));
 
         // nft transfers from nft class treasury update
-        persistNftTransfers(
-                List.of(nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransferId.WILDCARD_SERIAL_NUMBER, nftId3)));
+        persistNftTransfer(nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransfer.WILDCARD_SERIAL_NUMBER, nftId3));
 
         // expected token changes
         ftClass1.setTotalSupply(ftClass1.getTotalSupply() - 10);
@@ -297,13 +299,15 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         return nft;
     }
 
-    private NftTransfer nftTransfer(
+    private MigrationNftTransfer nftTransfer(
             long consensusTimestamp, EntityId receiver, EntityId sender, long serialNumber, EntityId tokenId) {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
-        nftTransfer.setReceiverAccountId(receiver);
-        nftTransfer.setSenderAccountId(sender);
-        return nftTransfer;
+        return MigrationNftTransfer.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .receiverAccountId(receiver)
+                .senderAccountId(sender)
+                .serialNumber(serialNumber)
+                .tokenId(tokenId.getId())
+                .build();
     }
 
     private Token token(long createdTimestamp, EntityId tokenId, TokenTypeEnum tokenType) {
@@ -474,19 +478,16 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistNftTransfers(List<NftTransfer> nftTransfers) {
-        for (NftTransfer nftTransfer : nftTransfers) {
-            var id = nftTransfer.getId();
-            jdbcOperations.update(
-                    "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
-                            + "serial_number, token_id)"
-                            + " values (?,?,?,?,?)",
-                    id.getConsensusTimestamp(),
-                    nftTransfer.getReceiverAccountId().getId(),
-                    nftTransfer.getSenderAccountId().getId(),
-                    id.getSerialNumber(),
-                    id.getTokenId().getId());
-        }
+    private void persistNftTransfer(MigrationNftTransfer nftTransfer) {
+        jdbcOperations.update(
+                "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
+                        + "serial_number, token_id)"
+                        + " values (?,?,?,?,?)",
+                nftTransfer.getConsensusTimestamp(),
+                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getReceiverAccountId()),
+                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getSenderAccountId()),
+                nftTransfer.getSerialNumber(),
+                nftTransfer.getTokenId());
     }
 
     private List<Transaction> findAllTransactions() {
@@ -516,19 +517,9 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         });
     }
 
-    private List<NftTransfer> findAllNftTransfers() {
-        return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> {
-            var receiver = rs.getLong("receiver_account_id");
-            var sender = rs.getLong("sender_account_id");
-            NftTransfer nftTransfer = new NftTransfer();
-            nftTransfer.setId(new NftTransferId(
-                    rs.getLong("consensus_timestamp"),
-                    rs.getLong("serial_number"),
-                    EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
-            nftTransfer.setReceiverAccountId(receiver == 0 ? null : EntityIdEndec.decode(receiver, ACCOUNT));
-            nftTransfer.setSenderAccountId(sender == 0 ? null : EntityIdEndec.decode(sender, ACCOUNT));
-            return nftTransfer;
-        });
+    private List<MigrationNftTransfer> findAllNftTransfers() {
+        return jdbcOperations.query(
+                "select * from nft_transfer", IntegrationTest.rowMapper(MigrationNftTransfer.class));
     }
 
     // Use a custom class for entity table since its columns have changed from the current domain object
@@ -554,6 +545,18 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         private Boolean deleted;
         private byte[] metadata;
         private long modifiedTimestamp;
+        private long serialNumber;
+        private long tokenId;
+    }
+
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @Builder
+    @Data
+    @NoArgsConstructor
+    private static class MigrationNftTransfer {
+        private long consensusTimestamp;
+        private EntityId receiverAccountId;
+        private EntityId senderAccountId;
         private long serialNumber;
         private long tokenId;
     }

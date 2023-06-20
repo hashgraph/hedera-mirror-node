@@ -22,9 +22,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -35,13 +38,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueTokenDatabaseAccessorTest {
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+
     @InjectMocks
     private UniqueTokenDatabaseAccessor uniqueTokenDatabaseAccessor;
 
     @Mock
     private NftRepository nftRepository;
-
-    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
     void get() {
@@ -53,13 +56,12 @@ class UniqueTokenDatabaseAccessorTest {
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
 
-        when(nftRepository.findActiveById(
-                        nft.getId().getTokenId().getId(), nft.getId().getSerialNumber()))
+        when(nftRepository.findActiveById(nft.getTokenId(), nft.getSerialNumber()))
                 .thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(nft.getId())).hasValueSatisfying(uniqueToken -> assertThat(
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
                         uniqueToken)
-                .returns(idFromEntityId(nft.getId().getTokenId()), UniqueToken::getTokenId)
+                .returns(idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN)), UniqueToken::getTokenId)
                 .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
                 .returns(new RichInstant(createdTimestampSecs, createdTimestampNanos), UniqueToken::getCreationTime)
                 .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
@@ -73,8 +75,14 @@ class UniqueTokenDatabaseAccessorTest {
 
         when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(nft.getId()))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft)))
                 .hasValueSatisfying(uniqueToken ->
                         assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
+    }
+
+    private NftId getNftKey(final Nft nft) {
+        final var nftId = nft.getId();
+        final var tokenId = EntityId.of(nftId.getTokenId(), EntityType.TOKEN);
+        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getEntityNum(), nftId.getSerialNumber());
     }
 }

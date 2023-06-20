@@ -77,7 +77,6 @@ public class ERCContractFeature extends AbstractFeature {
 
     private CompiledSolidityArtifact compiledSolidityArtifact;
     private ContractId contractId;
-
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;
@@ -176,14 +175,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         var getOwnerOfResponse = mirrorClient.contractsCall(contractCallGetOwnerOf);
-
-        assertThat(getOwnerOfResponse.getResultAsAddress())
-                .isEqualTo(tokenClient
-                        .getSdkClient()
-                        .getExpandedOperatorAccountId()
-                        .getPublicKey()
-                        .toEvmAddress()
-                        .toString());
+        tokenClient.validateAddress(getOwnerOfResponse.getResultAsAddress());
     }
 
     @RetryAsserts

@@ -35,9 +35,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
@@ -90,7 +90,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
-        final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
+        final var nftOptional = nftRepository.findById(
+                new AbstractNft.Id(serialNo, fromEvmAddress(nft.toArrayUnsafe()).getId()));
         if (nftOptional.isEmpty()) {
             return Optional.empty();
         }
@@ -221,10 +222,6 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
-        if (!properties.isAllowanceEnabled()) {
-            throw new UnsupportedOperationException("allowance(address owner, address spender) is not supported.");
-        }
-
         final var tokenAllowanceId = new AbstractTokenAllowance.Id();
         tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
         tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
@@ -238,7 +235,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
         final var spenderEntity = nftRepository.findById(nftId).map(Nft::getSpender);
 
         if (spenderEntity.isEmpty()) {
@@ -250,11 +248,6 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
-        if (!properties.isApprovedForAllEnabled()) {
-            throw new UnsupportedOperationException(
-                    "isApprovedForAll(address owner, address operator) is not supported.");
-        }
-
         final var nftAllowanceId = new AbstractNftAllowance.Id();
         nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
         nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
@@ -268,7 +261,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
         final var ownerEntity = nftRepository.findById(nftId).map(Nft::getAccountId);
 
         if (ownerEntity.isEmpty()) {
@@ -285,7 +279,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String metadataOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
 
         return nftRepository
                 .findById(nftId)

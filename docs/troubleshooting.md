@@ -85,7 +85,7 @@ Following is list of error messages and how to begin handling issues when they a
 - `Failed downloading`
 
   These errors happen even in a perfectly running mirror node, but are pretty infrequent (one every few minutes). Failed
-  download attempts will be retried rapidly. If they happen two much, investigate. Many possible causes - S3 may be
+  download attempts will be retried rapidly. If they happen too much, investigate. Many possible causes - S3 may be
   down, or there maybe other connection issues.
 
   Actions:

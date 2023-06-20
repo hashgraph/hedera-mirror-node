@@ -20,7 +20,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -74,9 +76,9 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(nft.getValue())
                 .returns(true, Nft::getDeleted)
-                .returns(recordItem.getConsensusTimestamp(), Nft::getModifiedTimestamp)
-                .returns(transactionBody.getSerialNumbers(0), n -> n.getId().getSerialNumber())
-                .returns(transaction.getEntityId(), n -> n.getId().getTokenId());
+                .returns(transactionBody.getSerialNumbers(0), AbstractNft::getSerialNumber)
+                .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
+                .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
     }
 
     @Test

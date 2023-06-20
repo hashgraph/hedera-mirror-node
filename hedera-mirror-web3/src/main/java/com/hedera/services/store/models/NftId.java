@@ -20,6 +20,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 
+/**
+ * Copied NftId type from hedera-services.
+ *
+ * Represents the id of a UniqueToken model
+ */
 public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId> {
     private static final Comparator<NftId> NATURAL_ORDER = Comparator.comparingLong(NftId::num)
             .thenComparingLong(NftId::serialNo)

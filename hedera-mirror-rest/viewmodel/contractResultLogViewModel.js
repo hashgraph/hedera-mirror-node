@@ -33,7 +33,7 @@ class ContractResultLogViewModel {
       address: contractLog.evmAddress ? toHexString(contractLog.evmAddress, true) : contractId.toEvmAddress(),
       bloom: toHexString(contractLog.bloom, true),
       contract_id: contractId.toString(),
-      data: toHexString(contractLog.data, true),
+      data: toHexString(contractLog.data, true, 64),
       index: contractLog.index,
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
     });

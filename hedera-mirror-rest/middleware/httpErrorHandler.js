@@ -25,6 +25,8 @@ const errorMap = {
   NotFoundError: httpStatusCodes.NOT_FOUND,
 };
 
+const simpleErrors = /statement timeout/;
+
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = async (err, req, res, next) => {
@@ -40,7 +42,8 @@ const handleError = async (err, req, res, next) => {
     );
   } else {
     errorMessage = statusCode.message;
-    logger.error(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${statusCode}`, err);
+    const detailedMessage = shouldPrintStacktrace(err) ? err : err.message;
+    logger.error(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${statusCode}`, detailedMessage);
   }
 
   res.status(statusCode.code).json(errorMessageFormat(errorMessage));
@@ -48,6 +51,15 @@ const handleError = async (err, req, res, next) => {
 
 const shouldReturnMessage = (statusCode) => {
   return statusCode.isClientError() || statusCode === httpStatusCodes.BAD_GATEWAY;
+};
+
+/**
+ * Returns if the stacktrace should be logged.
+ * @param errorMessage
+ * @returns {boolean}
+ */
+const shouldPrintStacktrace = (err) => {
+  return !simpleErrors.test(err.message);
 };
 
 /**
