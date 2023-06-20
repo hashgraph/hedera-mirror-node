@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-package com.hedera.services.hapi.fees.usage;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-/**
- *  Exact copy from hedera-services
- */
-@FunctionalInterface
-public interface EstimatorFactory {
-    TxnUsageEstimator get(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils);
-}
+public record EmptyRunResult() implements RunResult {}

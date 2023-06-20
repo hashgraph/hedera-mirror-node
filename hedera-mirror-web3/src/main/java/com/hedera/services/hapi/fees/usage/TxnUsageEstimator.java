@@ -22,6 +22,9 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public class TxnUsageEstimator {
     private final SigUsage sigUsage;
     private final TransactionBody txn;

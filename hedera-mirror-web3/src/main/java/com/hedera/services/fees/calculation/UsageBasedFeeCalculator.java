@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,9 +52,13 @@ import org.apache.logging.log4j.Logger;
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and collections of estimators
  * which can infer the resource usage of various transactions and queries.
  * <p>
- * Copied Logic type from hedera-services. Differences with the original: 1. Use abstraction for the state by
- * introducing {@link Store} interface 2. Hardcode the FeeMultiplierSource 3. Remove unused methods: init,
- * estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
+ * Copied Logic type from hedera-services.
+ *
+ * Differences with the original:
+ *  1. Use abstraction for the state by
+ * introducing {@link Store} interface
+ *  2. Hardcode the FeeMultiplierSource
+ *  3. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
 public class UsageBasedFeeCalculator implements FeeCalculator {
     private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);

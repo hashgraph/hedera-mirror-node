@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.services.hapi.fees.usage;
+package com.hedera.services.fees.calculation.token.txns;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 
-/**
- *  Exact copy from hedera-services
- */
-@FunctionalInterface
-public interface EstimatorFactory {
-    TxnUsageEstimator get(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils);
+public class AbstractTokenResourceUsage {
+    protected final EstimatorFactory estimatorFactory;
+
+    public AbstractTokenResourceUsage(EstimatorFactory estimatorFactory) {
+        this.estimatorFactory = estimatorFactory;
+    }
 }

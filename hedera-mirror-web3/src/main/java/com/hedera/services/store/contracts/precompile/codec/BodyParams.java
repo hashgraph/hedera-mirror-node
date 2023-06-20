@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.services.hapi.fees.usage;
-
-import com.hederahashgraph.api.proto.java.TransactionBody;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /**
- *  Exact copy from hedera-services
+ * Marker interface for records that would contain additional arguments for the Precompile.body method. This is needed,
+ * so that we can achieve stateless behaviour and pass the additional needed information.
  */
-@FunctionalInterface
-public interface EstimatorFactory {
-    TxnUsageEstimator get(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils);
-}
+public interface BodyParams {}

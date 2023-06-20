@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.services.hapi.fees.usage;
-
-import com.hederahashgraph.api.proto.java.TransactionBody;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /**
- *  Exact copy from hedera-services
- */
-@FunctionalInterface
-public interface EstimatorFactory {
-    TxnUsageEstimator get(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils);
-}
+ * Marker interface for records that would contain results from the execution of the precompile run methods. We need to save the result in a record, so that
+ *  we achieve stateless behaviour of the precompiles.
+ *  */
+public interface RunResult {}
