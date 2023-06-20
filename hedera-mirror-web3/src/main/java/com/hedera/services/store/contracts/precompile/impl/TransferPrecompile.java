@@ -40,6 +40,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
@@ -54,6 +55,7 @@ import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
+import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
@@ -109,22 +111,115 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             new Function("transferNFT(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
-    private final int functionId;
-    private final boolean isLazyCreationEnabled;
     protected CryptoTransferWrapper transferOp;
+    Address senderAddress;
     private ImpliedTransfers impliedTransfers;
     private int numLazyCreates;
     private ResponseCodeEnum impliedValidity;
 
-    private final Address senderAddress;
     protected final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
 
     public TransferPrecompile(
-            PrecompilePricingUtils pricingUtils, int functionId, boolean isLazyCreationEnabled, Address senderAddress) {
-        super(pricingUtils);
-        this.functionId = functionId;
-        this.isLazyCreationEnabled = isLazyCreationEnabled;
-        this.senderAddress = senderAddress;
+            PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        super(pricingUtils, mirrorNodeEvmProperties);
+    }
+
+    @Override
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
+        if (bodyParams instanceof TransferParams transferParams) {
+            transferOp = switch (transferParams.functionId()) {
+                case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
+                case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
+                case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
+                case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
+                case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
+                case ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
+                default -> null;};
+            Objects.requireNonNull(transferOp, "Unable to decode function input");
+            senderAddress = transferParams.sernderAddress();
+
+            transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
+            if (!transferOp.transferWrapper().hbarTransfers().isEmpty()) {
+                transactionBody.mergeFrom(
+                        syntheticTxnFactory.createCryptoTransferForHbar(transferOp.transferWrapper()));
+            }
+
+            extrapolateDetailsFromSyntheticTxn();
+
+            initializeHederaTokenStore();
+            return transactionBody;
+        }
+        return TransactionBody.newBuilder();
+    }
+
+    @Override
+    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+        if (impliedValidity == null) {
+            extrapolateDetailsFromSyntheticTxn();
+        }
+        if (impliedValidity != ResponseCodeEnum.OK) {
+            throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
+        }
+
+        //        final var assessmentStatus = impliedTransfers.getMeta().code();
+        //        validateTrue(assessmentStatus == OK, assessmentStatus);
+        final var changes = impliedTransfers.getAllBalanceChanges();
+
+        //        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
+
+        final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
+        for (int i = 0, n = changes.size(); i < n; i++) {
+            final var change = changes.get(i);
+            final var units = change.getAggregatedUnits();
+            if (change.hasAlias()) {
+                replaceAliasWithId(change, changes, completedLazyCreates);
+            }
+
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
+            if (change.isForCustomFee() && isDebit) {
+                if (change.includesFallbackFee()) {} // delete
+                //                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty
+                // fee");
+                //                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
+            }
+
+            if (change.isForNft() || isDebit) {
+                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
+                // fee
+                final var isForNonFallbackRoyaltyFee = change.isForCustomFee() && !change.includesFallbackFee();
+                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
+                    // Signing requirements are skipped for changes to be authorized via an
+                    // allowance
+                    continue;
+                }
+            }
+        }
+
+        // track auto-creation child records if needed
+        //        if (autoCreationLogic != null) {
+        //            autoCreationLogic.submitRecords(infrastructureFactory.newRecordSubmissionsScopedTo(updater));
+        //        }
+        //
+        //        transferLogic.doZeroSum(changes);
+        return new EmptyRunResult();
+    }
+
+    @Override
+    public Set<Integer> getFunctionSelectors() {
+        return Set.of(
+                ABI_ID_CRYPTO_TRANSFER,
+                ABI_ID_CRYPTO_TRANSFER_V2,
+                ABI_ID_TRANSFER_TOKENS,
+                ABI_ID_TRANSFER_TOKEN,
+                ABI_ID_TRANSFER_NFTS,
+                ABI_ID_TRANSFER_NFT);
+    }
+
+    private void initializeHederaTokenStore() {
+        //        hederaTokenStore = infrastructureFactory.newHederaTokenStore(
+        //                sideEffects, store);
     }
 
     /**
@@ -317,34 +412,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        transferOp = switch (functionId) {
-            case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-            case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
-            case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
-            case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
-            case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
-            case ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
-            default -> null;};
-        Objects.requireNonNull(transferOp, "Unable to decode function input");
-
-        transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
-        if (!transferOp.transferWrapper().hbarTransfers().isEmpty()) {
-            transactionBody.mergeFrom(syntheticTxnFactory.createCryptoTransferForHbar(transferOp.transferWrapper()));
-        }
-
-        extrapolateDetailsFromSyntheticTxn();
-
-        initializeHederaTokenStore();
-        return transactionBody;
-    }
-
-    private void initializeHederaTokenStore() {
-        //        hederaTokenStore = infrastructureFactory.newHederaTokenStore(
-        //                sideEffects, store);
-    }
-
-    @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
@@ -374,66 +441,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
                         / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
-        if (isLazyCreationEnabled && numLazyCreates > 0) {
+        if (mirrorNodeEvmProperties.isLazyCreationEnabled() && numLazyCreates > 0) {
             final var lazyCreationFee = pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
                     + pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_UPDATE, consensusTime);
             accumulatedCost += numLazyCreates * lazyCreationFee;
         }
         return accumulatedCost;
-    }
-
-    @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
-        if (impliedValidity == null) {
-            extrapolateDetailsFromSyntheticTxn();
-        }
-        if (impliedValidity != ResponseCodeEnum.OK) {
-            throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
-        }
-
-        //        final var assessmentStatus = impliedTransfers.getMeta().code();
-        //        validateTrue(assessmentStatus == OK, assessmentStatus);
-        final var changes = impliedTransfers.getAllBalanceChanges();
-
-        //        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
-
-        final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
-        for (int i = 0, n = changes.size(); i < n; i++) {
-            final var change = changes.get(i);
-            final var units = change.getAggregatedUnits();
-            if (change.hasAlias()) {
-                replaceAliasWithId(change, changes, completedLazyCreates);
-            }
-
-            final var isDebit = units < 0;
-            final var isCredit = units > 0;
-
-            if (change.isForCustomFee() && isDebit) {
-                if (change.includesFallbackFee()) {} // delete
-                //                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty
-                // fee");
-                //                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
-            }
-
-            if (change.isForNft() || isDebit) {
-                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
-                // fee
-                final var isForNonFallbackRoyaltyFee = change.isForCustomFee() && !change.includesFallbackFee();
-                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
-                    // Signing requirements are skipped for changes to be authorized via an
-                    // allowance
-                    continue;
-                }
-            }
-        }
-
-        // track auto-creation child records if needed
-        //        if (autoCreationLogic != null) {
-        //            autoCreationLogic.submitRecords(infrastructureFactory.newRecordSubmissionsScopedTo(updater));
-        //        }
-        //
-        //        transferLogic.doZeroSum(changes);
-        return new EmptyRunResult();
     }
 
     private void replaceAliasWithId(
@@ -471,7 +484,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             return;
         }
         final var explicitChanges = constructBalanceChanges();
-        if (numLazyCreates > 0 && !isLazyCreationEnabled) {
+        if (numLazyCreates > 0 && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
             impliedValidity = NOT_SUPPORTED;
             return;
         }
@@ -561,16 +574,5 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 .setAmount(amount)
                 .setIsApproval(isApproval)
                 .build();
-    }
-
-    @Override
-    public Set<Integer> getFunctionSelectors() {
-        return Set.of(
-                ABI_ID_CRYPTO_TRANSFER,
-                ABI_ID_CRYPTO_TRANSFER_V2,
-                ABI_ID_TRANSFER_TOKENS,
-                ABI_ID_TRANSFER_TOKEN,
-                ABI_ID_TRANSFER_NFTS,
-                ABI_ID_TRANSFER_NFT);
     }
 }

@@ -37,6 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasC
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
+import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -230,7 +231,14 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
         } else {
             this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            this.transactionBody = precompile.body(input, aliasResolver, null);
+
+            if (AbiConstants.ABI_ID_TRANSFER_TOKENS == functionId
+                    || AbiConstants.ABI_ID_TRANSFER_TOKEN == functionId
+                    || AbiConstants.ABI_ID_TRANSFER_NFTS == functionId
+                    || AbiConstants.ABI_ID_TRANSFER_NFT == functionId) {
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+            }
         }
 
         gasRequirement = defaultGas();

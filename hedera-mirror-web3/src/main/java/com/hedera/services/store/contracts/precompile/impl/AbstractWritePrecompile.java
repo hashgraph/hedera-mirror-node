@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -24,9 +25,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public abstract class AbstractWritePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
     protected TransactionBody.Builder transactionBody;
+    protected final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils) {
+    protected AbstractWritePrecompile(
+            PrecompilePricingUtils pricingUtils, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.pricingUtils = pricingUtils;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     @Override

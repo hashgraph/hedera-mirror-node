@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -208,6 +209,12 @@ public class EvmConfiguration {
     AssociatePrecompile associatePrecompile(
             final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
         return new AssociatePrecompile(precompilePricingUtils, properties);
+    }
+
+    @Bean
+    TransferPrecompile transferPrecompile(
+            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
+        return new TransferPrecompile(precompilePricingUtils, properties);
     }
 
     @Bean
