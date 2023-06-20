@@ -23,7 +23,6 @@ import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import java.util.Collection;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -52,10 +51,6 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
         final var wrapped = wrappedWorldView();
         final A account = wrapped.getForMutation(address);
         return account == null ? null : new UpdateTrackingAccount<>(account, null);
-    }
-
-    protected Collection<Address> getDeletedAccounts() {
-        return deletedAccounts;
     }
 
     @Override
