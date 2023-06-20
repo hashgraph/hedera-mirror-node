@@ -203,8 +203,8 @@ public class Account extends HederaEvmAccount {
      * @param updatedAutoAssociationMetadata
      * @return the new instance of {@link Account} with updated {@link #autoAssociationMetadata} property
      */
-    private Account createNewAccountWithNewAutoAssociationMetadata(Account oldAccount,
-            int updatedAutoAssociationMetadata) {
+    private Account createNewAccountWithNewAutoAssociationMetadata(
+            Account oldAccount, int updatedAutoAssociationMetadata) {
         return new Account(
                 oldAccount.id,
                 oldAccount.expiry,
@@ -232,8 +232,7 @@ public class Account extends HederaEvmAccount {
      * @param newBalance
      * @return the new instance of {@link Account} with updated {@link #balance} property
      */
-    private Account createNewAccountWithNewBalance(Account oldAccount,
-            long newBalance) {
+    private Account createNewAccountWithNewBalance(Account oldAccount, long newBalance) {
         return new Account(
                 oldAccount.id,
                 oldAccount.expiry,
@@ -330,8 +329,8 @@ public class Account extends HederaEvmAccount {
 
     public Account setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
         validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-        final var updatedAutoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata,
-                alreadyUsedCount);
+        final var updatedAutoAssociationMetadata =
+                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
         return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
     }
 

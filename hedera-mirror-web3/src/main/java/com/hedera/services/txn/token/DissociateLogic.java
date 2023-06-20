@@ -36,11 +36,15 @@ import java.time.Instant;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
-
+/**
+ * Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  3. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
+ * */
 public class DissociateLogic {
 
-    public DissociateLogic() {
-    }
+    public DissociateLogic() {}
 
     public void dissociate(final Address address, final List<Address> tokenAddresses, final Store store) {
 
@@ -58,8 +62,7 @@ public class DissociateLogic {
             final var tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
             validateTrue(hasAssociation(tokenRelationshipKey, store), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-            var tokenRelationship =
-                    store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
+            var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
             final var updatedRelationship = updateRelationship(tokenRelationship, store);
             Account updatedAccount = null;
             final var oldAccount = updatedRelationship.getAccount();
@@ -109,8 +112,10 @@ public class DissociateLogic {
 
     private void updateModelsForDissociationFromActiveToken(TokenRelationship tokenRelationship, final Store store) {
         final var token = tokenRelationship.getToken();
-        final var isAccountTreasuryOfDissociatedToken =
-                tokenRelationship.getAccount().getId().equals(token.getTreasury().getId());
+        final var isAccountTreasuryOfDissociatedToken = tokenRelationship
+                .getAccount()
+                .getId()
+                .equals(token.getTreasury().getId());
         validateFalse(isAccountTreasuryOfDissociatedToken, ACCOUNT_IS_TREASURY);
         validateFalse(tokenRelationship.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
@@ -134,6 +139,4 @@ public class DissociateLogic {
         final var isTokenExpired = Instant.now().getEpochSecond() > token.getExpiry();
         validateTrue(isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
     }
-
-
 }
