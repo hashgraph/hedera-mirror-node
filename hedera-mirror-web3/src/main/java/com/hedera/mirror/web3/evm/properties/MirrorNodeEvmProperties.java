@@ -39,11 +39,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
-    @Getter
-    private boolean allowanceEnabled = false;
-
-    @Getter
-    private boolean approvedForAllEnabled = false;
 
     @NotNull
     private HederaChainId chainId = HederaChainId.TESTNET;
@@ -78,6 +73,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 100;
+
+    @Getter
+    @Min(1)
+    private int maxTokensPerAccount = 1000;
 
     @Getter
     @NotNull

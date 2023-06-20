@@ -25,35 +25,29 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.function.ToLongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.operation.CallOperation;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
 
-    @Autowired
-    private MeterRegistry meterRegistry;
-
-    @Autowired
-    private MirrorEvmTxProcessorFacadeImpl processor;
+    @BeforeEach
+    void setup() {
+        // reset gas metrics
+        meterRegistry.clear();
+    }
 
     @Test
     void pureCall() {
@@ -285,26 +279,32 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void create2ContractDeployIsNotSupported() {
-        // deployViaCreate2()
-        final var stateChangePayable = "0xdbb6f04a";
-        final var params =
-                serviceParameters(stateChangePayable, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
-
-        persistEntities(false);
-
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("CREATE2 operation is not supported yet.");
-    }
-
-    @Test
     void estimateGasForStateChangeCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var stateChangeHash =
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters =
                 serviceParameters(stateChangeHash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasForCreate2ContractDeploy() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        // deployViaCreate2()
+        final var deployViaCreate2Hash = "0xdbb6f04a";
+        final var serviceParameters =
+                serviceParameters(deployViaCreate2Hash, 0, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
@@ -426,19 +426,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         }
 
         return gasUsedBeforeExecution;
-    }
-
-    private long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
-        return processor
-                .execute(
-                        serviceParameters.getSender(),
-                        serviceParameters.getReceiver(),
-                        serviceParameters.getGas(),
-                        serviceParameters.getValue(),
-                        serviceParameters.getCallData(),
-                        Instant.now(),
-                        serviceParameters.isStatic())
-                .getGasUsed();
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {

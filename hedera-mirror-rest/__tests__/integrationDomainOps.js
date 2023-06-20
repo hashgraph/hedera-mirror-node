@@ -22,7 +22,8 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
-import {isV2Schema, valueToBuffer} from './testutils.js';
+import {isV2Schema, valueToBuffer} from './testutils';
+import {JSONStringify} from '../utils';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -495,6 +496,7 @@ const entityDefaults = {
   timestamp_range: '[0,)',
   type: constants.entityTypes.ACCOUNT,
 };
+
 const addEntity = async (defaults, custom) => {
   const insertFields = Object.keys(entityDefaults).sort();
   const entity = {
@@ -755,6 +757,7 @@ const defaultTransaction = {
   consensus_timestamp: null,
   entity_id: null,
   max_fee: 33,
+  nft_transfer: null,
   node_account_id: null,
   nonce: 0,
   parent_consensus_timestamp: null,
@@ -783,6 +786,15 @@ const addTransaction = async (transaction) => {
     valid_start_ns: transaction.valid_start_timestamp,
   };
 
+  if (transaction.nft_transfer !== null) {
+    transaction.nft_transfer.forEach((nftTransfer) => {
+      ['receiver_account_id', 'sender_account_id', 'token_id'].forEach((key) => {
+        _.update(nftTransfer, key, (value) => EntityId.parse(value, {isNullable: true}).getEncodedId());
+      });
+    });
+    // use JSONStringify to handle BigInt values
+    transaction.nft_transfer = JSONStringify(transaction.nft_transfer);
+  }
   transaction.transaction_hash = valueToBuffer(transaction.transaction_hash);
 
   if (transaction.valid_start_ns === undefined) {
@@ -815,7 +827,6 @@ const addTransaction = async (transaction) => {
     payerAccount
   );
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list, payerAccount);
-  await insertNftTransfers(transaction.consensus_timestamp, transaction.nft_transfer_list, payerAccount);
 };
 
 const addTransactionHash = async (transactionHash) => {
@@ -889,31 +900,6 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
     pgformat(
       'insert into token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) values %L',
       tokenTransfers
-    )
-  );
-};
-
-const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAccountId) => {
-  if (!nftTransferList || nftTransferList.length === 0) {
-    return;
-  }
-
-  const nftTransfers = nftTransferList.map((transfer) => {
-    return [
-      `${consensusTimestamp}`,
-      EntityId.parse(transfer.receiver_account_id, {isNullable: true}).getEncodedId(),
-      EntityId.parse(transfer.sender_account_id, {isNullable: true}).getEncodedId(),
-      transfer.serial_number,
-      EntityId.parse(transfer.token_id).getEncodedId().toString(),
-      payerAccountId,
-      transfer.is_approval,
-    ];
-  });
-
-  await pool.query(
-    pgformat(
-      'insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id, is_approval) values %L',
-      nftTransfers
     )
   );
 };
@@ -1425,41 +1411,35 @@ const addNetworkStake = async (networkStakeInput) => {
   await insertDomainObject('network_stake', insertFields, networkStake);
 };
 
-const addNft = async (nft) => {
-  // create nft account object
-  nft = {
-    account_id: '0.0.0',
-    created_timestamp: 0,
-    delegating_spender: null,
-    deleted: false,
-    metadata: '\\x',
-    modified_timestamp: 0,
-    serial_number: 0,
-    spender: null,
-    token_id: '0.0.0',
-    ...nft,
+const nftDefaults = {
+  account_id: '0.0.0',
+  created_timestamp: 0,
+  delegating_spender: null,
+  deleted: false,
+  metadata: '\\x',
+  serial_number: 0,
+  spender: null,
+  timestamp_range: null,
+  token_id: '0.0.0',
+};
+
+const addNft = async (custom) => {
+  const insertFields = Object.keys(nftDefaults).sort();
+  const nft = {
+    ...nftDefaults,
+    ...custom,
   };
 
-  if (!nft.modified_timestamp) {
-    nft.modified_timestamp = nft.created_timestamp;
+  if (!nft.timestamp_range) {
+    nft.timestamp_range = `[${nft.created_timestamp},)`;
   }
 
-  await pool.query(
-    `insert into nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata,
-                      serial_number, spender, token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
-    [
-      EntityId.parse(nft.account_id, {isNullable: true}).getEncodedId(),
-      nft.created_timestamp,
-      EntityId.parse(nft.delegating_spender, {isNullable: true}).getEncodedId(),
-      nft.deleted,
-      nft.modified_timestamp,
-      nft.metadata,
-      nft.serial_number,
-      EntityId.parse(nft.spender, {isNullable: true}).getEncodedId(),
-      EntityId.parse(nft.token_id).getEncodedId(),
-    ]
+  ['account_id', 'delegating_spender', 'spender'].forEach((key) =>
+    _.update(nft, key, (v) => EntityId.parse(v, {isNullable: true}).getEncodedId())
   );
+  nft.token_id = EntityId.parse(nft.token_id).getEncodedId();
+
+  await insertDomainObject(getTableName('nft', nft), insertFields, nft);
 };
 
 const addNodeStake = async (nodeStakeInput) => {

@@ -25,18 +25,17 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -48,14 +47,16 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private final MirrorNodeEvmProperties evmProperties;
-    private final MirrorOperationTracer mirrorOperationTracer;
     private final StaticBlockMetaSource blockMetaSource;
-    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final PricesAndFeesImpl pricesAndFees;
-    private final AbstractCodeCache codeCache;
-    private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
+    private final PrecompileMapper precompileMapper;
+    private final AccountAccessorImpl accountAccessor;
+    private final TokenAccessorImpl tokenAccessor;
+    private final EntityAddressSequencer entityAddressSequencer;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
+    private final MirrorEntityAccess entityAccess;
+    private final TraceProperties traceProperties;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -68,30 +69,19 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
-            final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors,
+            final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
-        this.mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
-        this.mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+        this.traceProperties = traceProperties;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
+        this.precompileMapper = precompileMapper;
+        this.accountAccessor = accountAccessor;
+        this.tokenAccessor = tokenAccessor;
+        this.entityAddressSequencer = entityAddressSequencer;
         this.databaseAccessors = databaseAccessors;
-
-        final int expirationCacheTime =
-                (int) evmProperties.getExpirationCacheTime().toSeconds();
-
-        this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
-
-        this.worldState = new HederaEvmWorldState(
-                entityAccess,
-                evmProperties,
-                codeCache,
-                accountAccessor,
-                tokenAccessor,
-                entityAddressSequencer,
-                mirrorEvmContractAliases,
-                stackedStateFrames);
+        this.entityAccess = entityAccess;
     }
 
     @Override
@@ -103,14 +93,31 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final Bytes callData,
             final Instant consensusTimestamp,
             final boolean isStatic) {
-        final var stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        final int expirationCacheTime =
+                (int) evmProperties.getExpirationCacheTime().toSeconds();
+
+        final var codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
+        final var store = new StoreImpl(databaseAccessors);
+
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
+        final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+
+        final var worldState = new HederaEvmWorldState(
+                entityAccess,
+                evmProperties,
+                codeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                store);
 
         final var processor = new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, stackedStateFrames, evmProperties, new PrecompileMapper()),
+                mcps(gasCalculator, evmProperties, precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

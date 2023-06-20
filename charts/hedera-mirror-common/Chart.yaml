@@ -18,6 +18,11 @@ dependencies:
     condition: promtail.enabled
     version: 6.8.3
     repository: https://grafana.github.io/helm-charts
+  - alias: stackgres
+    condition: stackgres.enabled
+    name: stackgres-operator
+    repository: https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
+    version: 1.5.0-RC1
   - condition: traefik.enabled
     name: traefik
     repository: https://helm.traefik.io/traefik

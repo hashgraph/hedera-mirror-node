@@ -28,7 +28,7 @@ class ImpliedTransfersTest {
 
     @Test
     void detectsMissingCustomFees() {
-        final var noCustomFees = new ImpliedTransfers(Collections.emptyList(), Collections.emptyList());
+        final var noCustomFees = new ImpliedTransfers(Collections.emptyList());
         assertFalse(noCustomFees.hasAssessedCustomFees());
     }
 }

@@ -26,6 +26,8 @@ import org.apache.commons.codec.DecoderException;
  */
 public abstract class JKey {
 
+    private static final byte[] MISSING_ED25519_KEY = new byte[0];
+    private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
     static final int MAX_KEY_DEPTH = 15;
 
     /**
@@ -40,8 +42,7 @@ public abstract class JKey {
     }
 
     /**
-     * Converts a key up to a given level of depth. Both the signature and the key may be complex
-     * with multiple levels.
+     * Converts a key up to a given level of depth. Both the signature and the key may be complex with multiple levels.
      *
      * @param key   the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
@@ -96,4 +97,12 @@ public abstract class JKey {
      * @return whether the key is valid
      */
     public abstract boolean isValid();
+
+    public byte[] getECDSASecp256k1Key() {
+        return MISSING_ECDSA_SECP256K1_KEY;
+    }
+
+    public byte[] getEd25519() {
+        return MISSING_ED25519_KEY;
+    }
 }

@@ -196,6 +196,14 @@ kubectl port-forward service/${RELEASE}-grafana 8080:80 &
 open "http://localhost:8080"
 ```
 
+To view the Stackgres UI:
+
+```shell
+kubectl get secret ${RELEASE}-restapi --template '{{ printf "%s / %s\n" (.data.k8sUsername | base64decode) (.data.clearPassword | base64decode) }}'
+kubectl port-forward service/${RELEASE}-restapi 8443:443 &
+open https://localhost:8443
+```
+
 ## Uninstall
 
 To remove all the Kubernetes components associated with the chart and delete the release:
@@ -237,8 +245,16 @@ to connect to Grafana.
 
 To connect to the database and run queries:
 
+V1:
+
 ```shell script
 kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mirror_node -U mirror_node
+```
+
+V2:
+
+```shell
+kubectl exec -it "${RELEASE}-citus-coord-0" -c postgres-util -- psql
 ```
 
 A thread dump can be taken by sending a `QUIT` signal to the java process inside the container. The thread dump output

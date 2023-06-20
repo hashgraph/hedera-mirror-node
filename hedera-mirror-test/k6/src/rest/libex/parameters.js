@@ -104,12 +104,13 @@ const getPropertiesForEntity = (extractProperties, properties) => {
 };
 
 const computeAccountParameters = wrapComputeParametersFunc(
-  ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY'],
+  ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY', 'DEFAULT_ACCOUNT_ID_TIMESTAMP'],
   () => {
     const extractProperties = (account) => {
       const {
         balance: {balance},
         key,
+        created_timestamp: timestamp,
       } = account;
       if (key === null) {
         throw new Error('The account has no key');
@@ -123,6 +124,7 @@ const computeAccountParameters = wrapComputeParametersFunc(
         DEFAULT_ACCOUNT_BALANCE: balance,
         DEFAULT_ACCOUNT_ID: account.account,
         DEFAULT_PUBLIC_KEY: key.key,
+        DEFAULT_ACCOUNT_ID_TIMESTAMP: timestamp,
       };
     };
     return getPropertiesForEntity(extractProperties, {

@@ -21,6 +21,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -57,6 +59,7 @@ import org.springframework.jdbc.core.RowMapper;
 @Import(IntegrationTestConfiguration.class)
 public abstract class IntegrationTest {
 
+    private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = Map.of(Nft.class, "token_id, serial_number");
     private static final RowMapper<NonFeeTransfer> NON_FEE_TRANSFER_ROW_MAPPER = rowMapper(NonFeeTransfer.class);
     private static final String SELECT_NON_FEE_TRANSFERS_QUERY = "select * from non_fee_transfer";
 
@@ -121,7 +124,7 @@ public abstract class IntegrationTest {
     }
 
     protected <T> Collection<T> findHistory(Class<T> historyClass) {
-        return findHistory(historyClass, "id");
+        return findHistory(historyClass, DEFAULT_DOMAIN_CLASS_IDS.getOrDefault(historyClass, "id"));
     }
 
     protected <T> Collection<T> findHistory(Class<T> historyClass, String ids) {

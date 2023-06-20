@@ -20,10 +20,14 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Set;
@@ -33,20 +37,24 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * Extracted from hedera-services
+ * Extracted interface from hedera-services
+ *
+ * Differences from the original:
+ *  1. Added record types for input arguments and return types, so that the Precompile implementation could achieve statless behaviour
+ *  2. Added dependency to a {@link Store} interface that will hide the details of the state used for read/write operations
  */
 public interface Precompile {
 
     // Construct the synthetic transaction
-    void body(Bytes input, UnaryOperator<byte[]> aliasResolver);
+    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime);
 
     // Change the world state through the given frame
-    void run(MessageFrame frame);
+    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
 
-    long getGasRequirement(long blockTimestamp);
+    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
 
     Set<Integer> getFunctionSelectors();
 
@@ -59,7 +67,7 @@ public interface Precompile {
         }
     }
 
-    default Bytes getSuccessResultFor() {
+    default Bytes getSuccessResultFor(final RunResult runResult) {
         return SUCCESS_RESULT;
     }
 

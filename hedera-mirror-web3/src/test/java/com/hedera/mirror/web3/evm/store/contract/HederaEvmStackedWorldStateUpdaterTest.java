@@ -19,13 +19,14 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
@@ -72,12 +73,15 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EvmProperties properties;
 
     @Mock
-    private EntityDatabaseAccessor entityDatabaseAccessor;
-
-    private StackedStateFrames<Object> stackedStateFrames;
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    private Store store;
 
     private HederaEvmStackedWorldStateUpdater subject;
 
@@ -85,28 +89,25 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void setUp() {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
+        store = new StoreImpl(accessors);
+        store.wrap();
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
                 entityAccess,
                 tokenAccessor,
                 properties,
+                entityAddressSequencer,
                 mirrorEvmContractAliases,
-                stackedStateFrames);
+                store);
     }
 
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
-        assertThat(stackedStateFrames.height()).isEqualTo(1);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        final var accountFromTopFrame = accountAccessor.get(address);
-        assertTrue(accountFromTopFrame.isPresent());
-        assertThat(accountFromTopFrame.get().getAccountAddress()).isEqualTo(address);
-        assertThat(stackedStateFrames.height()).isEqualTo(1);
+        final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(address);
     }
 
     @Test
@@ -118,8 +119,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAccess,
                 tokenAccessor,
                 properties,
+                entityAddressSequencer,
                 mirrorEvmContractAliases,
-                stackedStateFrames);
+                store);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();
@@ -205,6 +207,11 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         assertThat(subject.isTokenAddress(someAddress)).isFalse();
+    }
+
+    @Test
+    void getSbhRefundReturnsZero() {
+        assertThat(subject.getSbhRefund()).isZero();
     }
 
     @Test

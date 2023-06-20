@@ -34,27 +34,29 @@ import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
-public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<TokenRelationshipKey, TokenRelationship> {
+public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, TokenRelationship> {
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;
 
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<TokenRelationship> get(@NonNull TokenRelationshipKey key) {
-        return findAccount(key.accountAddress())
-                .flatMap(account -> findToken(key.tokenAddress()).flatMap(token -> findTokenAccount(token, account)
-                        .filter(t -> t.getAssociated() == Boolean.TRUE)
-                        .map(tokenAccount -> new TokenRelationship(
-                                token,
-                                account,
-                                tokenAccount.getBalance(),
-                                TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
-                                TokenKycStatusEnum.GRANTED == tokenAccount.getKycStatus(),
-                                false,
-                                false,
-                                Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
-                                0))));
+    public @NonNull Optional<TokenRelationship> get(@NonNull Object key) {
+        final var tokenRelationshipKey = (TokenRelationshipKey) key;
+        return findAccount(tokenRelationshipKey.accountAddress())
+                .flatMap(account -> findToken(tokenRelationshipKey.tokenAddress())
+                        .flatMap(token -> findTokenAccount(token, account)
+                                .filter(AbstractTokenAccount::getAssociated)
+                                .map(tokenAccount -> new TokenRelationship(
+                                        token,
+                                        account,
+                                        tokenAccount.getBalance(),
+                                        TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
+                                        TokenKycStatusEnum.GRANTED == tokenAccount.getKycStatus(),
+                                        false,
+                                        false,
+                                        Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
+                                        0))));
     }
 
     private Optional<Account> findAccount(Address address) {

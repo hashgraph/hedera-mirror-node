@@ -19,6 +19,9 @@ package com.hedera.services.hapi.fees.usage;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 
+/**
+ *  Exact copy from hedera-services
+ */
 @SuppressWarnings("java:S6548")
 public enum SingletonUsageProperties implements UsageProperties {
     USAGE_PROPERTIES;
