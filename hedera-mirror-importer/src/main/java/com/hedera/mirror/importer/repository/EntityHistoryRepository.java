@@ -27,7 +27,7 @@ public interface EntityHistoryRepository extends CrudRepository<EntityHistory, L
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from entity_history where timestamp_range << int8range (?1, null)")
+    @Query(nativeQuery = true, value = "delete from entity_history where timestamp_range << int8range(?1, null)")
     int prune(long consensusTimestamp);
 
     @Modifying

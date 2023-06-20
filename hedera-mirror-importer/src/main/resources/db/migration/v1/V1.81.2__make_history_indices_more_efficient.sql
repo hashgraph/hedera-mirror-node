@@ -17,6 +17,8 @@ alter table token_account_history
     drop constraint token_account_history_pkey;
 create index if not exists token_account_history__account_token_lower_timestamp
     on token_account_history (account_id, token_id, lower(timestamp_range));
+create index if not exists token_account_history__timestamp_range
+    on token_account_history using gist (timestamp_range);
 
 alter table token_allowance_history
     drop constraint token_allowance_history_pkey;
