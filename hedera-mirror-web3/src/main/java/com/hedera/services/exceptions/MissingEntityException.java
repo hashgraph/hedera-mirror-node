@@ -20,6 +20,9 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 import java.io.Serial;
 
+/**
+ * Copied exception type from hedera-services.
+ */
 public class MissingEntityException extends IllegalArgumentException {
 
     @Serial

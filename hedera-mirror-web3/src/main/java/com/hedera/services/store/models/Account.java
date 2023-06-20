@@ -210,6 +210,62 @@ public class Account extends HederaEvmAccount {
                 oldAccount.isSmartContract);
     }
 
+    /**
+     * Creates new instance of {@link Account} with updated expiry in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param expiry
+     * @return the new instance of {@link Account} with updated {@link #expiry} property
+     */
+    private Account createNewAccountWithNewExpiry(Account oldAccount, long expiry) {
+        return new Account(
+                oldAccount.id,
+                expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated isSmartContract in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param isSmartContract
+     * @return the new instance of {@link Account} with updated {@link #isSmartContract} property
+     */
+    private Account createNewAccountWithNewIsSmartContract(Account oldAccount, boolean isSmartContract) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                isSmartContract);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -234,6 +290,10 @@ public class Account extends HederaEvmAccount {
         return expiry;
     }
 
+    public Account setExpiry(long expiry) {
+        return createNewAccountWithNewExpiry(this, expiry);
+    }
+
     public long getBalance() {
         return balance;
     }
@@ -244,6 +304,10 @@ public class Account extends HederaEvmAccount {
 
     public boolean isSmartContract() {
         return isSmartContract;
+    }
+
+    public Account setIsSmartContract(boolean isSmartContract) {
+        return createNewAccountWithNewIsSmartContract(this, isSmartContract);
     }
 
     public long getOwnedNfts() {

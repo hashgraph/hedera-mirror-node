@@ -16,31 +16,36 @@
 
 package com.hedera.services.txns.validation;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.services.store.models.Account;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
+/**
+ * Copied validator type from hedera-services.
+ * <p>
+ * Relies on a State to determine whether various options are permissible.
+ * <p>
+ * Differences with the original:
+ * <ol>
+ * <li>Deleted unnecessary fields</li>
+ * <li>Use abstraction for the state by introducing {@link Store} interface</li>
+ * <li>Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}</li>
+ * <li>Calculates `isDetached` by using System.currentTimeMillis</li>
+ * </ol>
+ */
 public class ContextOptionValidator {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    @Inject
     public ContextOptionValidator(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
-    public ResponseCodeEnum expiryStatusGiven(final StackedStateFrames<Object> stackedStateFrames, final AccountID id) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(Account.class);
-        final var account = accountAccessor.get(id).orElseThrow(); // TODO: change?
+    public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
+        var account = store.getAccount(asTypedEvmAddress(id), true);
         if (!mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()) {
             return OK;
         }

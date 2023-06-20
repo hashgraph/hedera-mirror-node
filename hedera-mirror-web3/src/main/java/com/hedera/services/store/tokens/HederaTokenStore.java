@@ -18,106 +18,79 @@ package com.hedera.services.store.tokens;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
+import static com.hedera.services.utils.EntityIdUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.store.models.*;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
 
-/** Provides a managing store for arbitrary tokens. */
-@Singleton
+/**
+ * Provides a managing store for arbitrary tokens.
+ * Differences with the original:
+ * <ol>
+ * <li>Removed validations performed in UsageLimits, since they check global node limits,
+ * while on Archive Node we are interested in transaction scope only</li>
+ * <li>Removed SideEffectsTracker and EntityIdSource</li>
+ * <li>Use abstraction for the state by introducing {@link Store} interface</li>
+ * <li>Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}</li>
+ * <li>Copied `usabilityOf` from `HederaLedger`</li>
+ * <li>Renamed `updateLedgers()` to `updateStore()`</li>
+ * </ol>
+ */
 public class HederaTokenStore {
 
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
     private final ContextOptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
     TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-    TokenID pendingId = NO_PENDING_ID;
-    Token pendingCreation;
 
-    @Inject
     public HederaTokenStore(
             final ContextOptionValidator validator,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final StackedStateFrames<Object> stackedStateFrames) {
+            final Store store) {
         this.validator = validator;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-        this.stackedStateFrames = stackedStateFrames;
+        this.store = store;
     }
 
-    public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
-        return Pair.of(account, token);
+    private static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
+        return new TokenRelationshipKey(asTypedEvmAddress(accountID), asTypedEvmAddress(tokenID));
     }
 
-    // Copied from HederaLedger
-    public ResponseCodeEnum usabilityOf(final AccountID id) {
+    private ResponseCodeEnum usabilityOf(final AccountID id) {
         try {
-            final var topFrame = stackedStateFrames.top();
-            final var accountAccessor = topFrame.getAccessor(Account.class);
-            final var account = accountAccessor.get(id).orElseThrow(); // TODO: Change
+            final var account = store.getAccount(asTypedEvmAddress(id), true);
             final var isDeleted = account.isDeleted();
             if (isDeleted) {
                 final var isContract = account.isSmartContract();
                 return isContract ? CONTRACT_DELETED : ACCOUNT_DELETED;
             }
-            return validator.expiryStatusGiven(stackedStateFrames, id);
+            return validator.expiryStatusGiven(store, id);
         } catch (final MissingEntityException ignore) {
             return INVALID_ACCOUNT_ID;
         }
     }
 
-    public boolean isCreationPending() {
-        return pendingId != NO_PENDING_ID;
-    }
-
     public ResponseCodeEnum autoAssociate(AccountID aId, TokenID tId) {
         return fullySanityChecked(aId, tId, (accountId, tokenId) -> {
-            final var topFrame = stackedStateFrames.top();
-            final var accountAccessor = topFrame.getAccessor(Account.class);
-            final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
-            final var tokenRelationship = tokenRelationshipAccessor.get(Pair.of(aId, tId));
+            final var tokenRelationship = store.getTokenRelationship(asTokenRelationshipKey(aId, tId), false);
 
-            if (tokenRelationship.isPresent()) {
+            if (!tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
                 return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
             }
 
-            var account = accountAccessor.get(aId).orElseThrow(); // TODO: change
+            var account = store.getAccount(asTypedEvmAddress(aId), true);
             var numAssociations = account.getNumAssociations();
 
             if (mirrorNodeEvmProperties.isLimitTokenAssociations()
@@ -134,11 +107,9 @@ public class HederaTokenStore {
             }
 
             if (validity == OK) {
-                final var relationship = asTokenRel(aId, tId);
-
                 final var token = get(tId);
-                final var newTokenRelationship = tokenRelationship
-                        .orElseThrow() // TODO: wrong; create new relationship
+
+                final var newTokenRelationship = new TokenRelationship(token, account)
                         .setFrozen(token.hasFreezeKey() && token.isFrozenByDefault())
                         .setKycGranted(!token.hasKycKey())
                         .setAutomaticAssociation(true);
@@ -148,35 +119,27 @@ public class HederaTokenStore {
                         .setAutoAssociationMetadata(setMaxAutomaticAssociationsTo(
                                 account.getAutoAssociationMetadata(), alreadyUsedAutomaticAssociations + 1));
 
-                tokenRelationshipAccessor.set(relationship, newTokenRelationship);
-                accountAccessor.set(aId, newAccount);
+                store.updateTokenRelationship(newTokenRelationship);
+                store.updateAccount(newAccount);
             }
             return validity;
         });
     }
 
     public boolean exists(final TokenID id) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        final var token = tokenAccessor.get(id);
-        return (isCreationPending() && pendingId.equals(id)) || token.isPresent();
+        final var token = store.getToken(asTypedEvmAddress(id), false);
+        return !token.getId().equals(Id.DEFAULT);
     }
 
     public Token get(final TokenID id) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        final var token = tokenAccessor.get(id);
+        final var token = store.getToken(asTypedEvmAddress(id), false);
 
-        if (token.isEmpty()) {
+        if (token.getId().equals(Id.DEFAULT)) {
             throw new IllegalArgumentException(
                     String.format("Argument 'id=%s' does not refer to a known token!", readableId(id)));
         }
 
-        if (pendingId.equals(id)) {
-            return pendingCreation;
-        } else {
-            return token.get();
-        }
+        return token;
     }
 
     public ResponseCodeEnum adjustBalance(final AccountID aId, final TokenID tId, final long adjustment) {
@@ -186,11 +149,8 @@ public class HederaTokenStore {
     public ResponseCodeEnum changeOwner(final NftId nftId, final AccountID from, final AccountID to) {
         final var tId = nftId.tokenId();
         return sanityChecked(false, from, to, tId, token -> {
-            final var topFrame = stackedStateFrames.top();
-            final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-            final var tokenAccessor = topFrame.getAccessor(Token.class);
-            final var nft = nftAccessor.get(nftId);
-            if (nft.isEmpty()) {
+            final var nft = store.getUniqueToken(nftId, false);
+            if (nft.getTokenId().equals(Id.DEFAULT)) {
                 return INVALID_NFT_ID;
             }
 
@@ -205,8 +165,8 @@ public class HederaTokenStore {
 
             final var tid = nftId.tokenId();
             final var tokenTreasury =
-                    tokenAccessor.get(tid).orElseThrow().getTreasury().getId(); // TODO: change
-            var owner = nft.get().getOwner();
+                    store.getToken(asTypedEvmAddress(tid), true).getTreasury().getId();
+            var owner = nft.getOwner();
             if (owner.equals(Id.DEFAULT)) {
                 owner = tokenTreasury;
             }
@@ -214,27 +174,21 @@ public class HederaTokenStore {
                 return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
             }
 
-            updateLedgers(nftId, from, to, toGrpcAccountId(tokenTreasury));
+            updateStore(nftId, from, to, toGrpcAccountId(tokenTreasury));
             return OK;
         });
     }
 
-    private void updateLedgers(
+    private void updateStore(
             final NftId nftId, final AccountID from, final AccountID to, final AccountID tokenTreasury) {
         final var nftType = nftId.tokenId();
-        final var fromRel = asTokenRel(from, nftType);
-        final var toRel = asTokenRel(to, nftType);
+        final var fromRel = asTokenRelationshipKey(from, nftType);
+        final var toRel = asTokenRelationshipKey(to, nftType);
 
-        final var topFrame = stackedStateFrames.top();
-
-        final var accountAccessor = topFrame.getAccessor(Account.class);
-        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
-        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-
-        final var fromAccount = accountAccessor.get(from).orElseThrow(); // TODO: change
-        final var toAccount = accountAccessor.get(to).orElseThrow(); // TODO: change
-        final var fromRelation = tokenRelationshipAccessor.get(fromRel).orElseThrow(); // TODO: change
-        final var toRelation = tokenRelationshipAccessor.get(toRel).orElseThrow(); // TODO: change
+        final var fromAccount = store.getAccount(asTypedEvmAddress(from), true);
+        final var toAccount = store.getAccount(asTypedEvmAddress(to), true);
+        final var fromRelation = store.getTokenRelationship(fromRel, true);
+        final var toRelation = store.getTokenRelationship(toRel, true);
 
         final var fromNftsOwned = fromAccount.getOwnedNfts();
         final var fromThisNftsOwned = fromRelation.getBalance();
@@ -244,14 +198,14 @@ public class HederaTokenStore {
         final var toNumPositiveBalances = toAccount.getNumPositiveBalances();
         final var isTreasuryReturn = tokenTreasury.equals(to);
 
-        final var nft = nftAccessor.get(nftId).orElseThrow(); // TODO: change
+        final var nft = store.getUniqueToken(nftId, true);
         UniqueToken newNft;
         if (isTreasuryReturn) {
             newNft = nft.setOwner(Id.DEFAULT);
         } else {
             newNft = nft.setOwner(Id.fromGrpcAccount(to));
         }
-        nftAccessor.set(nftId, newNft);
+        store.updateUniqueToken(newNft);
 
         final var updatedFromPositiveBalances =
                 fromThisNftsOwned - 1 == 0 ? fromNumPositiveBalances - 1 : fromNumPositiveBalances;
@@ -267,10 +221,10 @@ public class HederaTokenStore {
         var newToRelation = toRelation.setBalance(toThisNftsOwned + 1);
 
         // Note correctness here depends on rejecting self-exchanges
-        accountAccessor.set(from, newFromAccount);
-        accountAccessor.set(to, newToAccount);
-        tokenRelationshipAccessor.set(fromRel, newFromRelation);
-        tokenRelationshipAccessor.set(toRel, newToRelation);
+        store.updateAccount(newFromAccount);
+        store.updateAccount(newToAccount);
+        store.updateTokenRelationship(newFromRelation);
+        store.updateTokenRelationship(newToRelation);
     }
 
     public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
@@ -283,13 +237,9 @@ public class HederaTokenStore {
             return freezeAndKycValidity;
         }
 
-        final var relationship = asTokenRel(aId, tId);
+        final var relationship = asTokenRelationshipKey(aId, tId);
 
-        final var topFrame = stackedStateFrames.top();
-        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
-        final var accountAccessor = topFrame.getAccessor(Account.class);
-        final var tokenRelationship =
-                tokenRelationshipAccessor.get(relationship).orElseThrow(); // TODO: change
+        final var tokenRelationship = store.getTokenRelationship(relationship, true);
 
         final var balance = tokenRelationship.getBalance();
         final var newBalance = balance + adjustment;
@@ -298,9 +248,9 @@ public class HederaTokenStore {
         }
 
         final var newTokenRelationship = tokenRelationship.setBalance(newBalance);
-        tokenRelationshipAccessor.set(relationship, newTokenRelationship);
+        store.updateTokenRelationship(newTokenRelationship);
 
-        final var account = accountAccessor.get(aId).orElseThrow(); // TODO: change
+        final var account = store.getAccount(asTypedEvmAddress(aId), true);
         int numPositiveBalances = account.getNumPositiveBalances();
 
         // If the original balance is zero, then the receiving account's numPositiveBalances has to
@@ -314,17 +264,13 @@ public class HederaTokenStore {
         }
 
         final var newAccount = account.setNumPositiveBalances(numPositiveBalances);
-        accountAccessor.set(aId, newAccount);
+        store.updateAccount(newAccount);
         return OK;
     }
 
     private ResponseCodeEnum checkRelFrozenAndKycProps(final AccountID aId, final TokenID tId) {
-        final var relationship = asTokenRel(aId, tId);
-
-        final var topFrame = stackedStateFrames.top();
-        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
-        final var tokenRelationship =
-                tokenRelationshipAccessor.get(relationship).orElseThrow(); // TODO: change
+        final var relationship = asTokenRelationshipKey(aId, tId);
+        final var tokenRelationship = store.getTokenRelationship(relationship, true);
 
         if (tokenRelationship.isFrozen()) {
             return ACCOUNT_FROZEN_FOR_TOKEN;
@@ -390,27 +336,24 @@ public class HederaTokenStore {
             return ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
         }
 
-        var key = asTokenRel(aId, tId);
-
-        final var topFrame = stackedStateFrames.top();
-        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
-        var tokenRelationship = tokenRelationshipAccessor.get(key);
+        var key = asTokenRelationshipKey(aId, tId);
+        var tokenRelationship = store.getTokenRelationship(key, false);
 
         /*
          * Instead of returning  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT when a token is not associated,
          * we check if the account has any maxAutoAssociations set up, if they do check if we reached the limit and
          * auto associate. If not return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT
          */
-        if (tokenRelationship.isEmpty()) {
+        if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
             validity = validateAndAutoAssociate(aId, tId);
             if (validity != OK) {
                 return validity;
             }
         }
         if (aCounterPartyId != null) {
-            key = asTokenRel(aCounterPartyId, tId);
-            tokenRelationship = tokenRelationshipAccessor.get(key);
-            if (tokenRelationship.isEmpty()) {
+            key = asTokenRelationshipKey(aCounterPartyId, tId);
+            tokenRelationship = store.getTokenRelationship(key, false);
+            if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
                 validity = validateAndAutoAssociate(aCounterPartyId, tId);
                 if (validity != OK) {
                     return validity;
@@ -422,9 +365,7 @@ public class HederaTokenStore {
     }
 
     private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(Account.class);
-        final var account = accountAccessor.get(aId).orElseThrow(); // TODO: change
+        final var account = store.getAccount(asTypedEvmAddress(aId), true);
         if (account.getMaxAutomaticAssociations() > 0) {
             return autoAssociate(aId, tId);
         }

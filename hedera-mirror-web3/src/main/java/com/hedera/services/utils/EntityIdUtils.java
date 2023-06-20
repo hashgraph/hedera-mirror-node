@@ -27,11 +27,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -255,17 +252,8 @@ public final class EntityIdUtils {
         if (o instanceof AccountID id) {
             return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
         }
-        if (o instanceof FileID id) {
-            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
-        }
-        if (o instanceof TopicID id) {
-            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
-        }
         if (o instanceof TokenID id) {
             return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
-        }
-        if (o instanceof ScheduleID id) {
-            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
         }
         if (o instanceof NftID id) {
             final var tokenID = id.getTokenID();
