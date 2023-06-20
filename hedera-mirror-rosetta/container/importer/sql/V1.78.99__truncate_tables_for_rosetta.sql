@@ -9,6 +9,7 @@ truncate contract_state_change;
 truncate custom_fee;
 truncate ethereum_transaction;
 truncate file_data;
+truncate nft;
 truncate nft_allowance;
 truncate nft_allowance_history;
 truncate nft_transfer;
