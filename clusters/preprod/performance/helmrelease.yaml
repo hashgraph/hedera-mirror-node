@@ -43,10 +43,10 @@ spec:
       resources:
         limits:
           cpu: 2000m
-          memory: 4Gi
+          memory: 6Gi
         requests:
           cpu: 2000m
-          memory: 4Gi
+          memory: 6Gi
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
