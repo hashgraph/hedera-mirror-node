@@ -87,7 +87,7 @@ public class DissociateLogic {
 
         final var token = tokenRelationship.getToken();
         if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
-            updateRelationshipForDeletedOrRemovedToken(tokenRelationship);
+            updateRelationshipForDeletedOrRemovedToken(tokenRelationship, store);
         } else {
             updateModelsForDissociationFromActiveToken(tokenRelationship, store);
         }
@@ -95,14 +95,15 @@ public class DissociateLogic {
         return tokenRelationship.markAsDestroyed();
     }
 
-    private void updateRelationshipForDeletedOrRemovedToken(TokenRelationship tokenRelationship) {
+    private void updateRelationshipForDeletedOrRemovedToken(TokenRelationship tokenRelationship, final Store store) {
         final var disappearingUnits = tokenRelationship.getBalance();
         tokenRelationship.setBalance(0L);
         final var token = tokenRelationship.getToken();
         if (token.getType() == NON_FUNGIBLE_UNIQUE) {
             final var account = tokenRelationship.getAccount();
             final var currentOwnedNfts = account.getOwnedNfts();
-            account.setOwnedNfts(currentOwnedNfts - disappearingUnits);
+            final var updatedAccount = account.setOwnedNfts(currentOwnedNfts - disappearingUnits);
+            store.updateAccount(updatedAccount);
         }
     }
 
