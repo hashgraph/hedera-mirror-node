@@ -17,11 +17,13 @@
 package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -34,10 +36,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.Assert;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Value
@@ -46,6 +48,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     public static final Comparator<StreamFilename> EXTENSION_COMPARATOR =
             Comparator.comparing(StreamFilename::getExtension);
     public static final StreamFilename EPOCH;
+    public static final String SIDECAR_FOLDER = "sidecar";
 
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
@@ -65,12 +68,18 @@ public class StreamFilename implements Comparable<StreamFilename> {
             streamTypeExtensionMap.put(type, Collections.unmodifiableMap(extensions));
         }
         STREAM_TYPE_EXTENSION_MAP = Collections.unmodifiableMap(streamTypeExtensionMap);
-        EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
+        EPOCH = from("1970-01-01T00_00_00Z.rcd");
     }
 
     private final String compressor;
     private final StreamType.Extension extension;
     private final String filename;
+    private final String pathSeparator;
+
+    // Relative path to directory containing filename, utilizing pathSeparator
+    private final String path;
+    // The computed file system or bucket relative path for this stream file
+    private final String filePath;
 
     @EqualsAndHashCode.Include
     private final String filenameWithoutCompressor;
@@ -81,9 +90,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final String sidecarId;
     private final StreamType streamType;
 
-    public StreamFilename(String filename) {
-        Assert.hasText(filename, "'filename' must not be empty");
+    private StreamFilename(String path, String filename, String pathSeparator) {
+        this.pathSeparator = pathSeparator;
         this.filename = filename;
+        this.path = path;
 
         TypeInfo typeInfo = extractTypeInfo(filename);
         this.compressor = typeInfo.compressor;
@@ -98,16 +108,40 @@ public class StreamFilename implements Comparable<StreamFilename> {
         // A compressed and uncompressed file can exist simultaneously, so we need uniqueness to not include .gz
         this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
+
+        var builder = new StringBuilder();
+        if (!StringUtils.isEmpty(this.path)) {
+            builder.append(this.path);
+            builder.append(this.pathSeparator);
+        }
+        if (this.fileType == SIDECAR) {
+            builder.append(SIDECAR_FOLDER);
+            builder.append(this.pathSeparator);
+        }
+        builder.append(this.filename);
+        this.filePath = builder.toString();
     }
 
-    /**
-     * Gets the filename with the specified streamType, fileType, and instant.
-     *
-     * @param streamType
-     * @param fileType
-     * @param instant
-     * @return the filename
-     */
+    public static StreamFilename from(String filePath) {
+        return from(filePath, S3StreamFileProvider.SEPARATOR);
+    }
+
+    public static StreamFilename from(@NonNull String filePath, @NonNull String pathSeparator) {
+        var lastSeparatorIndex = filePath.lastIndexOf(pathSeparator);
+        var filename = lastSeparatorIndex < 0 ? filePath : filePath.substring(lastSeparatorIndex + 1);
+        var path = lastSeparatorIndex < 0 ? null : filePath.substring(0, lastSeparatorIndex);
+
+        return from(path, filename, pathSeparator);
+    }
+
+    public static StreamFilename from(@NonNull StreamFilename base, String filename) {
+        return from(base.getPath(), filename, base.getPathSeparator());
+    }
+
+    public static StreamFilename from(String path, @NonNull String filename, @NonNull String pathSeparator) {
+        return new StreamFilename(path, filename, pathSeparator);
+    }
+
     public static String getFilename(StreamType streamType, FileType fileType, Instant instant) {
         String timestamp = instant.toString().replace(STANDARD_TIME_SEPARATOR, COMPATIBLE_TIME_SEPARATOR);
         String suffix = streamType.getSuffix();

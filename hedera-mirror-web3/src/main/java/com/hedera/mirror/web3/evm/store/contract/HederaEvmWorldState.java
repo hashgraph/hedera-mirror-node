@@ -23,7 +23,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -120,7 +119,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         // default no-op
     }
 
-    public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
+    public static class Updater extends AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
         private final HederaEvmEntityAccess hederaEvmEntityAccess;
         private final TokenAccessor tokenAccessor;
@@ -139,7 +138,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
                 final EntityAddressSequencer contractAddressState,
                 final MirrorEvmContractAliases mirrorEvmContractAliases,
                 final Store store) {
-            super(world, accountAccessor);
+            super(world, accountAccessor, store);
             this.tokenAccessor = tokenAccessor;
             this.hederaEvmEntityAccess = hederaEvmEntityAccess;
             this.evmProperties = evmProperties;

@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.downloader;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
-import java.nio.file.Path;
 import java.time.Duration;
 
 public interface DownloaderProperties {
@@ -28,12 +27,6 @@ public interface DownloaderProperties {
     Duration getFrequency();
 
     MirrorProperties getMirrorProperties();
-
-    default Path getNodeStreamPath(long nodeId) {
-        return getStreamPath().resolve(getStreamType().getNodePrefix() + nodeId);
-    }
-
-    Path getStreamPath();
 
     StreamType getStreamType();
 
