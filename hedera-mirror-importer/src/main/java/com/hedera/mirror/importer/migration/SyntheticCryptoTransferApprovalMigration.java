@@ -22,6 +22,7 @@ import com.hedera.mirror.importer.db.DBProperties;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -207,26 +208,21 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
                 if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
                     // set is_approval to true
                     String updateSql;
-                    Map<String, Number> update;
+                    var updateParamMap = new HashMap<String, Number>();
+                    updateParamMap.put("consensus_timestamp", transfer.consensusTimestamp);
                     if (transfer.transferType == TRANSFER_TYPE.CRYPTO_TRANSFER) {
                         updateSql = UPDATE_CRYPTO_TRANSFER_SQL;
-                        update = Map.of(
-                                "consensus_timestamp", transfer.consensusTimestamp,
-                                "sender", transfer.sender);
+                        updateParamMap.put("sender", transfer.sender);
                     } else if (transfer.transferType == TRANSFER_TYPE.NFT_TRANSFER) {
                         updateSql = UPDATE_NFT_TRANSFER_SQL;
-                        update = Map.of(
-                                "index", transfer.index,
-                                "consensus_timestamp", transfer.consensusTimestamp);
+                        updateParamMap.put("index", transfer.index);
                     } else {
                         updateSql = UPDATE_TOKEN_TRANSFER_SQL;
-                        update = Map.of(
-                                "token_id", transfer.tokenId,
-                                "consensus_timestamp", transfer.consensusTimestamp,
-                                "sender", transfer.sender);
+                        updateParamMap.put("sender", transfer.sender);
+                        updateParamMap.put("token_id", transfer.tokenId);
                     }
 
-                    transferJdbcTemplate.update(updateSql, update);
+                    transferJdbcTemplate.update(updateSql, updateParamMap);
                     count++;
                 }
             }
