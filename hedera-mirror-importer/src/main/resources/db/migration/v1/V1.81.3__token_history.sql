@@ -13,6 +13,6 @@ create table token_history
     like token including defaults
 );
 
-create index if not exists token_history__pk
+create index if not exists token_history__token_id_timestamp_range
     on token_history (token_id, lower(timestamp_range));
 create index if not exists token_history__timestamp_range on token_history using gist (timestamp_range);

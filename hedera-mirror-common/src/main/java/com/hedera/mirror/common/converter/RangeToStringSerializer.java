@@ -26,6 +26,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("java:S6548") // Singletons are fine
 public class RangeToStringSerializer extends JsonSerializer<Range<?>> {
 
     public static final RangeToStringSerializer INSTANCE = new RangeToStringSerializer();

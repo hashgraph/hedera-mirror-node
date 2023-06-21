@@ -1,8 +1,6 @@
 @ConverterRegistration(converter = UnknownIdConverter.class)
-@TypeRegistrations({
-    @TypeRegistration(basicClass = List.class, userType = ListArrayType.class),
-    @TypeRegistration(basicClass = Range.class, userType = PostgreSQLGuavaRangeType.class)
-})
+@TypeRegistration(basicClass = List.class, userType = ListArrayType.class)
+@TypeRegistration(basicClass = Range.class, userType = PostgreSQLGuavaRangeType.class)
 package com.hedera.mirror.common.domain;
 
 import com.google.common.collect.Range;
@@ -12,4 +10,3 @@ import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeTyp
 import java.util.List;
 import org.hibernate.annotations.ConverterRegistration;
 import org.hibernate.annotations.TypeRegistration;
-import org.hibernate.annotations.TypeRegistrations;
