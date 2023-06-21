@@ -17,6 +17,8 @@
 package com.hedera.services.hapi.utils.fees;
 
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import java.util.List;
@@ -125,6 +127,70 @@ public class FeeBuilder {
             count[0]++;
         }
         return count;
+    }
+    /**
+     * This method calculates Fee for specific component (Noe/Network/Service) based upon param
+     * componentCoefficients and componentMetrics
+     *
+     * @param componentCoefficients component coefficients
+     * @param componentMetrics compnent metrics
+     * @return long representation of the fee in tiny cents
+     */
+    public static long getComponentFeeInTinyCents(
+            final FeeComponents componentCoefficients, final FeeComponents componentMetrics) {
+
+        final long bytesUsageFee = componentCoefficients.getBpt() * componentMetrics.getBpt();
+        final long verificationFee = componentCoefficients.getVpt() * componentMetrics.getVpt();
+        final long ramStorageFee = componentCoefficients.getRbh() * componentMetrics.getRbh();
+        final long storageFee = componentCoefficients.getSbh() * componentMetrics.getSbh();
+        final long evmGasFee = componentCoefficients.getGas() * componentMetrics.getGas();
+        final long txValueFee = Math.round((float) (componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
+        final long bytesResponseFee = componentCoefficients.getBpr() * componentMetrics.getBpr();
+        final long storageBytesResponseFee = componentCoefficients.getSbpr() * componentMetrics.getSbpr();
+        final long componentUsage = componentCoefficients.getConstant() * componentMetrics.getConstant();
+
+        long totalComponentFee = componentUsage
+                + (bytesUsageFee
+                        + verificationFee
+                        + ramStorageFee
+                        + storageFee
+                        + evmGasFee
+                        + txValueFee
+                        + bytesResponseFee
+                        + storageBytesResponseFee);
+
+        if (totalComponentFee < componentCoefficients.getMin()) {
+            totalComponentFee = componentCoefficients.getMin();
+        } else if (totalComponentFee > componentCoefficients.getMax()) {
+            totalComponentFee = componentCoefficients.getMax();
+        }
+        return Math.max(totalComponentFee > 0 ? 1 : 0, (totalComponentFee) / FEE_DIVISOR_FACTOR);
+    }
+
+    public static FeeObject getFeeObject(
+            final FeeData feeData, final FeeData feeMatrices, final ExchangeRate exchangeRate, final long multiplier) {
+        // get the Network Fee
+        long networkFee = getComponentFeeInTinyCents(feeData.getNetworkdata(), feeMatrices.getNetworkdata());
+        long nodeFee = getComponentFeeInTinyCents(feeData.getNodedata(), feeMatrices.getNodedata());
+        long serviceFee = getComponentFeeInTinyCents(feeData.getServicedata(), feeMatrices.getServicedata());
+        // convert the Fee to tiny hbars
+        networkFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, networkFee) * multiplier;
+        nodeFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, nodeFee) * multiplier;
+        serviceFee = FeeBuilder.getTinybarsFromTinyCents(exchangeRate, serviceFee) * multiplier;
+        return new FeeObject(nodeFee, networkFee, serviceFee);
+    }
+
+    /**
+     * Get fee object
+     *
+     * @param feeData fee data
+     * @param feeMatrices fee matrices
+     * @param exchangeRate exchange rate
+     * @return fee object
+     */
+    public static FeeObject getFeeObject(
+            final FeeData feeData, final FeeData feeMatrices, final ExchangeRate exchangeRate) {
+        return getFeeObject(feeData, feeMatrices, exchangeRate, 1L);
     }
 
     private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {

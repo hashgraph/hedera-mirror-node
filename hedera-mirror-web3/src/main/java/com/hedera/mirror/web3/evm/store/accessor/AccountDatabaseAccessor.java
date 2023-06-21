@@ -36,7 +36,6 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
@@ -56,7 +55,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
 
     @Override
     public @NonNull Optional<Account> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get((Address) address).map(this::accountFromEntity);
+        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {

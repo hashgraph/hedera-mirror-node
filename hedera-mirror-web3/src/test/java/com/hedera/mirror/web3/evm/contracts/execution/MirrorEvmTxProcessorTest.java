@@ -28,11 +28,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
@@ -40,6 +40,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -84,7 +85,7 @@ class MirrorEvmTxProcessorTest {
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @Mock
-    private EvmProperties evmProperties;
+    private MirrorNodeEvmProperties evmProperties;
 
     @Mock
     private GasCalculator gasCalculator;
@@ -110,6 +111,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private BlockMetaSource blockMetaSource;
 
+    @Mock
+    private PrecompileMapper precompileMapper;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
     @BeforeEach
@@ -126,8 +130,8 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator),
-                ccps(gasCalculator),
+                mcps(gasCalculator, evmProperties, precompileMapper),
+                ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess));

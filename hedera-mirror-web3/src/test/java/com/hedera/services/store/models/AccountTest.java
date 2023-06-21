@@ -17,9 +17,8 @@
 package com.hedera.services.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
@@ -123,5 +122,10 @@ class AccountTest {
 
         // expect:
         assertEquals(desired, subject.toString());
+    }
+
+    @Test
+    void modificationBuilder() {
+        assertThat(subject.toBuilder().build()).isEqualTo(subject);
     }
 }

@@ -20,14 +20,24 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
+import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -57,6 +67,9 @@ class HederaEvmWorldStateTest {
     TokenAccessor tokenAccessor;
 
     @Mock
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
     EntityAddressSequencer entityAddressSequencer;
 
     @Mock
@@ -71,15 +84,40 @@ class HederaEvmWorldStateTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
-    private StackedStateFrames<Object> stackedStateFrames;
+    @Mock
+    private TokenRepository tokenRepository;
+
+    @Mock
+    private EntityRepository entityRepository;
+
+    @Mock
+    private TokenAccountRepository tokenAccountRepository;
+
+    @Mock
+    private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
+
+    @Mock
+    private NftRepository nftRepository;
+
+    private Store store;
 
     private HederaEvmWorldState subject;
 
     @BeforeEach
     void setUp() {
-        final List<DatabaseAccessor<Object, ?>> accessors =
-                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
+        final var accountDatabaseAccessor =
+                new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null);
+        final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
+                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
+        final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
+                tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
+        final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(
+                accountDatabaseAccessor,
+                tokenDatabaseAccessor,
+                tokenRelationshipDatabaseAccessor,
+                uniqueTokenDatabaseAccessor);
+        store = new StoreImpl(accessors);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
@@ -87,7 +125,8 @@ class HederaEvmWorldStateTest {
                 accountAccessor,
                 tokenAccessor,
                 entityAddressSequencer,
-                stackedStateFrames);
+                mirrorEvmContractAliases,
+                store);
     }
 
     @Test
@@ -151,11 +190,7 @@ class HederaEvmWorldStateTest {
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         final var actualSubject = subject.updater();
-        assertThat(stackedStateFrames.height()).isEqualTo(1);
-        stackedStateFrames.push();
-        stackedStateFrames.push();
-        var topFrame = stackedStateFrames.top();
-        var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+
         final var accountModel = new com.hedera.services.store.models.Account(
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
@@ -173,14 +208,10 @@ class HederaEvmWorldStateTest {
                 0,
                 0L,
                 false);
-        accountAccessor.set(address, accountModel);
+        store.updateAccount(accountModel);
         actualSubject.commit();
-        topFrame = stackedStateFrames.top();
-        accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
-        final var accountFromTopFrame = accountAccessor.get(address);
-        assertTrue(accountFromTopFrame.isPresent());
-        assertThat(accountFromTopFrame.get()).isEqualTo(accountModel);
-        assertThat(stackedStateFrames.height()).isEqualTo(2);
+        final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        assertThat(accountFromTopFrame).isEqualTo(accountModel);
     }
 
     @Test

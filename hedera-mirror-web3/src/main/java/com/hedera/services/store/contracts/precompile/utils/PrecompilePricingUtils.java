@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.*;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -29,14 +29,17 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
-import jakarta.inject.Inject;
-import jakarta.inject.Provider;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ */
 public class PrecompilePricingUtils {
 
     public static final JKey EMPTY_KEY;
@@ -65,22 +68,21 @@ public class PrecompilePricingUtils {
             .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
             .build();
     private final BasicHbarCentExchange exchange;
-    private final Provider<FeeCalculator> feeCalculator;
+    private final FeeCalculator feeCalculator;
     private final BasicFcfsUsagePrices resourceCosts;
-    private final StackedStateFrames<?> state;
-    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    private final AccessorFactory accessorFactory;
+    final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
-    @Inject
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
             final BasicHbarCentExchange exchange,
-            final Provider<FeeCalculator> feeCalculator,
+            final FeeCalculator feeCalculator,
             final BasicFcfsUsagePrices resourceCosts,
-            final StackedStateFrames<?> state) {
+            final AccessorFactory accessorFactory) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
-        this.state = state;
+        this.accessorFactory = accessorFactory;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -112,17 +114,24 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(final Timestamp timestamp) {
-        final var fees = feeCalculator.get().computeFee(EMPTY_KEY, state, timestamp);
+    public long gasFeeInTinybars(final TransactionBody.Builder txBody, final Timestamp timestamp, final Store store) {
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(txBody.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
-        final var calculator = feeCalculator.get();
+    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost, final Store store) {
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
-        final var fees = calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, state, now, ANSWER_ONLY);
+        final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, store, now, ANSWER_ONLY);
 
-        final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
+        final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, now);
         final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
         final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
@@ -133,12 +142,21 @@ public class PrecompilePricingUtils {
         return baseGasCost + (baseGasCost / 5L);
     }
 
-    public long computeGasRequirement(final long blockTimestamp, final Precompile precompile) {
+    public long computeGasRequirement(
+            final long blockTimestamp,
+            final Precompile precompile,
+            final TransactionBody.Builder transactionBody,
+            final Store store) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+        final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-        final long calculatedFeeInTinybars = gasFeeInTinybars(timestamp);
+        final long calculatedFeeInTinybars = gasFeeInTinybars(
+                transactionBody.setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(timestamp)
+                        .build()),
+                timestamp,
+                store);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);

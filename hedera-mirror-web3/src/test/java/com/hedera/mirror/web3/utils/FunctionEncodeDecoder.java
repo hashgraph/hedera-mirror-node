@@ -31,8 +31,10 @@ import jakarta.inject.Named;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -49,11 +51,19 @@ public class FunctionEncodeDecoder {
     private static final String INT64 = "(int64)";
     private static final String TRIPLE_ADDRESS = "(address,address,address)";
     private static final String ADDRESS_UINT = "(address,uint256)";
+    private static final String ADDRESS_DUO_UINT = "(address,address,uint256)";
+    private static final String TRIPLE_ADDRESS_UINT = "(address,address,address,uint256)";
     private static final String ADDRESS_INT64 = "(address,int64)";
     private static final String KEY_VALUE = "((bool,address,bytes,bytes,address))";
     private static final String CUSTOM_FEE = "(bytes,bytes,bytes)";
+    private static final String ADDRESS_ARRAY_OF_ADDRESSES = "(address,address[])";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
+
+    public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
+    }
 
     public byte[] getContractBytes(final Path contractPath) {
         try {
@@ -69,6 +79,19 @@ public class FunctionEncodeDecoder {
         Tuple parametersBytes = encodeTupleParameters(function.getInputs().getCanonicalType(), parameters);
 
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
+    }
+
+    public Bytes functionHashWithEmptyDataFor(
+            final String functionName, final Path contractPath, final Object... parameters) {
+        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
+        Function function = Function.fromJson(jsonFunction);
+        return Bytes.wrap(encodeCall(function).array());
+    }
+
+    public ByteBuffer encodeCall(Function function) {
+        ByteBuffer dest = ByteBuffer.allocate(function.selector().length + 3200);
+        dest.put(function.selector());
+        return dest;
     }
 
     public String encodedResultFor(final String functionName, final Path contractPath, final Object... results) {
@@ -100,6 +123,15 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[0]),
                     convertAddress((Address) parameters[1]),
                     convertAddress((Address) parameters[2]));
+            case ADDRESS_DUO_UINT -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    convertAddress((Address) parameters[1]),
+                    BigInteger.valueOf((long) parameters[2]));
+            case TRIPLE_ADDRESS_UINT -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    convertAddress((Address) parameters[1]),
+                    convertAddress((Address) parameters[2]),
+                    BigInteger.valueOf((long) parameters[3]));
             case ADDRESS_UINT -> Tuple.of(
                     convertAddress((Address) parameters[0]), BigInteger.valueOf((long) parameters[1]));
             case KEY_VALUE -> Tuple.of(Tuple.of(
@@ -110,6 +142,12 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[4])));
             case CUSTOM_FEE -> Tuple.of(parameters[0], parameters[1], parameters[2]);
             case ADDRESS_INT64 -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1]);
+            case ADDRESS_ARRAY_OF_ADDRESSES -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream(((Address[]) parameters[1]))
+                            .map(FunctionEncodeDecoder::convertAddress)
+                            .toList()
+                            .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]));
             default -> Tuple.EMPTY;
         };
     }
@@ -131,10 +169,5 @@ public class FunctionEncodeDecoder {
         } catch (IOException e) {
             return "Failed to parse";
         }
-    }
-
-    public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
-        return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

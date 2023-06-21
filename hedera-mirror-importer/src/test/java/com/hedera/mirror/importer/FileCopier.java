@@ -16,14 +16,20 @@
 
 package com.hedera.mirror.importer;
 
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.function.Function;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 @Log4j2
@@ -96,6 +102,49 @@ public class FileCopier {
             if (log.isTraceEnabled()) {
                 try (var paths = Files.walk(to)) {
                     paths.forEach(p -> log.trace("Moved: {}", p));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Copy a {@code from} account ID based directory structure to the destination as a node ID based structure.
+     *
+     * @param destinationAdjuster adjustment to make to {@code to} path. Often {@code to} as been configured to be a
+     *                            specific account ID directory stream type, such as {@code accountBalances} or
+     *                            {@code recordstreams} etc. Provide a function to adjust this prior to files being
+     *                            copied. If no adjustment is required, provide {@link Function.identity()}
+     * @param network             Hedera or dev/test network name, typically found in mirror node properties.
+     */
+    public void copyAsNodeIdStructure(Function<Path, Path> destinationAdjuster, String network) {
+
+        try {
+            var destination = destinationAdjuster.apply(to);
+            var networkDir = destination.resolve(network);
+            var sourceNodeDirs = FileUtils.listFilesAndDirs(from.toFile(), TrueFileFilter.INSTANCE, null);
+
+            for (var sourceNodeDir : sourceNodeDirs) {
+
+                var sourceNodeDirName = sourceNodeDir.getName();
+                var streamTypeOpt = Arrays.stream(StreamType.values())
+                        .filter(st -> sourceNodeDirName.startsWith(st.getNodePrefix()))
+                        .findFirst();
+
+                if (streamTypeOpt.isPresent()) {
+                    var streamType = streamTypeOpt.get();
+                    EntityId nodeEntityId = EntityId.of(
+                            sourceNodeDirName.substring(
+                                    streamType.getNodePrefix().length()),
+                            EntityType.ACCOUNT);
+
+                    var destinationNodeIdPath = networkDir.resolve(Path.of(
+                            String.valueOf(nodeEntityId.getShardNum()),
+                            String.valueOf(nodeEntityId.getEntityNum() - 3L), // Node ID
+                            streamType.getNodeIdBasedSuffix()));
+
+                    FileUtils.copyDirectory(sourceNodeDir, destinationNodeIdPath.toFile());
                 }
             }
         } catch (Exception e) {

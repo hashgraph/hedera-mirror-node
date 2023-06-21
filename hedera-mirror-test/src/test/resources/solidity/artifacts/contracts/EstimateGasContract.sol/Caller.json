@@ -1,0 +1,95 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Caller",
+  "sourceName": "contracts/EstimateGasContract.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "addressBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "msgSender",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "msgSig",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "msgValue",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pureMultiply",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "txOrigin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b506101c1806100206000396000f3fe6080604052600436106100655760003560e01c8063ddf363d711610043578063ddf363d7146100f6578063ec3e88cf146100fc578063f96757d11461013b57600080fd5b80630ec1551d1461006a5780633ec4de351461008d578063d737d0c7146100c2575b600080fd5b34801561007657600080fd5b5060045b6040519081526020015b60405180910390f35b34801561009957600080fd5b5061007a6100a836600461014e565b73ffffffffffffffffffffffffffffffffffffffff163190565b3480156100ce57600080fd5b50335b60405173ffffffffffffffffffffffffffffffffffffffff9091168152602001610084565b3461007a565b34801561010857600080fd5b506040517fffffffff00000000000000000000000000000000000000000000000000000000600035168152602001610084565b34801561014757600080fd5b50326100d1565b60006020828403121561016057600080fd5b813573ffffffffffffffffffffffffffffffffffffffff8116811461018457600080fd5b939250505056fea264697066735822122089f79a5671cb1f4b135ce45dea47b03413a7219af349c2859f1dcc1614f0ad3964736f6c63430008090033",
+  "deployedBytecode": "0x6080604052600436106100655760003560e01c8063ddf363d711610043578063ddf363d7146100f6578063ec3e88cf146100fc578063f96757d11461013b57600080fd5b80630ec1551d1461006a5780633ec4de351461008d578063d737d0c7146100c2575b600080fd5b34801561007657600080fd5b5060045b6040519081526020015b60405180910390f35b34801561009957600080fd5b5061007a6100a836600461014e565b73ffffffffffffffffffffffffffffffffffffffff163190565b3480156100ce57600080fd5b50335b60405173ffffffffffffffffffffffffffffffffffffffff9091168152602001610084565b3461007a565b34801561010857600080fd5b506040517fffffffff00000000000000000000000000000000000000000000000000000000600035168152602001610084565b34801561014757600080fd5b50326100d1565b60006020828403121561016057600080fd5b813573ffffffffffffffffffffffffffffffffffffffff8116811461018457600080fd5b939250505056fea264697066735822122089f79a5671cb1f4b135ce45dea47b03413a7219af349c2859f1dcc1614f0ad3964736f6c63430008090033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

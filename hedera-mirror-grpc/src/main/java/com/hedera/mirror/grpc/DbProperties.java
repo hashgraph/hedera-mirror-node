@@ -38,6 +38,9 @@ public class DbProperties {
     @Min(0)
     private int port = 5432;
 
+    @Min(1000L)
+    private long statementTimeout = 10_000L;
+
     @NotBlank
     private String username = "";
 }

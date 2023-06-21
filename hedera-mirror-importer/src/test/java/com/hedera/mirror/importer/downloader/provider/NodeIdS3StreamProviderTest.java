@@ -51,4 +51,13 @@ public class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
     protected Path nodePath(ConsensusNode node) {
         return TestUtils.nodePath(node, PathType.NODE_ID, StreamType.RECORD);
     }
+
+    @Override
+    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
+        return TestUtils.nodeIdStreamFileProviderPath(
+                node,
+                StreamType.RECORD,
+                fileName,
+                properties.getMirrorProperties().getNetwork());
+    }
 }

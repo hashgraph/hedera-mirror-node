@@ -62,6 +62,7 @@ hedera:
         maxRepeatedQueryParameters: 100
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m
+        strictTimestampParam: true
       response:
         compression: true
         headers:

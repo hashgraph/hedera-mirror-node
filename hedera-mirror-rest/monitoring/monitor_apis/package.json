@@ -25,9 +25,9 @@
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "mathjs": "^11.8.0",
+    "mathjs": "^11.8.1",
     "node-fetch": "^3.3.1",
-    "parse-duration": "^1.0.3",
+    "parse-duration": "^1.1.0",
     "pretty-ms": "^8.0.0"
   },
   "devDependencies": {
@@ -39,8 +39,5 @@
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
     "outputName": "TEST-jest.xml"
-  },
-  "overrides": {
-    "json5": "2.2.3"
   }
 }

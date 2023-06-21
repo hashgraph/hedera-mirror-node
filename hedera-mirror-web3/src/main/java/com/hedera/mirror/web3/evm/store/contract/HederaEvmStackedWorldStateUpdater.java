@@ -17,49 +17,60 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+@SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
-        extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account> {
+        extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>
+        implements HederaEvmWorldUpdater, HederaEvmStackedWorldUpdater {
 
+    private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final EntityAddressSequencer entityAddressSequencer;
+    private final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
-            final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
+            final AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> updater,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties,
-            final StackedStateFrames<Object> stackedStateFrames) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, stackedStateFrames);
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
+            final Store store) {
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, mirrorEvmContractAliases, store);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
-        this.stackedStateFrames = stackedStateFrames;
-        this.stackedStateFrames.push();
+        this.entityAddressSequencer = entityAddressSequencer;
+        this.tokenAccessor = tokenAccessor;
     }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        persistInStackedStateFrames(address, nonce, balance);
+        persistAccount(address, nonce, balance);
         final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
         account.setNonce(nonce);
         account.setBalance(balance);
@@ -85,9 +96,7 @@ public class HederaEvmStackedWorldStateUpdater
         return super.getAccount(address);
     }
 
-    private void persistInStackedStateFrames(Address address, long nonce, Wei balance) {
-        final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+    private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
@@ -105,7 +114,71 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 nonce,
                 false);
-        accountAccessor.set(address, accountModel);
+        store.updateAccount(accountModel);
+    }
+
+    /**
+     * Returns the mirror form of the given EVM address.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form
+     */
+    public byte[] permissivelyUnaliased(final byte[] evmAddress) {
+        return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+    }
+
+    /**
+     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
+     * the given address is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based address value of a given account.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
+     *     this account
+     */
+    public byte[] unaliased(final byte[] evmAddress) {
+        final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
+            return NON_CANONICAL_REFERENCE;
+        }
+        return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
+    }
+
+    @Override
+    public Address priorityAddress(Address addressOrAlias) {
+        return accountAccessor.canonicalAddress(addressOrAlias);
+    }
+
+    @Override
+    public Address newAliasedContractAddress(Address sponsor, Address alias) {
+        final var mirrorAddress = newContractAddress(sponsor);
+        // Only link the alias if it's not already in use, or if the target of the alleged link
+        // doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
+        // alias address is going to fail in short order; in the second case, the existing link
+        // must have been created by an inline create2 that failed, but didn't revert us---we are
+        // free to re-use this alias).
+        if (!mirrorEvmContractAliases.isInUse(alias) || isMissingTarget(alias)) {
+            mirrorEvmContractAliases.link(alias, mirrorAddress);
+        }
+        return mirrorAddress;
+    }
+
+    @Override
+    public Address newContractAddress(Address sponsor) {
+        return asTypedEvmAddress(entityAddressSequencer.getNewContractId(sponsor));
+    }
+
+    @Override
+    public long getSbhRefund() {
+        return 0;
+    }
+
+    public Store getStore() {
+        return store;
+    }
+
+    private boolean isMissingTarget(final Address alias) {
+        final var target = mirrorEvmContractAliases.resolveForEvm(alias);
+        return Id.DEFAULT.equals(store.getAccount(target, OnMissing.DONT_THROW).getId());
     }
 
     private boolean isTokenRedirect(final Address address) {

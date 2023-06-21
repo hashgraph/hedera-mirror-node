@@ -16,16 +16,8 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
-import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
-import static com.swirlds.common.utility.CommonUtils.unhex;
-
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import java.time.Duration;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -35,15 +27,15 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
+
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+
 @Setter
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
-    @Getter
-    private boolean allowanceEnabled = false;
-
-    @Getter
-    private boolean approvedForAllEnabled = false;
 
     @NotNull
     private HederaChainId chainId = HederaChainId.TESTNET;
@@ -67,6 +59,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
 
+    @Getter
+    private long htsDefaultGasCost = 10000;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
@@ -75,6 +70,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 100;
+
+    @Getter
+    @Min(1)
+    private int maxTokensPerAccount = 1000;
 
     @Getter
     @NotNull
@@ -100,10 +99,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @NotNull
     private boolean limitTokenAssociations = false;
-
-    @Getter
-    @NotNull
-    private int maxTokensPerAccount = 1000;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {

@@ -8,6 +8,13 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
+Constructs the database name.
+*/}}
+{{- define "hedera-mirror.stackgres" -}}
+{{- printf "%s-citus" (include "hedera-mirror.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Constructs the database host that should be used by all components.
 */}}
 {{- define "hedera-mirror.db" -}}
@@ -17,8 +24,8 @@ Constructs the database host that should be used by all components.
 {{- include "postgresql-ha.pgpool" .Subcharts.postgresql -}}
 {{- else if .Values.postgresql.enabled -}}
 {{- include "postgresql-ha.postgresql" .Subcharts.postgresql -}}
-{{- else if .Values.citus.enabled -}}
-{{- include "postgresql.primary.fullname" .Subcharts.citus -}}
+{{ else if .Values.stackgres.enabled -}}
+{{- printf "%s-reads" (include "hedera-mirror.stackgres" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -32,7 +39,7 @@ If release name contains chart name it will be used as a full name.
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
+{{- if contains .Release.Name $name  -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}

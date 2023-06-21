@@ -16,13 +16,14 @@
 
 package com.hedera.services.txns.validation;
 
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Copied validator type from hedera-services.
@@ -45,7 +46,7 @@ public class ContextOptionValidator {
     }
 
     public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
-        var account = store.getAccount(asTypedEvmAddress(id), true);
+        var account = store.getAccount(asTypedEvmAddress(id), OnMissing.THROW);
         if (!mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()) {
             return OK;
         }

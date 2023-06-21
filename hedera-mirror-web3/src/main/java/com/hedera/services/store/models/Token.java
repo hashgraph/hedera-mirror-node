@@ -16,12 +16,6 @@
 
 package com.hedera.services.store.models;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -33,11 +27,20 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.*;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 /**
+ * Copied model from hedera-services.
+ * <p>
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -50,6 +53,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ * <p>
+ * Differences from the original:
+ * 1. Added factory method that returns empty instance
+ * 2. Added mapToDomain method from TokenTypesManager
  */
 public class Token {
     private final Id id;
@@ -185,6 +192,10 @@ public class Token {
         this.customFees = customFees;
     }
 
+    public static Token getEmptyToken() {
+        return new Token(Id.DEFAULT);
+    }
+
     /**
      * Creates a new instance of the model token, which is later persisted in state.
      *
@@ -250,8 +261,9 @@ public class Token {
     private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
             return TokenType.NON_FUNGIBLE_UNIQUE;
+        } else {
+            return TokenType.FUNGIBLE_COMMON;
         }
-        return TokenType.FUNGIBLE_COMMON;
     }
 
     /**
@@ -736,7 +748,7 @@ public class Token {
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
             ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
             removedUniqueTokens.add(
-                    new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
+                    new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[]{}));
         }
         final var numBurned = serialNumbers.size();
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
@@ -804,7 +816,7 @@ public class Token {
         for (final long serialNum : serialNumbers) {
             ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(
-                    id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
+                    id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[]{}));
         }
 
         if (newAccountBalance == 0) {

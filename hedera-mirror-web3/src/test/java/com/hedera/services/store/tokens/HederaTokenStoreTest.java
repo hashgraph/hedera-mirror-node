@@ -16,15 +16,8 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.exceptions.MissingEntityException;
@@ -37,6 +30,14 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class HederaTokenStoreTest {
     //    private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
@@ -182,15 +183,15 @@ class HederaTokenStoreTest {
 
     @Test
     void getThrowsIseOnMissing() {
-        given(store.getToken(asTypedEvmAddress(misc), false)).willReturn(new Token(Id.DEFAULT));
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
         assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
     }
 
     @Test
     void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
-        given(store.getToken(asTypedEvmAddress(HederaTokenStore.NO_PENDING_ID), false))
-                .willReturn(new Token(Id.DEFAULT));
+        given(store.getFungibleToken(asTypedEvmAddress(HederaTokenStore.NO_PENDING_ID), OnMissing.DONT_THROW))
+                .willReturn(Token.getEmptyToken());
 
         assertFalse(subject.exists(HederaTokenStore.NO_PENDING_ID));
     }
@@ -206,8 +207,8 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsMissingToken() {
-        given(store.getToken(asTypedEvmAddress(misc), false)).willReturn(new Token(Id.DEFAULT));
-        given(store.getAccount(asTypedEvmAddress(sponsor), true))
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
                 .willReturn(new Account(Id.fromGrpcAccount(sponsor), 0));
 
         final var status = subject.autoAssociate(sponsor, misc);
@@ -217,7 +218,7 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsMissingAccounts() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willThrow(new MissingEntityException(""));
 
         final var status = subject.autoAssociate(sponsor, misc);
 
@@ -229,10 +230,10 @@ class HederaTokenStoreTest {
         var account = new Account(Id.fromGrpcAccount(sponsor), 0L);
         var token = new Token(Id.fromGrpcToken(misc));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), false))
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, account));
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), false)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         final var status = subject.autoAssociate(sponsor, misc);
 
@@ -244,11 +245,11 @@ class HederaTokenStoreTest {
         var account = new Account(Id.fromGrpcAccount(sponsor), 0L);
         var token = new Token(Id.fromGrpcToken(misc));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), false))
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L)));
-        given(store.getAccount(asTypedEvmAddress(sponsor), true))
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
                 .willReturn(account.setNumAssociations(associatedTokensCount));
-        given(store.getToken(asTypedEvmAddress(misc), false)).willReturn(token);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(mirrorNodeEvmProperties.isLimitTokenAssociations()).willReturn(true);
         given(mirrorNodeEvmProperties.getMaxTokensPerAccount()).willReturn(associatedTokensCount);
 
@@ -266,10 +267,10 @@ class HederaTokenStoreTest {
                         account.getAutoAssociationMetadata(), maxAutoAssociations));
         var token = new Token(Id.fromGrpcToken(misc));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), false))
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L)));
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), false)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         var status = subject.autoAssociate(sponsor, misc);
         assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
@@ -277,7 +278,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustingRejectsMissingAccount() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willThrow(new MissingEntityException(""));
 
         final var status = subject.adjustBalance(sponsor, misc, 1);
 
@@ -286,7 +287,7 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsMissingSender() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willThrow(new MissingEntityException(""));
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -295,7 +296,7 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsMissingReceiver() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willThrow(new MissingEntityException(""));
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -308,14 +309,14 @@ class HederaTokenStoreTest {
         var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
         var token = new Token(Id.fromGrpcToken(aNft.tokenId()));
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), true)).willReturn(counterpartyAccount);
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), false)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), false))
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW)).willReturn(counterpartyAccount);
+        given(store.getFungibleToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, sponsorAccount));
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), false))
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, counterpartyAccount));
-        given(store.getUniqueToken(aNft, false))
+        given(store.getUniqueToken(aNft, OnMissing.DONT_THROW))
                 .willReturn(new UniqueToken(
                         Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]));
 

@@ -24,10 +24,19 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This class would serve as a bridge between hedera-evm and the other libraries from services that would contain the precompile logic.
+ * Currently, the adapter implementation resides in com.hedera.services package but would be removed once we start depending on the new modules from services.
+ */
 public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
-    public MirrorHTSPrecompiledContract(EvmInfrastructureFactory infrastructureFactory) {
+    private final HTSPrecompiledContractAdapter htsPrecompiledContractAdapter;
+
+    public MirrorHTSPrecompiledContract(
+            final EvmInfrastructureFactory infrastructureFactory,
+            final HTSPrecompiledContractAdapter htsPrecompiledContractAdapter) {
         super(infrastructureFactory);
+        this.htsPrecompiledContractAdapter = htsPrecompiledContractAdapter;
     }
 
     @Override
@@ -36,27 +45,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final MessageFrame frame,
             final ViewGasCalculator viewGasCalculator,
             final TokenAccessor tokenAccessor) {
-        // We need to check if a precompile call was made with preceding non-static frame. This would mean there might
-        // be an operation
-        // which modifies state. Currently, we do not support speculative writes, so we should throw na error.
-        if (frameContainsNonStaticFrameInStack(frame)) {
-            throw new UnsupportedOperationException("Precompile not supported for non-static frames");
-        }
-
-        return super.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
-    }
-
-    private boolean frameContainsNonStaticFrameInStack(final MessageFrame messageFrame) {
-        if (!messageFrame.isStatic()) {
-            return true;
-        }
-
-        for (final var frame : messageFrame.getMessageFrameStack()) {
-            if (!frame.isStatic()) {
-                return true;
-            }
-        }
-
-        return false;
+        return htsPrecompiledContractAdapter.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
     }
 }

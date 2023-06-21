@@ -362,14 +362,20 @@ create table if not exists nft
     account_id         bigint,
     created_timestamp  bigint,
     delegating_spender bigint default null,
-    deleted            boolean,
+    deleted            boolean default false,
     metadata           bytea,
-    modified_timestamp bigint not null,
     serial_number      bigint not null,
     spender            bigint default null,
+    timestamp_range    int8range not null,
     token_id           bigint not null
 ) partition by range (token_id);
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
+
+create table if not exists nft_history
+(
+    like nft including defaults
+) partition by range (token_id);
+comment on table nft_history is 'Non-Fungible Tokens (NFTs) history state';
 
 create table if not exists nft_allowance
 (
@@ -387,19 +393,6 @@ create table if not exists nft_allowance_history
     like nft_allowance including defaults
 ) partition by range (owner);
 comment on table nft_allowance_history is 'History of NFT allowances delegated by payer to spender';
-
--- nft_transfer
-create table if not exists nft_transfer
-(
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    payer_account_id    bigint  not null,
-    receiver_account_id bigint,
-    sender_account_id   bigint,
-    serial_number       bigint  not null,
-    token_id            bigint  not null
-) partition by range (consensus_timestamp);
-comment on table nft_transfer is 'Crypto account nft transfers';
 
 create table if not exists node_stake
 (
@@ -639,6 +632,7 @@ create table if not exists transaction
     initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,
+    nft_transfer               jsonb       null,
     node_account_id            bigint,
     nonce                      integer     not null default 0,
     parent_consensus_timestamp bigint      null,

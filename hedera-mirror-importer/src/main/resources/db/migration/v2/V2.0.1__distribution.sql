@@ -45,11 +45,11 @@ select create_distributed_table('file_data', 'entity_id', colocate_with => 'enti
 
 select create_distributed_table('nft', 'token_id', colocate_with => 'entity');
 
+select create_distributed_table('nft_history', 'token_id', colocate_with => 'nft');
+
 select create_distributed_table('nft_allowance', 'owner', colocate_with => 'entity');
 
 select create_distributed_table('nft_allowance_history', 'owner', colocate_with => 'nft_allowance');
-
-select create_distributed_table('nft_transfer', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('non_fee_transfer', 'payer_account_id', colocate_with => 'entity');
 
