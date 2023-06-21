@@ -238,8 +238,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     || AbiConstants.ABI_ID_TRANSFER_NFT == functionId) {
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+            } else {
+                this.transactionBody = precompile.body(input, aliasResolver, null);
             }
-            this.transactionBody = precompile.body(input, aliasResolver, null);
         }
 
         gasRequirement = defaultGas();
