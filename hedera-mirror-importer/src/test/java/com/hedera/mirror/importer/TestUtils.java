@@ -258,4 +258,24 @@ public class TestUtils {
                         String.valueOf(node.getNodeId()),
                         streamType.getNodeIdBasedSuffix());
     }
+
+    public static String accountIdStreamFileProviderPath(ConsensusNode node, StreamType streamType, String fileName) {
+        return "%s/%s%s/%s"
+                .formatted(
+                        streamType.getPath(),
+                        streamType.getNodePrefix(),
+                        node.getNodeAccountId().toString(),
+                        fileName);
+    }
+
+    public static String nodeIdStreamFileProviderPath(
+            ConsensusNode node, StreamType streamType, String fileName, String network) {
+        return "%s/%d/%d/%s/%s"
+                .formatted(
+                        network,
+                        node.getNodeAccountId().getShardNum(),
+                        node.getNodeId(),
+                        streamType.getNodeIdBasedSuffix(),
+                        fileName);
+    }
 }

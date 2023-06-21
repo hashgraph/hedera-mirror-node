@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
-import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
@@ -42,6 +42,8 @@ abstract class AbstractStreamFileProviderTest {
     @TempDir
     protected Path dataPath;
 
+    protected Path bucketRootPath;
+
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties properties;
     protected StreamFileProvider streamFileProvider;
@@ -53,9 +55,14 @@ abstract class AbstractStreamFileProviderTest {
         properties = new CommonDownloaderProperties(mirrorProperties);
         customizeProperties(properties);
         fileCopier = createFileCopier(dataPath);
+        bucketRootPath = dataPath.resolve(properties.getBucketName());
     }
 
     protected abstract FileCopier createFileCopier(Path dataPath);
+
+    protected abstract String getProviderPathSeparator();
+
+    protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
 
     protected FileCopier getFileCopier(ConsensusNode node) {
         return fileCopier;
@@ -180,7 +187,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected final void listAfter(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var lastFilename = new StreamFilename("2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var lastFilename = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
@@ -191,7 +198,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected final void listNotFound(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        var lastFilename = new StreamFilename("2100-01-01T01_01_01.000000001Z.rcd_sig");
+        var lastFilename = StreamFilename.from("2100-01-01T01_01_01.000000001Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0)
@@ -236,13 +243,14 @@ abstract class AbstractStreamFileProviderTest {
 
     protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
         try {
-            var streamFilename = new StreamFilename(filename);
-            var filePath = fileCopier
+            var streamFilename =
+                    StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
+            var repoDataPath = fileCopier
                     .getFrom()
                     .resolve(nodePath(node))
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
                     .resolve(filename);
-            var bytes = FileUtils.readFileToByteArray(filePath.toFile());
+            var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
             return new StreamFileData(streamFilename, bytes, Instant.now());
         } catch (Exception e) {
             throw new RuntimeException(e);

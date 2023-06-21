@@ -88,7 +88,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -296,18 +295,27 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                 .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
     }
 
+    private void preparePathType(PathType pathType) {
+        commonDownloaderProperties.setPathType(pathType);
+        commonDownloaderProperties.setPathRefreshInterval(Duration.ZERO);
+        if (pathType == PathType.ACCOUNT_ID) {
+            fileCopier.copy();
+        } else {
+            fileCopier.copyAsNodeIdStructure(Path::getParent, mirrorProperties.getNetwork());
+        }
+    }
+
     @ParameterizedTest(name = "Download and verify files with path type: {0}")
-    @EnumSource(value = PathType.class, mode = Mode.EXCLUDE, names = "NODE_ID")
+    @EnumSource(PathType.class)
     void download(PathType pathType) {
         mirrorProperties.setStartBlockNumber(null);
-        commonDownloaderProperties.setPathType(pathType);
+        preparePathType(pathType);
 
-        fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -413,27 +421,27 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         verifyUnsuccessful();
     }
 
-    @Test
-    @DisplayName("Write stream files")
-    void writeFiles() throws Exception {
+    @ParameterizedTest(name = "Write stream files with path type: {0}")
+    @EnumSource(PathType.class)
+    void writeFiles(PathType pathType) throws Exception {
         downloaderProperties.setWriteFiles(true);
-        fileCopier.copy();
+        preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+        assertThat(Files.walk(mirrorProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isStreamFile);
     }
 
-    @Test
-    @DisplayName("Write signature files")
-    void writeSignatureFiles() throws Exception {
+    @ParameterizedTest(name = "Write signature files with path type: {0}")
+    @EnumSource(PathType.class)
+    void writeSignatureFiles(PathType pathType) throws Exception {
         downloaderProperties.setWriteSignatures(true);
-        fileCopier.copy();
+        preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+        assertThat(Files.walk(mirrorProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isSigFile);
@@ -485,7 +493,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -616,7 +624,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
     }
 
     @SneakyThrows
@@ -647,7 +655,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     private String getSigFilename(String dataFilename) {
-        var streamFilename = new StreamFilename(dataFilename);
+        var streamFilename = StreamFilename.from(dataFilename);
         var dataExtension = streamFilename.getExtension().getName();
         // take into account that data files may be compressed so the filename has an additional compression suffix,
         // while signature files won't be compressed.
@@ -701,7 +709,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     }
                 })
                 .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
-                .allSatisfy(t -> extraAssert.accept(t));
+                .allSatisfy(extraAssert::accept);
 
         if (!files.isEmpty()) {
             var lastFilename = files.get(files.size() - 1);
@@ -716,22 +724,19 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     private Instant chooseFileInstant(String choice) {
-        switch (choice) {
-            case "file1":
-                return file1Instant;
-            case "file2":
-                return file2Instant;
-            default:
-                throw new RuntimeException("Invalid choice " + choice);
-        }
+        return switch (choice) {
+            case "file1" -> file1Instant;
+            case "file2" -> file2Instant;
+            default -> throw new RuntimeException("Invalid choice " + choice);
+        };
     }
 
     protected void setTestFilesAndInstants(List<String> files) {
         file1 = files.get(0);
         file2 = files.get(1);
 
-        file1Instant = new StreamFilename(file1).getInstant();
-        file2Instant = new StreamFilename(file2).getInstant();
+        file1Instant = StreamFilename.from(file1).getInstant();
+        file2Instant = StreamFilename.from(file2).getInstant();
         instantFilenamePairs = List.of(Pair.of(file1Instant, file1), Pair.of(file2Instant, file2));
     }
 
