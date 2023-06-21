@@ -18,6 +18,14 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -28,6 +36,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StoreImpl implements Store {
@@ -48,6 +57,37 @@ public class StoreImpl implements Store {
         } else {
             return account.orElse(Account.getEmptyAccount());
         }
+    }
+
+    @Override
+    public Optional<Entity> getEntity(Address address, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(Entity.class).get(address);
+    }
+
+    @Override
+    public Optional<Entity> getEntity(EntityId entityId, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(Entity.class).get(entityId);
+    }
+
+    @Override
+    public Optional<TokenAccount> getTokenAccount(AbstractTokenAccount.Id id, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(TokenAccount.class).get(id);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public Optional<List> getCustomFee(Long entityIdNum, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(List.class).get(entityIdNum);
+    }
+
+    @Override
+    public Optional<TokenAllowance> getTokenAllowance(AbstractTokenAllowance.Id id, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(TokenAllowance.class).get(id);
+    }
+
+    @Override
+    public Optional<NftAllowance> getNftAllowance(AbstractNftAllowance.Id id, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(NftAllowance.class).get(id);
     }
 
     @Override

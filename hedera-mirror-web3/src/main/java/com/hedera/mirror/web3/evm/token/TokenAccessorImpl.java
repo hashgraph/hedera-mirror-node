@@ -38,11 +38,10 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
-import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -50,8 +49,8 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.UniqueToken;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -65,7 +64,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenAccessorImpl implements TokenAccessor {
 
     private final MirrorNodeEvmProperties properties;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
 
     @Override
     public Optional<EvmTokenInfo> evmInfoForToken(Address address) {
@@ -73,23 +72,23 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
-        final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-        final var nftOptional = nftAccessor.get(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
-        if (nftOptional.isEmpty()) {
+    public Optional<EvmNftInfo> evmNftInfo(final Address address, long serialNo) {
+        final var entityId = entityIdFromEvmAddress(address);
+        final var nft = store.getUniqueToken(
+                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
+                OnMissing.DONT_THROW);
+        if (nft.isEmptyUniqueToken()) {
             return Optional.empty();
         }
 
         final var ledgerId = properties.getNetwork().getLedgerId();
-        final var nftEntity = nftOptional.get();
-        final var entityAddress = nftEntity.getOwner() != null
-                ? evmAddressFromId(EntityId.of(nftEntity.getOwner().asGrpcAccount()))
+        final var entityAddress = nft.getOwner() != null
+                ? evmAddressFromId(EntityId.of(nft.getOwner().asGrpcAccount()))
                 : Address.ZERO;
-        final var creationTime = nftEntity.getCreationTime();
-        final var metadata = nftEntity.getMetadata();
-        final var spender = nftEntity.getSpender() != null
-                ? evmAddressFromId(EntityId.of(nftEntity.getSpender().asGrpcAccount()))
+        final var creationTime = nft.getCreationTime();
+        final var metadata = nft.getMetadata();
+        final var spender = nft.getSpender() != null
+                ? evmAddressFromId(EntityId.of(nft.getSpender().asGrpcAccount()))
                 : Address.ZERO;
         final var nftInfo =
                 new EvmNftInfo(serialNo, entityAddress, creationTime.getSeconds(), metadata, spender, ledgerId);
@@ -98,48 +97,36 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isTokenAddress(final Address address) {
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        final var entityOptional = entityAccessor.get(address);
+        final var entityOptional = store.getEntity(address, OnMissing.DONT_THROW);
         return entityOptional.filter(e -> e.getType() == TOKEN).isPresent();
     }
 
     @Override
-    public boolean isFrozen(final Address account, final Address token) {
+    public boolean isFrozen(final Address address, final Address token) {
         final var tokenAccountId = new AbstractTokenAccount.Id();
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
-        return tokenAccountAccessor
-                .get(tokenAccountId)
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
+        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
                 .map(acc -> acc.getFreezeStatus().equals(FROZEN))
                 .orElse(false);
     }
 
     @Override
-    public boolean defaultFreezeStatus(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::hasFreezeKey).orElse(false);
+    public boolean defaultFreezeStatus(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).hasFreezeKey();
     }
 
     @Override
-    public boolean defaultKycStatus(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::getKycKey).isPresent();
+    public boolean defaultKycStatus(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).hasKycKey();
     }
 
     @Override
-    public boolean isKyc(final Address account, final Address token) {
+    public boolean isKyc(final Address address, final Address token) {
         final var tokenAccountId = new AbstractTokenAccount.Id();
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
-        return tokenAccountAccessor
-                .get(tokenAccountId)
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
+        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
                 .map(acc -> acc.getKycStatus().equals(GRANTED))
                 .orElse(false);
     }
@@ -150,13 +137,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public TokenType typeOf(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor
-                .get(token)
-                .map(t -> TokenType.valueOf(t.getType().name()))
-                .orElse(null);
+    public TokenType typeOf(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).getType();
     }
 
     @Override
@@ -177,42 +159,31 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public String nameOf(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::getName).orElse("");
+    public String nameOf(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).getName();
     }
 
     @Override
-    public String symbolOf(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::getSymbol).orElse("");
+    public String symbolOf(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).getSymbol();
     }
 
     @Override
-    public long totalSupplyOf(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::getTotalSupply).orElse(0L);
+    public long totalSupplyOf(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).getTotalSupply();
     }
 
     @Override
-    public int decimalsOf(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        return tokenAccessor.get(token).map(Token::getDecimals).orElse(0);
+    public int decimalsOf(final Address address) {
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).getDecimals();
     }
 
     @Override
-    public long balanceOf(Address account, Address token) {
+    public long balanceOf(Address address, Address token) {
         final var tokenAccountId = new AbstractTokenAccount.Id();
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccountAccessor = topFrame.getAccessor(TokenAccount.class);
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
         tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        return tokenAccountAccessor
-                .get(tokenAccountId)
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
+        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
                 .map(AbstractTokenAccount::getBalance)
                 .orElse(0L);
     }
@@ -224,26 +195,25 @@ public class TokenAccessorImpl implements TokenAccessor {
         tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
         tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
 
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAllowanceAccessor = topFrame.getAccessor(TokenAllowance.class);
-        return tokenAllowanceAccessor
-                .get(tokenAllowanceId)
+        return store.getTokenAllowance(tokenAllowanceId, OnMissing.DONT_THROW)
                 .map(TokenAllowance::getAmount)
                 .orElse(0L);
     }
 
     @Override
-    public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-        final var spenderEntity = nftAccessor.get(nftId).map(UniqueToken::getSpender);
-
-        if (spenderEntity.isEmpty()) {
+    public Address staticApprovedSpenderOf(final Address address, long serialNo) {
+        final var entityId = entityIdFromEvmAddress(address);
+        final var nft = store.getUniqueToken(
+                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
+                OnMissing.DONT_THROW);
+        if (nft.isEmptyUniqueToken()) {
             return Address.ZERO;
         }
-
-        return evmAddressFromId(EntityId.of(spenderEntity.get().asGrpcAccount()));
+        final var spender = nft.getSpender();
+        if (spender == null) {
+            return Address.ZERO;
+        }
+        return evmAddressFromId(EntityId.of(spender.asGrpcAccount()));
     }
 
     @Override
@@ -252,28 +222,27 @@ public class TokenAccessorImpl implements TokenAccessor {
         nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
         nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
         nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
-
-        final var topFrame = stackedStateFrames.top();
-        final var nftAllowanceAccessor = topFrame.getAccessor(NftAllowance.class);
-
-        return nftAllowanceAccessor
-                .get(nftAllowanceId)
+        return store.getNftAllowance(nftAllowanceId, OnMissing.DONT_THROW)
                 .map(NftAllowance::isApprovedForAll)
                 .orElse(false);
     }
 
     @Override
-    public Address ownerOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-        final var ownerEntity = nftAccessor.get(nftId).map(UniqueToken::getOwner);
+    public Address ownerOf(final Address address, long serialNo) {
+        final var entityId = entityIdFromEvmAddress(address);
+        final var nft = store.getUniqueToken(
+                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
+                OnMissing.DONT_THROW);
+        if (nft.isEmptyUniqueToken()) {
+            return Address.ZERO;
+        }
+        final var owner = nft.getOwner();
 
-        if (ownerEntity.isEmpty()) {
+        if (owner == null) {
             return Address.ZERO;
         }
 
-        return evmAddressFromId(EntityId.of(ownerEntity.get().asGrpcAccount()));
+        return evmAddressFromId(EntityId.of(owner.asGrpcAccount()));
     }
 
     @Override
@@ -282,14 +251,15 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public String metadataOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
-        final var topFrame = stackedStateFrames.top();
-        final var nftAccessor = topFrame.getAccessor(UniqueToken.class);
-        return nftAccessor
-                .get(nftId)
-                .map(n -> new String(n.getMetadata(), StandardCharsets.UTF_8))
-                .orElse("");
+    public String metadataOf(final Address address, long serialNo) {
+        final var entityId = entityIdFromEvmAddress(address);
+        final var nft = store.getUniqueToken(
+                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
+                OnMissing.DONT_THROW);
+        if (nft.isEmptyUniqueToken()) {
+            return "";
+        }
+        return new String(nft.getMetadata(), StandardCharsets.UTF_8);
     }
 
     @Override
@@ -297,18 +267,14 @@ public class TokenAccessorImpl implements TokenAccessor {
         return properties.getNetwork().getLedgerId();
     }
 
-    private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var tokenAccessor = topFrame.getAccessor(Token.class);
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        final var tokenEntityOptional = tokenAccessor.get(token);
-        final var entityOptional = entityAccessor.get(token);
+    private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
+        final var tokenEntity = store.getFungibleToken(address, OnMissing.DONT_THROW);
+        final var entityOptional = store.getEntity(address, OnMissing.DONT_THROW);
 
-        if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
+        if (tokenEntity.isEmptyToken() || entityOptional.isEmpty()) {
             return Optional.empty();
         }
 
-        final var tokenEntity = tokenEntityOptional.get();
         final var entity = entityOptional.get();
         final var ledgerId = ledgerId();
         final var expirationTimeInSec = expirationTimeSeconds(entity);
@@ -326,7 +292,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 expirationTimeInSec);
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
         evmTokenInfo.setDefaultFreezeStatus(tokenEntity.hasFreezeKey());
-        evmTokenInfo.setCustomFees(getCustomFees(token));
+        evmTokenInfo.setCustomFees(getCustomFees(address));
         setEvmKeys(entity, tokenEntity, evmTokenInfo);
         final var isPaused = tokenEntity.isPaused();
         evmTokenInfo.setIsPaused(isPaused);
@@ -354,10 +320,9 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @SuppressWarnings("unchecked")
-    private List<CustomFee> getCustomFees(final Address token) {
-        final var topFrame = stackedStateFrames.top();
-        final var customFeeAccessor = topFrame.getAccessor(List.class);
-        return customFeeAccessor.get(entityIdNumFromEvmAddress(token)).orElse(Collections.emptyList());
+    private List<CustomFee> getCustomFees(final Address address) {
+        return store.getCustomFee(entityIdNumFromEvmAddress(address), OnMissing.DONT_THROW)
+                .orElse(Collections.emptyList());
     }
 
     private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
@@ -397,17 +362,13 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var id = fromEvmAddress(addressBytes);
             return id != null ? id.getId() : 0L;
         }
-
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        return entityAccessor.get(address).map(AbstractEntity::getId).orElse(0L);
+        return store.getEntity(address, OnMissing.DONT_THROW)
+                .map(AbstractEntity::getId)
+                .orElse(0L);
     }
 
     private Address evmAddressFromId(EntityId entityId) {
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        Entity entity = entityAccessor.get(entityId).orElse(null);
-
+        Entity entity = store.getEntity(entityId, OnMissing.DONT_THROW).orElse(null);
         if (entity == null) {
             return Address.ZERO;
         }

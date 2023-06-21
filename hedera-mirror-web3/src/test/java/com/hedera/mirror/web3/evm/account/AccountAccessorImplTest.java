@@ -22,7 +22,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
@@ -62,7 +63,7 @@ class AccountAccessorImplTest {
 
     private List<DatabaseAccessor<Object, ?>> accessors;
 
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
 
     public AccountAccessorImpl accountAccessor;
 
@@ -70,8 +71,8 @@ class AccountAccessorImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
-        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, stackedStateFrames);
+        store = new StoreImpl(accessors);
+        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
     }
 
     @Test

@@ -41,7 +41,8 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
@@ -103,7 +104,7 @@ class TokenAccessorImplTest {
 
     private List<DatabaseAccessor<Object, ?>> accessors;
 
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
     public TokenAccessorImpl tokenAccessor;
@@ -119,8 +120,8 @@ class TokenAccessorImplTest {
                 new TokenAccountDatabaseAccessor(tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository),
                 new TokenDatabaseAccessor(tokenRepository, entityAccessor, entityRepository, customFeeAccessor));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
-        tokenAccessor = new TokenAccessorImpl(properties, stackedStateFrames);
+        store = new StoreImpl(accessors);
+        tokenAccessor = new TokenAccessorImpl(properties, store);
     }
 
     @Test

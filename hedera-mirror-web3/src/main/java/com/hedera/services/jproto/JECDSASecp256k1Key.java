@@ -36,16 +36,6 @@ public class JECDSASecp256k1Key extends JKey {
     }
 
     @Override
-    public byte[] getECDSASecp256k1Key() {
-        return ecdsaSecp256k1Key;
-    }
-
-    @Override
-    public boolean hasECDSAsecp256k1Key() {
-        return true;
-    }
-
-    @Override
     public boolean isValid() {
         return !(isEmpty()
                 || (ecdsaSecp256k1Key.length != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH)
@@ -55,6 +45,11 @@ public class JECDSASecp256k1Key extends JKey {
     @Override
     public String toString() {
         return "<JECDSASecp256k1Key: ecdsaSecp256k1Key hex=" + CommonUtils.hex(ecdsaSecp256k1Key) + ">";
+    }
+
+    @Override
+    public boolean hasECDSAsecp256k1Key() {
+        return true;
     }
 
     @Override

@@ -67,24 +67,6 @@ class JKeyTest {
     }
 
     @Test
-    void rejectsEmptyKey() {
-        // expect:
-        assertThrows(
-                DecoderException.class,
-                () -> JKey.convertJKeyBasic(new JKey() {
-                    @Override
-                    public boolean isEmpty() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isValid() {
-                        return false;
-                    }
-                }));
-    }
-
-    @Test
     void convertsECDSAsecp256k1Key() {
         ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
                 .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));

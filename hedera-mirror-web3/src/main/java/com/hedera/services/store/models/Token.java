@@ -199,6 +199,10 @@ public class Token {
         return new Token(Id.DEFAULT);
     }
 
+    public boolean isEmptyToken() {
+        return this.equals(getEmptyToken());
+    }
+
     /**
      * Creates a new instance of the model token, which is later persisted in state.
      *

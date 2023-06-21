@@ -17,8 +17,8 @@
 package com.hedera.mirror.web3.evm.account;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +30,11 @@ public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
 
     private final HederaEvmEntityAccess mirrorEntityAccess;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        final var entityFoundByAlias = entityAccessor.get(addressOrAlias);
+        final var entityFoundByAlias = store.getEntity(addressOrAlias, OnMissing.DONT_THROW);
         if (entityFoundByAlias.isPresent()) {
             return addressOrAlias;
         }

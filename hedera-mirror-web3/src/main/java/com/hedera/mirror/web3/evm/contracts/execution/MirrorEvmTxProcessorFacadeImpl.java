@@ -25,15 +25,20 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.repository.ContractStateRepository;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import jakarta.inject.Named;
@@ -51,24 +56,22 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final PricesAndFeesImpl pricesAndFees;
     private final GasCalculatorHederaV22 gasCalculator;
     private final PrecompileMapper precompileMapper;
-    private final AccountAccessorImpl accountAccessor;
-    private final TokenAccessorImpl tokenAccessor;
     private final EntityAddressSequencer entityAddressSequencer;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
-    private final MirrorEntityAccess entityAccess;
+    private final ContractRepository contractRepository;
+    private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
-            final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
             final TraceProperties traceProperties,
             final StaticBlockMetaSource blockMetaSource,
             final PricesAndFeesImpl pricesAndFees,
-            final AccountAccessorImpl accountAccessor,
-            final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
+            final ContractRepository contractRepository,
+            final ContractStateRepository contractStateRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
@@ -77,11 +80,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
         this.precompileMapper = precompileMapper;
-        this.accountAccessor = accountAccessor;
-        this.tokenAccessor = tokenAccessor;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.contractRepository = contractRepository;
+        this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
-        this.entityAccess = entityAccess;
     }
 
     @Override
@@ -95,15 +97,17 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final boolean isStatic) {
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
-
-        final var codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        final var store = new StoreImpl(databaseAccessors);
-
-        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(entityAccess);
+        final Store store = new StoreImpl(databaseAccessors);
+        final TokenAccessor tokenAccessor = new TokenAccessorImpl(evmProperties, store);
+        final MirrorEntityAccess mirrorEntityAccess =
+                new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+        final AccountAccessor accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
+        final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
         final var worldState = new HederaEvmWorldState(
-                entityAccess,
+                mirrorEntityAccess,
                 evmProperties,
                 codeCache,
                 accountAccessor,

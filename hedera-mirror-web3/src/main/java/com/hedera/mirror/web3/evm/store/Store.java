@@ -16,12 +16,22 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -33,6 +43,19 @@ import org.hyperledger.besu.datatypes.Address;
 public interface Store {
 
     Account getAccount(Address address, OnMissing throwIfMissing);
+
+    Optional<Entity> getEntity(Address address, OnMissing throwIfMissing);
+
+    Optional<Entity> getEntity(EntityId entityId, OnMissing throwIfMissing);
+
+    Optional<TokenAccount> getTokenAccount(AbstractTokenAccount.Id id, OnMissing throwIfMissing);
+
+    @SuppressWarnings("rawtypes")
+    Optional<List> getCustomFee(Long entityIdNum, OnMissing throwIfMissing);
+
+    Optional<TokenAllowance> getTokenAllowance(AbstractTokenAllowance.Id id, OnMissing throwIfMissing);
+
+    Optional<NftAllowance> getNftAllowance(AbstractNftAllowance.Id id, OnMissing throwIfMissing);
 
     Token getFungibleToken(Address address, OnMissing throwIfMissing);
 

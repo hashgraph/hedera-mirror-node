@@ -19,6 +19,8 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -33,6 +35,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Differences from the original:
  *  1. Added address field for convenience
  *  2. Added factory method that returns empty instance
+ *  3. Added equals() and hashCode()
  */
 public class UniqueToken {
     private final Id tokenId;
@@ -58,6 +61,10 @@ public class UniqueToken {
 
     public static UniqueToken getEmptyUniqueToken() {
         return new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]);
+    }
+
+    public boolean isEmptyUniqueToken() {
+        return this.equals(getEmptyUniqueToken());
     }
 
     public NftId getNftId() {
@@ -102,5 +109,15 @@ public class UniqueToken {
                 .add("owner", owner)
                 .add("spender", spender)
                 .toString();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
     }
 }

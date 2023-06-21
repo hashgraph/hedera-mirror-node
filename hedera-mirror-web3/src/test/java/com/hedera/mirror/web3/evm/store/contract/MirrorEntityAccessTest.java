@@ -27,7 +27,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -74,7 +75,7 @@ class MirrorEntityAccessTest {
     private Entity entity;
 
     private List<DatabaseAccessor<Object, ?>> accessors;
-    private StackedStateFrames<Object> stackedStateFrames;
+    private Store store;
 
     private MirrorEntityAccess mirrorEntityAccess;
 
@@ -82,8 +83,8 @@ class MirrorEntityAccessTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        stackedStateFrames = new StackedStateFrames<>(accessors);
-        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, stackedStateFrames);
+        store = new StoreImpl(accessors);
+        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
     }
 
     @Test

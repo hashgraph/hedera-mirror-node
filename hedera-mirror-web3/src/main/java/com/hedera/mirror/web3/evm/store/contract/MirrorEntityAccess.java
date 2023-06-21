@@ -24,7 +24,8 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -38,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final Store store;
 
     @Override
     public boolean isUsable(final Address address) {
@@ -113,9 +114,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     }
 
     public Optional<Entity> findEntity(final Address address) {
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        return entityAccessor.get(address);
+        return store.getEntity(address, OnMissing.DONT_THROW);
     }
 
     private Long fetchEntityId(final Address address) {
@@ -124,8 +123,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return entityIdNumFromEvmAddress(address);
         }
 
-        final var topFrame = stackedStateFrames.top();
-        final var entityAccessor = topFrame.getAccessor(Entity.class);
-        return entityAccessor.get(address).map(AbstractEntity::getId).orElse(0L);
+        return store.getEntity(address, OnMissing.DONT_THROW)
+                .map(AbstractEntity::getId)
+                .orElse(0L);
     }
 }

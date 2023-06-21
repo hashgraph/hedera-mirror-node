@@ -25,6 +25,7 @@ import com.hedera.services.jproto.JEd25519Key;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.UUID;
 
 public class TxnUtils {
@@ -40,6 +41,12 @@ public class TxnUtils {
             builder.setKeyList(KeyList.newBuilder().addKeys(nestedBuilder));
             return builder;
         }
+    }
+
+    public static Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransactionBytes)
+                .build();
     }
 
     public static byte[] randomUtf8Bytes(int n) {
