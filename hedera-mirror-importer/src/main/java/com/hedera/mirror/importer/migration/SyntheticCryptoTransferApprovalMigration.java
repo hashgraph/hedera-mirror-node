@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
-import lombok.SneakyThrows;
 import org.flywaydb.core.api.MigrationVersion;
-import org.postgresql.jdbc.PgArray;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
@@ -151,11 +149,8 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     private static final DataClassRowMapper<SyntheticCryptoTransferApprovalMigration.ApprovalTransfer> resultRowMapper;
 
     static {
-        DefaultConversionService defaultConversionService = new DefaultConversionService();
-        defaultConversionService.addConverter(
-                PgArray.class, Long[].class, SyntheticCryptoTransferApprovalMigration::convert);
         resultRowMapper = new DataClassRowMapper<>(ApprovalTransfer.class);
-        resultRowMapper.setConversionService(defaultConversionService);
+        resultRowMapper.setConversionService(new DefaultConversionService());
     }
 
     private final MirrorProperties mirrorProperties;
@@ -273,11 +268,6 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         }
         // Update the isApproval value to true
         return false;
-    }
-
-    @SneakyThrows
-    private static Long[] convert(PgArray pgArray) {
-        return (Long[]) pgArray.getArray();
     }
 
     @Data
