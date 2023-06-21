@@ -239,6 +239,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
             }
+            this.transactionBody = precompile.body(input, aliasResolver, null);
         }
 
         gasRequirement = defaultGas();
