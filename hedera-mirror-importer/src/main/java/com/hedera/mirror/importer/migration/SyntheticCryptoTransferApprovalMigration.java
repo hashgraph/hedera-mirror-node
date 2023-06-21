@@ -21,79 +21,80 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import lombok.NoArgsConstructor;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.flywaydb.core.api.MigrationVersion;
+import org.postgresql.jdbc.PgArray;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
 public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long> {
 
+    // The contract id of the first synthetic transfer that could have exhibited this problem
+    private static final long GRANDFATHERED_ID = 2119900L;
+    // The created timestamp of the grandfathered id contract
     private static final Long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
-    private static final Long UPPER_BOUND_TIMESTAMP = 1686243920981874003L;
+    // This problem was fixed by services release 0.38.10, this is last timestamp before that release
+    private static final Long UPPER_BOUND_TIMESTAMP = 1686243920981874002L;
     private static final Long TIMESTAMP_INCREMENT =
             86_400_000_000_000L; // 1 day in nanoseconds which will yield 69 async iterations
     private static final String TRANSFER_SQL =
             """
             with cryptotransfers as (
-              select ct.is_approval,
+              select
                 ct.consensus_timestamp,
-                ct.amount,
                 cast(null as int) as index,
-                cast(null as bigint) as receiver,
                 ct.entity_id as sender,
-                sender_id,
+                contract_id,
                 cast(null as bigint) as token_id,
                 'CRYPTO_TRANSFER' as transfer_type
               from contract_result cr
               join crypto_transfer ct on cr.consensus_timestamp = ct.consensus_timestamp
               where cr.consensus_timestamp > :lower_bound and
-                cr.consensus_timestamp < :upper_bound and
-                sender_id <> ct.entity_id and
+                cr.consensus_timestamp <= :upper_bound and
+                contract_id <> ct.entity_id and
+                contract_id >= :grandfathered_id and
                 ct.is_approval = false and
                 ct.amount < 0
             ), tokentransfers as (
-              select is_approval,
+              select
                 t.consensus_timestamp,
-                t.amount,
                 cast(null as int) as index,
-                cast(null as bigint) as receiver,
                 account_id as sender,
-                cr.sender_id,
+                cr.contract_id,
                 token_id,
                 'TOKEN_TRANSFER' as transfer_type
               from token_transfer t
               join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp
               where cr.consensus_timestamp > :lower_bound and
-              cr.consensus_timestamp < :upper_bound and
-              cr.sender_id <> account_id and
+              cr.consensus_timestamp <= :upper_bound and
+              cr.contract_id <> account_id and
+              cr.contract_id >= :grandfathered_id and
               is_approval = false and
               t.amount < 0
             ), nfttransfers as (
-              select (arr.item->>'is_approval')::boolean as is_approval,
+              select
                 t.consensus_timestamp,
-                cast(null as bigint) as amount,
-                arr.index,
-                (arr.item->>'receiver_account_id')::bigint as receiver,
+                arr.index - 1 as index,
                 (arr.item->>'sender_account_id')::bigint as sender,
-                cr.sender_id,
+                cr.contract_id,
                 cast(null as bigint) as token_id,
                 'NFT_TRANSFER' as transfer_type
               from transaction t
               join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp,
               jsonb_array_elements(nft_transfer) with ordinality arr(item, index)
               where cr.consensus_timestamp > :lower_bound and
-              cr.consensus_timestamp < :upper_bound and
-              cr.sender_id <> (arr.item->>'sender_account_id')::bigint and
+              cr.consensus_timestamp <= :upper_bound and
+              cr.contract_id <> (arr.item->>'sender_account_id')::bigint and
+              cr.contract_id >= :grandfathered_id and
               (arr.item->>'is_approval')::boolean = false
             ), entity as (
                 select key, id, timestamp_range from entity
@@ -115,7 +116,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
               select nft.*, e.key
               from nfttransfers nft
               join entity e on e.timestamp_range @> nft.consensus_timestamp::bigint
-              where e.id = nft.receiver
+              where e.id = nft.sender
             ) select * from cryptoentities
               union all
               select * from tokenentities
@@ -126,7 +127,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
 
     private static final String UPDATE_CRYPTO_TRANSFER_SQL =
             """
-            update crypto_transfer set is_approval = true where amount = :amount and consensus_timestamp = :consensus_timestamp and entity_id = :sender
+            update crypto_transfer set is_approval = true where consensus_timestamp = :consensus_timestamp and entity_id = :sender
             """;
     private static final String UPDATE_NFT_TRANSFER_SQL =
             """
@@ -143,9 +144,18 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         TOKEN_TRANSFER
     }
 
+    private static final DataClassRowMapper<SyntheticCryptoTransferApprovalMigration.ApprovalTransfer> resultRowMapper;
+
+    static {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(
+                PgArray.class, Long[].class, SyntheticCryptoTransferApprovalMigration::convert);
+        resultRowMapper = new DataClassRowMapper<>(ApprovalTransfer.class);
+        resultRowMapper.setConversionService(defaultConversionService);
+    }
+
     private final MirrorProperties mirrorProperties;
     private final NamedParameterJdbcTemplate transferJdbcTemplate;
-    private final TransferMapper transferMapper = new TransferMapper();
 
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
@@ -160,7 +170,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
 
     @Override
     public String getDescription() {
-        return "Update the is_approval value for synthetic crypto transfers";
+        return "Update the is_approval value for synthetic transfers";
     }
 
     @Override
@@ -180,51 +190,54 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     }
 
     @Override
-    protected Optional<Long> migratePartial(Long lastUpperBound) {
+    protected Optional<Long> migratePartial(Long lowerBound) {
         if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
             log.info("Skipping migration since it only applies to mainnet");
             return Optional.empty();
         }
 
-        AtomicLong count = new AtomicLong(0L);
+        long count = 0;
         var migrationErrors = new ArrayList<String>();
-        long upperBound = getUpperBound(lastUpperBound);
-        Map<String, Long> boundaryTimestamps = Map.of("lower_bound", lastUpperBound, "upper_bound", upperBound);
+        long upperBound = Math.min(lowerBound + TIMESTAMP_INCREMENT, UPPER_BOUND_TIMESTAMP);
+        Map<String, Long> queryParamMap =
+                Map.of("lower_bound", lowerBound, "upper_bound", upperBound, "grandfathered_id", GRANDFATHERED_ID);
         try {
-            var transfers = transferJdbcTemplate.query(TRANSFER_SQL, boundaryTimestamps, transferMapper);
+            var transfers = transferJdbcTemplate.query(TRANSFER_SQL, queryParamMap, resultRowMapper);
             for (ApprovalTransfer transfer : transfers) {
                 if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
                     // set is_approval to true
-                    String updateSql = UPDATE_TOKEN_TRANSFER_SQL;
+                    String updateSql;
+                    Map<String, Number> update;
                     if (transfer.transferType == TRANSFER_TYPE.CRYPTO_TRANSFER) {
                         updateSql = UPDATE_CRYPTO_TRANSFER_SQL;
+                        update = Map.of(
+                                "consensus_timestamp", transfer.consensusTimestamp,
+                                "sender", transfer.sender);
                     } else if (transfer.transferType == TRANSFER_TYPE.NFT_TRANSFER) {
                         updateSql = UPDATE_NFT_TRANSFER_SQL;
+                        update = Map.of(
+                                "index", transfer.index,
+                                "consensus_timestamp", transfer.consensusTimestamp);
+                    } else {
+                        updateSql = UPDATE_TOKEN_TRANSFER_SQL;
+                        update = Map.of(
+                                "token_id", transfer.tokenId,
+                                "consensus_timestamp", transfer.consensusTimestamp,
+                                "sender", transfer.sender);
                     }
 
-                    var updateMap = Map.of(
-                            "amount", transfer.amount,
-                            "consensus_timestamp", transfer.consensusTimestamp,
-                            "index", transfer.index,
-                            "sender", transfer.sender,
-                            "token_id", transfer.tokenId);
-                    transferJdbcTemplate.update(updateSql, updateMap);
-                    count.incrementAndGet();
+                    transferJdbcTemplate.update(updateSql, update);
+                    count++;
                 }
             }
         } catch (Exception e) {
-            log.error("Error migrating transfer approvals", e);
+            log.error("Error migrating synthetic transfer approvals", e);
             return Optional.empty();
         }
 
-        log.info("Updated {} crypto transfer approvals", count);
+        log.info("Updated {} synthetic transfer approvals", count);
         migrationErrors.forEach(log::error);
         return upperBound == UPPER_BOUND_TIMESTAMP ? Optional.empty() : Optional.of(upperBound);
-    }
-
-    private Long getUpperBound(long lastUpperBound) {
-        long nextIncrement = Math.addExact(lastUpperBound, TIMESTAMP_INCREMENT);
-        return nextIncrement >= UPPER_BOUND_TIMESTAMP ? UPPER_BOUND_TIMESTAMP : nextIncrement;
     }
 
     /**
@@ -248,13 +261,13 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             return false;
         }
 
-        return isAuthorizedByThresholdKey(parsedKey, transfer.senderId);
+        return isAuthorizedByThresholdKey(parsedKey, transfer.contractId);
     }
 
-    private boolean isAuthorizedByThresholdKey(Key parsedKey, long senderId) {
+    private boolean isAuthorizedByThresholdKey(Key parsedKey, long contractId) {
         var keys = parsedKey.getThresholdKey().getKeys().getKeysList();
         for (var key : keys) {
-            if (key.hasContractID() && EntityId.of(key.getContractID()).getId() == senderId) {
+            if (key.hasContractID() && EntityId.of(key.getContractID()).getId() == contractId) {
                 // Do not update the isApproval value
                 return true;
             }
@@ -263,30 +276,19 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         return false;
     }
 
-    public class TransferMapper implements RowMapper<ApprovalTransfer> {
-        @SneakyThrows
-        public ApprovalTransfer mapRow(ResultSet rs, int rowNum) {
-            var migrationTransfer = new ApprovalTransfer();
-            migrationTransfer.amount = rs.getLong("amount");
-            migrationTransfer.consensusTimestamp = rs.getLong("consensus_timestamp");
-            migrationTransfer.index = rs.getInt("index") - 1;
-            migrationTransfer.key = rs.getBytes("key");
-            migrationTransfer.sender = rs.getLong("sender");
-            migrationTransfer.senderId = rs.getLong("sender_id");
-            migrationTransfer.tokenId = rs.getLong("token_id");
-            migrationTransfer.transferType = TRANSFER_TYPE.valueOf(rs.getString("transfer_type"));
-            return migrationTransfer;
-        }
+    @SneakyThrows
+    private static Long[] convert(PgArray pgArray) {
+        return (Long[]) pgArray.getArray();
     }
 
-    @NoArgsConstructor
-    public class ApprovalTransfer {
+    @Data
+    static class ApprovalTransfer {
         private Long amount;
         private Long consensusTimestamp;
+        private Long contractId;
         private Integer index;
         private byte[] key;
         private Long sender;
-        private Long senderId;
         private Long tokenId;
         private TRANSFER_TYPE transferType;
     }
