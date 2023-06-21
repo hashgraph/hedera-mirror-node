@@ -17,7 +17,8 @@
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.EntityIdUtils.asModelId;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.state.submerkle.RichInstant;
 import java.nio.charset.StandardCharsets;
@@ -65,8 +66,8 @@ class UniqueTokenTest {
     @Test
     void testEquals() {
         var rel = new UniqueToken(tokenId, 1, RichInstant.MISSING_INSTANT, id, null, metadata);
-        assertTrue(rel.equals(subj));
+        assertEquals(rel, subj);
         rel = new UniqueToken(tokenId, 2, RichInstant.MISSING_INSTANT, id, null, metadata);
-        assertFalse(rel.equals(subj));
+        assertNotEquals(rel, subj);
     }
 }
