@@ -34,7 +34,7 @@ public interface Store {
 
     Account getAccount(Address address, OnMissing throwIfMissing);
 
-    Token getFungibleToken(Address address, OnMissing throwIfMissing);
+    Token getToken(Address address, OnMissing throwIfMissing);
 
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
@@ -46,7 +46,7 @@ public interface Store {
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
-    void updateFungibleToken(Token fungibleToken);
+    void updateToken(Token fungibleToken);
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.

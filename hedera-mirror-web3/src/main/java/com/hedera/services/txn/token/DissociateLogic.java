@@ -50,7 +50,7 @@ public class DissociateLogic {
 
         final var account = store.getAccount(address, OnMissing.THROW);
         final var tokens = tokenAddresses.stream()
-                .map(t -> store.getFungibleToken(t, OnMissing.THROW))
+                .map(t -> store.getToken(t, OnMissing.THROW))
                 .toList();
 
         dissociateUsing(account, tokens, store);

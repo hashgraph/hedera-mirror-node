@@ -99,7 +99,7 @@ class DissociateLogicTest {
     @Test
     void throwExceptionIfTokenNotFound() {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
-        when(store.getFungibleToken(tokenAddress, OnMissing.THROW))
+        when(store.getToken(tokenAddress, OnMissing.THROW))
                 .thenThrow(getException(Token.class.getName(), tokenAddress));
         assertThatThrownBy(() -> dissociateLogic.dissociate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
@@ -233,7 +233,7 @@ class DissociateLogicTest {
     }
 
     private void setupToken() {
-        when(store.getFungibleToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
+        when(store.getToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
         when(token.getId()).thenReturn(tokenId);
         when(tokenId.asEvmAddress()).thenReturn(tokenAddress);
     }
