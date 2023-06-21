@@ -28,6 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.exceptions.MissingEntityException;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.*;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.IdUtils;
@@ -273,42 +274,55 @@ class HederaTokenStoreTest {
         var status = subject.autoAssociate(sponsor, misc);
         assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
     }
-    //
-    //    @Test
-    //    void adjustingRejectsMissingAccount() {
-    //        given(accountsLedger.exists(sponsor)).willReturn(false);
-    //
-    //        final var status = subject.adjustBalance(sponsor, misc, 1);
-    //
-    //        assertEquals(INVALID_ACCOUNT_ID, status);
-    //    }
-    //
-    //    @Test
-    //    void changingOwnerRejectsMissingSender() {
-    //        given(accountsLedger.exists(sponsor)).willReturn(false);
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(INVALID_ACCOUNT_ID, status);
-    //    }
-    //
-    //    @Test
-    //    void changingOwnerRejectsMissingReceiver() {
-    //        given(accountsLedger.exists(counterparty)).willReturn(false);
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(INVALID_ACCOUNT_ID, status);
-    //    }
-    //
-    //    @Test
-    //    void changingOwnerRejectsMissingNftInstance() {
-    //        given(nftsLedger.exists(aNft)).willReturn(false);
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(INVALID_NFT_ID, status);
-    //    }
+
+    @Test
+    void adjustingRejectsMissingAccount() {
+        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+
+        final var status = subject.adjustBalance(sponsor, misc, 1);
+
+        assertEquals(INVALID_ACCOUNT_ID, status);
+    }
+
+    @Test
+    void changingOwnerRejectsMissingSender() {
+        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(INVALID_ACCOUNT_ID, status);
+    }
+
+    @Test
+    void changingOwnerRejectsMissingReceiver() {
+        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willThrow(new MissingEntityException(""));
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(INVALID_ACCOUNT_ID, status);
+    }
+
+    @Test
+    void changingOwnerRejectsMissingNftInstance() {
+        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
+        var token = new Token(Id.fromGrpcToken(aNft.tokenId()));
+
+        given(store.getAccount(asTypedEvmAddress(sponsor), true)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), true)).willReturn(counterpartyAccount);
+        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), false)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), false))
+                .willReturn(new TokenRelationship(token, sponsorAccount));
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), false))
+                .willReturn(new TokenRelationship(token, counterpartyAccount));
+        given(store.getUniqueToken(aNft, false))
+                .willReturn(new UniqueToken(
+                        Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]));
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(INVALID_NFT_ID, status);
+    }
     //
     //    @Test
     //    void changingOwnerRejectsUnassociatedReceiver() {
