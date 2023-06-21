@@ -21,7 +21,6 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
-import com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
@@ -30,8 +29,11 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperat
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -88,9 +90,12 @@ public class EvmOperationConstructionUtil {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties, final PrecompileMapper precompileMapper) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
+
+        final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
+                evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
-                new MirrorHTSPrecompiledContract(evmFactory, mirrorNodeEvmProperties, precompileMapper));
+                new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
 
         return hederaPrecompiles;
     }

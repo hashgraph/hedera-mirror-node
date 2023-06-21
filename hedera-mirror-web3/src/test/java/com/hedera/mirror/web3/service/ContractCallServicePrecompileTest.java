@@ -30,6 +30,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,6 +74,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
+    }
+
+    @ParameterizedTest
+    @EnumSource(SupportedContractModificationFunctions.class)
+    void evmPrecompileSupportedModificationTokenFunctionsTest(SupportedContractModificationFunctions contractFunc) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @ParameterizedTest
@@ -303,8 +319,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }),
         MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
         BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        ASSOCIATE_TOKENS("associateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
         DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
         CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
@@ -336,6 +350,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
+
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+    @RequiredArgsConstructor
+    enum SupportedContractModificationFunctions {
+        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
+        ASSOCIATE_TOKENS(
+                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}});
 
         private final String name;
         private final Object[] functionParameters;

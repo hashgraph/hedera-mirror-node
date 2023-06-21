@@ -18,18 +18,18 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NftRepository extends CrudRepository<Nft, NftId> {
+public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
 
     @Override
     @Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<Nft> findById(NftId nftId);
+    Optional<Nft> findById(AbstractNft.Id id);
 
     @Query(
             value = "select n.* from Nft n "

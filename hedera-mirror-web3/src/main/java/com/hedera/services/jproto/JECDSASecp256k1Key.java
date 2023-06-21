@@ -73,4 +73,9 @@ public class JECDSASecp256k1Key extends JKey {
     public int hashCode() {
         return Arrays.hashCode(ecdsaSecp256k1Key);
     }
+
+    @Override
+    public byte[] getECDSASecp256k1Key() {
+        return ecdsaSecp256k1Key;
+    }
 }

@@ -560,10 +560,7 @@ func NewConstructionAPIService(
 		return nil, err
 	}
 
-	if !baseService.IsOnline() {
-		// cancel network update for the offline mode server
-		hederaClient.CancelScheduledNetworkUpdate()
-	}
+	hederaClient.CancelScheduledNetworkUpdate()
 
 	// disable SDK auto retry
 	hederaClient.SetMaxAttempts(1)

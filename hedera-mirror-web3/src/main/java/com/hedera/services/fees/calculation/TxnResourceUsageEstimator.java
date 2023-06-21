@@ -16,11 +16,15 @@
 
 package com.hedera.services.fees.calculation;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.hapi.utils.fees.SigValueObj;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ */
 public interface TxnResourceUsageEstimator {
 
     /**
@@ -37,11 +41,11 @@ public interface TxnResourceUsageEstimator {
      *
      * @param txn      the txn in question
      * @param sigUsage the signature usage
-     * @param state
+     * @param store
      * @return the estimated resource usage
      * @throws Exception            if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
     @SuppressWarnings("java:S112")
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StackedStateFrames<?> state) throws Exception;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, Store store) throws Exception;
 }

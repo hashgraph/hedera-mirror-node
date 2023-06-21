@@ -285,13 +285,20 @@ const verifyExtractSqlFromTokenRequest = (
 
 describe('token formatNftHistoryRow', () => {
   const defaultRow = {
-    consensus_timestamp: '123456000987654',
+    consensus_timestamp: 123456000987654,
     nonce: 0,
+    nft_transfer: [
+      {
+        is_approval: true,
+        receiver_account_id: 2000,
+        serial_number: 1,
+        sender_account_id: 3000,
+        token_id: 4000,
+      },
+    ],
     payer_account_id: '500',
-    receiver_account_id: '2000',
-    sender_account_id: '3000',
     type: 14,
-    valid_start_ns: '123450000111222',
+    valid_start_ns: 123450000111222,
     is_approval: true,
   };
   const expected = {
@@ -325,12 +332,20 @@ describe('token formatNftHistoryRow', () => {
       name: 'tokendeletion',
       row: {
         ...defaultRow,
-        receiver_account_id: null,
-        sender_account_id: null,
+        nft_transfer: [
+          {
+            is_approval: false,
+            receiver_account_id: null,
+            serial_number: 1,
+            sender_account_id: null,
+            token_id: 4000,
+          },
+        ],
         type: 35,
       },
       expected: {
         ...expected,
+        is_approval: false,
         receiver_account_id: null,
         sender_account_id: null,
         type: 'TOKENDELETION',
@@ -1009,9 +1024,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1050,9 +1065,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1091,9 +1106,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1142,9 +1157,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1195,9 +1210,9 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                            left join entity e on e.id = nft.token_id
@@ -1232,95 +1247,69 @@ describe('token validateSerialNumberParam tests', () => {
   });
 });
 
-describe('token validateTokenIdParam tests', () => {
-  const invalidTokenIds = ['', '-1', null, undefined, 'end'];
-  const validTokenIds = ['1', '0.1', '0.20.1'];
-
-  invalidTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for invalid ${tokenId}`, () => {
-      expect(() => tokens.validateTokenIdParam(tokenId)).toThrowErrorMatchingSnapshot();
-    });
-  });
-
-  validTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for valid ${tokenId}`, () => {
-      tokens.validateTokenIdParam(tokenId);
-    });
-  });
-});
-
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
   const getExpectedQuery = (order = constants.orderFilterValues.DESC, timestampFilters = []) => {
-    let paramIndex = 3;
-    const transferTimestampCondition = timestampFilters
-      .map((f) => `nft_tr.consensus_timestamp ${f.operator} $${paramIndex++}`)
+    let paramIndex = 4;
+    const nftTimestampCondition = timestampFilters
+      .map((f) => `lower(timestamp_range) ${f.operator} $${paramIndex++}`)
       .join(' and ');
-    const deleteTimestampCondition = transferTimestampCondition.replace(
-      'nft_tr.consensus_timestamp',
-      'consensus_timestamp'
-    );
+    const deleteTimestampCondition = nftTimestampCondition.replace('lower(timestamp_range)', 'consensus_timestamp');
     const limitQuery = `limit $${paramIndex}`;
-    return `with serial_transfers as (
-      select
-        consensus_timestamp,
-        receiver_account_id,
-        sender_account_id,
-        token_id,
-        is_approval
-      from nft_transfer nft_tr
-      where nft_tr.token_id = $1 and nft_tr.serial_number = $2
-        ${(transferTimestampCondition && ' and ' + transferTimestampCondition) || ''}
-      order by consensus_timestamp ${order}
+    return `with nft_event as (
+      select lower(timestamp_range) as timestamp
+      from nft
+      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
+      union all
+      select lower(timestamp_range) as timestamp
+      from nft_history
+      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
+      order by timestamp ${order}
       ${limitQuery}
-    ), token_transactions as (
-      select
-        nft_tr.consensus_timestamp,
-        nft_tr.receiver_account_id,
-        nft_tr.sender_account_id,
-        nft_tr.is_approval,
-        t.nonce,
-        t.payer_account_id,
-        t.type,
-        t.valid_start_ns
-      from serial_transfers nft_tr
-      join transaction t
-      on nft_tr.consensus_timestamp = t.consensus_timestamp
-    ), token_deletion as (
+    ), nft_transaction as (
       select
         consensus_timestamp,
+        (select jsonb_path_query_array(
+          nft_transfer,
+          '$[*] ? (@.token_id == $token_id && @.serial_number == $serial_number)',
+          $1)
+        ) as nft_transfer,
         nonce,
         payer_account_id,
         type,
         valid_start_ns
       from transaction
-      where consensus_timestamp = (
-          select lower(timestamp_range)
-          from entity
-          where id = $1 and deleted is true
-        ) ${(deleteTimestampCondition && ' and ' + deleteTimestampCondition) || ''}
+      join nft_event on timestamp = consensus_timestamp
+    ), token_deletion as (
+      select
+        consensus_timestamp,
+        jsonb_build_array(jsonb_build_object(
+          'is_approval', false,
+          'receiver_account_id', null,
+          'sender_account_id', null,
+          'serial_number', $3,
+          'token_id', $2)) as nft_transfer,
+        nonce,
+        payer_account_id,
+        type,
+        valid_start_ns
+      from transaction
+      where consensus_timestamp = (select lower(timestamp_range) from entity where id = $2 and deleted is true)
+        ${deleteTimestampCondition && 'and ' + deleteTimestampCondition}
     )
-    select * from token_transactions
-    union
-    select
-      consensus_timestamp,
-      null as receiver_account_id,
-      null as sender_account_id,
-      null as is_approval,
-      nonce,
-      payer_account_id,
-      type,
-      valid_start_ns
-    from token_deletion
+    select * from nft_transaction
+    union all
+    select * from token_deletion
     order by consensus_timestamp ${order}
     ${limitQuery}`;
   };
 
-  const tokenId = '1009'; // encoded
-  const serialNumber = '960';
+  const tokenId = 1009; // encoded
+  const serialNumber = 9886299254743552n; // larger than MAX_SAFE_INTEGER
+  const defaultParams = [`{"token_id":${tokenId},"serial_number":${serialNumber}}`, tokenId, serialNumber];
 
   test('Verify simple query', () => {
     const expectedQuery = getExpectedQuery();
-    const expectedParams = [tokenId, serialNumber, defaultLimit];
+    const expectedParams = [...defaultParams, defaultLimit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, []);
     assertSqlQueryEqual(actual.query, expectedQuery);
@@ -1336,7 +1325,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     ];
 
     const expectedQuery = getExpectedQuery(order);
-    const expectedParams = [tokenId, serialNumber, limit];
+    const expectedParams = [...defaultParams, limit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
     assertSqlQueryEqual(actual.query, expectedQuery);
@@ -1348,7 +1337,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     const filters = [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: timestamp}];
 
     const expectedQuery = getExpectedQuery(constants.orderFilterValues.DESC, filters);
-    const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
+    const expectedParams = [...defaultParams, timestamp, defaultLimit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
     assertSqlQueryEqual(actual.query, expectedQuery);

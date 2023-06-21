@@ -29,6 +29,9 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+/**
+ *  Exact copy from hedera-services
+ */
 @SuppressWarnings("java:S6548")
 public enum SingletonEstimatorUtils implements EstimatorUtils {
     ESTIMATOR_UTILS;

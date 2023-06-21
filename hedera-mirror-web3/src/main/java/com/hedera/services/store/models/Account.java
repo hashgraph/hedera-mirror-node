@@ -24,6 +24,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
@@ -59,6 +60,7 @@ public class Account extends HederaEvmAccount {
     private final int numTreasuryTitles;
     private final long ethereumNonce;
 
+    @Builder(toBuilder = true)
     @SuppressWarnings("java:S107")
     public Account(
             Id id,
