@@ -32,7 +32,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
-import java.util.Collection;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -179,16 +178,8 @@ public class HederaEvmStackedWorldStateUpdater
         return 0;
     }
 
-    protected Collection<Address> getDeletedAccounts() {
-        return deletedAccounts;
-    }
-
     public Store getStore() {
         return store;
-    }
-
-    public EvmProperties getEvmProperties() {
-        return this.evmProperties;
     }
 
     private boolean isMissingTarget(final Address alias) {
