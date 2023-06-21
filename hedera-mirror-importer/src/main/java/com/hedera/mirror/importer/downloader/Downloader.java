@@ -46,7 +46,6 @@ import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -293,7 +292,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     return streamFile;
                 })
                 .map(StreamFile::getName)
-                .map(StreamFilename::new)
+                .map(StreamFilename::from)
                 .orElse(StreamFilename.EPOCH);
     }
 
@@ -381,16 +380,13 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 if (downloaderProperties.isWriteFiles()) {
                     Utility.archiveFile(
-                            streamFile.getName(),
-                            streamFile.getBytes(),
-                            downloaderProperties.getNodeStreamPath(nodeId));
+                            streamFileData.getFilePath(), streamFile.getBytes(), mirrorProperties.getDataPath());
                 }
 
                 if (downloaderProperties.isWriteSignatures()) {
-                    signatures.forEach(s -> {
-                        Path destination = downloaderProperties.getNodeStreamPath(nodeId);
-                        Utility.archiveFile(s.getFilename().getFilename(), s.getBytes(), destination);
-                    });
+                    var destination = mirrorProperties.getDataPath();
+                    signatures.forEach(
+                            s -> Utility.archiveFile(s.getFilename().getFilePath(), s.getBytes(), destination));
                 }
 
                 if (!downloaderProperties.isPersistBytes()) {
