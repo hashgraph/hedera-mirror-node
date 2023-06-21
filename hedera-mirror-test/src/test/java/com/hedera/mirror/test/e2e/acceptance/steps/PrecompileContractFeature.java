@@ -817,26 +817,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(response.getResultAsBoolean());
     }
 
-    @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token")
-    public void getNonFungibleTokenIsApprovedForAllByDirectCall() throws Exception {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR.getSelector()
-                        + to32BytesString(contractClient.getClientAddress())
-                        + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()))
-                .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
-                .estimate(false)
-                .build();
-        ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
-        assertFalse(response.getResultAsBoolean());
-    }
-
     @And(
             "the contract call REST API should return the isApprovedForAll by direct call for a non fungible token - owner")
     public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR.getSelector()
-                        + to32BytesString(contractClient.getClientAddress()))
+                        + to32BytesString(contractClient.getClientAddress())
+                        + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)

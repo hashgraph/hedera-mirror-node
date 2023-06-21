@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -30,23 +34,18 @@ import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -96,7 +95,7 @@ public class CallFeature extends AbstractFeature {
         address1 = new BigInteger(address1, 16).toString(16);
         address2 = new BigInteger(address2, 16).toString(16);
 
-        return new String[]{address1, address2};
+        return new String[] {address1, address2};
     }
 
     @Given("I successfully create ERC contract")
@@ -226,9 +225,10 @@ public class CallFeature extends AbstractFeature {
                 .to(precompileContractAddress)
                 .estimate(false)
                 .build();
+
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsBoolean()).isTrue();
+        assertTrue(response.getResultAsBoolean());
     }
 
     // ETHCALL-026
@@ -306,8 +306,7 @@ public class CallFeature extends AbstractFeature {
                 .to(estimateContractAddress)
                 .estimate(false)
                 .build();
-        ContractCallResponse updateCallResponse =
-                mirrorClient.contractsCall(updateCall);
+        ContractCallResponse updateCallResponse = mirrorClient.contractsCall(updateCall);
         assertEquals(String.valueOf(updateCallResponse.getResultAsNumber()), updateValue);
     }
 
@@ -334,8 +333,7 @@ public class CallFeature extends AbstractFeature {
                 .to(estimateContractAddress)
                 .estimate(false)
                 .build();
-        ContractCallResponse deployCallResponse =
-                mirrorClient.contractsCall(deployCall);
+        ContractCallResponse deployCallResponse = mirrorClient.contractsCall(deployCall);
         String[] addresses = splitAddresses(deployCallResponse.getResult());
 
         validateAddresses(addresses);
@@ -349,8 +347,7 @@ public class CallFeature extends AbstractFeature {
                 .to(estimateContractAddress)
                 .estimate(false)
                 .build();
-        ContractCallResponse deployCallResponse =
-                mirrorClient.contractsCall(deployCall);
+        ContractCallResponse deployCallResponse = mirrorClient.contractsCall(deployCall);
 
         String[] addresses = splitAddresses(deployCallResponse.getResult());
 
@@ -369,13 +366,12 @@ public class CallFeature extends AbstractFeature {
                 .to(estimateContractAddress)
                 .estimate(false)
                 .build();
-        ContractCallResponse transferCallResponse =
-                mirrorClient.contractsCall(transferCall);
+        ContractCallResponse transferCallResponse = mirrorClient.contractsCall(transferCall);
         String[] balances = splitAddresses(transferCallResponse.getResult());
 
-        //verify initial balance
+        // verify initial balance
         assertEquals(Integer.parseInt(balances[0], 16), 1000000);
-        //verify balance after transfer of 10,000
+        // verify balance after transfer of 10,000
         assertEquals(Integer.parseInt(balances[1], 16), 990000);
     }
 
@@ -394,7 +390,6 @@ public class CallFeature extends AbstractFeature {
         return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
     }
 
-
     private ContractId verifyCreateContractNetworkResponse() {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -405,7 +400,7 @@ public class CallFeature extends AbstractFeature {
 
     private FileId persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[]{});
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -472,6 +467,5 @@ public class CallFeature extends AbstractFeature {
     }
 
     private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {
-    }
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

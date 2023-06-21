@@ -375,7 +375,7 @@ public class ERCContractFeature extends AbstractFeature {
         tokenSerialNumbers.get(tokenId).add(serialNumber);
     }
 
-    @Then("the mirror node REST API should return status {int} for the mint transaction")
+    @Then("the mirror node REST API should return status {int} for the erc contract transaction")
     public void verifyMirrorAPIResponses(int status) {
         verifyMirrorTransactionsResponse(mirrorClient, status);
     }
