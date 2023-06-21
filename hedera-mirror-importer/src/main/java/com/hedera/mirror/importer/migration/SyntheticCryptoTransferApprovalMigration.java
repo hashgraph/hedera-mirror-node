@@ -49,20 +49,27 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             86_400_000_000_000L; // 1 day in nanoseconds which will yield 69 async iterations
     private static final String TRANSFER_SQL =
             """
-            with cryptotransfers as (
+            with contractresults as (
+              select
+                consensus_timestamp,
+                contract_id
+                from contract_result
+                where
+                  consensus_timestamp > :lower_bound and
+                  consensus_timestamp <= :upper_bound and
+                  contract_id >= :grandfathered_id
+            ), cryptotransfers as (
               select
                 ct.consensus_timestamp,
                 cast(null as int) as index,
-                ct.entity_id as sender,
-                contract_id,
+                entity_id as sender,
+                cr.contract_id,
                 cast(null as bigint) as token_id,
                 'CRYPTO_TRANSFER' as transfer_type
-              from contract_result cr
-              join crypto_transfer ct on cr.consensus_timestamp = ct.consensus_timestamp
-              where cr.consensus_timestamp > :lower_bound and
-                cr.consensus_timestamp <= :upper_bound and
-                contract_id <> ct.entity_id and
-                contract_id >= :grandfathered_id and
+              from crypto_transfer ct
+              join contractresults cr on cr.consensus_timestamp = ct.consensus_timestamp
+              where
+                cr.contract_id <> ct.entity_id and
                 ct.is_approval = false and
                 ct.amount < 0
             ), tokentransfers as (
@@ -74,13 +81,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
                 token_id,
                 'TOKEN_TRANSFER' as transfer_type
               from token_transfer t
-              join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp
-              where cr.consensus_timestamp > :lower_bound and
-              cr.consensus_timestamp <= :upper_bound and
-              cr.contract_id <> account_id and
-              cr.contract_id >= :grandfathered_id and
-              is_approval = false and
-              t.amount < 0
+              join contractresults cr on cr.consensus_timestamp = t.consensus_timestamp
+              where
+                cr.contract_id <> account_id and
+                is_approval = false and
+                t.amount < 0
             ), nfttransfers as (
               select
                 t.consensus_timestamp,
@@ -90,13 +95,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
                 cast(null as bigint) as token_id,
                 'NFT_TRANSFER' as transfer_type
               from transaction t
-              join contract_result cr on cr.consensus_timestamp = t.consensus_timestamp,
+              join contractresults cr on cr.consensus_timestamp = t.consensus_timestamp,
               jsonb_array_elements(nft_transfer) with ordinality arr(item, index)
-              where cr.consensus_timestamp > :lower_bound and
-              cr.consensus_timestamp <= :upper_bound and
-              cr.contract_id <> (arr.item->>'sender_account_id')::bigint and
-              cr.contract_id >= :grandfathered_id and
-              (arr.item->>'is_approval')::boolean = false
+              where
+                cr.contract_id <> (arr.item->>'sender_account_id')::bigint and
+                (arr.item->>'is_approval')::boolean = false
             ), entity as (
                 select key, id, timestamp_range from entity
                 where key is not null
