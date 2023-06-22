@@ -649,7 +649,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     .build());
         }
         Collection<ConsensusNode> partial = downloader.partialCollection(allNodes);
-        assertThat(partial.size()).isEqualTo(expectedNodes);
+        assertThat(partial).hasSize(expectedNodes);
     }
 
     @SneakyThrows
