@@ -19,7 +19,6 @@ package com.hedera.services.txn.token;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.txn.token.utils.TokenUtils.hasAssociation;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -59,7 +58,7 @@ public class DissociateLogic {
         tokens.forEach(token -> {
             final var tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
-            validateTrue(hasAssociation(tokenRelationshipKey, store), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            validateTrue(store.hasAssociation(tokenRelationshipKey), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
             final var updatedRelationship = updateRelationship(tokenRelationship, store);
             Account updatedAccount = null;

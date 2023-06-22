@@ -112,7 +112,6 @@ class DissociateLogicTest {
     void throwExceptionIfTokenIsNotAssocWithAccount() {
         setupAccount();
         setupToken();
-        setupTokenRelationship();
         assertThatThrownBy(() -> dissociateLogic.dissociate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.name());
@@ -126,7 +125,6 @@ class DissociateLogicTest {
         setupAccount();
         setupToken();
         setupTokenRelationship();
-        when(accountId.num()).thenReturn(1L);
         when(token.getTreasury()).thenReturn(mock(Account.class));
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
 
@@ -144,7 +142,6 @@ class DissociateLogicTest {
         tokenRelationship = tokenRelationship.setNotYetPersisted(false);
         setupToken();
         setupTokenRelationship();
-        when(accountId.num()).thenReturn(1L);
         when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         setupAccount();
         when(token.isDeleted()).thenReturn(true);
@@ -159,7 +156,6 @@ class DissociateLogicTest {
         setupToken();
         setupTokenRelationship();
         setupAccount();
-        when(accountId.num()).thenReturn(1L);
         when(token.getTreasury()).thenReturn(mock(Account.class));
         when(token.isDeleted()).thenReturn(false);
         when(token.getExpiry()).thenReturn(9999999999L);
@@ -176,7 +172,6 @@ class DissociateLogicTest {
         setupToken();
         setupTokenRelationship();
         setupAccount();
-        when(accountId.num()).thenReturn(1L);
         when(token.getTreasury()).thenReturn(mock(Account.class));
         when(token.isDeleted()).thenReturn(false);
         when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -193,7 +188,6 @@ class DissociateLogicTest {
         setupToken();
         setupTokenRelationship();
         setupAccount();
-        when(accountId.num()).thenReturn(1L);
         final var treasury = new Account(treasuryId, 15L);
         final var spiedTreasury = spy(treasury);
         when(token.getTreasury()).thenReturn(spiedTreasury);
@@ -215,7 +209,6 @@ class DissociateLogicTest {
         setupToken();
         setupTokenRelationship();
         setupAccount();
-        when(accountId.num()).thenReturn(1L);
         when(token.getTreasury()).thenReturn(mock(Account.class));
         when(token.isDeleted()).thenReturn(false);
 
@@ -239,6 +232,7 @@ class DissociateLogicTest {
     }
 
     private void setupTokenRelationship() {
+        when(store.hasAssociation(any(TokenRelationshipKey.class))).thenReturn(true);
         when(store.getTokenRelationship(any(TokenRelationshipKey.class), any(OnMissing.class)))
                 .thenReturn(tokenRelationship);
     }

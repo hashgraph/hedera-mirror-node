@@ -17,7 +17,6 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.services.txn.token.utils.TokenUtils.hasAssociation;
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -80,7 +79,7 @@ public class AssociateLogic {
             TokenRelationshipKey tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
-            validateFalse(hasAssociation(tokenRelationshipKey, store), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
             final var newRel = new TokenRelationship(token, updatedAccount);
             numAssociations++;

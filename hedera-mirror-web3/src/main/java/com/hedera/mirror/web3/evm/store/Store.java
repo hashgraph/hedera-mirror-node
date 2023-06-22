@@ -48,6 +48,8 @@ public interface Store {
 
     void updateToken(Token fungibleToken);
 
+    boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey);
+
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.
      * */
