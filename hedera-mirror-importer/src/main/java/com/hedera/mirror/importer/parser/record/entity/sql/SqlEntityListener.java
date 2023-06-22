@@ -409,9 +409,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onToken(Token token) throws ImporterException {
         var merged = tokenState.merge(token.getTokenId(), token, this::mergeToken);
-        if (merged == token) {
-            tokens.add(token);
-        }
+        tokens.add(merged);
     }
 
     @Override
@@ -589,6 +587,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             tokens.clear();
             tokenAccounts.clear();
+            tokenState.clear();
             nftState.clear();
             nfts.clear();
         }

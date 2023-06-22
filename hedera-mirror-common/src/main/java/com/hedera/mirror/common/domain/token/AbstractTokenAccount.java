@@ -25,7 +25,6 @@ import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.IdClass;
@@ -52,7 +51,6 @@ public class AbstractTokenAccount implements History {
 
     private Boolean automaticAssociation;
 
-    @Column(updatable = false)
     private Long createdTimestamp;
 
     private long balance;
