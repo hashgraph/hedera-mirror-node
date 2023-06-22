@@ -208,7 +208,7 @@ public class SDKClient implements AutoCloseable {
                     .setMaxAttempts(3)
                     .setMaxBackoff(Duration.ofSeconds(2))
                     .execute(client, Duration.ofSeconds(10L));
-            log.info("Validated node in {}: {}", nodeAccountId, stopwatch);
+            log.info("Validated node {} in {}", nodeAccountId, stopwatch);
             valid = true;
         } catch (Exception e) {
             log.warn("Unable to validate node {} after {}: {}", nodeAccountId, stopwatch, e.getMessage());
