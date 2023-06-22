@@ -72,7 +72,7 @@ public class AcceptanceTestProperties {
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
     @Min(100_000_000L)
-    private long operatorBalance = Hbar.from(1000).toTinybars();
+    private long operatorBalance = Hbar.from(10000).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";
