@@ -34,12 +34,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
@@ -54,6 +51,7 @@ import reactor.retry.Repeat;
 public class NetworkServiceImpl implements NetworkService {
 
     static final String INVALID_FILE_ID = "Not a valid address book file";
+    private static final long NODE_STAKE_EMPTY_TABLE_TIMESTAMP = 0L;
     private static final Collection<EntityId> VALID_FILE_IDS =
             Set.of(EntityId.of(0L, 0L, 101L, EntityType.FILE), EntityId.of(0L, 0L, 102L, EntityType.FILE));
 
@@ -73,10 +71,11 @@ public class NetworkServiceImpl implements NetworkService {
             throw new IllegalArgumentException(INVALID_FILE_ID);
         }
 
-        long timestamp = addressBookRepository
+        long addressBookTimestamp = addressBookRepository
                 .findLatestTimestamp(fileId.getId())
                 .orElseThrow(() -> new EntityNotFoundException(fileId));
-        var context = new AddressBookContext(timestamp);
+        long nodeStakeTimestamp = nodeStakeRepository.findLatestTimeStamp().orElse(NODE_STAKE_EMPTY_TABLE_TIMESTAMP);
+        var context = new AddressBookContext(addressBookTimestamp, nodeStakeTimestamp);
 
         return Flux.defer(() -> page(context))
                 .repeatWhen(Repeat.onlyIf(c -> !context.isComplete())
@@ -91,18 +90,23 @@ public class NetworkServiceImpl implements NetworkService {
 
     private Flux<AddressBookEntry> page(AddressBookContext context) {
         return transactionOperations.execute(t -> {
-            var timestamp = context.getTimestamp();
+            var addressBookTimestamp = context.getAddressBookTimestamp();
+            var nodeStakeTimestamp = context.getNodeStakeTimestamp();
             var nextNodeId = context.getNextNodeId();
             var pageSize = addressBookProperties.getPageSize();
-            var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
+            var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(
+                    addressBookTimestamp, nextNodeId, pageSize);
             var endpoints = new AtomicInteger(0);
 
-            nodes.forEach(node -> {
-                // Replace node stake with latest present in node_stake table
-                node.setStake(getStakeForNode(node.getNodeId()));
+            for (var node : nodes) {
+                // Replace address book entry node stake with latest present in node_stake table
+                var nodeStake = nodeStakeRepository
+                        .findStakeByConsensusTimestampAndNodeId(nodeStakeTimestamp, node.getNodeId())
+                        .orElse(0L);
+                node.setStake(nodeStake);
                 // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
                 endpoints.addAndGet(node.getServiceEndpoints().size());
-            });
+            }
 
             if (nodes.size() < pageSize) {
                 context.completed();
@@ -112,23 +116,10 @@ public class NetworkServiceImpl implements NetworkService {
                     "Retrieved {} address book entries and {} endpoints for timestamp {} and node ID {}",
                     nodes.size(),
                     endpoints,
-                    timestamp,
+                    addressBookTimestamp,
                     nextNodeId);
             return Flux.fromIterable(nodes);
         });
-    }
-
-    @Scheduled(fixedRateString = "#{@addressBookProperties.getNodeStakeCacheRefreshFrequency().toMillis()}")
-    public void reloadNodeStakeCache() {
-        var latestNodeStake = nodeStakeRepository.findLatest();
-        log.info("Reloading node stake cache with {} entries", latestNodeStake.size());
-        this.nodeStakeCacheMapRef.set(latestNodeStake.stream()
-                .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, Function.identity())));
-    }
-
-    private long getStakeForNode(long nodeId) {
-        var nodeStake = nodeStakeCacheMapRef.get().get(nodeId);
-        return nodeStake != null ? nodeStake.getStake() : 0L;
     }
 
     @Value
@@ -137,7 +128,8 @@ public class NetworkServiceImpl implements NetworkService {
         private final AtomicBoolean complete = new AtomicBoolean(false);
         private final AtomicLong count = new AtomicLong(0L);
         private final AtomicReference<AddressBookEntry> last = new AtomicReference<>();
-        private final long timestamp;
+        private final long addressBookTimestamp;
+        private final long nodeStakeTimestamp;
 
         void onNext(AddressBookEntry entry) {
             count.incrementAndGet();

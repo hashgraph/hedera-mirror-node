@@ -17,15 +17,19 @@
 package com.hedera.mirror.grpc.repository;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import java.util.List;
+import com.hedera.mirror.grpc.config.CacheConfiguration;
+import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id> {
 
-    @Query(
-            value = "select * from node_stake where consensus_timestamp = (select max(consensus_timestamp) from "
-                    + "node_stake)",
-            nativeQuery = true)
-    List<NodeStake> findLatest();
+    @Query(value = "select max(consensus_timestamp) from node_stake", nativeQuery = true)
+    Optional<Long> findLatestTimeStamp();
+
+    // All results, including nulls, are cached as not all nodes may be present in the table
+    @Cacheable(cacheManager = CacheConfiguration.NODE_STAKE_CACHE, cacheNames = "node_stake")
+    @Query(value = "select stake from node_stake where consensus_timestamp = ? and node_id = ? ", nativeQuery = true)
+    Optional<Long> findStakeByConsensusTimestampAndNodeId(long consensusTimestamp, long nodeId);
 }
