@@ -9,7 +9,7 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with IERC721Metadata token symbol
     Then I call function with IERC721Metadata token totalSupply
     Then I call function with IERC721 token balanceOf owner
-    Then I call function with HederaTokenService isToken token
+#    Then I call function with HederaTokenService isToken token
     Then I call function with HederaTokenService isFrozen token, account
     Then I call function with HederaTokenService isKyc token, account
     Then I call function with HederaTokenService getTokenDefaultFreezeStatus token

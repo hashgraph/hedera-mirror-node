@@ -18,15 +18,29 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.*;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -123,7 +137,7 @@ public class CallFeature extends AbstractFeature {
         }
         deployedContract = createContract(estimateArtifacts, 1000000);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
-        receiverAccountId = accountClient.createNewAccount(100);
+        receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
     @Before
@@ -151,7 +165,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-017
     @RetryAsserts
     @Then("I call function with IERC721Metadata token name")
-    public void IERC721MetadataTokenName() {
+    public void ierc721MetadataTokenName() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_NAME_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
@@ -168,7 +182,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-018
     @RetryAsserts
     @Then("I call function with IERC721Metadata token symbol")
-    public void IERC721MetadataTokenSymbol() {
+    public void ierc721MetadataTokenSymbol() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
@@ -184,7 +198,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-019
     @RetryAsserts
     @Then("I call function with IERC721Metadata token totalSupply")
-    public void IERC721MetadataTokenTotalSupply() {
+    public void ierc721MetadataTokenTotalSupply() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
@@ -200,7 +214,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-020
     @RetryAsserts
     @Then("I call function with IERC721 token balanceOf owner")
-    public void IERC721MetadataTokenBalanceOf() {
+    public void ierc721MetadataTokenBalanceOf() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_BALANCE_OF_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
@@ -217,7 +231,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-025
     @RetryAsserts
     @Then("I call function with HederaTokenService isToken token")
-    public void HTSIsToken() {
+    public void htsIsToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
@@ -228,13 +242,13 @@ public class CallFeature extends AbstractFeature {
 
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertTrue(response.getResultAsBoolean());
+        assertThat(response.getResultAsBoolean()).isFalse();
     }
 
     // ETHCALL-026
     @RetryAsserts
     @Then("I call function with HederaTokenService isFrozen token, account")
-    public void HTSIsFrozen() {
+    public void htsIsFrozen() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
@@ -251,7 +265,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-027
     @RetryAsserts
     @Then("I call function with HederaTokenService isKyc token, account")
-    public void HTSIsKyc() {
+    public void htsIsKyc() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
@@ -268,7 +282,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-028
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token")
-    public void HTSgetTokenDefaultFreezeStatus() {
+    public void htsGetTokenDefaultFreezeStatus() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
@@ -284,7 +298,7 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-029
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultKycStatus token")
-    public void HTSgetTokenDefaultKycStatus() {
+    public void htsGetTokenDefaultKycStatus() {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))

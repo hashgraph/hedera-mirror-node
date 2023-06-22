@@ -1,8 +1,7 @@
 @cryptoallowance @allowance @fullsuite
 Feature: Account Crypto Allowance Coverage Feature
 
-  @critical @release
-# @acceptance TODO: enable after fix (failing due to MAX_ALLOWANCES_EXCEEDED)
+  @critical @release @acceptance
   Scenario Outline: Validate approval CryptoTransfer
     Given I approve <spender> to transfer up to <approvedAmount> tℏ
     Then the mirror node REST API should confirm the approved <approvedAmount> tℏ crypto allowance
@@ -12,4 +11,4 @@ Feature: Account Crypto Allowance Coverage Feature
     Then the mirror node REST API should confirm the crypto allowance deletion
     Examples:
       | spender | approvedAmount | recipient | transferAmount |
-      | "BOB"   | 10000          | "ALICE"   | 2500           |
+      | "BOB"   | 100            | "ALICE"   | 1              |

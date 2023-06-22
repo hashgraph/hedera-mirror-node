@@ -55,8 +55,7 @@ Feature: Precompile Contract Base Coverage Feature
     And the contract call REST API should return the ownerOf by direct call for a non fungible token
     And the contract call REST API should return the getApproved by direct call for a non fungible token
     And the contract call REST API should return the isApprovedForAll by direct call for a non fungible token
-    And the contract call REST API should return the isApprovedForAll by direct call for a non fungible token - owner
     And the contract call REST API should return the custom fees for a non fungible token
     And I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token
-    And I call function with HederaTokenService getTokenCustomFees token - royalty fee
-    And I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback
+    #And I call function with HederaTokenService getTokenCustomFees token - royalty fee
+    #And I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback

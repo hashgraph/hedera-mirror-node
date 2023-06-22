@@ -20,12 +20,12 @@ Feature: ERC Contract Base Coverage Feature
     When I approve <spenderName> for nft
     Then the mirror node REST API should return status 200 for the erc contract transaction
     And I call the erc contract via the mirror node REST API for token getApproved with response BOB
-#    When I approve <approvedForAllSpenderName> for nft all serials TODO: Fix failing test (failing due to MAX_ALLOWANCES_EXCEEDED)
-#    Then the mirror node REST API should return status 200 for the erc contract transaction TODO: Fix failing test
-#    And I call the erc contract via the mirror node REST API for token isApprovedForAll with response true TODO: Fix failing test
-#    When I approve <tokenAllowanceSpender> with <allowances> TODO: Fix failing test (failing due to MAX_ALLOWANCES_EXCEEDED)
-#    Then the mirror node REST API should return status 200 for the erc contract transaction TODO: Fix failing test
-#    And I call the erc contract via the mirror node REST API for token allowance with allowances TODO: Fix failing test
+    When I approve <approvedForAllSpenderName> for nft all serials
+    Then the mirror node REST API should return status 200 for the erc contract transaction
+    And I call the erc contract via the mirror node REST API for token isApprovedForAll with response true
+    When I approve <tokenAllowanceSpender> with <allowances>
+    Then the mirror node REST API should return status 200 for the erc contract transaction
+    And I call the erc contract via the mirror node REST API for token allowance with allowances
     Examples:
       | supplyType | spenderName | approvedForAllSpenderName | tokenAllowanceSpender | allowances |
       | "INFINITE" | "BOB"       | "ALICE"                   | "ALICE"               | 2          |
