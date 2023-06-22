@@ -39,12 +39,10 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Copied Logic type from hedera-services. Differences with the original:
  *  1. Use abstraction for the state by introducing {@link Store} interface
- *  3. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  2. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
  * */
 public class DissociateLogic {
-
-    public DissociateLogic() {}
 
     public void dissociate(final Address address, final List<Address> tokenAddresses, final Store store) {
 
@@ -70,7 +68,7 @@ public class DissociateLogic {
                 updatedAccount = oldAccount.decrementUsedAutomaticAssociations();
             }
             if (updatedRelationship.getBalanceChange() != 0) {
-                var newBalance = account.getNumPositiveBalances();
+                var newBalance = oldAccount.getNumPositiveBalances();
                 updatedAccount = oldAccount.setNumPositiveBalances(--newBalance);
             }
             if (updatedAccount != null) {
@@ -90,27 +88,31 @@ public class DissociateLogic {
 
         final var token = tokenRelationship.getToken();
         if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
-            updateRelationshipForDeletedOrRemovedToken(tokenRelationship, store);
+            tokenRelationship = updateRelationshipForDeletedOrRemovedToken(tokenRelationship, store);
         } else {
-            updateModelsForDissociationFromActiveToken(tokenRelationship, store);
+            tokenRelationship = updateModelsForDissociationFromActiveToken(tokenRelationship, store);
         }
 
         return tokenRelationship.markAsDestroyed();
     }
 
-    private void updateRelationshipForDeletedOrRemovedToken(TokenRelationship tokenRelationship, final Store store) {
+    private TokenRelationship updateRelationshipForDeletedOrRemovedToken(
+            TokenRelationship tokenRelationship, final Store store) {
         final var disappearingUnits = tokenRelationship.getBalance();
-        tokenRelationship.setBalance(0L);
+        tokenRelationship = tokenRelationship.setBalance(0L);
         final var token = tokenRelationship.getToken();
         if (token.getType() == NON_FUNGIBLE_UNIQUE) {
             final var account = tokenRelationship.getAccount();
             final var currentOwnedNfts = account.getOwnedNfts();
             final var updatedAccount = account.setOwnedNfts(currentOwnedNfts - disappearingUnits);
             store.updateAccount(updatedAccount);
+            tokenRelationship = tokenRelationship.setAccount(updatedAccount);
         }
+        return tokenRelationship;
     }
 
-    private void updateModelsForDissociationFromActiveToken(TokenRelationship tokenRelationship, final Store store) {
+    private TokenRelationship updateModelsForDissociationFromActiveToken(
+            TokenRelationship tokenRelationship, final Store store) {
         final var token = tokenRelationship.getToken();
         final var isAccountTreasuryOfDissociatedToken = tokenRelationship
                 .getAccount()
@@ -127,12 +129,13 @@ public class DissociateLogic {
 
             /* If the fungible common token is expired, we automatically transfer the
             dissociating account's balance back to the treasury. */
-            tokenRelationship.setBalance(0L);
+            tokenRelationship = tokenRelationship.setBalance(0L);
             final var treasury = token.getTreasury();
             final var newTreasuryBalance = treasury.getBalance() + balance;
             final var updatedTreasury = treasury.setBalance(newTreasuryBalance);
             store.updateAccount(updatedTreasury);
         }
+        return tokenRelationship;
     }
 
     private void validateTokenExpiration(Token token) {
