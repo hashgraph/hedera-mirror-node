@@ -40,6 +40,9 @@ import org.hyperledger.besu.datatypes.Address;
  *  1. Use abstraction for the state by introducing {@link Store} interface
  *  2. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
+ *  3. Moved dissociateUsing method from Account to DissociateLogic
+ *  4. Moved methods from com.hedera.app.service.mono.txns.token.process.Dissociation
+ *  to DissociateLogic
  * */
 public class DissociateLogic {
 
