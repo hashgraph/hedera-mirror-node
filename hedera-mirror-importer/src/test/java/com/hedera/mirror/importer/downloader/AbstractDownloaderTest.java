@@ -54,12 +54,14 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -269,6 +271,8 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
+        // tests (except for "testPartialCollection" test) expect every Streamfile to be present
+        commonDownloaderProperties.setDownloadRatio(BigDecimal.ONE);
 
         downloaderProperties = getDownloaderProperties();
     }
@@ -625,6 +629,27 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
         verifyForSuccess();
         assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+    }
+
+    @Test
+    void testPartialCollection() {
+        final long totalNodes = 60L;
+        final int expectedNodes = 29;
+        // restore default download ratio: 1/3 + 15%, which == 29/60
+        BigDecimal defaultDownloadRatio = commonDownloaderProperties.getConsensusRatio().add(new BigDecimal("0.15"));
+        commonDownloaderProperties.setDownloadRatio(defaultDownloadRatio);
+        downloaderProperties = getDownloaderProperties();
+
+        ArrayList<ConsensusNode> allNodes = new ArrayList<>();
+        for (long i = 0; i < totalNodes; i++) {
+            allNodes.add(ConsensusNodeStub.builder()
+                    .nodeId(i)
+                    .stake(1L)
+                    .totalStake(totalNodes)
+                    .build());
+        }
+        Collection<ConsensusNode> partial = downloader.partialCollection(allNodes);
+        assertThat(partial.size()).isEqualTo(expectedNodes);
     }
 
     @SneakyThrows

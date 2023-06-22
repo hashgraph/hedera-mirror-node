@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.downloader;
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -46,11 +47,14 @@ import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -217,7 +221,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var startAfterFilename = getStartAfterFilename();
         var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
-        var nodes = consensusNodeService.getNodes();
+        var nodes = partialCollection(consensusNodeService.getNodes());
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         var totalDownloads = new AtomicInteger();
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
@@ -531,5 +535,41 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 .tag("type", streamType)
                 .tag("status", status.toString())
                 .register(meterRegistry);
+    }
+
+    /**
+     * Returns a randomly-selected (and randomly-ordered) collection of CondensusNode elements from the
+     * input, where the total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
+     * (Note: when the downloadRatio = BigDecimal.ONE, this will just randomly reorder the whole list).
+     *
+     * @param allNodes the entire set of ConsensusNodes
+     * @return a randomly-ordered subcollection
+     */
+    @VisibleForTesting
+    Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
+        var nodes = new ArrayList<ConsensusNode>(allNodes);
+        if (nodes == null || nodes.size() <= 1) {
+            return nodes;
+        }
+        // shuffle nodes into a random order
+        Collections.shuffle(nodes);
+
+        // only keep "just enough" nodes to reach/exceed downloadRatio
+        BigDecimal neededStake = BigDecimal.valueOf(nodes.get(0).getTotalStake())
+                .multiply(downloaderProperties.getCommon().getDownloadRatio());
+        BigDecimal aggregateStake = BigDecimal.ZERO;
+        Iterator<ConsensusNode> itr = nodes.iterator();
+        while (itr.hasNext()) {
+            if (aggregateStake.compareTo(neededStake) >= 0) { // we've reached the downloadRatio already.
+                itr.remove();
+                itr.next();
+            } else {
+                aggregateStake = aggregateStake.add(BigDecimal.valueOf(itr.next().getStake()));
+            }
+        }
+
+        log.debug("Kept {} of {} nodes, for stake of {} / {}", nodes.size(), allNodes.size(), aggregateStake,
+            nodes.get(0).getTotalStake());
+        return nodes;
     }
 }

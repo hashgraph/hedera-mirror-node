@@ -63,6 +63,12 @@ public class CommonDownloaderProperties {
     @Min(0)
     private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), MATH_CONTEXT);
 
+    // defaults to consensusRatio + 15%, but never higher than 100%
+    @NotNull
+    @Max(1)
+    @Min(0)
+    private BigDecimal downloadRatio = BigDecimal.ONE.min(consensusRatio.add(new BigDecimal("0.15"), MATH_CONTEXT));
+
     private String endpointOverride;
 
     private String gcpProjectId;
