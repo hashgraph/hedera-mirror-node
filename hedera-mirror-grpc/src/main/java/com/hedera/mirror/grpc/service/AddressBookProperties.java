@@ -22,8 +22,10 @@ import java.time.Duration;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+@Component
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc.addressbook")
@@ -35,6 +37,13 @@ public class AddressBookProperties {
 
     @Min(0)
     private long cacheSize = 50L;
+
+    @DurationMin(minutes = 1L)
+    @NotNull
+    private Duration nodeStakeCacheRefreshFrequency = Duration.ofMinutes(1);
+
+    @Min(0)
+    private long nodeStakeCacheSize = 50L;
 
     @DurationMin(millis = 100L)
     @NotNull

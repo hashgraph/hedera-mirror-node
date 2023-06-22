@@ -17,22 +17,29 @@
 package com.hedera.mirror.grpc.service;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
 import com.hedera.mirror.grpc.repository.AddressBookRepository;
+import com.hedera.mirror.grpc.repository.NodeStakeRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
@@ -53,7 +60,10 @@ public class NetworkServiceImpl implements NetworkService {
     private final AddressBookProperties addressBookProperties;
     private final AddressBookRepository addressBookRepository;
     private final AddressBookEntryRepository addressBookEntryRepository;
+    private final NodeStakeRepository nodeStakeRepository;
     private final TransactionOperations transactionOperations;
+
+    private volatile Map<Long, NodeStake> nodeStakeCacheMap = Collections.emptyMap();
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
@@ -86,8 +96,12 @@ public class NetworkServiceImpl implements NetworkService {
             var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
             var endpoints = new AtomicInteger(0);
 
-            // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
-            nodes.forEach(e -> endpoints.addAndGet(e.getServiceEndpoints().size()));
+            nodes.forEach(node -> {
+                // Replace node stake with latest present in node_stake table
+                node.setStake(getStakeForNode(node.getNodeId()));
+                // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
+                endpoints.addAndGet(node.getServiceEndpoints().size());
+            });
 
             if (nodes.size() < pageSize) {
                 context.completed();
@@ -101,6 +115,19 @@ public class NetworkServiceImpl implements NetworkService {
                     nextNodeId);
             return Flux.fromIterable(nodes);
         });
+    }
+
+    @Scheduled(fixedRateString = "#{@addressBookProperties.getNodeStakeCacheRefreshFrequency().toMillis()}")
+    public void reloadNodeStakeCache() {
+        var latestNodeStake = nodeStakeRepository.findLatest();
+        log.info("Reloading node stake cache with {} entries", latestNodeStake.size());
+        this.nodeStakeCacheMap = latestNodeStake.stream()
+                .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, Function.identity()));
+    }
+
+    private long getStakeForNode(long nodeId) {
+        var nodeStake = nodeStakeCacheMap.get(nodeId);
+        return nodeStake != null ? nodeStake.getStake() : 0L;
     }
 
     @Value
