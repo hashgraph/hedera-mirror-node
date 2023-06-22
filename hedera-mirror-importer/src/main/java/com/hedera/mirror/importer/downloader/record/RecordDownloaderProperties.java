@@ -23,14 +23,15 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@Data
-@Component
-@Validated
 @ConfigurationProperties("hedera.mirror.importer.downloader.record")
+@Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Validated
 public class RecordDownloaderProperties implements DownloaderProperties {
 
     private final MirrorProperties mirrorProperties;

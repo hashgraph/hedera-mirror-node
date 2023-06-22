@@ -31,7 +31,6 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("netty.version", "4.1.94.Final") // Temporary until Spring Boot includes this version
     set("protobufVersion", "3.23.2")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
