@@ -25,6 +25,7 @@ hedera:
       log:
         level: info
       network: demo
+      networkAddressBookUpdateFrequency: 24h
       nodes:
       nodeVersion: 0
       online: true

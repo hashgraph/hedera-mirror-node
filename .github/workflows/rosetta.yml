@@ -116,7 +116,8 @@ jobs:
       - name: Run Mirror Node in Offline Mode
         if: matrix.online-only != 'true'
         run: |
-          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet \
+          docker network create --internal offline
+          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet --network offline \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5701:5700 "${MODULE}:latest")
           echo "OFFLINE_CONTAINER_ID=$OFFLINE_CONTAINER_ID" >> $GITHUB_ENV

@@ -49,6 +49,7 @@ const (
 	defaultValidDurationSeconds     = maxValidDurationSeconds
 	maxValidDurationNanos           = maxValidDurationSeconds * 1_000_000_000
 	metadataKeyAccountMap           = "account_map"
+	metadataKeyNodeAccountId        = "node_account_id"
 	metadataKeyValidDurationSeconds = "valid_duration"
 	metadataKeyValidStartNanos      = "valid_start_nanos"
 	metadataKeyValidUntilNanos      = "valid_until_nanos"
@@ -59,14 +60,11 @@ const (
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
 	BaseService
-	accountRepo              interfaces.AccountRepository
-	defaultMaxTransactionFee map[string]hedera.Hbar
-	hederaClient             *hedera.Client
-	nodeAccountIds           []hedera.AccountID
-	nodeAccountIdsLen        *big.Int
-	systemShard              int64
-	systemRealm              int64
-	transactionHandler       construction.TransactionConstructor
+	accountRepo        interfaces.AccountRepository
+	hederaClient       *hedera.Client
+	systemShard        int64
+	systemRealm        int64
+	transactionHandler construction.TransactionConstructor
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
@@ -169,9 +167,9 @@ func (c *constructionAPIService) ConstructionMetadata(
 		return nil, errors.ErrInvalidOptions
 	}
 
-	maxFee, err := c.transactionHandler.GetDefaultMaxTransactionFee(operationType)
-	if err != nil {
-		return nil, err
+	maxFee, rErr := c.transactionHandler.GetDefaultMaxTransactionFee(operationType)
+	if rErr != nil {
+		return nil, rErr
 	}
 
 	response := &rTypes.ConstructionMetadataResponse{
@@ -207,6 +205,13 @@ func (c *constructionAPIService) ConstructionMetadata(
 	}
 	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
 	delete(response.Metadata, optionKeyAccountAliases)
+
+	// node account id
+	nodeAccountId, rErr := c.getRandomNodeAccountId()
+	if rErr != nil {
+		return nil, rErr
+	}
+	response.Metadata[metadataKeyNodeAccountId] = nodeAccountId.String()
 
 	// pass the value as a string to avoid being deserialized into data types like float64
 	validUntilNanos := time.Now().UnixNano() + maxValidDurationNanos
@@ -255,6 +260,11 @@ func (c *constructionAPIService) ConstructionPayloads(
 	ctx context.Context,
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
+	nodeAccountId, rErr := c.getTransactionNodeAccountId(request.Metadata)
+	if rErr != nil {
+		return nil, rErr
+	}
+
 	validDurationSeconds, validStartNanos, rErr := c.getTransactionTimestampProperty(request.Metadata)
 	if rErr != nil {
 		return nil, rErr
@@ -279,7 +289,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 	if rErr = updateTransaction(
 		transaction,
 		transactionSetMemo(request.Metadata[types.MetadataKeyMemo]),
-		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
+		transactionSetNodeAccountId(nodeAccountId),
 		transactionSetTransactionId(payer, validStartNanos),
 		transactionSetValidDuration(validDurationSeconds),
 		transactionFreeze,
@@ -387,6 +397,34 @@ func (c *constructionAPIService) ConstructionSubmit(
 	return &rTypes.TransactionIdentifierResponse{
 		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
 	}, nil
+}
+
+func (c *constructionAPIService) getTransactionNodeAccountId(metadata map[string]interface{}) (
+	emptyAccountId hedera.AccountID, nilErr *rTypes.Error,
+) {
+	if value, ok := metadata[metadataKeyNodeAccountId]; ok {
+		str, ok := value.(string)
+		if !ok {
+			return emptyAccountId, errors.ErrInvalidArgument
+		}
+
+		nodeAccountId, err := hedera.AccountIDFromString(str)
+		if err != nil {
+			log.Errorf("Invalid node account id provided in metadata: %s", str)
+			return emptyAccountId, errors.ErrInvalidAccount
+		}
+
+		log.Infof("Use node account id %s from metadata", str)
+		return nodeAccountId, nilErr
+	}
+
+	nodeAccountId, err := c.getRandomNodeAccountId()
+	if err != nil {
+		return emptyAccountId, err
+	}
+
+	log.Infof("Use random node account id %s from client network", nodeAccountId)
+	return nodeAccountId, nilErr
 }
 
 func (c *constructionAPIService) getTransactionTimestampProperty(metadata map[string]interface{}) (
@@ -503,14 +541,33 @@ func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.Accou
 	return payer, nil
 }
 
-func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
-	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
-	if err != nil {
-		log.Errorf("Failed to get a random number, use 0 instead: %s", err)
-		return c.nodeAccountIds[0]
+func (c *constructionAPIService) getRandomNodeAccountId() (hedera.AccountID, *rTypes.Error) {
+	nodeAccountIds := make([]hedera.AccountID, 0)
+	seen := map[hedera.AccountID]struct{}{}
+	// network returned from hederaClient is a map[string]AccountID, the key is the address of a node and the value is
+	// its node account id. Since a node can have multiple addresses, we need the seen map to get a unique node account
+	// id array
+	for _, nodeAccountId := range c.hederaClient.GetNetwork() {
+		if _, ok := seen[nodeAccountId]; ok {
+			continue
+		}
+
+		seen[nodeAccountId] = struct{}{}
+		nodeAccountIds = append(nodeAccountIds, nodeAccountId)
 	}
 
-	return c.nodeAccountIds[index.Int64()]
+	if len(nodeAccountIds) == 0 {
+		return hedera.AccountID{}, errors.ErrNodeAccountIdsEmpty
+	}
+
+	max := big.NewInt(int64(len(nodeAccountIds)))
+	index, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		log.Errorf("Failed to get a random number, use 0 instead: %s", err)
+		return nodeAccountIds[0], nil
+	}
+
+	return nodeAccountIds[index.Int64()], nil
 }
 
 func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interface{}, metadataKey string) (int64, *rTypes.Error) {
@@ -539,46 +596,42 @@ func isValidTransactionValidDuration(validDuration int64) bool {
 func NewConstructionAPIService(
 	accountRepo interfaces.AccountRepository,
 	baseService BaseService,
-	network string,
-	nodes config.NodeMap,
-	systemShard int64,
-	systemRealm int64,
+	config *config.Config,
 	transactionConstructor construction.TransactionConstructor,
 ) (server.ConstructionAPIServicer, error) {
 	var err error
 	var hederaClient *hedera.Client
 
 	// there is no live demo network, it's only used to run rosetta test, so replace it with testnet
+	network := strings.ToLower(config.Network)
 	if network == "demo" {
 		log.Info("Use testnet instead of demo")
 		network = "testnet"
 	}
 
-	if len(nodes) > 0 {
-		hederaClient = hedera.ClientForNetwork(nodes)
+	if len(config.Nodes) > 0 {
+		hederaClient = hedera.ClientForNetwork(config.Nodes)
 	} else if hederaClient, err = hedera.ClientForName(network); err != nil {
 		return nil, err
 	}
 
-	hederaClient.CancelScheduledNetworkUpdate()
+	if !baseService.IsOnline() || len(config.Nodes) > 0 {
+		// cancel scheduled network address book update if in offline mode or custom nodes are provided
+		log.Info("Cancel scheduled network address book update")
+		hederaClient.CancelScheduledNetworkUpdate()
+	} else {
+		hederaClient.SetNetworkUpdatePeriod(config.NetworkAddressBookUpdateFrequency)
+	}
 
 	// disable SDK auto retry
 	hederaClient.SetMaxAttempts(1)
-
-	networkMap := hederaClient.GetNetwork()
-	nodeAccountIds := make([]hedera.AccountID, 0, len(networkMap))
-	for _, nodeAccountId := range networkMap {
-		nodeAccountIds = append(nodeAccountIds, nodeAccountId)
-	}
 
 	return &constructionAPIService{
 		accountRepo:        accountRepo,
 		BaseService:        baseService,
 		hederaClient:       hederaClient,
-		nodeAccountIds:     nodeAccountIds,
-		nodeAccountIdsLen:  big.NewInt(int64(len(nodeAccountIds))),
-		systemShard:        systemShard,
-		systemRealm:        systemRealm,
+		systemShard:        config.Shard,
+		systemRealm:        config.Realm,
 		transactionHandler: transactionConstructor,
 	}, nil
 }
