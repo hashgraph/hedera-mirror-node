@@ -116,8 +116,11 @@ jobs:
       - name: Run Mirror Node in Offline Mode
         if: matrix.online-only != 'true'
         run: |
-          docker network create --internal offline
-          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet --network offline \
+          # create an isolated network for offline mode and insert an iptables rule to drop any packets from the
+          # isolated network
+          docker network create --gateway 192.168.10.1 --subnet 192.168.10.0/24 isolated
+          sudo iptables -I DOCKER-USER --destination 0.0.0.0/0 --source 192.168.10.0/24 -j DROP
+          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet --network isolated \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5701:5700 "${MODULE}:latest")
           echo "OFFLINE_CONTAINER_ID=$OFFLINE_CONTAINER_ID" >> $GITHUB_ENV
