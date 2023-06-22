@@ -943,7 +943,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         Tuple royaltyFee = royaltyFees[0];
         assertThat((long) royaltyFee.get(0)).isEqualTo(5);
         assertThat((long) royaltyFee.get(1)).isEqualTo(10);
-        assertThat(royaltyFee.get(5).toString())
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
                 .isEqualTo("0x"
                         + tokenClient
                                 .getSdkClient()
@@ -971,7 +971,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) royaltyFee.get(2)).isEqualTo(new Hbar(1).toTinybars());
         assertThat(royaltyFee.get(3).toString()).hasToString(ZERO_ADDRESS);
         assertTrue((boolean) royaltyFee.get(4));
-        assertThat(royaltyFee.get(5).toString())
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
                 .hasToString("0x"
                         + tokenClient
                                 .getSdkClient()

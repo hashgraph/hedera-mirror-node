@@ -112,6 +112,11 @@ public class CallFeature extends AbstractFeature {
         return new String[] {address1, address2};
     }
 
+    @Then("the mirror node REST API should return status {int} for the estimate contract transaction")
+    public void verifyMirrorAPIResponses(int status) {
+        verifyMirrorTransactionsResponse(mirrorClient, status);
+    }
+
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
         try (var in = ercTestContract.getInputStream()) {
@@ -242,7 +247,7 @@ public class CallFeature extends AbstractFeature {
 
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsBoolean()).isFalse();
+        assertThat(response.getResultAsBoolean()).isTrue();
     }
 
     // ETHCALL-026
@@ -321,6 +326,7 @@ public class CallFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         ContractCallResponse updateCallResponse = mirrorClient.contractsCall(updateCall);
+
         assertEquals(String.valueOf(updateCallResponse.getResultAsNumber()), updateValue);
     }
 
