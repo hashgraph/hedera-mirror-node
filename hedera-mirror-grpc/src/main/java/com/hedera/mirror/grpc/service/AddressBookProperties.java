@@ -40,7 +40,7 @@ public class AddressBookProperties {
 
     @DurationMin(minutes = 1L)
     @NotNull
-    private Duration nodeStakeCacheRefreshFrequency = Duration.ofMinutes(1);
+    private Duration nodeStakeCacheRefreshFrequency = Duration.ofMinutes(10);
 
     @Min(0)
     private long nodeStakeCacheSize = 50L;

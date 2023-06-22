@@ -63,7 +63,8 @@ public class NetworkServiceImpl implements NetworkService {
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionOperations transactionOperations;
 
-    private volatile Map<Long, NodeStake> nodeStakeCacheMap = Collections.emptyMap();
+    private final AtomicReference<Map<Long, NodeStake>> nodeStakeCacheMapRef =
+            new AtomicReference<>(Collections.emptyMap());
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
@@ -121,12 +122,12 @@ public class NetworkServiceImpl implements NetworkService {
     public void reloadNodeStakeCache() {
         var latestNodeStake = nodeStakeRepository.findLatest();
         log.info("Reloading node stake cache with {} entries", latestNodeStake.size());
-        this.nodeStakeCacheMap = latestNodeStake.stream()
-                .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, Function.identity()));
+        this.nodeStakeCacheMapRef.set(latestNodeStake.stream()
+                .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, Function.identity())));
     }
 
     private long getStakeForNode(long nodeId) {
-        var nodeStake = nodeStakeCacheMap.get(nodeId);
+        var nodeStake = nodeStakeCacheMapRef.get().get(nodeId);
         return nodeStake != null ? nodeStake.getStake() : 0L;
     }
 
