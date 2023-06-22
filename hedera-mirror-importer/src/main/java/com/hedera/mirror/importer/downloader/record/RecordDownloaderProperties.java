@@ -26,8 +26,10 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+@Component("recordDownloaderProperties")
 @ConfigurationProperties("hedera.mirror.importer.downloader.record")
 @Data
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))

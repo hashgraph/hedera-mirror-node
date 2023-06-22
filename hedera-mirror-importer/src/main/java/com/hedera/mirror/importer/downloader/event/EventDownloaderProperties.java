@@ -29,9 +29,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+@Component("eventDownloaderProperties")
 @ConfigurationProperties("hedera.mirror.importer.downloader.event")
 @Data
-@Component
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class EventDownloaderProperties implements DownloaderProperties {
