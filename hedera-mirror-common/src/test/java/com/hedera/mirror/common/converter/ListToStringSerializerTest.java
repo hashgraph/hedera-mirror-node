@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.converter;
 
+import static com.hedera.mirror.common.converter.ListToStringSerializer.INSTANCE;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.IOException;
 import java.util.Collections;
@@ -28,17 +30,15 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class LongListToStringSerializerTest {
-
-    private final LongListToStringSerializer serializer = new LongListToStringSerializer();
+class ListToStringSerializerTest {
 
     @Mock
-    JsonGenerator jsonGenerator;
+    private JsonGenerator jsonGenerator;
 
     @Test
     void testNull() throws IOException {
         // when
-        serializer.serialize(null, jsonGenerator, null);
+        INSTANCE.serialize(null, jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator, Mockito.never()).writeString(ArgumentMatchers.anyString());
@@ -47,7 +47,7 @@ class LongListToStringSerializerTest {
     @Test
     void testEmptyList() throws IOException {
         // when
-        serializer.serialize(Collections.emptyList(), jsonGenerator, null);
+        INSTANCE.serialize(Collections.emptyList(), jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator, Mockito.times(1)).writeString("{}");
@@ -56,7 +56,7 @@ class LongListToStringSerializerTest {
     @Test
     void testNonEmptyList() throws IOException {
         // when
-        serializer.serialize(List.of(1L, 2L), jsonGenerator, null);
+        INSTANCE.serialize(List.of(1L, 2L), jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator, Mockito.times(1)).writeString("{1,2}");

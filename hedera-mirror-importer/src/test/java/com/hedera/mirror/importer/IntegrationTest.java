@@ -18,7 +18,7 @@ package com.hedera.mirror.importer;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -98,7 +98,7 @@ public abstract class IntegrationTest {
         defaultConversionService.addConverter(
                 PGobject.class, Range.class, source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
         defaultConversionService.addConverter(
-                Long.class, EntityId.class, AccountIdConverter.INSTANCE::convertToEntityAttribute);
+                Long.class, EntityId.class, EntityIdConverter.INSTANCE::convertToEntityAttribute);
         defaultConversionService.addConverter(PgArray.class, List.class, array -> {
             try {
                 return Arrays.asList((Object[]) array.getArray());

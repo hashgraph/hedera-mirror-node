@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.converter;
 
+import static com.hedera.mirror.common.converter.EntityIdSerializer.INSTANCE;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -33,7 +35,7 @@ class EntityIdSerializerTest {
     @Test
     void testNull() throws Exception {
         // when
-        new EntityIdSerializer().serialize(null, jsonGenerator, null);
+        INSTANCE.serialize(null, jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator).writeNull();
@@ -42,7 +44,7 @@ class EntityIdSerializerTest {
     @Test
     void testEmpty() throws Exception {
         // when
-        new EntityIdSerializer().serialize(EntityId.EMPTY, jsonGenerator, null);
+        INSTANCE.serialize(EntityId.EMPTY, jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator).writeNull();
@@ -52,7 +54,7 @@ class EntityIdSerializerTest {
     void testEntity() throws Exception {
         // when
         var entity = EntityId.of(10L, 20L, 30L, EntityType.ACCOUNT);
-        new EntityIdSerializer().serialize(entity, jsonGenerator, null);
+        INSTANCE.serialize(entity, jsonGenerator, null);
 
         // then
         Mockito.verify(jsonGenerator).writeNumber(entity.getId());

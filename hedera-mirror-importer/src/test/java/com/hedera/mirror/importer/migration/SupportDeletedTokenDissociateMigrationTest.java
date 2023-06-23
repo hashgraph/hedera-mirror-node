@@ -22,7 +22,7 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -484,8 +484,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                         + "serial_number, token_id)"
                         + " values (?,?,?,?,?)",
                 nftTransfer.getConsensusTimestamp(),
-                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getReceiverAccountId()),
-                AccountIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getSenderAccountId()),
+                EntityIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getReceiverAccountId()),
+                EntityIdConverter.INSTANCE.convertToDatabaseColumn(nftTransfer.getSenderAccountId()),
                 nftTransfer.getSerialNumber(),
                 nftTransfer.getTokenId());
     }

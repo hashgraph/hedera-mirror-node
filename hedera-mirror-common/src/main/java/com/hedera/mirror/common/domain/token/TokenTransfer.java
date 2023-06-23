@@ -18,12 +18,7 @@ package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -56,7 +51,6 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
     private Boolean isApproval;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
@@ -92,11 +86,8 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
         private long consensusTimestamp;
 
-        @Convert(converter = TokenIdConverter.class)
         private EntityId tokenId;
 
-        @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
     }
 }
