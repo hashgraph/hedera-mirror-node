@@ -50,6 +50,7 @@ const (
 	InvalidTransaction                = "Invalid transaction"
 	InvalidTransactionIdentifier      = "Invalid Transaction Identifier provided"
 	InvalidTransactionMemo            = "Invalid transaction memo"
+	MissingNodeAccountIdMetadata      = "Missing node_account_id metadata"
 	MultipleOperationTypesPresent     = "Only one Operation Type must be present"
 	NoSignature                       = "No signature"
 	NodeAccountIdsEmpty               = "Node account IDs are empty"
@@ -112,6 +113,7 @@ var (
 	ErrInvalidOptions                    = newError(InvalidOptions, 138, false)
 	ErrInvalidTransactionMemo            = newError(InvalidTransactionMemo, 139, false)
 	ErrNodeAccountIdsEmpty               = newError(NodeAccountIdsEmpty, 140, true)
+	ErrMissingNodeAccountIdMetadata      = newError(MissingNodeAccountIdMetadata, 141, false)
 	ErrInternalServerError               = newError(InternalServerError, 500, true)
 
 	Errors = make([]*types.Error, 0)

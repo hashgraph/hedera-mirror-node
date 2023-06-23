@@ -30,21 +30,21 @@ import (
 const EntityCacheKey = "entity"
 
 type Config struct {
-	Cache                             map[string]Cache
-	Db                                Db
-	Feature                           Feature
-	Http                              Http
-	Log                               Log
-	Network                           string
-	NetworkAddressBookUpdateFrequency time.Duration `yaml:"networkAddressBookUpdateFrequency"`
-	Nodes                             NodeMap
-	NodeVersion                       string `yaml:"nodeVersion"`
-	Online                            bool
-	Port                              uint16
-	Realm                             int64
-	Response                          Response
-	Shard                             int64
-	ShutdownTimeout                   time.Duration `yaml:"shutdownTimeout"`
+	Cache               map[string]Cache
+	Db                  Db
+	Feature             Feature
+	Http                Http
+	Log                 Log
+	Network             string
+	NodeRefreshInterval time.Duration `yaml:"nodeRefreshInterval"`
+	NodeVersion         string        `yaml:"nodeVersion"`
+	Nodes               NodeMap
+	Online              bool
+	Port                uint16
+	Realm               int64
+	Response            Response
+	Shard               int64
+	ShutdownTimeout     time.Duration `yaml:"shutdownTimeout"`
 }
 
 type Cache struct {

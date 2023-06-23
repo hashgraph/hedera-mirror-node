@@ -86,6 +86,28 @@ var (
 	validSignedTransaction      = "0x0aaa012aa7010a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f12660a640a20eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba771a40793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108"
 )
 
+type metadata map[string]interface{}
+
+func (m metadata) addIfAbsent(key string, value interface{}) metadata {
+	if _, ok := m[key]; !ok {
+		m[key] = value
+	}
+	return m
+}
+
+func addMetadataNodeAccountId(m metadata) metadata {
+	if m == nil {
+		m = make(metadata)
+	}
+
+	return m.addIfAbsent(metadataKeyNodeAccountId, "0.0.3")
+}
+
+func addDefaultConstructionPayloadsMetadata(m metadata) metadata {
+	return addMetadataNodeAccountId(m).
+		addIfAbsent(metadataKeyValidStartNanos, "123456789000000123")
+}
+
 func getConstructionCombineRequest() *rTypes.ConstructionCombineRequest {
 	unsignedTransaction := "0x0a432a410a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f1200"
 	signingPayloadBytes := "967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507"
@@ -443,8 +465,8 @@ func TestConstructionMetadataOnline(t *testing.T) {
 		On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
 		Return(types.HbarAmount{Value: 100}, mocks.NilError)
 	randomNodeAccountId := hedera.AccountID{Account: uint64(rand.Intn(100) + 1)}
-	nodes := map[string]hedera.AccountID{"10.0.0.1:50211": randomNodeAccountId}
-	config := &config.Config{
+	nodes := map[string]hedera.AccountID{"10.0.0.1:50211": randomNodeAccountId, "10.0.0.2:50211": randomNodeAccountId}
+	rosettaConfig := &config.Config{
 		Network: defaultNetwork,
 		Nodes:   nodes,
 	}
@@ -470,7 +492,7 @@ func TestConstructionMetadataOnline(t *testing.T) {
 	service, _ := NewConstructionAPIService(
 		mockAccountRepo,
 		onlineBaseService,
-		config,
+		rosettaConfig,
 		mockTransactionConstructor,
 	)
 	res, e := service.ConstructionMetadata(defaultContext, request)
@@ -757,6 +779,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	res, e := service.ConstructionParse(defaultContext, getConstructionParseRequest(invalidTransaction, false))
 
 	// then
+	mockConstructor.AssertExpectations(t)
 	assert.Nil(t, res)
 	assert.Equal(t, errors.ErrTransactionDecodeFailed, e)
 }
@@ -770,6 +793,7 @@ func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	res, e := service.ConstructionParse(defaultContext, getConstructionParseRequest(corruptedTransaction, false))
 
 	// then
+	mockConstructor.AssertExpectations(t)
 	assert.Nil(t, res)
 	assert.Equal(t, errors.ErrTransactionUnmarshallingFailed, e)
 }
@@ -783,7 +807,6 @@ func TestConstructionPayloads(t *testing.T) {
 	}{
 		{
 			name:           "shard.realm.num payer",
-			metadata:       map[string]interface{}{metadataKeyValidStartNanos: "123456789000000123"},
 			payerAccountId: defaultCryptoAccountId1,
 			expected: &rTypes.ConstructionPayloadsResponse{
 				UnsignedTransaction: "0x0a292a270a230a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40172020a001200",
@@ -797,11 +820,8 @@ func TestConstructionPayloads(t *testing.T) {
 			},
 		},
 		{
-			name: "alias account payer",
-			metadata: map[string]interface{}{
-				metadataKeyAccountMap:      fmt.Sprintf("%s:0.0.100", aliasStr),
-				metadataKeyValidStartNanos: "123456789000000123",
-			},
+			name:           "alias account payer",
+			metadata:       map[string]interface{}{metadataKeyAccountMap: fmt.Sprintf("%s:0.0.100", aliasStr)},
 			payerAccountId: aliasAccount,
 			expected: &rTypes.ConstructionPayloadsResponse{
 				UnsignedTransaction: "0x0a272a250a210a0d0a0708959aef3a107b12021864120218031880c2d72f220308b40172020a001200",
@@ -815,29 +835,8 @@ func TestConstructionPayloads(t *testing.T) {
 			},
 		},
 		{
-			name: "node account id",
-			metadata: map[string]interface{}{
-				metadataKeyNodeAccountId:   "0.0.5",
-				metadataKeyValidStartNanos: "123456789000000123",
-			},
-			payerAccountId: defaultCryptoAccountId1,
-			expected: &rTypes.ConstructionPayloadsResponse{
-				UnsignedTransaction: "0x0a292a270a230a0f0a0708959aef3a107b120418d8c307120218051880c2d72f220308b40172020a001200",
-				Payloads: []*rTypes.SigningPayload{
-					{
-						AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
-						Bytes:             hexutil.MustDecode("0x0a0f0a0708959aef3a107b120418d8c307120218051880c2d72f220308b40172020a00"),
-						SignatureType:     rTypes.Ed25519,
-					},
-				},
-			},
-		},
-		{
-			name: "transaction memo",
-			metadata: map[string]interface{}{
-				"memo":                     "transfer",
-				metadataKeyValidStartNanos: "123456789000000123",
-			},
+			name:           "transaction memo",
+			metadata:       map[string]interface{}{types.MetadataKeyMemo: "transfer"},
 			payerAccountId: defaultCryptoAccountId1,
 			expected: &rTypes.ConstructionPayloadsResponse{
 				UnsignedTransaction: "0x0a332a310a2d0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a001200",
@@ -884,7 +883,8 @@ func TestConstructionPayloads(t *testing.T) {
 			mockConstructor.
 				On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
 				Return(hedera.NewTransferTransaction(), []types.AccountId{tt.payerAccountId}, mocks.NilError)
-			request := getPayloadsRequest(operations, payloadsRequestMetadata(tt.metadata))
+			metadata := addDefaultConstructionPayloadsMetadata(tt.metadata)
+			request := getPayloadsRequest(operations, payloadsRequestMetadata(metadata))
 			service, _ := NewConstructionAPIService(nil, onlineBaseService, singleNodeConfig, mockConstructor)
 
 			// when
@@ -920,10 +920,9 @@ func TestConstructionPayloadValidDuration(t *testing.T) {
 	mockConstructor.
 		On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
 		Return(hedera.NewTransferTransaction(), []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
-	metadata := map[string]interface{}{
-		metadataKeyValidStartNanos:      "123456789000000123",
+	metadata := addDefaultConstructionPayloadsMetadata(map[string]interface{}{
 		metadataKeyValidDurationSeconds: "60",
-	}
+	})
 	request := getPayloadsRequest(operations, payloadsRequestMetadata(metadata))
 	service, _ := NewConstructionAPIService(nil, onlineBaseService, singleNodeConfig, mockConstructor)
 
@@ -943,19 +942,19 @@ func TestConstructionPayloadsAliasError(t *testing.T) {
 	}{
 		{
 			name:     "no account_map metadata",
-			metadata: map[string]interface{}{},
+			metadata: addMetadataNodeAccountId(nil),
 		},
 		{
 			name:     "no matching alias in metadata",
-			metadata: map[string]interface{}{metadataKeyAccountMap: "foobar:0.0.100"},
+			metadata: addMetadataNodeAccountId(metadata{metadataKeyAccountMap: "foobar:0.0.100"}),
 		},
 		{
 			name:     "invalid metadata value type",
-			metadata: map[string]interface{}{metadataKeyAccountMap: 10},
+			metadata: addMetadataNodeAccountId(metadata{metadataKeyAccountMap: 10}),
 		},
 		{
 			name:     "invalid account id",
-			metadata: map[string]interface{}{metadataKeyAccountMap: fmt.Sprintf("%s:abc", aliasStr)},
+			metadata: addMetadataNodeAccountId(metadata{metadataKeyAccountMap: fmt.Sprintf("%s:abc", aliasStr)}),
 		},
 	}
 
@@ -985,6 +984,64 @@ func TestConstructionPayloadsAliasError(t *testing.T) {
 	}
 }
 
+func TestConstructionPayloadsInvalidOperation(t *testing.T) {
+	tests := []struct {
+		name       string
+		operations []*rTypes.Operation
+	}{
+		{
+			name: "Invalid account 0.0.0",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "0.0.0"},
+					Amount:              (&types.HbarAmount{Value: 1}).ToRosetta(),
+				},
+			},
+		},
+		{
+			name: "Invalid account 'a'",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "a"},
+					Amount:              (&types.HbarAmount{Value: 1}).ToRosetta(),
+				},
+			},
+		},
+		{
+			name: "Invalid amount value",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "0.0.100"},
+					Amount:              &rTypes.Amount{Value: "a"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			mockConstructor := &mocks.MockTransactionConstructor{}
+			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
+
+			// when
+			actual, e := service.ConstructionPayloads(defaultContext, &rTypes.ConstructionPayloadsRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Operations:        tt.operations,
+				Metadata:          addDefaultConstructionPayloadsMetadata(nil),
+			})
+
+			// then
+			mockConstructor.AssertExpectations(t)
+			assert.Nil(t, actual)
+			assert.NotNil(t, e)
+		})
+	}
+}
+
 func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 	operations := types.OperationSlice{
 		getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
@@ -997,55 +1054,55 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 	}{
 		{
 			name:      "ValidDurationOverMax",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "181"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidDurationSeconds: "181"})),
 		},
 		{
 			name:      "ValidDurationUnderMin",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "-1"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidDurationSeconds: "-1"})),
 		},
 		{
 			name:      "InvalidValidDurationType",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: 120}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidDurationSeconds: 120})),
 		},
 		{
 			name:      "InvalidNodeAccountIdType",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyNodeAccountId: 10}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyNodeAccountId: 10})),
 		},
 		{
 			name:      "InvalidNodeAccountIdValue",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyNodeAccountId: "a.b.c"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyNodeAccountId: "a.b.c"})),
 		},
 		{
 			name:      "ValidDurationTypeNotANumber",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "abc"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidDurationSeconds: "abc"})),
 		},
 		{
 			name:      "InvalidValidStartNanosType",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidStartNanos: 100}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidStartNanos: 100})),
 		},
 		{
 			name:      "NegativeValidSTartNanos",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidStartNanos: "-100"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidStartNanos: "-100"})),
 		},
 		{
 			name:      "ValidStartNanosNotNumber",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidStartNanos: "abc"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidStartNanos: "abc"})),
 		},
 		{
 			name:      "ValidUntilNegative",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "-100"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidUntilNanos: "-100"})),
 		},
 		{
 			name:      "ValidUntilCauseZeroValidStartNanos",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "180000000000"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidUntilNanos: "180000000000"})),
 		},
 		{
 			name:      "ValidUntilCauseNegativeValidStartNanos",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "179999999999"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidUntilNanos: "179999999999"})),
 		},
 		{
 			name:      "ValidUntilNotNumber",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "abc"}),
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{metadataKeyValidUntilNanos: "abc"})),
 		},
 		{
 			name:      "InvalidOperationAccountIdentifier",
@@ -1063,14 +1120,15 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
+			mockConstructor := &mocks.MockTransactionConstructor{}
 			request := getPayloadsRequest(operations, tt.customize)
-			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig,
-				&mocks.MockTransactionConstructor{})
+			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
 
 			// when
 			response, err := service.ConstructionPayloads(defaultContext, request)
 
 			// then
+			mockConstructor.AssertExpectations(t)
 			assert.NotNil(t, err)
 			assert.Nil(t, response)
 		})
@@ -1094,9 +1152,13 @@ func TestConstructionPayloadsThrowsWithConstructorConstructFailure(t *testing.T)
 	service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
 
 	// when
-	actual, err := service.ConstructionPayloads(defaultContext, getPayloadsRequest(operations))
+	actual, err := service.ConstructionPayloads(
+		defaultContext,
+		getPayloadsRequest(operations, payloadsRequestMetadata(addDefaultConstructionPayloadsMetadata(nil))),
+	)
 
 	// then
+	mockConstructor.AssertExpectations(t)
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
 }
@@ -1195,24 +1257,83 @@ func TestConstructionPreprocess(t *testing.T) {
 			actual, err := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(true, tt.metadata))
 
 			// then:
+			mockConstructor.AssertExpectations(t)
 			assert.Equal(t, tt.expected, actual)
 			assert.Nil(t, err)
 		})
 	}
 }
 
+func TestConstructionPreprocessInvalidOperation(t *testing.T) {
+	tests := []struct {
+		name       string
+		operations []*rTypes.Operation
+	}{
+		{
+			name: "Invalid account 0.0.0",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "0.0.0"},
+					Amount:              (&types.HbarAmount{Value: 1}).ToRosetta(),
+				},
+			},
+		},
+		{
+			name: "Invalid account 'a'",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "a"},
+					Amount:              (&types.HbarAmount{Value: 1}).ToRosetta(),
+				},
+			},
+		},
+		{
+			name: "Invalid amount value",
+			operations: []*rTypes.Operation{
+				{
+					OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
+					Account:             &rTypes.AccountIdentifier{Address: "0.0.100"},
+					Amount:              &rTypes.Amount{Value: "a"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			mockConstructor := &mocks.MockTransactionConstructor{}
+			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
+
+			// when
+			actual, e := service.ConstructionPreprocess(defaultContext, &rTypes.ConstructionPreprocessRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Operations:        tt.operations,
+			})
+
+			// then
+			mockConstructor.AssertExpectations(t)
+			assert.Nil(t, actual)
+			assert.NotNil(t, e)
+		})
+	}
+}
+
 func TestConstructionPreprocessThrowsWithConstructorPreprocessFailure(t *testing.T) {
-	// given:
+	// given
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
 		On("Preprocess", defaultContext, mock.IsType(types.OperationSlice{})).
 		Return(mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
 
-	// when:
+	// when
 	actual, e := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(false, nil))
 
-	// then:
+	// then
+	mockConstructor.AssertExpectations(t)
 	assert.Nil(t, actual)
 	assert.NotNil(t, e)
 }

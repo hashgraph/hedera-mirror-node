@@ -402,29 +402,25 @@ func (c *constructionAPIService) ConstructionSubmit(
 func (c *constructionAPIService) getTransactionNodeAccountId(metadata map[string]interface{}) (
 	emptyAccountId hedera.AccountID, nilErr *rTypes.Error,
 ) {
-	if value, ok := metadata[metadataKeyNodeAccountId]; ok {
-		str, ok := value.(string)
-		if !ok {
-			return emptyAccountId, errors.ErrInvalidArgument
-		}
-
-		nodeAccountId, err := hedera.AccountIDFromString(str)
-		if err != nil {
-			log.Errorf("Invalid node account id provided in metadata: %s", str)
-			return emptyAccountId, errors.ErrInvalidAccount
-		}
-
-		log.Infof("Use node account id %s from metadata", str)
-		return nodeAccountId, nilErr
+	value, ok := metadata[metadataKeyNodeAccountId]
+	if !ok {
+		return emptyAccountId, errors.ErrMissingNodeAccountIdMetadata
 	}
 
-	nodeAccountId, err := c.getRandomNodeAccountId()
+	str, ok := value.(string)
+	if !ok {
+		return emptyAccountId, errors.ErrInvalidArgument
+	}
+
+	nodeAccountId, err := hedera.AccountIDFromString(str)
 	if err != nil {
-		return emptyAccountId, err
+		log.Errorf("Invalid node account id provided in metadata: %s", str)
+		return emptyAccountId, errors.ErrInvalidAccount
 	}
 
-	log.Infof("Use random node account id %s from client network", nodeAccountId)
+	log.Infof("Use node account id %s from metadata", str)
 	return nodeAccountId, nilErr
+
 }
 
 func (c *constructionAPIService) getTransactionTimestampProperty(metadata map[string]interface{}) (
@@ -620,7 +616,7 @@ func NewConstructionAPIService(
 		log.Info("Cancel scheduled network address book update")
 		hederaClient.CancelScheduledNetworkUpdate()
 	} else {
-		hederaClient.SetNetworkUpdatePeriod(config.NetworkAddressBookUpdateFrequency)
+		hederaClient.SetNetworkUpdatePeriod(config.NodeRefreshInterval)
 	}
 
 	// disable SDK auto retry

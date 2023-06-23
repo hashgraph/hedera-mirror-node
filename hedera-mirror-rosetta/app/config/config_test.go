@@ -49,7 +49,7 @@ hedera:
       db:
         port: 5431
         username: foobar
-      networkAddressBookUpdateFrequency: 30m`
+      nodeRefreshInterval: 30m`
 	yml2 = `
 hedera:
   mirror:
@@ -61,7 +61,7 @@ hedera:
 	serviceEndpoint = "192.168.0.1:50211"
 )
 
-var expectedNetworkAddressBookUpdateFrequency = 30 * time.Minute
+var expectedNodeRefreshInterval = 30 * time.Minute
 
 func TestLoadDefaultConfig(t *testing.T) {
 	config, err := LoadConfig()
@@ -110,7 +110,7 @@ func TestLoadCustomConfig(t *testing.T) {
 			assert.True(t, config.Online)
 			assert.Equal(t, uint16(5431), config.Db.Port)
 			assert.Equal(t, "foobar", config.Db.Username)
-			assert.Equal(t, expectedNetworkAddressBookUpdateFrequency, config.NetworkAddressBookUpdateFrequency)
+			assert.Equal(t, expectedNodeRefreshInterval, config.NodeRefreshInterval)
 		})
 	}
 }
@@ -137,7 +137,7 @@ func TestLoadCustomConfigFromCwdAndEnvVar(t *testing.T) {
 	expected.Db.Port = 12000
 	expected.Db.Username = "foobar"
 	expected.Network = "testnet"
-	expected.NetworkAddressBookUpdateFrequency = expectedNetworkAddressBookUpdateFrequency
+	expected.NodeRefreshInterval = expectedNodeRefreshInterval
 	assert.NoError(t, err)
 	assert.Equal(t, expected, config)
 }
