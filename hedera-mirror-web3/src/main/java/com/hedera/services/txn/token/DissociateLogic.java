@@ -56,6 +56,23 @@ public class DissociateLogic {
         dissociateUsing(account, tokens, store);
     }
 
+    /**
+     * Based on the dissociateUsing method in com.hedera.node.app.service.mono.store.models.Account
+     * in hedera-services. Instead of the List of Dissociation and validator we provide the Account, a List of tokens
+     * to be dissociated and the Store.
+     * We first check if the account and provided tokens have association with the hasAssociation method,
+     * then we call the updateRelationship method that is based on the updateModelRelsSubjectTo in the hedera-services
+     * but adapted to work with the Store logic.
+     * The inside calls to updateRelationshipForDeletedOrRemovedToken and updateModelsForDissociationFromActiveToken
+     * keep the same behaviour but again adapted to work with the Store.
+     * For validating the token expiration we introduced the validateTokenExpiration method
+     * instead of the OptionValidator in hedera-services.
+     * The association counters are also kept and adapted with the Store logic.
+     * Finally, we publish the updated entities to the Store.
+     * @param account
+     * @param tokens
+     * @param store
+     */
     private void dissociateUsing(final Account account, final List<Token> tokens, final Store store) {
 
         tokens.forEach(token -> {
