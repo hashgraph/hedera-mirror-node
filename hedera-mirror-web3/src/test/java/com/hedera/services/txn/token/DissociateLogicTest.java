@@ -216,6 +216,23 @@ class DissociateLogicTest {
         verify(spyAccount).decrementUsedAutomaticAssociations();
     }
 
+    @Test
+    void verifyUpdagtedNumPositiveBalance() {
+        var newAccount = new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0);
+        newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
+        spyAccount = spy(newAccount);
+        tokenRelationship =
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, 0L);
+        setupToken();
+        setupTokenRelationship();
+        setupAccount();
+        when(token.getTreasury()).thenReturn(mock(Account.class));
+        when(token.isDeleted()).thenReturn(false);
+
+        dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
+        verify(spyAccount).setNumPositiveBalances(any(Integer.class));
+    }
+
     private InvalidTransactionException getException(final String type, Object id) {
         return new InvalidTransactionException(
                 FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
