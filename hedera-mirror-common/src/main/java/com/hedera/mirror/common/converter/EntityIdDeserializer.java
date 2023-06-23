@@ -23,6 +23,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
 
+@SuppressWarnings("java:S6548")
 public class EntityIdDeserializer extends JsonDeserializer<EntityId> {
 
     public static final EntityIdDeserializer INSTANCE = new EntityIdDeserializer();

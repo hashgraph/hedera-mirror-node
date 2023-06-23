@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesBindin
 
 @Converter
 @ConfigurationPropertiesBinding
+@SuppressWarnings("java:S6548")
 public class EntityIdConverter implements AttributeConverter<EntityId, Long> {
 
     public static final EntityIdConverter INSTANCE = new EntityIdConverter();

@@ -29,6 +29,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("java:S6548")
 public class ObjectToStringSerializer extends JsonSerializer<Object> {
 
     public static final ObjectToStringSerializer INSTANCE = new ObjectToStringSerializer();
