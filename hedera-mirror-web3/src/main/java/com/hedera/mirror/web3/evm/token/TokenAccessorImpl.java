@@ -207,9 +207,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Address ownerOf(final Address address, long serialNo) {
         final var entityId = entityIdFromEvmAddress(address);
-        final var nft = store.getUniqueToken(
-                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
-                OnMissing.DONT_THROW);
+        final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
         if (nft.isEmptyUniqueToken()) {
             return Address.ZERO;
         }
@@ -229,9 +227,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public String metadataOf(final Address address, long serialNo) {
         final var entityId = entityIdFromEvmAddress(address);
-        final var nft = store.getUniqueToken(
-                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
-                OnMissing.DONT_THROW);
+        final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
         if (nft.isEmptyUniqueToken()) {
             return "";
         }
