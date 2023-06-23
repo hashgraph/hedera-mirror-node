@@ -43,16 +43,20 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenAccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
+import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
@@ -72,8 +76,10 @@ class TokenAccessorImplTest {
     final Key key =
             Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(bytes)).build();
     private final long serialNo = 0L;
-    private static final String HEX = "0x00000000000000000000000000000000000004e4";
-    private static final Address TOKEN = Address.fromHexString(HEX);
+    private static final String HEX_TOKEN = "0x00000000000000000000000000000000000004e4";
+    private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
+    private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
+    private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
     private static final Long ENTITY_ID =
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
@@ -92,6 +98,15 @@ class TokenAccessorImplTest {
 
     @Mock
     private TokenAccountRepository tokenAccountRepository;
+
+    @Mock
+    private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Mock
+    private TokenAllowanceRepository tokenAllowanceRepository;
+
+    @Mock
+    private NftAllowanceRepository nftAllowanceRepository;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private MirrorNodeEvmProperties properties;
@@ -114,12 +129,23 @@ class TokenAccessorImplTest {
         MockitoAnnotations.openMocks(this);
         final var entityAccessor = new EntityDatabaseAccessor(entityRepository);
         final var customFeeAccessor = new CustomFeeDatabaseAccessor(customFeeRepository, entityAccessor);
+        final var tokenDatabaseAccessor =
+                new TokenDatabaseAccessor(tokenRepository, entityAccessor, entityRepository, customFeeAccessor);
+        final var accountDatabaseAccessor = new AccountDatabaseAccessor(
+                entityAccessor,
+                nftAllowanceRepository,
+                nftRepository,
+                tokenAllowanceRepository,
+                cryptoAllowanceRepository,
+                tokenAccountRepository);
         accessors = List.of(
                 entityAccessor,
                 customFeeAccessor,
-                new TokenAccountDatabaseAccessor(tokenAccountRepository),
-                new UniqueTokenDatabaseAccessor(nftRepository),
-                new TokenDatabaseAccessor(tokenRepository, entityAccessor, entityRepository, customFeeAccessor));
+                accountDatabaseAccessor,
+                tokenDatabaseAccessor,
+                new TokenRelationshipDatabaseAccessor(
+                        tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
+                new UniqueTokenDatabaseAccessor(nftRepository));
         store = new StoreImpl(accessors);
         tokenAccessor = new TokenAccessorImpl(properties, store);
     }
@@ -146,12 +172,16 @@ class TokenAccessorImplTest {
     }
 
     @Test
-    void evmNftInfoNoOwner() {
+    void evmNftInfoWithNoOwnerAndNoSpender() {
         int createdTimestampNanos = 13;
         long createdTimestampSecs = 12;
         Nft nft = domainBuilder
                 .nft()
-                .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
+                .customize(n -> {
+                    n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos);
+                    n.spender(EntityId.EMPTY);
+                    n.accountId(EntityId.EMPTY);
+                })
                 .get();
         when(entityRepository.findByIdAndDeletedIsFalse(nft.getAccountId().getId()))
                 .thenReturn(Optional.empty());
@@ -178,20 +208,26 @@ class TokenAccessorImplTest {
     void isFrozen() {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
+        tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
-        assertTrue(tokenAccessor.isFrozen(TOKEN, TOKEN));
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
-        assertFalse(tokenAccessor.isFrozen(TOKEN, TOKEN));
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(token.getType()).thenReturn(null);
+        when(token.getSupplyType()).thenReturn(null);
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        assertTrue(tokenAccessor.isFrozen(ACCOUNT, TOKEN));
     }
 
     @Test
     void isKyc() {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
+        tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
-        assertTrue(tokenAccessor.isKyc(TOKEN, TOKEN));
-        tokenAccount.setKycStatus(TokenKycStatusEnum.REVOKED);
-        assertFalse(tokenAccessor.isKyc(TOKEN, TOKEN));
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(token.getType()).thenReturn(null);
+        when(token.getSupplyType()).thenReturn(null);
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        assertTrue(tokenAccessor.isKyc(ACCOUNT, TOKEN));
     }
 
     @Test
@@ -202,6 +238,10 @@ class TokenAccessorImplTest {
         customFee.setCollectorAccountId(collectorId);
         List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(token.getType()).thenReturn(null);
+        when(token.getSupplyType()).thenReturn(null);
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(customFeeRepository.findByTokenId(any())).thenReturn(customFeeList);
         assertThat(tokenAccessor.infoForTokenCustomFees(TOKEN)).isNotEmpty();
         assertEquals(

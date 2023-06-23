@@ -17,31 +17,22 @@
 package com.hedera.mirror.web3.evm.token;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
-import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -49,15 +40,16 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
@@ -82,14 +74,10 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         final var ledgerId = properties.getNetwork().getLedgerId();
-        final var entityAddress = nft.getOwner() != null
-                ? evmAddressFromId(EntityId.of(nft.getOwner().asGrpcAccount()))
-                : Address.ZERO;
+        final var entityAddress = nft.getOwner() != null ? nft.getOwner().asEvmAddress() : Address.ZERO;
         final var creationTime = nft.getCreationTime();
         final var metadata = nft.getMetadata();
-        final var spender = nft.getSpender() != null
-                ? evmAddressFromId(EntityId.of(nft.getSpender().asGrpcAccount()))
-                : Address.ZERO;
+        final var spender = nft.getSpender() != null ? nft.getSpender().asEvmAddress() : Address.ZERO;
         final var nftInfo =
                 new EvmNftInfo(serialNo, entityAddress, creationTime.getSeconds(), metadata, spender, ledgerId);
         return Optional.of(nftInfo);
@@ -103,17 +91,14 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isFrozen(final Address address, final Address token) {
-        final var tokenAccountId = new AbstractTokenAccount.Id();
-        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
-        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
-                .map(acc -> acc.getFreezeStatus().equals(FROZEN))
-                .orElse(false);
+        final var tokenRelationship =
+                store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
+        return tokenRelationship.isEmptyTokenRelationship() ? false : tokenRelationship.isFrozen();
     }
 
     @Override
     public boolean defaultFreezeStatus(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).hasFreezeKey();
+        return store.getFungibleToken(address, OnMissing.DONT_THROW).isFrozenByDefault();
     }
 
     @Override
@@ -123,12 +108,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isKyc(final Address address, final Address token) {
-        final var tokenAccountId = new AbstractTokenAccount.Id();
-        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
-        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
-                .map(acc -> acc.getKycStatus().equals(GRANTED))
-                .orElse(false);
+        final var tokenRelationship =
+                store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
+        return tokenRelationship.isEmptyTokenRelationship() ? false : tokenRelationship.isKycGranted();
     }
 
     @Override
@@ -190,14 +172,12 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
-        final var tokenAllowanceId = new AbstractTokenAllowance.Id();
-        tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
-        tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
-        tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
+        final var tokenNum = EntityNum.fromEvmAddress(token);
+        final var spenderNum = EntityNum.fromEvmAddress(spender);
 
-        return store.getTokenAllowance(tokenAllowanceId, OnMissing.DONT_THROW)
-                .map(TokenAllowance::getAmount)
-                .orElse(0L);
+        final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
+
+        return store.getTokenAllowance(owner, fcTokenAllowanceId, OnMissing.DONT_THROW);
     }
 
     @Override
@@ -213,18 +193,17 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (spender == null) {
             return Address.ZERO;
         }
-        return evmAddressFromId(EntityId.of(spender.asGrpcAccount()));
+        return spender.asEvmAddress();
     }
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
-        final var nftAllowanceId = new AbstractNftAllowance.Id();
-        nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
-        nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
-        nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
-        return store.getNftAllowance(nftAllowanceId, OnMissing.DONT_THROW)
-                .map(NftAllowance::isApprovedForAll)
-                .orElse(false);
+        final var tokenNum = EntityNum.fromEvmAddress(token);
+        final var operatorNum = EntityNum.fromEvmAddress(operator);
+
+        final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, operatorNum);
+
+        return store.hasNftAllowance(owner, fcTokenAllowanceId, OnMissing.DONT_THROW);
     }
 
     @Override
@@ -241,8 +220,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (owner == null) {
             return Address.ZERO;
         }
-
-        return evmAddressFromId(EntityId.of(owner.asGrpcAccount()));
+        return owner.asEvmAddress();
     }
 
     @Override
@@ -297,9 +275,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var isPaused = tokenEntity.isPaused();
         evmTokenInfo.setIsPaused(isPaused);
 
-        if (entity.getAutoRenewAccountId() != null) {
-            var autoRenewAddress = evmAddressFromId(EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
-            evmTokenInfo.setAutoRenewAccount(autoRenewAddress);
+        if (tokenEntity.getAutoRenewAccount() != null) {
+            evmTokenInfo.setAutoRenewAccount(tokenEntity.getAutoRenewAccount().getAccountAddress());
         }
 
         return Optional.of(evmTokenInfo);
@@ -321,8 +298,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @SuppressWarnings("unchecked")
     private List<CustomFee> getCustomFees(final Address address) {
-        return store.getCustomFee(entityIdNumFromEvmAddress(address), OnMissing.DONT_THROW)
-                .orElse(Collections.emptyList());
+        return store.getCustomFee(address, OnMissing.DONT_THROW).orElse(Collections.emptyList());
     }
 
     private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
@@ -365,22 +341,5 @@ public class TokenAccessorImpl implements TokenAccessor {
         return store.getEntity(address, OnMissing.DONT_THROW)
                 .map(AbstractEntity::getId)
                 .orElse(0L);
-    }
-
-    private Address evmAddressFromId(EntityId entityId) {
-        Entity entity = store.getEntity(entityId, OnMissing.DONT_THROW).orElse(null);
-        if (entity == null) {
-            return Address.ZERO;
-        }
-
-        if (entity.getEvmAddress() != null) {
-            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-        }
-
-        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-            return Address.wrap(Bytes.wrap(entity.getAlias()));
-        }
-
-        return toAddress(entityId);
     }
 }

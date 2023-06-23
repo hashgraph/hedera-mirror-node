@@ -36,6 +36,7 @@ import org.hyperledger.besu.datatypes.Address;
  *  1. Added address field for convenience
  *  2. Added factory method that returns empty instance
  *  3. Added equals() and hashCode()
+ *  4. Added isEmptyUniqueToken()
  */
 public class UniqueToken {
     private final Id tokenId;

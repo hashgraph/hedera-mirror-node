@@ -16,16 +16,13 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -46,16 +43,13 @@ public interface Store {
 
     Optional<Entity> getEntity(Address address, OnMissing throwIfMissing);
 
-    Optional<Entity> getEntity(EntityId entityId, OnMissing throwIfMissing);
-
     Optional<TokenAccount> getTokenAccount(AbstractTokenAccount.Id id, OnMissing throwIfMissing);
 
-    @SuppressWarnings("rawtypes")
-    Optional<List> getCustomFee(Long entityIdNum, OnMissing throwIfMissing);
+    Optional<List<CustomFee>> getCustomFee(Address entityIdNum, OnMissing throwIfMissing);
 
-    Optional<TokenAllowance> getTokenAllowance(AbstractTokenAllowance.Id id, OnMissing throwIfMissing);
+    Long getTokenAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
 
-    Optional<NftAllowance> getNftAllowance(AbstractNftAllowance.Id id, OnMissing throwIfMissing);
+    boolean hasNftAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
 
     Token getFungibleToken(Address address, OnMissing throwIfMissing);
 

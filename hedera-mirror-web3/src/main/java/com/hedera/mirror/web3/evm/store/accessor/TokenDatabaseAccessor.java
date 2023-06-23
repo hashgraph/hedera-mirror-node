@@ -87,7 +87,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
                 getTreasury(databaseToken.getTreasuryAccountId()),
-                null,
+                getAutoRenewAccount(entity),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
@@ -108,6 +108,10 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private Account getAutoRenewAccount(Entity entity) {
+        return new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance());
     }
 
     private Account getTreasury(EntityId treasuryId) {

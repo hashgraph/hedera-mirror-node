@@ -47,6 +47,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *
  * Differences from the original:
  *  1. Added factory method that returns empty instance
+ *  2. Added isEmptyTokenRelationship() method
  */
 public class TokenRelationship {
     private final Token token;
@@ -97,6 +98,10 @@ public class TokenRelationship {
 
     public static TokenRelationship getEmptyTokenRelationship() {
         return new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L));
+    }
+
+    public boolean isEmptyTokenRelationship() {
+        return this.equals(getEmptyTokenRelationship());
     }
 
     /**

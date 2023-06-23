@@ -41,6 +41,7 @@ import org.hyperledger.besu.datatypes.Address;
  *     3. Changed collection types to SortedMap and SortedSet
  *     4. Added constructors and set methods for creating new instances and achieve immutability
  *     6. Added factory method that returns empty instance
+ *     7. Added isEmptyAccount() method
  */
 public class Account extends HederaEvmAccount {
     private final Id id;
@@ -107,6 +108,10 @@ public class Account extends HederaEvmAccount {
 
     public static Account getEmptyAccount() {
         return new Account(Id.DEFAULT, 0L);
+    }
+
+    public boolean isEmptyAccount() {
+        return this.equals(getEmptyAccount());
     }
 
     /**
