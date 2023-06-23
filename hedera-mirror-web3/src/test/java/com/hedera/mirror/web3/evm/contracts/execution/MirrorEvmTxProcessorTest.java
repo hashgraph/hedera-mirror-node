@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -119,6 +120,9 @@ class MirrorEvmTxProcessorTest {
     private AbstractAutoCreationLogic autoCreationLogic;
 
     @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
@@ -137,7 +141,13 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, autoCreationLogic, mirrorEvmContractAliases, evmProperties, precompileMapper),
+                mcps(
+                        gasCalculator,
+                        autoCreationLogic,
+                        entityAddressSequencer,
+                        mirrorEvmContractAliases,
+                        evmProperties,
+                        precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

@@ -50,11 +50,11 @@ class EntityAddressSequencerTest {
         assertThat(entityAddressSequencer.getNewAccountId())
                 .returns(0L, AccountID::getRealmNum)
                 .returns(0L, AccountID::getShardNum)
-                .returns(0L, AccountID::getAccountNum);
+                .returns(1000000000L, AccountID::getAccountNum);
         assertThat(entityAddressSequencer.getNewAccountId())
                 .returns(0L, AccountID::getRealmNum)
                 .returns(0L, AccountID::getShardNum)
-                .returns(1L, AccountID::getAccountNum);
+                .returns(1000000001L, AccountID::getAccountNum);
     }
 
     @Test

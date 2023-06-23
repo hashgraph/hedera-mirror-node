@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
@@ -54,6 +55,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MirrorEvmMessageCallProcessorTest {
     @Mock
     private AbstractAutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
 
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
@@ -87,7 +91,12 @@ class MirrorEvmMessageCallProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, mirrorEvmContractAliases, evm, precompiles, hederaPrecompileList);
+                autoCreationLogic,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                evm,
+                precompiles,
+                hederaPrecompileList);
 
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
         when(updater.getStore()).thenReturn(store);

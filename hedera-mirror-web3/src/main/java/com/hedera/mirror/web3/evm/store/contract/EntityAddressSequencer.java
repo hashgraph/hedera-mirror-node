@@ -29,7 +29,6 @@ import org.hyperledger.besu.datatypes.Address;
 @RequiredArgsConstructor
 public class EntityAddressSequencer {
     private final AtomicLong entityIds = new AtomicLong(1_000_000_000);
-    private final AtomicLong accountIds = new AtomicLong(0);
 
     public ContractID getNewContractId(Address sponsor) {
         final var newContractSponsor = accountIdFromEvmAddress(sponsor.toArrayUnsafe());
@@ -44,15 +43,11 @@ public class EntityAddressSequencer {
         return AccountID.newBuilder()
                 .setRealmNum(0)
                 .setShardNum(0)
-                .setAccountNum(getNextAccountId())
+                .setAccountNum(getNextEntityId())
                 .build();
     }
 
     private long getNextEntityId() {
         return entityIds.getAndIncrement();
-    }
-
-    private long getNextAccountId() {
-        return accountIds.getAndIncrement();
     }
 }

@@ -45,15 +45,18 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final AbstractAutoCreationLogic autoCreationLogic;
+    private final EntityAddressSequencer entityAddressSequencer;
 
     public MirrorEvmMessageCallProcessor(
             final AbstractAutoCreationLogic autoCreationLogic,
+            final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
         this.autoCreationLogic = autoCreationLogic;
+        this.entityAddressSequencer = entityAddressSequencer;
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
@@ -64,9 +67,12 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final EntityAddressSequencer ids = new EntityAddressSequencer();
         final var lazyCreateResult = autoCreationLogic.create(
-                syntheticBalanceChange, timestamp, updater.getStore(), ids, mirrorEvmContractAliases);
+                syntheticBalanceChange,
+                timestamp,
+                updater.getStore(),
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
             haltFrameAndTraceCreationResult(frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
