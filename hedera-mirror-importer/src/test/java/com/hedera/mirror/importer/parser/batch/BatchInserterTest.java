@@ -37,7 +37,6 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.Reader;
@@ -61,7 +60,6 @@ class BatchInserterTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TokenTransferRepository tokenTransferRepository;
-    private final TransactionRepository transactionRepository;
 
     @Test
     void persist() {
