@@ -69,7 +69,7 @@ public class StoreImpl implements Store {
     @Override
     @SuppressWarnings("rawtypes")
     public Optional<List<CustomFee>> getCustomFee(Address address, OnMissing throwIfMissing) {
-        final var token = getFungibleToken(address, throwIfMissing);
+        final var token = getToken(address, throwIfMissing);
         return Optional.of(token.getCustomFees());
     }
 
@@ -88,7 +88,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Token getFungibleToken(final Address address, final OnMissing throwIfMissing) {
+    public Token getToken(final Address address, final OnMissing throwIfMissing) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 

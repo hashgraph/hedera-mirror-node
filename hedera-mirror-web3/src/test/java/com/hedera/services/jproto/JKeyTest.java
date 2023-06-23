@@ -16,6 +16,7 @@
 
 package com.hedera.services.jproto;
 
+import static com.hedera.services.utils.TxnUtils.nestJKeys;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -30,6 +31,18 @@ import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 class JKeyTest {
+
+    @Test
+    void negativeConvertJKeyTest() {
+        // given:
+        var jKeyTooDeep = nestJKeys(JKey.MAX_KEY_DEPTH);
+
+        // expect:
+        assertThrows(
+                DecoderException.class,
+                () -> JKey.convertJKey(jKeyTooDeep, 1),
+                "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+    }
 
     @Test
     void positiveConvertKeyTest() {

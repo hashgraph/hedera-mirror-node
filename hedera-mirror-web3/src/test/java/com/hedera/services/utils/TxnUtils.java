@@ -22,13 +22,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.jproto.JEd25519Key;
+import com.hedera.services.jproto.JKey;
+import com.hedera.services.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.util.List;
 import java.util.UUID;
 
 public class TxnUtils {
+    public static JKey nestJKeys(int additionalKeysToNest) {
+        if (additionalKeysToNest == 0) {
+            return new JEd25519Key("firstKey".getBytes());
+        } else {
+            final var descendantKeys = nestJKeys(additionalKeysToNest - 1);
+            return new JKeyList(List.of(descendantKeys));
+        }
+    }
 
     public static Key.Builder nestKeys(Key.Builder builder, int additionalKeysToNest) {
         if (additionalKeysToNest == 0) {

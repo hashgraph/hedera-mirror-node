@@ -27,6 +27,7 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -66,9 +67,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address address, long serialNo) {
         final var entityId = entityIdFromEvmAddress(address);
-        final var nft = store.getUniqueToken(
-                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
-                OnMissing.DONT_THROW);
+        final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
         if (nft.isEmptyUniqueToken()) {
             return Optional.empty();
         }
@@ -93,24 +92,24 @@ public class TokenAccessorImpl implements TokenAccessor {
     public boolean isFrozen(final Address address, final Address token) {
         final var tokenRelationship =
                 store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
-        return tokenRelationship.isEmptyTokenRelationship() ? false : tokenRelationship.isFrozen();
+        return !tokenRelationship.isEmptyTokenRelationship() && tokenRelationship.isFrozen();
     }
 
     @Override
     public boolean defaultFreezeStatus(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).isFrozenByDefault();
+        return store.getToken(address, OnMissing.DONT_THROW).isFrozenByDefault();
     }
 
     @Override
     public boolean defaultKycStatus(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).hasKycKey();
+        return store.getToken(address, OnMissing.DONT_THROW).hasKycKey();
     }
 
     @Override
     public boolean isKyc(final Address address, final Address token) {
         final var tokenRelationship =
                 store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
-        return tokenRelationship.isEmptyTokenRelationship() ? false : tokenRelationship.isKycGranted();
+        return !tokenRelationship.isEmptyTokenRelationship() && tokenRelationship.isKycGranted();
     }
 
     @Override
@@ -120,7 +119,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).getType();
+        return store.getToken(address, OnMissing.DONT_THROW).getType();
     }
 
     @Override
@@ -142,22 +141,22 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String nameOf(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).getName();
+        return store.getToken(address, OnMissing.DONT_THROW).getName();
     }
 
     @Override
     public String symbolOf(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).getSymbol();
+        return store.getToken(address, OnMissing.DONT_THROW).getSymbol();
     }
 
     @Override
     public long totalSupplyOf(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).getTotalSupply();
+        return store.getToken(address, OnMissing.DONT_THROW).getTotalSupply();
     }
 
     @Override
     public int decimalsOf(final Address address) {
-        return store.getFungibleToken(address, OnMissing.DONT_THROW).getDecimals();
+        return store.getToken(address, OnMissing.DONT_THROW).getDecimals();
     }
 
     @Override
@@ -183,9 +182,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Address staticApprovedSpenderOf(final Address address, long serialNo) {
         final var entityId = entityIdFromEvmAddress(address);
-        final var nft = store.getUniqueToken(
-                new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo),
-                OnMissing.DONT_THROW);
+        final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
+
         if (nft.isEmptyUniqueToken()) {
             return Address.ZERO;
         }
@@ -246,7 +244,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
-        final var tokenEntity = store.getFungibleToken(address, OnMissing.DONT_THROW);
+        final var tokenEntity = store.getToken(address, OnMissing.DONT_THROW);
         final var entityOptional = store.getEntity(address, OnMissing.DONT_THROW);
 
         if (tokenEntity.isEmptyToken() || entityOptional.isEmpty()) {
@@ -269,7 +267,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getDecimals(),
                 expirationTimeInSec);
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
-        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.hasFreezeKey());
+        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.isFrozenByDefault());
         evmTokenInfo.setCustomFees(getCustomFees(address));
         setEvmKeys(entity, tokenEntity, evmTokenInfo);
         final var isPaused = tokenEntity.isPaused();
@@ -341,5 +339,9 @@ public class TokenAccessorImpl implements TokenAccessor {
         return store.getEntity(address, OnMissing.DONT_THROW)
                 .map(AbstractEntity::getId)
                 .orElse(0L);
+    }
+
+    private NftId nftIdFromEntityId(final EntityId entityId, long serialNo) {
+        return new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo);
     }
 }

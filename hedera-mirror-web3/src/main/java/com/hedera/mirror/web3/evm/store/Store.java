@@ -51,7 +51,7 @@ public interface Store {
 
     boolean hasNftAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
 
-    Token getFungibleToken(Address address, OnMissing throwIfMissing);
+    Token getToken(Address address, OnMissing throwIfMissing);
 
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
