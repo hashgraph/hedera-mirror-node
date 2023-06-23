@@ -523,7 +523,7 @@ latter configuration overwriting (technically recursively merged into) the curre
 The following table lists the available properties along with their default values.
 
  Name                                               | Default             | Description                                                                                         
-----------------------------------------------------|---------------------|---------------------------------------------------------------------------------------------------- 
+----------------------------------------------------|---------------------|-----------------------------------------------------------------------------------------------------
  `hedera.mirror.rosetta.cache.entity.maxSize`       | 524288              | The max number of entities to cache                                                                 
  `hedera.mirror.rosetta.db.host`                    | 127.0.0.1           | The IP or hostname used to connect to the database                                                  
  `hedera.mirror.rosetta.db.name`                    | mirror_node         | The name of the database                                                                            
