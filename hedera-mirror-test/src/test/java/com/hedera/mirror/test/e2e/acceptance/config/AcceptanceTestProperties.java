@@ -44,7 +44,8 @@ public class AcceptanceTestProperties {
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
-    private boolean createOperatorAccount = false;
+    // A new account is usually necessary since shared accounts like 0.0.2 might reach maxTokensPerAccount, etc
+    private boolean createOperatorAccount = true;
 
     private boolean emitBackgroundMessages = false;
 
@@ -71,7 +72,7 @@ public class AcceptanceTestProperties {
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
     @Min(100_000_000L)
-    private long operatorBalance = Hbar.from(260).toTinybars();
+    private long operatorBalance = Hbar.from(1050).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";
