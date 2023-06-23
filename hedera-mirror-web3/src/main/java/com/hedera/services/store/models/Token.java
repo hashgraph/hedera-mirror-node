@@ -16,6 +16,12 @@
 
 package com.hedera.services.store.models;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -27,16 +33,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import java.util.*;
-
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Copied model from hedera-services.
@@ -654,6 +653,49 @@ public class Token {
     }
 
     /**
+     * Creates new instance of {@link Token} with updated treasury in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param treasury
+     * @return new instance of {@link Token} with updated {@link #treasury} property
+     */
+    private Token createNewTokenWithTreasury(Token oldToken, Account treasury) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
      * @param treasuryRel
@@ -748,7 +790,7 @@ public class Token {
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
             ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
             removedUniqueTokens.add(
-                    new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[]{}));
+                    new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
         final var numBurned = serialNumbers.size();
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
@@ -816,7 +858,7 @@ public class Token {
         for (final long serialNum : serialNumbers) {
             ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(
-                    id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[]{}));
+                    id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
         }
 
         if (newAccountBalance == 0) {
@@ -924,6 +966,10 @@ public class Token {
 
     public Account getTreasury() {
         return treasury;
+    }
+
+    public Token setTreasury(Account treasury) {
+        return createNewTokenWithTreasury(this, treasury);
     }
 
     public Account getAutoRenewAccount() {

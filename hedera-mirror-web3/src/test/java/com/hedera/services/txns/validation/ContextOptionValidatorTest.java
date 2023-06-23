@@ -16,6 +16,12 @@
 
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -25,12 +31,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 class ContextOptionValidatorTest {
     private final Id id = new Id(0, 0, 13);

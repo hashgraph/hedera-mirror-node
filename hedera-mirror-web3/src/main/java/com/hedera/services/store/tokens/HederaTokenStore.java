@@ -17,7 +17,7 @@
 package com.hedera.services.store.tokens;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -118,7 +118,7 @@ public class HederaTokenStore {
 
                 numAssociations++;
                 final var newAccount = account.setNumAssociations(numAssociations)
-                        .setAutoAssociationMetadata(setMaxAutomaticAssociationsTo(
+                        .setAutoAssociationMetadata(setAlreadyUsedAutomaticAssociationsTo(
                                 account.getAutoAssociationMetadata(), alreadyUsedAutomaticAssociations + 1));
 
                 store.updateTokenRelationship(newTokenRelationship);

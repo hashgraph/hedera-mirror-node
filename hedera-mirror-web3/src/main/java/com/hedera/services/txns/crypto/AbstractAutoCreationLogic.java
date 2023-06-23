@@ -16,6 +16,13 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -27,17 +34,9 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.Collections;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
-
-import java.util.Collections;
-
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Copied Logic type from hedera-services. Differences with the original:

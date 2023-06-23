@@ -16,16 +16,15 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.*;
-import org.hyperledger.besu.datatypes.Address;
-
 import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import org.hyperledger.besu.datatypes.Address;
 
 public class StoreImpl implements Store {
 

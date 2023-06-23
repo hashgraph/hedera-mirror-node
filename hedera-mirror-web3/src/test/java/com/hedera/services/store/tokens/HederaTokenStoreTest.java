@@ -16,13 +16,13 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.utils.BitPackUtils.*;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -265,10 +265,10 @@ class HederaTokenStoreTest {
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
         var account = new Account(Id.fromGrpcAccount(sponsor), 0L).setNumAssociations(associatedTokensCount);
-        account.setAutoAssociationMetadata(
-                        setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations))
-                .setAutoAssociationMetadata(setAlreadyUsedAutomaticAssociationsTo(
-                        account.getAutoAssociationMetadata(), maxAutoAssociations));
+        account = account.setAutoAssociationMetadata(
+                setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations));
+        account = account.setAutoAssociationMetadata(
+                setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations));
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
@@ -323,52 +323,109 @@ class HederaTokenStoreTest {
                 .willReturn(new TokenRelationship(token, sponsorAccount));
         given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, counterpartyAccount));
-        given(store.getUniqueToken(aNft, OnMissing.DONT_THROW))
-                .willReturn(new UniqueToken(
-                        Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]));
+        given(store.getUniqueToken(aNft, OnMissing.DONT_THROW)).willReturn(UniqueToken.getEmptyUniqueToken());
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
         assertEquals(INVALID_NFT_ID, status);
     }
-    //
-    //    @Test
-    //    void changingOwnerRejectsUnassociatedReceiver() {
-    //        given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
-    //        given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
-    //    }
-    //
-    //    @Test
-    //    void changingOwnerAutoAssociatesCounterpartyWithOpenSlots() {
-    //        final long startSponsorNfts = 5;
-    //        final long startCounterpartyNfts = 8;
-    //        final long startSponsorANfts = 1;
-    //        final long startCounterpartyANfts = 0;
-    //
-    //        given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(100);
-    //        given(accountsLedger.get(counterparty, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
-    //        given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
-    //        given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
-    //        given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
-    //        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
-    //        given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
-    //        given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-    //        given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
-    //        given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-    //        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
-    //        given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(OK, status);
-    //        verify(accountsLedger).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount + 1);
-    //        verify(accountsLedger).set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
-    //    }
-    //
+
+    @Test
+    void changingOwnerRejectsUnassociatedReceiver() {
+        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
+        var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
+
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+                .willReturn(counterpartyAccount);
+        given(store.getFungibleToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getFungibleToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(TokenRelationship.getEmptyTokenRelationship());
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+    }
+
+    @Test
+    void changingOwnerAutoAssociatesCounterpartyWithOpenSlots() {
+        final long startSponsorNfts = 5;
+        final long startCounterpartyNfts = 8;
+        final long startSponsorANfts = 1;
+        final long startCounterpartyANfts = 0;
+
+        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L)
+                .setNumAssociations(associatedTokensCount)
+                .setNumPositiveBalances(numPositiveBalances)
+                .setOwnedNfts(startCounterpartyNfts);
+        counterpartyAccount = counterpartyAccount.setAutoAssociationMetadata(
+                setMaxAutomaticAssociationsTo(counterpartyAccount.getAutoAssociationMetadata(), 100));
+        counterpartyAccount = counterpartyAccount.setAutoAssociationMetadata(
+                setAlreadyUsedAutomaticAssociationsTo(counterpartyAccount.getAutoAssociationMetadata(), 0));
+
+        final var updated1CounterpartyAccount = counterpartyAccount
+                .setNumAssociations(associatedTokensCount + 1)
+                .setAutoAssociationMetadata(setAlreadyUsedAutomaticAssociationsTo(
+                        counterpartyAccount.getAutoAssociationMetadata(),
+                        getAlreadyUsedAutomaticAssociationsFrom(counterpartyAccount.getAutoAssociationMetadata()) + 1));
+
+        final var updated2CounterpartyAccount = updated1CounterpartyAccount
+                .setOwnedNfts(updated1CounterpartyAccount.getOwnedNfts() + 1)
+                .setNumPositiveBalances(updated1CounterpartyAccount.getNumPositiveBalances() + 1);
+
+        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L)
+                .setOwnedNfts(startSponsorNfts)
+                .setNumAssociations(associatedTokensCount)
+                .setNumPositiveBalances(numPositiveBalances);
+
+        var token = new Token(Id.fromGrpcToken(nonfungible)).setTreasury(sponsorAccount);
+        var nft = new UniqueToken(
+                Id.fromGrpcToken(nonfungible),
+                1234,
+                RichInstant.MISSING_INSTANT,
+                Id.fromGrpcAccount(sponsor),
+                Id.DEFAULT,
+                new byte[0]);
+
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyANfts);
+        var sponsorRel = new TokenRelationship(token, sponsorAccount).setBalance(startSponsorANfts);
+
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+                .willReturn(
+                        counterpartyAccount,
+                        counterpartyAccount,
+                        counterpartyAccount,
+                        counterpartyAccount,
+                        counterpartyAccount,
+                        counterpartyAccount,
+                        updated1CounterpartyAccount);
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
+
+        given(store.getFungibleToken(asTypedEvmAddress(nonfungible), OnMissing.THROW))
+                .willReturn(token);
+        given(store.getFungibleToken(asTypedEvmAddress(nonfungible), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
+        given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
+
+        given(store.getTokenRelationship(counterpartyNft, OnMissing.THROW)).willReturn(counterpartyRel);
+        given(store.getTokenRelationship(counterpartyNft, OnMissing.DONT_THROW))
+                .willReturn(TokenRelationship.getEmptyTokenRelationship());
+        given(store.getTokenRelationship(sponsorNft, OnMissing.THROW)).willReturn(sponsorRel);
+        given(store.getTokenRelationship(sponsorNft, OnMissing.DONT_THROW)).willReturn(sponsorRel);
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(OK, status);
+        verify(store).updateAccount(updated1CounterpartyAccount);
+        verify(store).updateAccount(updated2CounterpartyAccount);
+    }
+
     //    @Test
     //    void changingOwnerRejectsIllegitimateOwner() {
     //        given(nftsLedger.get(aNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
