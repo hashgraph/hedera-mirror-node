@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.importer.repository;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
-
-import com.hedera.mirror.common.domain.token.Token;
-import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
+import com.hedera.mirror.common.domain.token.TokenHistory;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenRepository extends CrudRepository<Token, Long> {
+public interface TokenHistoryRepository extends CrudRepository<TokenHistory, Long>, RetentionRepository {
 
-    @Override
-    @Cacheable(cacheNames = "token", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<Token> findById(Long tokenId);
+    @Modifying
+    @Query(nativeQuery = true, value = "delete from token_history where timestamp_range << int8range(?1, null)")
+    int prune(long consensusTimestamp);
 }
