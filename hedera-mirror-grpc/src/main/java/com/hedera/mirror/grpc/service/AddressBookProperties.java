@@ -22,10 +22,8 @@ import java.time.Duration;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@Component
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc.addressbook")

@@ -17,7 +17,6 @@
 package com.hedera.mirror.grpc.service;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
-import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
@@ -27,8 +26,6 @@ import com.hedera.mirror.grpc.repository.AddressBookRepository;
 import com.hedera.mirror.grpc.repository.NodeStakeRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,9 +57,6 @@ public class NetworkServiceImpl implements NetworkService {
     private final AddressBookEntryRepository addressBookEntryRepository;
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionOperations transactionOperations;
-
-    private final AtomicReference<Map<Long, NodeStake>> nodeStakeCacheMapRef =
-            new AtomicReference<>(Collections.emptyMap());
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
