@@ -11,6 +11,7 @@
       },
       {
         "created_timestamp": "987654000123456",
+        "ethereum_nonce": 1,
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
@@ -19,6 +20,7 @@
       {
         "auto_renew_period": 1500,
         "created_timestamp": "987654111123456",
+        "ethereum_nonce": 1,
         "file_id": "5001",
         "key": [2, 2, 2],
         "num": "8002",
@@ -27,6 +29,7 @@
       {
         "auto_renew_period": 1500,
         "created_timestamp": "987654222123456",
+        "ethereum_nonce": 1,
         "expiration_timestamp": "1236987654000000123",
         "file_id": "5001",
         "key": [3, 3, 3],
@@ -58,6 +61,7 @@
         "file_id": "0.0.5001",
         "max_automatic_token_associations": 0,
         "memo": "contract memo",
+        "nonce": 1,
         "obtainer_id": null,
         "permanent_removal": null,
         "proxy_account_id": null,
@@ -81,6 +85,7 @@
         "file_id": "0.0.5001",
         "max_automatic_token_associations": 0,
         "memo": "contract memo",
+        "nonce": 1,
         "obtainer_id": null,
         "permanent_removal": null,
         "proxy_account_id": null,

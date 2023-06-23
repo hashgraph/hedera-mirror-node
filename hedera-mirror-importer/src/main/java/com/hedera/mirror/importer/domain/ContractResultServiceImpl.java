@@ -203,6 +203,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
+        if (entityProperties.getPersist().isTrackNonce()) {
+            processContractNonce(functionResult);
+        }
         if (!entityProperties.getPersist().isContractResults()) {
             return;
         }
@@ -247,6 +250,21 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         entityListener.onContractResult(contractResult);
+    }
+
+    private void processContractNonce(ContractFunctionResult functionResult) {
+        var nonceInfos = functionResult.getContractNoncesList();
+        if (!nonceInfos.isEmpty()) {
+            nonceInfos.forEach(nonceInfo -> {
+                var contractId =
+                        entityIdService.lookup(nonceInfo.getContractId()).orElse(EntityId.EMPTY);
+                Entity entity = contractId.toEntity();
+                entity.setBalance(0L);
+                entity.setEthereumNonce(nonceInfo.getNonce());
+                entity.setTimestampRange(null);
+                entityListener.onEntity(entity);
+            });
+        }
     }
 
     private void processContractLogs(
@@ -309,7 +327,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
                 if (persist && !contractId.equals(parentEntityContractId)) {
-                    processCreatedContractEntity(recordItem, contractId);
+                    processCreatedContractEntity(recordItem, contractId, functionResult);
                 }
             }
         }
@@ -317,7 +335,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         return createdContractIds;
     }
 
-    private void processCreatedContractEntity(RecordItem recordItem, EntityId contractEntityId) {
+    private void processCreatedContractEntity(
+            RecordItem recordItem, EntityId contractEntityId, ContractFunctionResult functionResult) {
         Entity entity = contractEntityId.toEntity();
         entity.setBalance(0L);
         entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
@@ -326,7 +345,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         entity.setTimestampLower(recordItem.getConsensusTimestamp());
 
         if (recordItem.getTransactionBody().hasContractCreateInstance()) {
-            updateContractEntityOnCreate(entity, recordItem);
+            updateContractEntityOnCreate(entity, recordItem, functionResult);
         }
 
         entityListener.onEntity(entity);
@@ -393,7 +412,8 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @param recordItem The recordItem in which the contract is created
      */
     @SuppressWarnings("deprecation")
-    private void updateContractEntityOnCreate(Entity entity, RecordItem recordItem) {
+    private void updateContractEntityOnCreate(
+            Entity entity, RecordItem recordItem, ContractFunctionResult functionResult) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {

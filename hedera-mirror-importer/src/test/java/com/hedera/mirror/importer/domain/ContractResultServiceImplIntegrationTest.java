@@ -144,6 +144,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(transactionBody.getAdminKey().toByteArray(), Entity::getKey)
                 .returns(EntityId.of(transactionBody.getProxyAccountID()), Entity::getProxyAccountId)
                 .returns(0, Entity::getMaxAutomaticTokenAssociations)
+                .returns(1L, Entity::getEthereumNonce)
                 .returns(transactionBody.getMemo(), Entity::getMemo);
     }
 

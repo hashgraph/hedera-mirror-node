@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -281,12 +282,13 @@ public class RecordItemBuilder {
 
     @SuppressWarnings("deprecation")
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
+        var createdContract = contractId();
         return ContractFunctionResult.newBuilder()
                 .setAmount(5_000L)
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
-                .addCreatedContractIDs(contractId())
+                .addCreatedContractIDs(createdContract)
                 .setErrorMessage(text(10))
                 .setFunctionParameters(bytes(64))
                 .setGas(10_000L)
@@ -309,7 +311,9 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
-                .setSenderId(accountId());
+                .setSenderId(accountId())
+                .addContractNonces(nonceInfo(contractId, 2))
+                .addContractNonces(nonceInfo(createdContract, 1));
     }
 
     @SuppressWarnings("deprecation")
@@ -757,6 +761,13 @@ public class RecordItemBuilder {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
+    }
+
+    private ContractNonceInfo nonceInfo(ContractID contractId, long nonce) {
+        return ContractNonceInfo.newBuilder()
+                .setContractId(contractId)
+                .setNonce(nonce)
+                .build();
     }
 
     private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
