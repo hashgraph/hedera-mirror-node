@@ -48,6 +48,8 @@ public interface Store {
 
     void updateAccount(Account updatedAccount);
 
+    void deleteAccount(Address accountAddress);
+
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
     /**

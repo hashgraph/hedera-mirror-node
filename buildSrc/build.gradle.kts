@@ -27,10 +27,6 @@ repositories {
     mavenCentral()
 }
 
-extra.apply {
-    set("springBootVersion", "3.1.0")
-}
-
 dependencies {
     val springBootVersion: String by rootProject.extra
     implementation("com.bmuschko:gradle-docker-plugin:9.3.1")
@@ -39,7 +35,7 @@ dependencies {
     implementation("com.github.node-gradle:gradle-node-plugin:5.0.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
-    implementation("com.graphql-java-generator:graphql-gradle-plugin:2.0")
+    implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.1b")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
     implementation("io.freefair.gradle:lombok-plugin:8.0.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
@@ -47,11 +43,8 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.5.3")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.6.0")
     implementation("org.owasp:dependency-check-gradle:8.2.1")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.2.0.3129")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-
-    // Temporary due to https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/16
-    implementation("org.springframework.boot:spring-boot-starter-graphql:${springBootVersion}")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.2.1.3168")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.1")
 
     // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
     implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.15")

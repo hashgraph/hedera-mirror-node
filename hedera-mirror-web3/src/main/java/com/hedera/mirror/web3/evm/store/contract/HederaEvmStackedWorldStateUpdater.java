@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
@@ -53,7 +52,7 @@ public class HederaEvmStackedWorldStateUpdater
     private final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
-            final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
+            final AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> updater,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,

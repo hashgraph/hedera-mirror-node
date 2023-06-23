@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -91,6 +92,17 @@ public class StoreImpl implements Store {
     public void updateAccount(final Account updatedAccount) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
+    }
+
+    @Override
+    public void deleteAccount(final Address accountAddress) {
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        try {
+            accountAccessor.delete(accountAddress);
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
     }
 
     @Override

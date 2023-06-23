@@ -20,7 +20,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -28,14 +30,33 @@ import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.*;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.*;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -176,8 +197,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(0).toSolidityAddress()))
+                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -191,8 +212,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -226,7 +247,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void checkIfValidAccountIsToken() {
         String selectorWithData = ContractMethods.IS_TOKEN_SELECTOR.getSelector()
                 + TestUtil.to32BytesString(
-                accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
+                        accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
         String contractClientAddress = contractClient.getClientAddress();
 
@@ -567,8 +588,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the type for a fungible token")
     public void getTypeForFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(0).toSolidityAddress()))
+                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -581,8 +602,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the type for a non fungible token")
     public void getTypeForNonFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector() + to32BytesString(
-                        tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -730,8 +751,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the balanceOf by direct call for a fungible token")
     public void getFungibleTokenBalanceOfByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.BALANCE_OF_SELECTOR.getSelector() + to32BytesString(
-                        contractClient.getClientAddress()))
+                .data(ContractMethods.BALANCE_OF_SELECTOR.getSelector()
+                        + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -793,8 +814,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the ownerOf by direct call for a non fungible token")
     public void getNonFungibleTokenOwnerOfByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.OWNER_OF_SELECTOR.getSelector() + to32BytesString(
-                        String.valueOf(firstNftSerialNumber)))
+                .data(ContractMethods.OWNER_OF_SELECTOR.getSelector()
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(1).toSolidityAddress())
                 .estimate(false)
@@ -807,8 +828,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.GET_APPROVED_SELECTOR.getSelector() + to32BytesString(
-                        String.valueOf(firstNftSerialNumber)))
+                .data(ContractMethods.GET_APPROVED_SELECTOR.getSelector()
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -818,24 +839,11 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token")
-    public void getNonFungibleTokenIsApprovedForAllByDirectCall() throws Exception {
+    public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR.getSelector()
                         + to32BytesString(contractClient.getClientAddress())
                         + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()))
-                .from(contractClient.getClientAddress())
-                .to(tokenIds.get(0).toSolidityAddress())
-                .estimate(false)
-                .build();
-        ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
-        assertFalse(response.getResultAsBoolean());
-    }
-
-    @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token - owner")
-    public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() throws Exception {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR.getSelector()
-                        + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -866,7 +874,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(1)).isEqualTo(10);
         assertThat((long) fractionalFee.get(2)).isZero();
         assertThat((long) fractionalFee.get(3)).isZero();
-        assertFalse((boolean) fractionalFee.get(4));
+        assertThat((boolean) fractionalFee.get(4)).isFalse();
         assertThat(royaltyFees).isEmpty();
     }
 
@@ -889,8 +897,9 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(royaltyFees).isNotEmpty();
     }
 
-    //ETHCALL-032
-    @And("I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token")
+    // ETHCALL-032
+    @And(
+            "I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token")
     public void getCustomFeesForFungibleTokenFractionalAndFixedFees() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
@@ -916,7 +925,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
     }
 
-    //ETHCALL-033
+    // ETHCALL-033
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee")
     public void getCustomFeesForFungibleTokenRoyaltyFee() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
@@ -934,11 +943,16 @@ public class PrecompileContractFeature extends AbstractFeature {
         Tuple royaltyFee = royaltyFees[0];
         assertThat((long) royaltyFee.get(0)).isEqualTo(5);
         assertThat((long) royaltyFee.get(1)).isEqualTo(10);
-        assertThat(royaltyFee.get(5).toString()).isEqualTo(
-                "0x" + tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress());
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
+                .isEqualTo("0x"
+                        + tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress());
     }
 
-    //ETHCALL-034
+    // ETHCALL-034
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback")
     public void getCustomFeesForFungibleTokenRoyaltyFeeAndFallback() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
@@ -957,9 +971,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) royaltyFee.get(2)).isEqualTo(new Hbar(1).toTinybars());
         assertThat(royaltyFee.get(3).toString()).hasToString(ZERO_ADDRESS);
         assertTrue((boolean) royaltyFee.get(4));
-        assertThat(royaltyFee.get(5).toString()).hasToString(
-                "0x" + tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress());
-
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
+                .hasToString("0x"
+                        + tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress());
     }
 
     private void tokenKeyCheck(final Tuple result) {
@@ -1066,7 +1084,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     private void persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[]{});
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;

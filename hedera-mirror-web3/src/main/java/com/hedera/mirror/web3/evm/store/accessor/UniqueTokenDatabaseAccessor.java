@@ -25,9 +25,9 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 

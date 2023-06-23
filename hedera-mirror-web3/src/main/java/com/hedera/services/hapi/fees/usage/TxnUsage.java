@@ -25,6 +25,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public abstract class TxnUsage {
     protected static final int AMOUNT_REPR_BYTES = 8;
     protected static final UsageProperties usageProperties = USAGE_PROPERTIES;

@@ -19,35 +19,34 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
+import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Import(IntegrationTestConfiguration.class)
 class PrecompileMapperTest {
 
-    @InjectMocks
-    private PrecompileMapper subject;
+    @Autowired
+    private MockPrecompile mockPrecompile;
 
-    @BeforeEach
-    void setup() {
-        subject.setSupportedPrecompiles(Set.of(new MockPrecompile()));
-    }
+    @Autowired
+    private PrecompileMapper precompileMapper;
 
     @Test
     void nonExistingAbiReturnsEmpty() {
         int functionSelector = 0x11111111;
-        final var result = subject.lookup(functionSelector);
+        final var result = precompileMapper.lookup(functionSelector);
         assertThat(result).isEmpty();
     }
 
     @Test
     void supportedPrecompileIsFound() {
         int functionSelector = 0x00000000;
-        final var result = subject.lookup(functionSelector);
+        final var result = precompileMapper.lookup(functionSelector);
         assertThat(result).isNotEmpty();
     }
 
@@ -55,6 +54,7 @@ class PrecompileMapperTest {
     void unsupportedPrecompileThrowsException() {
         int functionSelector = 0x189a554c;
 
-        assertThatThrownBy(() -> subject.lookup(functionSelector)).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> precompileMapper.lookup(functionSelector))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }
