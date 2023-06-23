@@ -568,8 +568,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             }
         }
 
-        log.debug("Kept {} of {} nodes, for stake of {} / {}", nodes.size(), allNodes.size(), aggregateStake,
-            nodes.get(0).getTotalStake());
+        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", nodes.size(), allNodes.size(),
+                aggregateStake, nodes.get(0).getTotalStake());
         return nodes;
     }
 }
