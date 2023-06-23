@@ -20,7 +20,7 @@ import com.graphql_java_generator.plugin.conf.PluginMode
 description = "Hedera Mirror Node GraphQL"
 
 plugins {
-    id("com.graphql-java-generator.graphql-gradle-plugin")
+    id("com.graphql-java-generator.graphql-gradle-plugin3")
     id("spring-conventions")
 }
 

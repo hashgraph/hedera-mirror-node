@@ -99,6 +99,10 @@ public class LoggingReporter implements ConcurrentEventListener, ColorAware {
 
     private Logger getLogger(TestStep step) {
         var location = step.getCodeLocation();
+        if (location == null) {
+            return log;
+        }
+
         int index = location.lastIndexOf('(');
 
         if (index > 0) {
