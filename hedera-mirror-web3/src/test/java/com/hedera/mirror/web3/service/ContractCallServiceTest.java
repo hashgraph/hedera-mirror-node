@@ -240,21 +240,16 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
-    /**
-     * _to.transfer(msg.value) fails due to missing support of auto account creation, this will be
-     * supported with future release with gas_estimate support.
-     */
     @Test
     void transferThruContract() {
         // transferHbarsToAddress(address)
         final var stateChangePayable = "0x80b9f03c0000000000000000000000000000000000000000000000000000000000000742";
         final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var successfulReadResponse = "0x";
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        assertThat(contractCallService.processCall(params)).isEqualTo(successfulReadResponse);
     }
 
     @Test

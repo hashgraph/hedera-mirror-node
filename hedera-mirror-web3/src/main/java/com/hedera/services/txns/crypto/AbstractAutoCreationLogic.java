@@ -162,12 +162,28 @@ public abstract class AbstractAutoCreationLogic {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     * @param alias
+     * @param balance
+     * @return
+     */
     private TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     * @param alias
+     * @param key
+     * @param balance
+     * @param maxAutoAssociations
+     * @return
+     */
     private TransactionBody.Builder createAccount(
             final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
@@ -179,6 +195,12 @@ public abstract class AbstractAutoCreationLogic {
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     * @param balance
+     * @return
+     */
     private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
         return CryptoCreateTransactionBody.newBuilder()
                 .setInitialBalance(balance)

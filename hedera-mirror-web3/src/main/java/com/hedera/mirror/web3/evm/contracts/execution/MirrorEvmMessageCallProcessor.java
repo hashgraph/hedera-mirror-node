@@ -60,6 +60,11 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
+    /**
+     * This logic is copied from hedera-services HederaMessageCallProcessor.
+     * @param frame
+     * @param operationTracer
+     */
     @Override
     protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
