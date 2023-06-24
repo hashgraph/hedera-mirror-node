@@ -42,7 +42,11 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
+import com.hedera.services.txn.token.BurnLogic;
+import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Collections;
@@ -223,6 +227,11 @@ public class EvmConfiguration {
     }
 
     @Bean
+    OptionValidator optionValidator(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new ContextOptionValidator(mirrorNodeEvmProperties);
+    }
+
+    @Bean
     AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
@@ -230,5 +239,15 @@ public class EvmConfiguration {
     @Bean
     AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
         return new AutoCreationLogic(feeCalculator, evmProperties);
+    }
+
+    @Bean
+    MintLogic mintLogic(OptionValidator optionValidator) {
+        return new MintLogic(optionValidator);
+    }
+
+    @Bean
+    BurnLogic burnLogic(OptionValidator optionValidator) {
+        return new BurnLogic(optionValidator);
     }
 }

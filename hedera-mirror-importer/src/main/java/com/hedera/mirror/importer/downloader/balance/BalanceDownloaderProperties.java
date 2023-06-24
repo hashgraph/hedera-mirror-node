@@ -23,18 +23,20 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@Data
-@Component
-@Validated
+@Component("balanceDownloaderProperties")
 @ConfigurationProperties("hedera.mirror.importer.downloader.balance")
+@Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Validated
 public class BalanceDownloaderProperties implements DownloaderProperties {
 
     private final MirrorProperties mirrorProperties;
-
     private final CommonDownloaderProperties common;
 
     private boolean enabled = true;

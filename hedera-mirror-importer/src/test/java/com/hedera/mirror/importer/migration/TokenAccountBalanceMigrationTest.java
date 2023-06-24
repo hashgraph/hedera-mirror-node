@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -266,7 +265,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         domainBuilder
                 .token()
                 .customize(c -> c.supplyType(TokenSupplyTypeEnum.FINITE)
-                        .tokenId(new TokenId(tokenId1))
+                        .tokenId(tokenId1.getId())
                         .totalSupply(1_000_000_000L)
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .build())
@@ -274,7 +273,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         domainBuilder
                 .token()
                 .customize(c -> c.supplyType(TokenSupplyTypeEnum.FINITE)
-                        .tokenId(new TokenId(tokenId2))
+                        .tokenId(tokenId2.getId())
                         .totalSupply(1_000_000_000L)
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .build())

@@ -28,7 +28,6 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
@@ -249,7 +248,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(new TokenId(tokenEntityId))
+                .customize(t -> t.tokenId(tokenEntityId.getId())
                         .treasuryAccountId(EntityId.of(0, 0, senderEntityId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .kycKey(key)
@@ -257,13 +256,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)
+                        .name("Hbars")
                         .totalSupply(12345L)
                         .decimals(12)
                         .wipeKey(key)
                         .freezeKey(key)
                         .pauseStatus(TokenPauseStatusEnum.PAUSED)
                         .pauseKey(key)
-                        .supplyKey(key))
+                        .supplyKey(key)
+                        .symbol("HBAR"))
                 .persist();
 
         return tokenEntityId;
@@ -362,19 +363,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(new TokenId(nftEntityId))
+                .customize(t -> t.tokenId(nftEntityId.getId())
                         .treasuryAccountId(EntityId.of(0, 0, senderEntityId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .kycKey(key)
                         .freezeDefault(true)
                         .feeScheduleKey(key)
                         .maxSupply(1L)
+                        .name("Hbars")
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(key)
                         .pauseKey(key)
                         .pauseStatus(TokenPauseStatusEnum.PAUSED)
                         .wipeKey(key)
                         .supplyKey(key)
+                        .symbol("HBAR")
                         .wipeKey(key))
                 .persist();
 

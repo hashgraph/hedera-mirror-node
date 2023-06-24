@@ -56,9 +56,10 @@ class TokenBurnTransactionHandler implements TransactionHandler {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
 
-        var token = Token.of(tokenId);
+        var token = new Token();
+        token.setTimestampLower(consensusTimestamp);
         token.setTotalSupply(newTotalSupply);
-        token.setModifiedTimestamp(consensusTimestamp);
+        token.setTokenId(tokenId.getId());
         entityListener.onToken(token);
 
         transactionBody.getSerialNumbersList().forEach(serialNumber -> {

@@ -107,7 +107,7 @@ const tokenInfoSelectFields = [
   'kyc_key',
   'max_supply',
   'e.memo',
-  't.modified_timestamp',
+  'lower(t.timestamp_range) as modified_timestamp',
   'name',
   'pause_key',
   'pause_status',
