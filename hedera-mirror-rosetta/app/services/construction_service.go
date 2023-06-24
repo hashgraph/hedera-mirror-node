@@ -26,6 +26,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"math/big"
 	"strings"
 	"time"
@@ -172,52 +173,30 @@ func (c *constructionAPIService) ConstructionMetadata(
 		return nil, rErr
 	}
 
-	response := &rTypes.ConstructionMetadataResponse{
-		Metadata:     request.Options,
-		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
-	}
+	metadata := maps.Clone(request.Options)
+	delete(metadata, optionKeyAccountAliases)
 
-	if options[optionKeyAccountAliases] == nil {
-		return response, nil
+	if resolved, rErr := c.resolveAccountAliases(ctx, options); rErr != nil {
+		return nil, rErr
+	} else if resolved != "" {
+		metadata[metadataKeyAccountMap] = resolved
 	}
-
-	if !c.BaseService.IsOnline() {
-		return nil, errors.ErrEndpointNotSupportedInOfflineMode
-	}
-
-	accountAliases, ok := options[optionKeyAccountAliases].(string)
-	if !ok {
-		return nil, errors.ErrInvalidOptions
-	}
-
-	var accountMap []string
-	for _, accountAlias := range strings.Split(accountAliases, ",") {
-		accountId, err := types.NewAccountIdFromString(accountAlias, c.systemShard, c.systemRealm)
-		if err != nil {
-			return nil, errors.ErrInvalidAccount
-		}
-
-		found, rErr := c.accountRepo.GetAccountId(ctx, accountId)
-		if rErr != nil {
-			return nil, rErr
-		}
-		accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
-	}
-	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
-	delete(response.Metadata, optionKeyAccountAliases)
 
 	// node account id
 	nodeAccountId, rErr := c.getRandomNodeAccountId()
 	if rErr != nil {
 		return nil, rErr
 	}
-	response.Metadata[metadataKeyNodeAccountId] = nodeAccountId.String()
+	metadata[metadataKeyNodeAccountId] = nodeAccountId.String()
 
 	// pass the value as a string to avoid being deserialized into data types like float64
 	validUntilNanos := time.Now().UnixNano() + maxValidDurationNanos
-	response.Metadata[metadataKeyValidUntilNanos] = fmt.Sprintf("%d", validUntilNanos)
+	metadata[metadataKeyValidUntilNanos] = fmt.Sprintf("%d", validUntilNanos)
 
-	return response, nil
+	return &rTypes.ConstructionMetadataResponse{
+		Metadata:     metadata,
+		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
+	}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
@@ -420,7 +399,6 @@ func (c *constructionAPIService) getTransactionNodeAccountId(metadata map[string
 
 	log.Infof("Use node account id %s from metadata", str)
 	return nodeAccountId, nilErr
-
 }
 
 func (c *constructionAPIService) getTransactionTimestampProperty(metadata map[string]interface{}) (
@@ -581,6 +559,40 @@ func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interfa
 	}
 
 	return metadataValue, nil
+}
+
+func (c *constructionAPIService) resolveAccountAliases(
+	ctx context.Context,
+	options map[string]interface{},
+) (emptyResult string, nilErr *rTypes.Error) {
+	if options[optionKeyAccountAliases] == nil {
+		return
+	}
+
+	if !c.BaseService.IsOnline() {
+		return emptyResult, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
+	accountAliases, ok := options[optionKeyAccountAliases].(string)
+	if !ok {
+		return emptyResult, errors.ErrInvalidOptions
+	}
+
+	var accountMap []string
+	for _, accountAlias := range strings.Split(accountAliases, ",") {
+		accountId, err := types.NewAccountIdFromString(accountAlias, c.systemShard, c.systemRealm)
+		if err != nil {
+			return emptyResult, errors.ErrInvalidAccount
+		}
+
+		found, rErr := c.accountRepo.GetAccountId(ctx, accountId)
+		if rErr != nil {
+			return emptyResult, rErr
+		}
+		accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
+	}
+
+	return strings.Join(accountMap, ","), nilErr
 }
 
 func isValidTransactionValidDuration(validDuration int64) bool {

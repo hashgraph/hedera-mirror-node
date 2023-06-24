@@ -495,7 +495,7 @@ func TestConstructionMetadataOnline(t *testing.T) {
 		rosettaConfig,
 		mockTransactionConstructor,
 	)
-	res, e := service.ConstructionMetadata(defaultContext, request)
+	res, err := service.ConstructionMetadata(defaultContext, request)
 
 	// then
 	mockAccountRepo.AssertExpectations(t)
@@ -507,7 +507,26 @@ func TestConstructionMetadataOnline(t *testing.T) {
 	delete(res.Metadata, metadataKeyValidUntilNanos)
 
 	assert.Equal(t, expectedResponse, res)
-	assert.Nil(t, e)
+	assert.Nil(t, err)
+
+	// given
+	delete(request.Options, optionKeyAccountAliases)
+	delete(expectedResponse.Metadata, metadataKeyAccountMap)
+
+	// when
+	res, err = service.ConstructionMetadata(defaultContext, request)
+
+	// then
+	mockAccountRepo.AssertNumberOfCalls(t, "GetAccountId", 1)
+	mockTransactionConstructor.AssertNumberOfCalls(t, "GetDefaultMaxTransactionFee", 2)
+
+	assert.IsType(t, "", res.Metadata[metadataKeyValidUntilNanos])
+	validUntilNanos, _ = strconv.ParseInt(res.Metadata[metadataKeyValidUntilNanos].(string), 10, 64)
+	assert.InDelta(t, validUntilNanos, time.Now().Add(maxValidDurationNanos).UnixNano(), 3_000_000_000)
+	delete(res.Metadata, metadataKeyValidUntilNanos)
+
+	assert.Equal(t, expectedResponse, res)
+	assert.Nil(t, err)
 }
 
 func TestConstructionMetadataOffline(t *testing.T) {
@@ -521,7 +540,10 @@ func TestConstructionMetadataOffline(t *testing.T) {
 		Options:           map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
 	}
 	expectedResponse := &rTypes.ConstructionMetadataResponse{
-		Metadata:     map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
+		Metadata: map[string]interface{}{
+			metadataKeyNodeAccountId: "0.0.3",
+			optionKeyOperationType:   types.OperationTypeCryptoTransfer,
+		},
 		SuggestedFee: []*rTypes.Amount{{Value: "100", Currency: types.CurrencyHbar}},
 	}
 
@@ -529,15 +551,19 @@ func TestConstructionMetadataOffline(t *testing.T) {
 	service, _ := NewConstructionAPIService(
 		nil,
 		offlineBaseService,
-		defaultConfig,
+		singleNodeConfig,
 		mockTransactionConstructor,
 	)
-	res, e := service.ConstructionMetadata(defaultContext, request)
+	res, err := service.ConstructionMetadata(defaultContext, request)
 
 	// then
 	mockTransactionConstructor.AssertExpectations(t)
+	assert.IsType(t, "", res.Metadata[metadataKeyValidUntilNanos])
+	validUntilNanos, _ := strconv.ParseInt(res.Metadata[metadataKeyValidUntilNanos].(string), 10, 64)
+	assert.InDelta(t, validUntilNanos, time.Now().Add(maxValidDurationNanos).UnixNano(), 3_000_000_000)
+	delete(res.Metadata, metadataKeyValidUntilNanos)
 	assert.Equal(t, expectedResponse, res)
-	assert.Nil(t, e)
+	assert.Nil(t, err)
 }
 
 func TestConstructionMetadataOfflineAccountAliasesFail(t *testing.T) {
