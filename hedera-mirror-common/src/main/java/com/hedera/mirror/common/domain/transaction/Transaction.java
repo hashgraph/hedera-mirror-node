@@ -73,7 +73,6 @@ public class Transaction implements Persistable<Long> {
     private Long maxFee;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @ToString.Exclude
     @Type(JsonBinaryType.class)
     private List<NftTransfer> nftTransfer;
 

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -50,7 +51,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Token getFungibleToken(final Address address, final OnMissing throwIfMissing) {
+    public Token getToken(final Address address, final OnMissing throwIfMissing) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 
@@ -94,13 +95,24 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public void deleteAccount(final Address accountAddress) {
+        final var topFrame = stackedStateFrames.top();
+        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        try {
+            accountAccessor.delete(accountAddress);
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
+    }
+
+    @Override
     public void updateTokenRelationship(final TokenRelationship updatedTokenRelationship) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
         tokenRelationshipAccessor.set(keyFromRelationship(updatedTokenRelationship), updatedTokenRelationship);
     }
 
     @Override
-    public void updateFungibleToken(final Token fungibleToken) {
+    public void updateToken(final Token fungibleToken) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         tokenAccessor.set(fungibleToken.getId().asEvmAddress(), fungibleToken);
     }

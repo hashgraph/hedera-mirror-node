@@ -43,7 +43,6 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
@@ -114,8 +113,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
 
-    private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
-    private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
@@ -155,10 +152,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
 
     private Set<TransactionType> defaultTransactionHashTypes;
-
-    private static Key keyFromString(String key) {
-        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
-    }
 
     @BeforeEach
     void beforeEach() {
@@ -1267,7 +1260,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var nftTransfers = List.of(nftTransfer1, nftTransfer2, nftTransfer3);
         // token account upsert needs token class in db
         nftTransfers.forEach(transfer -> {
-            var tokenId = new TokenId(transfer.getTokenId());
+            var tokenId = transfer.getTokenId().getId();
             domainBuilder
                     .token()
                     .customize(t -> t.tokenId(tokenId).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
@@ -1319,16 +1312,17 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .token()
                 .customize(t -> t.type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
-        var tokenId = token.getTokenId().getTokenId();
+        var tokenId = token.getTokenId();
         var tokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.balance(2L).tokenId(tokenId.getId()))
+                .customize(ta -> ta.balance(2L).tokenId(tokenId))
                 .persist();
+
         var nftTransfer = domainBuilder
                 .nftTransfer()
                 .customize(t -> t.receiverAccountId(EntityId.EMPTY)
                         .senderAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT))
-                        .tokenId(tokenId))
+                        .tokenId(EntityId.of(tokenId, TOKEN)))
                 .get();
         var transaction = domainBuilder
                 .transaction()
@@ -1357,16 +1351,17 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .token()
                 .customize(t -> t.type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
-        var tokenId = token.getTokenId().getTokenId();
+        var tokenId = token.getTokenId();
         var tokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenId.getId()))
+                .customize(ta -> ta.tokenId(tokenId))
                 .persist();
+
         var nftTransfer = domainBuilder
                 .nftTransfer()
                 .customize(t -> t.receiverAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT))
                         .senderAccountId(EntityId.EMPTY)
-                        .tokenId(tokenId))
+                        .tokenId(EntityId.of(tokenId, TOKEN)))
                 .get();
         var transaction = domainBuilder
                 .transaction()
@@ -1597,8 +1592,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onToken() {
-        Token token1 = getToken(EntityId.of("0.0.3", TOKEN), EntityId.of("0.0.5", ACCOUNT), 1L, 1L);
-        Token token2 = getToken(EntityId.of("0.0.7", TOKEN), EntityId.of("0.0.11", ACCOUNT), 2L, 2L);
+        // given
+        var token1 = domainBuilder.token().get();
+        var token2 = domainBuilder.token().get();
 
         // when
         sqlEntityListener.onToken(token1);
@@ -1607,158 +1603,125 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(token1, token2);
+        assertThat(findHistory(Token.class, "token_id")).isEmpty();
     }
 
     @Test
     void onTokenMerge() {
-        EntityId tokenId = EntityId.of("0.0.3", TOKEN);
-        EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
+        // given
+        var tokenCreate = domainBuilder.token().get();
+        sqlEntityListener.onToken(tokenCreate);
 
-        // save token entities first
-        Token token = getToken(
-                tokenId,
-                accountId,
-                1L,
-                1L,
-                1000,
-                false,
-                keyFromString(KEY),
-                1_000_000_000L,
-                null,
-                "FOO COIN TOKEN",
-                null,
-                "FOOTOK",
-                null,
-                null,
-                TokenPauseStatusEnum.UNPAUSED);
-        sqlEntityListener.onToken(token);
-
-        Token tokenUpdated = getToken(
-                tokenId,
-                accountId,
-                null,
-                5L,
-                null,
-                null,
-                null,
-                null,
-                keyFromString(KEY2),
-                "BAR COIN TOKEN",
-                keyFromString(KEY),
-                "BARTOK",
-                keyFromString(KEY2),
-                keyFromString(KEY2),
-                TokenPauseStatusEnum.UNPAUSED);
-        sqlEntityListener.onToken(tokenUpdated);
+        var tokenUpdate = domainBuilder
+                .token()
+                .customize(t -> t.freezeDefault(true)
+                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .tokenId(tokenCreate.getTokenId())
+                        .totalSupply(null)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)) // Not possible, testing not updated
+                .get();
+        sqlEntityListener.onToken(tokenUpdate);
         completeFileAndCommit();
 
         // then
-        Token tokenMerged = getToken(
-                tokenId,
-                accountId,
-                1L,
-                5L,
-                1000,
-                false,
-                keyFromString(KEY),
-                1_000_000_000L,
-                keyFromString(KEY2),
-                "BAR COIN TOKEN",
-                keyFromString(KEY),
-                "BARTOK",
-                keyFromString(KEY2),
-                keyFromString(KEY2),
-                TokenPauseStatusEnum.UNPAUSED);
+        var tokenMerged = TestUtils.clone(tokenUpdate);
+        tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
+        tokenMerged.setDecimals(tokenCreate.getDecimals());
+        tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
+        tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
+        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
+        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
+        tokenMerged.setType(tokenCreate.getType());
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+
+        var tokenHistory = TestUtils.clone(tokenCreate);
+        tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
+        assertThat(findHistory(Token.class, "token_id")).containsExactlyInAnyOrder(tokenHistory);
     }
 
     @Test
     void onTokenConsecutiveNegativeTotalSupply() {
         // given
-        EntityId tokenId = EntityId.of("0.0.3", TOKEN);
-        EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
-
-        // save token
-        Token token = getToken(tokenId, accountId, 1L, 1L);
-        sqlEntityListener.onToken(token);
-        completeFileAndCommit();
+        var tokenCreate = domainBuilder.token().get();
+        var tokenId = tokenCreate.getTokenId();
+        var ts = tokenCreate.getCreatedTimestamp();
+        var tokenUpdate1 = Token.builder()
+                .timestampRange(Range.atLeast(ts + 1))
+                .tokenId(tokenId)
+                .totalSupply(-10L)
+                .build();
+        var tokenUpdate2 = Token.builder()
+                .timestampRange(Range.atLeast(ts + 2))
+                .tokenId(tokenId)
+                .totalSupply(-15L)
+                .build();
 
         // when
-        // two dissociate of the deleted token, both with negative amount
-        Token update = getTokenUpdate(tokenId, 5);
-        update.setTotalSupply(-10L);
-        sqlEntityListener.onToken(update);
+        sqlEntityListener.onToken(tokenCreate);
+        completeFileAndCommit();
 
-        update = getTokenUpdate(tokenId, 6);
-        update.setTotalSupply(-15L);
-        sqlEntityListener.onToken(update);
-
+        sqlEntityListener.onToken(tokenUpdate1);
+        sqlEntityListener.onToken(tokenUpdate2);
         completeFileAndCommit();
 
         // then
-        token.setTotalSupply(token.getTotalSupply() - 25);
-        token.setModifiedTimestamp(6);
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(token);
+        var expected = TestUtils.clone(tokenCreate);
+        expected.setTimestampLower(tokenUpdate2.getTimestampLower());
+        expected.setTotalSupply(tokenCreate.getTotalSupply() - 25);
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(expected);
+
+        var history1 = TestUtils.clone(tokenCreate);
+        var history2 = TestUtils.clone(tokenCreate);
+        history1.setTimestampUpper(tokenUpdate1.getTimestampLower());
+        history2.setTimestampLower(tokenUpdate1.getTimestampLower());
+        history2.setTimestampUpper(tokenUpdate2.getTimestampLower());
+        history2.setTotalSupply(history2.getTotalSupply() - 10);
+        assertThat(findHistory(Token.class, "token_id")).containsExactlyInAnyOrder(history1, history2);
     }
 
     @Test
     void onTokenMergeNegativeTotalSupply() {
         // given
-        EntityId tokenId = EntityId.of("0.0.3", TOKEN);
-        EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
+        var tokenCreate = domainBuilder.token().get();
+        var tokenDissociateDeleted = Token.builder()
+                .timestampRange(Range.atLeast(tokenCreate.getCreatedTimestamp() + 1))
+                .tokenId(tokenCreate.getTokenId())
+                .totalSupply(-10L)
+                .build();
 
         // when
-        // create token
-        Token token = getToken(tokenId, accountId, 1L, 1L);
-        sqlEntityListener.onToken(token);
-
-        // token dissociate of the deleted token
-        Token update = getTokenUpdate(tokenId, 5);
-        update.setTotalSupply(-10L);
-        sqlEntityListener.onToken(update);
-
+        sqlEntityListener.onToken(tokenCreate);
+        sqlEntityListener.onToken(tokenDissociateDeleted);
         completeFileAndCommit();
 
         // then
-        Token expected = getToken(tokenId, accountId, 1L, 5L);
+        var expected = TestUtils.clone(tokenCreate);
+        expected.setTimestampLower(tokenDissociateDeleted.getTimestampLower());
         expected.setTotalSupply(expected.getTotalSupply() - 10);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(expected);
+
+        var history = TestUtils.clone(tokenCreate);
+        history.setTimestampUpper(tokenDissociateDeleted.getTimestampLower());
+        assertThat(findHistory(Token.class, "token_id")).containsExactly(history);
     }
 
     @Test
     void onTokenAccount() {
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.5", TOKEN);
-
-        // save token entities first
-        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
-        Token token2 = getToken(tokenId2, EntityId.of("0.0.110", ACCOUNT), 2L, 2L);
+        var token1 = domainBuilder.token().get();
+        var token2 = domainBuilder.token().get();
         sqlEntityListener.onToken(token1);
         sqlEntityListener.onToken(token2);
         completeFileAndCommit();
 
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        EntityId accountId2 = EntityId.of("0.0.11", ACCOUNT);
-        TokenAccount tokenAccount1 = getTokenAccount(
-                tokenId1,
-                accountId1,
-                5L,
-                true,
-                false,
-                0,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
-                Range.atLeast(5L));
-        TokenAccount tokenAccount2 = getTokenAccount(
-                tokenId2,
-                accountId2,
-                6L,
-                true,
-                false,
-                0,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
-                Range.atLeast(6L));
+        var tokenAccount1 = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token1.getTokenId()))
+                .get();
+        var tokenAccount2 = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token2.getTokenId()))
+                .get();
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
@@ -2201,8 +2164,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         var token1 = domainBuilder
                 .token()
                 .customize(c -> c.createdTimestamp(1L)
-                        .modifiedTimestamp(1L)
-                        .tokenId(new TokenId(tokenId1))
+                        .timestampRange(Range.atLeast(1L))
+                        .tokenId(tokenId1.getId())
                         .totalSupply(1_000_000_000L)
                         .treasuryAccountId(EntityId.of("0.0.500", ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON))
@@ -2413,11 +2376,11 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        RecordFile recordFile = domainBuilder.recordFile().get();
+        RecordFile recordFile =
+                domainBuilder.recordFile().customize(r -> r.sidecars(List.of())).get();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
 
         assertThat(recordFileRepository.findAll()).contains(recordFile);
-        assertThat(sidecarFileRepository.findAll()).containsAll(recordFile.getSidecars());
     }
 
     private Collection<TokenAccount> findTokenAccountHistory() {
@@ -2485,24 +2448,19 @@ class SqlEntityListenerTest extends IntegrationTest {
         token.setInitialSupply(initialSupply);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
         token.setMaxSupply(0L);
-        token.setModifiedTimestamp(modifiedTimestamp);
         token.setName(name);
         token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
         token.setPauseStatus(pauseStatus);
         token.setSupplyKey(supplyKey != null ? supplyKey.toByteArray() : null);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol(symbol);
-        token.setTokenId(new TokenId(tokenId));
+        token.setTimestampLower(modifiedTimestamp);
+        token.setTokenId(tokenId.getId());
+        token.setTotalSupply(initialSupply);
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setTreasuryAccountId(accountId);
         token.setWipeKey(wipeKey != null ? wipeKey.toByteArray() : null);
 
-        return token;
-    }
-
-    private Token getTokenUpdate(EntityId tokenId, long modifiedTimestamp) {
-        Token token = Token.of(tokenId);
-        token.setModifiedTimestamp(modifiedTimestamp);
         return token;
     }
 

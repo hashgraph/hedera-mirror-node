@@ -60,7 +60,7 @@ public class DeletedTokenDissociateTransferUpsertQueryGenerator implements Upser
                 ''sender_account_id'', tdt.account_id,
                 ''serial_number'', tdt.amount,
                 ''token_id'', tdt.token_id
-              )) as transfer
+              ) order by tdt.token_id asc, tdt.amount asc) as transfer
               from {0} tdt
               join nft_token on nft_token.token_id = tdt.token_id
               group by tdt.consensus_timestamp

@@ -97,7 +97,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getInitialSupply(), Token::getInitialSupply)
                 .returns(transactionBody.getKycKey().toByteArray(), Token::getKycKey)
                 .returns(transactionBody.getMaxSupply(), Token::getMaxSupply)
-                .returns(consensusTimestamp, Token::getModifiedTimestamp)
+                .returns(consensusTimestamp, Token::getTimestampLower)
                 .returns(transactionBody.getName(), Token::getName)
                 .returns(transactionBody.getPauseKey().toByteArray(), Token::getPauseKey)
                 .returns(TokenPauseStatusEnum.UNPAUSED, Token::getPauseStatus)
@@ -107,7 +107,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getInitialSupply(), Token::getTotalSupply)
                 .returns(EntityId.of(transactionBody.getTreasury()), Token::getTreasuryAccountId)
                 .returns(TokenTypeEnum.fromId(transactionBody.getTokenTypeValue()), Token::getType)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId())
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
                 .returns(transactionBody.getWipeKey().toByteArray(), Token::getWipeKey);
 
         assertThat(customFee.getValue())

@@ -17,17 +17,16 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class MockLedgerWorldUpdater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> {
+public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> {
 
     public MockLedgerWorldUpdater(final HederaEvmWorldState world, final AccountAccessor accountAccessor) {
-        super(world, accountAccessor);
+        super(world, accountAccessor, null);
     }
 
     @Override

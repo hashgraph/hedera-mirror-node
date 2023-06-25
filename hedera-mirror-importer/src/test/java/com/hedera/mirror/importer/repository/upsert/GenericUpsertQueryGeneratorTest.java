@@ -69,13 +69,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     }
 
     @Test
-    void getInsertQueryHistory() {
-        UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getUpsertQuery()))
-                .isEqualTo(
-                        format(
-                                """
+    void getUpsertQueryHistory() {
+        var sql =
+                """
                 with current as (
                   select e.*
                   from entity e
@@ -113,9 +109,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     e.timestamp_range as e_timestamp_range,
                     e.type as e_type,
                     t.*
-                  from
-                    entity_temp t
-                    left join current e on e.id = t.id
+                  from entity_temp t
+                  left join current e on e.id = t.id
                 ),
                 existing_history as (
                   insert into
@@ -221,14 +216,11 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     )
                   select
                     distinct coalesce(alias, e_alias, null),
-                    coalesce(
-                      auto_renew_account_id,
-                      e_auto_renew_account_id,
-                      null
-                    ),
+                    coalesce(auto_renew_account_id, e_auto_renew_account_id, null),
                     coalesce(auto_renew_period, e_auto_renew_period, null),
                     case
-                      when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                      when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT')
+                      then coalesce(e_balance, 0) + coalesce(balance, 0)
                       else null
                     end,
                     coalesce(created_timestamp, e_created_timestamp, null),
@@ -239,11 +231,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     coalesce(expiration_timestamp, e_expiration_timestamp, null),
                     coalesce(id, e_id, null),
                     coalesce(key, e_key, null),
-                    coalesce(
-                      max_automatic_token_associations,
-                      e_max_automatic_token_associations,
-                      null
-                    ),
+                    coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null),
                     coalesce(memo, e_memo, ''),
                     coalesce(num, e_num, null),
                     coalesce(obtainer_id, e_obtainer_id, null),
@@ -251,11 +239,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     coalesce(proxy_account_id, e_proxy_account_id, null),
                     coalesce(public_key, e_public_key, null),
                     coalesce(realm, e_realm, null),
-                    coalesce(
-                      receiver_sig_required,
-                      e_receiver_sig_required,
-                      null
-                    ),
+                    coalesce(receiver_sig_required, e_receiver_sig_required, null),
                     coalesce(shard, e_shard, null),
                     coalesce(stake_period_start, e_stake_period_start, '-1'),
                     coalesce(staked_account_id, e_staked_account_id, null),
@@ -302,14 +286,11 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   )
                 select
                   coalesce(alias, e_alias, null),
-                  coalesce(
-                    auto_renew_account_id,
-                    e_auto_renew_account_id,
-                    null
-                  ),
+                  coalesce(auto_renew_account_id, e_auto_renew_account_id, null),
                   coalesce(auto_renew_period, e_auto_renew_period, null),
                   case
-                    when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                    when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT')
+                    then coalesce(e_balance, 0) + coalesce(balance, 0)
                     else null
                   end,
                   coalesce(created_timestamp, e_created_timestamp, null),
@@ -320,11 +301,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   coalesce(expiration_timestamp, e_expiration_timestamp, null),
                   coalesce(id, e_id, null),
                   coalesce(key, e_key, null),
-                  coalesce(
-                    max_automatic_token_associations,
-                    e_max_automatic_token_associations,
-                    null
-                  ),
+                  coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null),
                   coalesce(memo, e_memo, ''),
                   coalesce(num, e_num, null),
                   coalesce(obtainer_id, e_obtainer_id, null),
@@ -332,11 +309,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   coalesce(proxy_account_id, e_proxy_account_id, null),
                   coalesce(public_key, e_public_key, null),
                   coalesce(realm, e_realm, null),
-                  coalesce(
-                    receiver_sig_required,
-                    e_receiver_sig_required,
-                    null
-                  ),
+                  coalesce(receiver_sig_required, e_receiver_sig_required, null),
                   coalesce(shard, e_shard, null),
                   coalesce(stake_period_start, e_stake_period_start, '-1'),
                   coalesce(staked_account_id, e_staked_account_id, null),
@@ -354,8 +327,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   or (
                     timestamp_range is not null
                     and upper(timestamp_range) is null
-                  ) on conflict (id) do
-                update
+                  )
+                on conflict (id) do update
                 set
                   auto_renew_account_id = excluded.auto_renew_account_id,
                   auto_renew_period = excluded.auto_renew_period,
@@ -378,17 +351,19 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   submit_key = excluded.submit_key,
                   timestamp_range = excluded.timestamp_range,
                   type = excluded.type
-                """));
+                """;
+
+        var generator = factory.get(Entity.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getUpsertQuery()))
+                .isEqualTo(format(sql))
+                .doesNotContain(" and coalesce(e_created_timestamp, created_timestamp) is not null");
     }
 
     @Test
-    void getInsertQueryNoHistory() {
-        UpsertQueryGenerator generator = factory.get(Schedule.class);
-        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getUpsertQuery()))
-                .isEqualTo(
-                        format(
-                                """
+    void getUpsertQueryNoHistory() {
+        var sql =
+                """
                 with current as (
                   select
                     e.*
@@ -437,8 +412,19 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   coalesce(consensus_timestamp, e_consensus_timestamp) is not null on conflict (schedule_id) do
                 update
                 set
-                  executed_timestamp = excluded.executed_timestamp
-                """));
+                  executed_timestamp = excluded.executed_timestamp""";
+
+        var generator = factory.get(Schedule.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getUpsertQuery())).isEqualTo(format(sql));
+    }
+
+    @Test
+    void skipPartialUpdate() {
+        var generator = factory.get(Token.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getUpsertQuery()))
+                .contains("and coalesce(e_created_timestamp, created_timestamp) is not null");
     }
 
     private String format(String sql) {
