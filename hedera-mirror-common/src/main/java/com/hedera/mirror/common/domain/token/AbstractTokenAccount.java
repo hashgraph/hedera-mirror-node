@@ -17,14 +17,9 @@
 package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.IdClass;
@@ -34,7 +29,6 @@ import java.io.Serializable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractTokenAccount.Id.class)
@@ -61,9 +55,6 @@ public class AbstractTokenAccount implements History {
     @Enumerated(EnumType.ORDINAL)
     private TokenKycStatusEnum kycStatus;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
-    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
     @jakarta.persistence.Id
