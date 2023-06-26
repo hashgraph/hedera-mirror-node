@@ -696,6 +696,49 @@ public class Token {
     }
 
     /**
+     * Creates new instance of {@link Token} with updated paused in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param paused
+     * @return new instance of {@link Token} with updated {@link #paused} property
+     */
+    private Token createNewTokenWithPaused(Token oldToken, boolean paused) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
      * @param treasuryRel
@@ -1047,6 +1090,10 @@ public class Token {
 
     public boolean isPaused() {
         return paused;
+    }
+
+    public Token setPaused(boolean paused) {
+        return createNewTokenWithPaused(this, paused);
     }
 
     public Id getId() {

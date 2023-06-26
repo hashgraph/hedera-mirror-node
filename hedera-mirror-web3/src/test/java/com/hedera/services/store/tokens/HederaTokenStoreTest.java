@@ -28,6 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.*;
@@ -426,14 +427,51 @@ class HederaTokenStoreTest {
         verify(store).updateAccount(updated2CounterpartyAccount);
     }
 
-    //    @Test
-    //    void changingOwnerRejectsIllegitimateOwner() {
-    //        given(nftsLedger.get(aNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
-    //
-    //        final var status = subject.changeOwner(aNft, sponsor, counterparty);
-    //
-    //        assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
-    //    }
+    @Test
+    void changingOwnerRejectsIllegitimateOwner() {
+        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
+        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
+
+        // Set the owner to `counterparty` instead of `sponsor`
+        var nft = new UniqueToken(
+                Id.fromGrpcToken(aNft.tokenId()),
+                1234,
+                RichInstant.MISSING_INSTANT,
+                Id.fromGrpcAccount(counterparty),
+                Id.DEFAULT,
+                new byte[0]);
+
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
+        var sponsorRel = new TokenRelationship(token, sponsorAccount);
+
+        asTokenRelationshipKey(counterparty, aNft.tokenId());
+
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+                .willReturn(counterpartyAccount);
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
+
+        given(store.getFungibleToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.THROW))
+                .willReturn(token);
+        given(store.getFungibleToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
+        given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
+
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.THROW))
+                .willReturn(counterpartyRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(counterpartyRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.THROW))
+                .willReturn(sponsorRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(sponsorRel);
+
+        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+        assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
+    }
     //
     //    @Test
     //    void changingOwnerDoesTheExpected() {
@@ -660,75 +698,118 @@ class HederaTokenStoreTest {
     //            given(token.hasPauseKey()).willReturn(true);
     //        }
     //    }
-    //
-    //    @Test
-    //    void understandsPendingCreation() {
-    //        assertFalse(subject.isCreationPending());
-    //
-    //        subject.pendingId = misc;
-    //        assertTrue(subject.isCreationPending());
-    //    }
-    //
-    //    @Test
-    //    void adjustingRejectsMissingToken() {
-    //        given(backingTokens.contains(misc)).willReturn(false);
-    //
-    //        final var status = subject.adjustBalance(sponsor, misc, 1);
-    //
-    //        assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
-    //    }
-    //
-    //    @Test
-    //    void adjustingRejectsDeletedToken() {
-    //        given(token.isDeleted()).willReturn(true);
-    //
-    //        final var status = subject.adjustBalance(treasury, misc, 1);
-    //
-    //        assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
-    //    }
-    //
-    //    @Test
-    //    void adjustingRejectsPausedToken() {
-    //        given(token.isPaused()).willReturn(true);
-    //
-    //        final var status = subject.adjustBalance(treasury, misc, 1);
-    //
-    //        assertEquals(ResponseCodeEnum.TOKEN_IS_PAUSED, status);
-    //    }
-    //
-    //    @Test
-    //    void adjustingRejectsFungibleUniqueToken() {
-    //        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-    //
-    //        final var status = subject.adjustBalance(treasury, misc, 1);
-    //
-    //        assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, status);
-    //    }
-    //
-    //    @Test
-    //    void refusesToAdjustFrozenRelationship() {
-    //        given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(true);
-    //
-    //        final var status = subject.adjustBalance(treasury, misc, -1);
-    //
-    //        assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
-    //    }
-    //
-    //    @Test
-    //    void refusesToAdjustRevokedKycRelationship() {
-    //        given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(false);
-    //
-    //        final var status = subject.adjustBalance(treasury, misc, -1);
-    //
-    //        assertEquals(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN, status);
-    //    }
-    //
-    //    @Test
-    //    void refusesInvalidAdjustment() {
-    //        final var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
-    //
-    //        assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
-    //    }
+
+    @Test
+    void adjustingRejectsMissingToken() {
+        var account = new Account(Id.fromGrpcAccount(sponsor), 0);
+
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(Token.getEmptyToken());
+
+        final var status = subject.adjustBalance(sponsor, misc, 1);
+
+        assertEquals(INVALID_TOKEN_ID, status);
+    }
+
+    @Test
+    void adjustingRejectsDeletedToken() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        final var status = subject.adjustBalance(treasury, misc, 1);
+
+        assertEquals(TOKEN_WAS_DELETED, status);
+    }
+
+    @Test
+    void adjustingRejectsPausedToken() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc)).setPaused(true);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        final var status = subject.adjustBalance(treasury, misc, 1);
+
+        assertEquals(TOKEN_IS_PAUSED, status);
+    }
+
+    @Test
+    void adjustingRejectsFungibleUniqueToken() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc)).setType(TokenType.NON_FUNGIBLE_UNIQUE);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        final var status = subject.adjustBalance(treasury, misc, 1);
+
+        assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, status);
+    }
+
+    @Test
+    void refusesToAdjustFrozenRelationship() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc));
+        var tokenRelationship = new TokenRelationship(token, account).setFrozen(true);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+                .willReturn(tokenRelationship);
+
+        final var status = subject.adjustBalance(treasury, misc, -1);
+
+        assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+    }
+
+    @Test
+    void refusesToAdjustRevokedKycRelationship() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc));
+        var tokenRelationship = new TokenRelationship(token, account).setKycGranted(false);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+                .willReturn(tokenRelationship);
+
+        final var status = subject.adjustBalance(treasury, misc, -1);
+
+        assertEquals(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN, status);
+    }
+
+    @Test
+    void refusesInvalidAdjustment() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc));
+        var tokenRelationship = new TokenRelationship(token, account);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getFungibleToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+                .willReturn(tokenRelationship);
+
+        final var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
+
+        assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
+    }
     //
     //    @Test
     //    void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
