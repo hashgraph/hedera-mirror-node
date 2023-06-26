@@ -16,7 +16,9 @@
 
 package com.hedera.services.ledger;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityNum.fromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -39,6 +41,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class TransferLogic {
@@ -84,7 +87,7 @@ public class TransferLogic {
                     validity = hederaTokenStore.tryTokenChange(change);
                 }
             } else if (change.isForHbar()) {
-                if (change.affectsAccount(topLevelPayer)) {
+                if (change.affectsAccount(accountIdFromEvmAddress(topLevelPayer))) {
                     updatedPayerBalance = change.getNewBalance();
                 }
             } else {
@@ -180,7 +183,8 @@ public class TransferLogic {
         final var alias = change.getNonEmptyAliasIfPresent();
 
         if (alias != null) {
-            final var aliasNum = mirrorEvmContractAliases.lookupIdBy(alias);
+            final var aliasNum = fromEvmAddress(
+                    mirrorEvmContractAliases.resolveForEvm(Address.wrap(Bytes.wrap(alias.toByteArray()))));
             if (aliasNum != EntityNum.MISSING_NUM) {
                 change.replaceNonEmptyAliasWith(aliasNum);
             }
