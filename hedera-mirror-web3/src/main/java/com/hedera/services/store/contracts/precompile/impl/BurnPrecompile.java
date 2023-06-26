@@ -38,18 +38,20 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class BurnPrecompile extends AbstractWritePrecompile{
+public class BurnPrecompile extends AbstractWritePrecompile {
 
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
+
     private final EncodingFacade encoder;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private BurnWrapper burnOp;
     private final OptionValidator optionValidator;
 
+    private BurnWrapper burnOp;
+
     public BurnPrecompile(
+            final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final PrecompilePricingUtils pricingUtils,
             final OptionValidator optionValidator) {
         super(pricingUtils);
         this.encoder = encoder;
@@ -84,14 +86,8 @@ public class BurnPrecompile extends AbstractWritePrecompile{
     public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
         Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
 
-        /* --- Check required signatures --- */ // TODO: delete comment?
         final var burnBody = transactionBody.getTokenBurn();
         final var tokenId = burnBody.getToken();
-
-        // TODO: do I need that?
-        /*final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases, TokenBurn);
-        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, BURN);*/
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var burnLogic = new BurnLogic(optionValidator);
