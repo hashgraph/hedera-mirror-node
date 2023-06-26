@@ -550,6 +550,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
         // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
         if (nodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
+            log.debug("partialCollection: Kept all {} nodes", nodes.size());
             return nodes;
         }
         // shuffle nodes into a random order
@@ -557,9 +558,9 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         // only keep "just enough" nodes to reach/exceed downloadRatio
         BigDecimal neededStake = BigDecimal.valueOf(nodes.get(0).getTotalStake()).multiply(downloadRatio);
-        BigDecimal aggregateStake = BigDecimal.ZERO; // sum of the stake of all nodes (evaluated so far)
+        BigDecimal aggregateStake = BigDecimal.ZERO; // sum of the stake of all nodes evaluated so far
         int lastEntry = 0; // "right-most" value to keep in the collection
-        while (aggregateStake.compareTo(neededStake) == -1) {
+        while (aggregateStake.compareTo(neededStake) < 0) {
             aggregateStake = aggregateStake.add(BigDecimal.valueOf(nodes.get(lastEntry++).getStake()));
         }
 
