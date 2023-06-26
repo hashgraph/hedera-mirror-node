@@ -66,9 +66,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private long htsDefaultGasCost = 10000;
 
     @Getter
+    @Min(1)
     private int maxBatchSizeBurn = 10;
 
     @Getter
+    @Min(1)
     private int maxBatchSizeMint = 10;
 
     // maximum iteration count for estimate gas' search algorithm

@@ -70,9 +70,9 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener).onNft(nft.capture());
 
         assertThat(token.getValue())
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId())
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
                 .returns(receipt.getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp);
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower);
 
         assertThat(nft.getValue())
                 .returns(true, Nft::getDeleted)

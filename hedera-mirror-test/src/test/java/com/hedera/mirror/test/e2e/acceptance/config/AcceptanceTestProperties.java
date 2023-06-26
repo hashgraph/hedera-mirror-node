@@ -27,13 +27,16 @@ import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Named
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
 @Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class AcceptanceTestProperties {
 

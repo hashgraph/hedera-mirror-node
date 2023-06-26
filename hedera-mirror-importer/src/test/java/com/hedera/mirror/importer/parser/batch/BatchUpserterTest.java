@@ -38,7 +38,6 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
@@ -243,14 +242,14 @@ class BatchUpserterTest extends IntegrationTest {
 
         // when
         Token update = new Token();
-        update.setModifiedTimestamp(8L);
+        update.setTimestampLower(8L);
         update.setTokenId(token.getTokenId());
         update.setTotalSupply(-50L);
         persist(batchPersister, List.of(update));
 
         // then
+        token.setTimestampLower(8L);
         token.setTotalSupply(token.getTotalSupply() - 50L);
-        token.setModifiedTimestamp(8L);
         assertThat(tokenRepository.findAll()).containsOnly(token);
     }
 
@@ -731,12 +730,13 @@ class BatchUpserterTest extends IntegrationTest {
         token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
         token.setPauseStatus(pauseKey != null ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE);
         token.setMaxSupply(1_000_000_000L);
-        token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN" + tokenId);
         token.setSupplyKey(hexKey);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK" + tokenId);
-        token.setTokenId(new TokenId(EntityId.of(tokenId, TOKEN)));
+        token.setTimestampLower(3L);
+        token.setTokenId(EntityId.of(tokenId, TOKEN).getId());
+        token.setTotalSupply(token.getInitialSupply());
         token.setTreasuryAccountId(EntityId.of(treasuryAccountId, ACCOUNT));
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);

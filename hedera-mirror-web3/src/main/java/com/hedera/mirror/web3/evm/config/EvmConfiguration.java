@@ -44,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
+import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -253,16 +254,21 @@ public class EvmConfiguration {
     }
 
     @Bean
-    MintLogic mintLogic(OptionValidator optionValidator) {
-        return new MintLogic(optionValidator);
-    }
-
-    @Bean
     MintPrecompile mintPrecompile(
             PrecompilePricingUtils precompilePricingUtils,
             EncodingFacade encodingFacade,
             SyntheticTxnFactory syntheticTxnFactory,
             OptionValidator optionValidator) {
         return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, optionValidator);
+    }
+
+    @Bean
+    MintLogic mintLogic(OptionValidator optionValidator) {
+        return new MintLogic(optionValidator);
+    }
+
+    @Bean
+    BurnLogic burnLogic(OptionValidator optionValidator) {
+        return new BurnLogic(optionValidator);
     }
 }

@@ -360,8 +360,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                 // for the token transfer of a deleted token in a token dissociate transaction, the amount is negative
                 // to bring the account's balance of the token to 0. Set the totalSupply of the token object to the
                 // negative amount, later in the pipeline the token total supply will be reduced accordingly
-                Token token = Token.of(tokenId);
-                token.setModifiedTimestamp(consensusTimestamp);
+                Token token = new Token();
+                token.setTimestampLower(consensusTimestamp);
+                token.setTokenId(tokenId.getId());
                 token.setTotalSupply(accountAmount.getAmount());
                 entityListener.onToken(token);
             }
