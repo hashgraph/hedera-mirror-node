@@ -70,6 +70,16 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                oldUniqueToken.owner,
+                newSpender,
+                oldUniqueToken.metadata);
+    }
+
     public NftId getNftId() {
         return nftId;
     }
@@ -96,6 +106,10 @@ public class UniqueToken {
 
     public UniqueToken setOwner(Id newOwner) {
         return createNewUniqueTokenWithNewOwner(this, newOwner);
+    }
+
+    public UniqueToken setSpender(Id newSpender) {
+        return createNewUniqueTokenWithNewSpender(this, newSpender);
     }
 
     public Id getSpender() {
