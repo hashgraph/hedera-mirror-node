@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.token;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
@@ -29,6 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -51,6 +51,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenAccessorImpl implements TokenAccessor {
 
     private final MirrorNodeEvmProperties properties;
+    private final MirrorEntityAccess mirrorEntityAccess;
     private final Store store;
 
     @Override
@@ -78,8 +79,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isTokenAddress(final Address address) {
-        final var entityOptional = store.getEntity(address, OnMissing.DONT_THROW);
-        return entityOptional.filter(e -> e.getType() == TOKEN).isPresent();
+        return !store.getToken(address, OnMissing.DONT_THROW).isEmptyToken();
     }
 
     @Override
@@ -231,7 +231,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
         final var tokenEntity = store.getToken(address, OnMissing.DONT_THROW);
-        final var entityOptional = store.getEntity(address, OnMissing.DONT_THROW);
+        final var entityOptional = mirrorEntityAccess.findEntity(address);
 
         if (tokenEntity.isEmptyToken() || entityOptional.isEmpty()) {
             return Optional.empty();

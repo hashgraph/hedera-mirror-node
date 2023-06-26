@@ -21,20 +21,19 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Token;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,16 +73,22 @@ class MirrorEntityAccessTest {
     @Mock
     private Entity entity;
 
-    private List<DatabaseAccessor<Object, ?>> accessors;
+    @Mock
+    private Account account;
+
+    @Mock
+    private Token token;
+
+    @Mock
     private Store store;
 
     private MirrorEntityAccess mirrorEntityAccess;
 
     @BeforeEach
     void setUp() {
-        accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        store = new StoreImpl(accessors);
-        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+        MockitoAnnotations.openMocks(this);
+        mirrorEntityAccess =
+                new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
     }
 
     @Test
@@ -184,75 +190,58 @@ class MirrorEntityAccessTest {
     @Test
     void getBalance() {
         final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isEqualTo(balance);
     }
 
     @Test
     void getBalanceForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isZero();
     }
 
     @Test
     void isExtant() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = mirrorEntityAccess.isExtant(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isExtantForNonMirrorAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe()))
-                .thenReturn(Optional.of(entity));
-        final var result = mirrorEntityAccess.isExtant(NON_MIRROR_ADDRESS);
-        assertThat(result).isTrue();
-    }
-
-    @Test
     void isExtantForZeroAddress() {
+        when(store.getAccount(ZERO, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.isExtant(ZERO);
         assertThat(result).isFalse();
     }
 
     @Test
     void isTokenAccount() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOKEN);
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isNotATokenAccount() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.ACCOUNT);
+    void isATokenAccountForMissingEntity() {
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isFalse();
     }
 
     @Test
-    void isATokenAccountForMissingEntity() {
-        final var address = Address.fromHexString("0x3232134567785444e");
-        final var result = mirrorEntityAccess.isTokenAccount(address);
-        assertThat(result).isFalse();
-    }
-
-    @Test
     void getAlias() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getAlias()).thenReturn(DATA);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getAlias()).thenReturn(ByteString.copyFrom(DATA));
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isNotEqualTo(EMPTY);
     }
 
     @Test
     void getAliasForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getAlias()).thenReturn(new byte[] {});
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isEqualTo(EMPTY);
     }
@@ -268,7 +257,7 @@ class MirrorEntityAccessTest {
     @Test
     void getStorageFailsForNonMirrorAddress() {
         final var key = Bytes.fromHexString(NON_MIRROR_ADDRESS.toHexString());
-        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ZERO, key));
+        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(NON_MIRROR_ADDRESS, key));
         assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
     }
 
@@ -296,7 +285,7 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void fetchCodeIfPresentReturnsEmpy() {
+    void fetchCodeIfPresentReturnsEmpty() {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
         assertThat(result).isEqualTo(Bytes.EMPTY);

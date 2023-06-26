@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
@@ -24,7 +23,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -40,8 +38,6 @@ public interface Store {
     Long getTokenAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
 
     boolean hasNftAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
-
-    Optional<Entity> getEntity(Address address, OnMissing throwIfMissing);
 
     Token getToken(Address address, OnMissing throwIfMissing);
 

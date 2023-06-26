@@ -22,14 +22,11 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.List;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,16 +60,13 @@ class AccountAccessorImplTest {
 
     private List<DatabaseAccessor<Object, ?>> accessors;
 
-    private Store store;
-
     public AccountAccessorImpl accountAccessor;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         accessors = List.of(new EntityDatabaseAccessor(entityRepository));
-        store = new StoreImpl(accessors);
-        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
+        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
     }
 
     @Test
@@ -97,8 +91,6 @@ class AccountAccessorImplTest {
 
     @Test
     void canonicalAliasAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArray()))
-                .thenReturn(Optional.of(account));
         final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }

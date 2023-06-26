@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -30,7 +29,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import java.util.List;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StoreImpl implements Store {
@@ -65,11 +63,6 @@ public class StoreImpl implements Store {
         final var account = getAccount(address, throwIfMissing);
         if (account.isEmptyAccount()) return false;
         return account.getApproveForAllNfts().contains(id);
-    }
-
-    @Override
-    public Optional<Entity> getEntity(Address address, OnMissing throwIfMissing) {
-        return stackedStateFrames.top().getAccessor(Entity.class).get(address);
     }
 
     @Override

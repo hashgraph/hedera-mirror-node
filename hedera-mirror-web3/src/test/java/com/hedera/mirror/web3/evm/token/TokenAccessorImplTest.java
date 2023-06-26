@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.token;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,6 +49,7 @@ import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
@@ -145,7 +145,8 @@ class TokenAccessorImplTest {
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
         store = new StoreImpl(accessors);
-        tokenAccessor = new TokenAccessorImpl(properties, store);
+        tokenAccessor =
+                new TokenAccessorImpl(properties, new MirrorEntityAccess(null, null, entityRepository, store), store);
     }
 
     @Test
@@ -193,8 +194,10 @@ class TokenAccessorImplTest {
     @Test
     void isTokenAddress() {
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        assertFalse(tokenAccessor.isTokenAddress(TOKEN));
-        when(entity.getType()).thenReturn(EntityType.TOKEN);
+        when(entity.getId()).thenReturn(0L);
+        when(tokenRepository.findById(0L)).thenReturn(Optional.of(token));
+        when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         assertTrue(tokenAccessor.isTokenAddress(TOKEN));
     }
 

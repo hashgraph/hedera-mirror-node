@@ -17,10 +17,8 @@
 package com.hedera.mirror.web3.evm.account;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -29,12 +27,11 @@ import org.hyperledger.besu.datatypes.Address;
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
 
-    private final HederaEvmEntityAccess mirrorEntityAccess;
-    private final Store store;
+    private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var entityFoundByAlias = store.getEntity(addressOrAlias, OnMissing.DONT_THROW);
+        final var entityFoundByAlias = mirrorEntityAccess.findEntity(addressOrAlias);
         if (entityFoundByAlias.isPresent()) {
             return addressOrAlias;
         }

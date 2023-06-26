@@ -34,6 +34,7 @@ import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -60,6 +61,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
+    private final EntityRepository entityRepository;
     private final TraceProperties traceProperties;
 
     @SuppressWarnings("java:S107")
@@ -72,6 +74,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final EntityAddressSequencer entityAddressSequencer,
             final ContractRepository contractRepository,
             final ContractStateRepository contractStateRepository,
+            final EntityRepository entityRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
@@ -83,6 +86,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.entityAddressSequencer = entityAddressSequencer;
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
+        this.entityRepository = entityRepository;
         this.databaseAccessors = databaseAccessors;
     }
 
@@ -98,10 +102,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final Store store = new StoreImpl(databaseAccessors);
-        final TokenAccessor tokenAccessor = new TokenAccessorImpl(evmProperties, store);
         final MirrorEntityAccess mirrorEntityAccess =
-                new MirrorEntityAccess(contractStateRepository, contractRepository, store);
-        final AccountAccessor accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
+                new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
+        final TokenAccessor tokenAccessor = new TokenAccessorImpl(evmProperties, mirrorEntityAccess, store);
+        final AccountAccessor accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorEvmContractAliases = new MirrorEvmContractAliases(mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
