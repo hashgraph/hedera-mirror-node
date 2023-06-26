@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -270,7 +271,6 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
-        commonDownloaderProperties.init();
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
         // tests (except for "testPartialCollection" test) expect every Streamfile to be present
         commonDownloaderProperties.setDownloadRatio(BigDecimal.ONE);
@@ -639,7 +639,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         // restore default download ratio: 1/3 + 15%, which == 29/60
         BigDecimal defaultDownloadRatio = commonDownloaderProperties.getConsensusRatio().add(new BigDecimal("0.15"));
         commonDownloaderProperties.setDownloadRatio(defaultDownloadRatio);
-        downloaderProperties = getDownloaderProperties();
+        commonDownloaderProperties.validateRatios();
 
         ArrayList<ConsensusNode> allNodes = new ArrayList<>();
         for (long i = 0; i < totalNodes; i++) {
@@ -654,23 +654,10 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     @Test
-    void testPartialCollectionWithDownloadRatioSetTooLow() {
-        final long totalNodes = 60L;
-        final int expectedNodes = 20; // 1/3 -- the default consensus ratio
-        BigDecimal explicitDownloadRatio = new BigDecimal("0.10");
-        commonDownloaderProperties.setDownloadRatio(explicitDownloadRatio);
-        downloaderProperties = getDownloaderProperties();
-
-        ArrayList<ConsensusNode> allNodes = new ArrayList<>();
-        for (long i = 0; i < totalNodes; i++) {
-            allNodes.add(ConsensusNodeStub.builder()
-                    .nodeId(i)
-                    .stake(1L)
-                    .totalStake(totalNodes)
-                    .build());
-        }
-        Collection<ConsensusNode> partial = downloader.partialCollection(allNodes);
-        assertThat(partial).hasSize(expectedNodes);
+    void testDownloadRatioSetTooLow() throws Exception {
+        BigDecimal problematicDownloadRatio = new BigDecimal("0.10");
+        commonDownloaderProperties.setDownloadRatio(problematicDownloadRatio);
+        assertThrows(IllegalArgumentException.class, () -> commonDownloaderProperties.validateRatios());
     }
 
     @SneakyThrows

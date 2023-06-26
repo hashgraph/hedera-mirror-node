@@ -119,11 +119,19 @@ public class CommonDownloaderProperties {
             sources.add(0, source);
         }
 
+        validateRatios();
+    }
+
+    @PostConstruct
+    public void validateRatios() {
         if (downloadRatio == null) {
             // defaults to consensusRatio + 15%, but never higher than 100%
             downloadRatio = BigDecimal.ONE.min(consensusRatio.add(new BigDecimal("0.15"), MATH_CONTEXT));
         } else { // enforce that downloadRatio >= consensusRatio
-            downloadRatio = downloadRatio.max(consensusRatio);
+            if (downloadRatio.compareTo(consensusRatio) < 0) {
+                throw new IllegalArgumentException(
+                        "downloadRatio (%f) must be >= consensusRatio(%f)".formatted(downloadRatio, consensusRatio));
+            }
         }
     }
 

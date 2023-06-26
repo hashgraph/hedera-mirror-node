@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.downloader;
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -48,6 +47,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -544,28 +544,32 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      * @param allNodes the entire set of ConsensusNodes
      * @return a randomly-ordered subcollection
      */
-    @VisibleForTesting
-    Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
-        var nodes = new ArrayList<ConsensusNode>(allNodes);
+    protected Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
         var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
         // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
-        if (nodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
-            log.debug("partialCollection: Kept all {} nodes", nodes.size());
-            return nodes;
+        if (allNodes == null || allNodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
+            return allNodes;
         }
+
+        // ensure downloadRatio >= consensusRatio
+        downloaderProperties.getCommon().validateRatios();
+        var nodes = new ArrayList<ConsensusNode>(allNodes);
+
         // shuffle nodes into a random order
         Collections.shuffle(nodes);
 
+        long totalStake = nodes.get(0).getTotalStake();
         // only keep "just enough" nodes to reach/exceed downloadRatio
-        BigDecimal neededStake = BigDecimal.valueOf(nodes.get(0).getTotalStake()).multiply(downloadRatio);
-        BigDecimal aggregateStake = BigDecimal.ZERO; // sum of the stake of all nodes evaluated so far
+        long neededStake = BigDecimal.valueOf(totalStake).multiply(downloadRatio).setScale(0, RoundingMode.CEILING)
+                .longValue();
+        long aggregateStake = 0; // sum of the stake of all nodes evaluated so far
         int lastEntry = 0; // "right-most" value to keep in the collection
-        while (aggregateStake.compareTo(neededStake) < 0) {
-            aggregateStake = aggregateStake.add(BigDecimal.valueOf(nodes.get(lastEntry++).getStake()));
+        while (aggregateStake < neededStake) {
+            aggregateStake += nodes.get(lastEntry++).getStake();
         }
 
-        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", lastEntry - 1, allNodes.size(),
-                aggregateStake, nodes.get(0).getTotalStake());
+        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", lastEntry, allNodes.size(),
+                aggregateStake, totalStake);
         return nodes.subList(0, lastEntry);
     }
 }
