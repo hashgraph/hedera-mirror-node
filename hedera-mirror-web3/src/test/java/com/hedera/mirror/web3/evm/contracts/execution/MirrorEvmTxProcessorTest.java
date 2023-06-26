@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -41,6 +42,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -114,6 +116,15 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private PrecompileMapper precompileMapper;
 
+    @Mock
+    private AbstractAutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
     @BeforeEach
@@ -130,7 +141,13 @@ class MirrorEvmTxProcessorTest {
                 pricesAndFeesProvider,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, evmProperties, precompileMapper),
+                mcps(
+                        gasCalculator,
+                        autoCreationLogic,
+                        entityAddressSequencer,
+                        mirrorEvmContractAliases,
+                        evmProperties,
+                        precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
