@@ -38,10 +38,10 @@ public class AddressBookProperties {
 
     @DurationMin(minutes = 1L)
     @NotNull
-    private Duration nodeStakeCacheExpiry = Duration.ofMinutes(10);
+    private Duration nodeStakeCacheExpiry = Duration.ofHours(24);
 
     @Min(0)
-    private long nodeStakeCacheSize = 50L;
+    private long nodeStakeCacheSize = 100L;
 
     @DurationMin(millis = 100L)
     @NotNull
