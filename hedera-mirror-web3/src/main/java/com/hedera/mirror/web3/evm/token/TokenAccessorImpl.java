@@ -166,7 +166,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
 
-        return store.getTokenAllowance(owner, fcTokenAllowanceId, OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
+        if (account.isEmptyAccount()) return 0L;
+        return account.getFungibleTokenAllowances().get(fcTokenAllowanceId);
     }
 
     @Override
@@ -191,7 +193,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, operatorNum);
 
-        return store.hasNftAllowance(owner, fcTokenAllowanceId, OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
+        if (account.isEmptyAccount()) return false;
+        return account.getApproveForAllNfts().contains(fcTokenAllowanceId);
     }
 
     @Override

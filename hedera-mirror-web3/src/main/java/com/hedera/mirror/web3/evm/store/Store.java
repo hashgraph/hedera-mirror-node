@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store;
 
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -35,10 +34,9 @@ public interface Store {
 
     Account getAccount(Address address, OnMissing throwIfMissing);
 
-    Long getTokenAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
-
-    boolean hasNftAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing);
-
+    /**
+     * Load fungible or non-fungible token from the in-memory state.
+     * */
     Token getToken(Address address, OnMissing throwIfMissing);
 
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);

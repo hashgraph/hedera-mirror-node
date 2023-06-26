@@ -81,10 +81,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     @Override
     public boolean isExtant(final Address address) {
         var account = store.getAccount(address, OnMissing.DONT_THROW);
-        if (account.isEmptyAccount()) {
-            return false;
-        }
-        return true;
+        return !account.isEmptyAccount();
     }
 
     @Override

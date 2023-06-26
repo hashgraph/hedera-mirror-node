@@ -23,7 +23,6 @@ import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -49,20 +48,6 @@ public class StoreImpl implements Store {
         } else {
             return account.orElse(Account.getEmptyAccount());
         }
-    }
-
-    @Override
-    public Long getTokenAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing) {
-        final var account = getAccount(address, throwIfMissing);
-        if (account.isEmptyAccount()) return 0L;
-        return account.getFungibleTokenAllowances().get(id);
-    }
-
-    @Override
-    public boolean hasNftAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing) {
-        final var account = getAccount(address, throwIfMissing);
-        if (account.isEmptyAccount()) return false;
-        return account.getApproveForAllNfts().contains(id);
     }
 
     @Override
