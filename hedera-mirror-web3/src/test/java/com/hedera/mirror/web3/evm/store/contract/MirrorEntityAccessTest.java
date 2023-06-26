@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -46,7 +45,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,7 +61,8 @@ class MirrorEntityAccessTest {
     private static final Long ENTITY_ID =
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
 
-    private EntityRepository entityRepository = mock(EntityRepository.class);
+    @Mock
+    private EntityRepository entityRepository;
 
     @Mock
     private ContractRepository contractRepository;
@@ -81,7 +80,6 @@ class MirrorEntityAccessTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         accessors = List.of(new EntityDatabaseAccessor(entityRepository));
         store = new StoreImpl(accessors);
         mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);

@@ -29,7 +29,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -207,8 +206,8 @@ class TokenDatabaseAccessorTest {
     }
 
     private void setupToken() {
-        final var tokenId = new TokenId(entity.toEntityId());
-        databaseToken = domainBuilder.token().customize(t -> t.tokenId(tokenId)).get();
+        databaseToken =
+                domainBuilder.token().customize(t -> t.tokenId(entity.getId())).get();
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
     }
 }

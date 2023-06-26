@@ -268,6 +268,10 @@ public class Account extends HederaEvmAccount {
         return numPositiveBalances;
     }
 
+    public long getEthereumNonce() {
+        return ethereumNonce;
+    }
+
     public Account setNumPositiveBalances(int newNumPositiveBalances) {
         return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }

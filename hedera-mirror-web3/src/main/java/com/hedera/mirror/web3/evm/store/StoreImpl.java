@@ -19,13 +19,10 @@ package com.hedera.mirror.web3.evm.store;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
-import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
@@ -57,23 +54,6 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Optional<Entity> getEntity(Address address, OnMissing throwIfMissing) {
-        return stackedStateFrames.top().getAccessor(Entity.class).get(address);
-    }
-
-    @Override
-    public Optional<TokenAccount> getTokenAccount(AbstractTokenAccount.Id id, OnMissing throwIfMissing) {
-        return stackedStateFrames.top().getAccessor(TokenAccount.class).get(id);
-    }
-
-    @Override
-    @SuppressWarnings("rawtypes")
-    public Optional<List<CustomFee>> getCustomFee(Address address, OnMissing throwIfMissing) {
-        final var token = getToken(address, throwIfMissing);
-        return Optional.of(token.getCustomFees());
-    }
-
-    @Override
     public Long getTokenAllowance(Address address, FcTokenAllowanceId id, OnMissing throwIfMissing) {
         final var account = getAccount(address, throwIfMissing);
         if (account.isEmptyAccount()) return 0L;
@@ -85,6 +65,11 @@ public class StoreImpl implements Store {
         final var account = getAccount(address, throwIfMissing);
         if (account.isEmptyAccount()) return false;
         return account.getApproveForAllNfts().contains(id);
+    }
+
+    @Override
+    public Optional<Entity> getEntity(Address address, OnMissing throwIfMissing) {
+        return stackedStateFrames.top().getAccessor(Entity.class).get(address);
     }
 
     @Override

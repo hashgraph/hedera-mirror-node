@@ -66,15 +66,14 @@ import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
 
-    final byte[] bytes = new byte[33];
-    final Key key =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(bytes)).build();
     private final long serialNo = 0L;
     private static final String HEX_TOKEN = "0x00000000000000000000000000000000000004e4";
     private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
@@ -126,7 +125,6 @@ class TokenAccessorImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         final var entityAccessor = new EntityDatabaseAccessor(entityRepository);
         final var customFeeAccessor = new CustomFeeDatabaseAccessor(customFeeRepository, entityAccessor);
         final var tokenDatabaseAccessor =
@@ -158,8 +156,6 @@ class TokenAccessorImplTest {
                 .nft()
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
-        when(entityRepository.findByIdAndDeletedIsFalse(nft.getAccountId().getId()))
-                .thenReturn(Optional.of(entity));
         when(nftRepository.findActiveById(ENTITY_ID, serialNo)).thenReturn(Optional.of(nft));
 
         final var expected = new EvmNftInfo(
@@ -183,8 +179,6 @@ class TokenAccessorImplTest {
                     n.accountId(EntityId.EMPTY);
                 })
                 .get();
-        when(entityRepository.findByIdAndDeletedIsFalse(nft.getAccountId().getId()))
-                .thenReturn(Optional.empty());
         when(nftRepository.findActiveById(ENTITY_ID, serialNo)).thenReturn(Optional.of(nft));
 
         final var expected =
@@ -265,7 +259,6 @@ class TokenAccessorImplTest {
         when(token.getWipeKey()).thenReturn(key.toByteArray());
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
-        when(entity.getAutoRenewAccountId()).thenReturn(null);
         final var result = tokenAccessor.keyOf(TOKEN, TokenKeyType.WIPE_KEY);
         assertThat(result).isNotNull();
         assertArrayEquals(key.getECDSASecp256K1().toByteArray(), result.getECDSASecp256K1());

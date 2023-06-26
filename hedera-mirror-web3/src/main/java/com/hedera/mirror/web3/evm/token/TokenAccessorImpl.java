@@ -18,17 +18,12 @@ package com.hedera.mirror.web3.evm.token;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
-import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -47,7 +42,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -161,12 +155,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long balanceOf(Address address, Address token) {
-        final var tokenAccountId = new AbstractTokenAccount.Id();
-        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
-        tokenAccountId.setAccountId(entityIdFromAccountAddress(address));
-        return store.getTokenAccount(tokenAccountId, OnMissing.DONT_THROW)
-                .map(AbstractTokenAccount::getBalance)
-                .orElse(0L);
+        final var tokenRelKey = new TokenRelationshipKey(token, address);
+        return store.getTokenRelationship(tokenRelKey, OnMissing.DONT_THROW).getBalance();
     }
 
     @Override
@@ -292,7 +282,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @SuppressWarnings("unchecked")
     private List<CustomFee> getCustomFees(final Address address) {
-        return store.getCustomFee(address, OnMissing.DONT_THROW).orElse(Collections.emptyList());
+        return store.getToken(address, OnMissing.DONT_THROW).getCustomFees();
     }
 
     private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
@@ -320,21 +310,6 @@ public class TokenAccessorImpl implements TokenAccessor {
         } catch (final IOException e) {
             throw new ParsingException("Error parsing token keys.");
         }
-    }
-
-    /**
-     * This method is temporary and prevent wrong conversion for eth_call account and contract addresses. This will be
-     * later addressed directly in the hedera-evm-lib and this method will be removed.
-     */
-    private Long entityIdFromAccountAddress(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var id = fromEvmAddress(addressBytes);
-            return id != null ? id.getId() : 0L;
-        }
-        return store.getEntity(address, OnMissing.DONT_THROW)
-                .map(AbstractEntity::getId)
-                .orElse(0L);
     }
 
     private NftId nftIdFromEntityId(final EntityId entityId, long serialNo) {
