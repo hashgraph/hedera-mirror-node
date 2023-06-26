@@ -40,15 +40,11 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@TestInstance(Lifecycle.PER_CLASS)
 class MirrorEntityAccessTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
@@ -86,7 +82,6 @@ class MirrorEntityAccessTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         mirrorEntityAccess =
                 new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
     }

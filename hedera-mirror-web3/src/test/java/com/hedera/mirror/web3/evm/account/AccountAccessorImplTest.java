@@ -21,25 +21,16 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.repository.EntityRepository;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@TestInstance(Lifecycle.PER_CLASS)
 class AccountAccessorImplTest {
 
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
@@ -52,20 +43,10 @@ class AccountAccessorImplTest {
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
 
-    @Mock
-    private EntityRepository entityRepository;
-
-    @Mock
-    private Entity account;
-
-    private List<DatabaseAccessor<Object, ?>> accessors;
-
     public AccountAccessorImpl accountAccessor;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        accessors = List.of(new EntityDatabaseAccessor(entityRepository));
         accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
     }
 
