@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -249,5 +250,10 @@ public class EvmConfiguration {
     @Bean
     BurnLogic burnLogic(OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
+    }
+
+    @Bean
+    DissociateLogic dissociateLogic() {
+        return new DissociateLogic();
     }
 }
