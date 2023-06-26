@@ -34,10 +34,16 @@ public interface Store {
 
     Account getAccount(Address address, OnMissing throwIfMissing);
 
+    /**
+     * Load fungible or non-fungible token from the in-memory state.
+     * */
     Token getToken(Address address, OnMissing throwIfMissing);
 
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
+    /**
+     * Load non-fungible token from the in-memory state specified by its serial number.
+     * */
     UniqueToken getUniqueToken(NftId nftId, OnMissing throwIfMissing);
 
     void updateAccount(Account updatedAccount);
@@ -46,6 +52,9 @@ public interface Store {
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
+    /**
+     * Update fungible or non-fungible token into the in-memory state.
+     * */
     void updateToken(Token fungibleToken);
 
     boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey);

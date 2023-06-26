@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
+import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -31,32 +32,41 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
+import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
 
+@CustomLog
 @Named
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
-    private static Supplier<Long> COST = () -> 0L;
+    private static Runnable CLEANUP = () -> {};
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
+    private final Collection<ExpandedAccountId> accountIds = new CopyOnWriteArrayList<>();
     private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
         final long initialBalance = getBalance();
         log.info("Operator account {} initial balance is {}", sdkClient.getExpandedOperatorAccountId(), initialBalance);
-        COST = () -> initialBalance - getBalance();
+
+        CLEANUP = () -> {
+            deleteAccounts();
+            var cost = initialBalance - getBalance();
+            sdkClient.close();
+            log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
+        };
     }
 
-    // Prints the operator balance. Static because used only by the static @AfterAll.
-    public static long getCost() {
-        return COST.get();
+    public static synchronized void cleanup() {
+        CLEANUP.run();
     }
 
     public synchronized ExpandedAccountId getTokenTreasuryAccount() {
@@ -66,6 +76,20 @@ public class AccountClient extends AbstractNetworkClient {
         }
 
         return tokenTreasuryAccount;
+    }
+
+    private void deleteAccounts() {
+        accountIds.forEach(accountId -> {
+            var accountDeleteTransaction = new AccountDeleteTransaction()
+                    .setAccountId(accountId.getAccountId())
+                    .setTransferAccountId(client.getOperatorAccountId())
+                    .freezeWith(client)
+                    .sign(accountId.getPrivateKey());
+            executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
+            log.info("Deleted account {}", accountId);
+        });
+        accountIds.clear();
+        accountMap.clear();
     }
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
@@ -152,11 +176,11 @@ public class AccountClient extends AbstractNetworkClient {
         return new ExpandedAccountId(accountInfo.getAccount(), newAccountPrivateKey.toString());
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
+    private ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
         return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null);
     }
 
-    public ExpandedAccountId createCryptoAccount(
+    private ExpandedAccountId createCryptoAccount(
             Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo) {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generateED25519();
@@ -185,7 +209,9 @@ public class AccountClient extends AbstractNetworkClient {
         }
 
         log.info("Created new account {} with {} via {}", newAccountId, initialBalance, response.getTransactionId());
-        return new ExpandedAccountId(newAccountId, privateKey);
+        var accountId = new ExpandedAccountId(newAccountId, privateKey);
+        accountIds.add(accountId);
+        return accountId;
     }
 
     public NetworkTransactionResponse approveCryptoAllowance(AccountId spender, Hbar hbarAmount) {

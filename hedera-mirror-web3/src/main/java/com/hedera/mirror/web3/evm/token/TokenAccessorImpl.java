@@ -39,7 +39,6 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -130,13 +129,13 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean defaultFreezeStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getFreezeDefault).orElse(false);
     }
 
     @Override
     public boolean defaultKycStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getKycKey).isPresent();
     }
 
@@ -159,7 +158,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
 
         return tokenRepository
                 .findById(tokenId)
@@ -186,25 +185,25 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String nameOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getName).orElse("");
     }
 
     @Override
     public String symbolOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getSymbol).orElse("");
     }
 
     @Override
     public long totalSupplyOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getTotalSupply).orElse(0L);
     }
 
     @Override
     public int decimalsOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getDecimals).orElse(0);
     }
 
@@ -294,7 +293,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
-        final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
+        final var tokenEntityOptional =
+                tokenRepository.findById(fromEvmAddress(token.toArray()).getId());
         final var entityOptional = entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(token));
 
         if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
