@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.token;
+package com.hedera.services.txns.validation;
 
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-@Data
-@Entity
-@NoArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class Token extends AbstractToken {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
+/**
+ * Copied Logic type from hedera-services. Unnecessary methods are deleted.
+ */
+public interface OptionValidator {
+
+    ResponseCodeEnum nftMetadataCheck(byte[] metadata);
+
+    ResponseCodeEnum maxBatchSizeMintCheck(int length);
+
+    ResponseCodeEnum maxBatchSizeBurnCheck(int length);
 }

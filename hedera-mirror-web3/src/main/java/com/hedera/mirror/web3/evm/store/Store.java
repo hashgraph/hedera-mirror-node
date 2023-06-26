@@ -55,6 +55,9 @@ public interface Store {
 
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
+    /**
+     * Load non-fungible token from the in-memory state specified by its serial number.
+     * */
     UniqueToken getUniqueToken(NftId nftId, OnMissing throwIfMissing);
 
     void updateAccount(Account updatedAccount);
@@ -63,7 +66,10 @@ public interface Store {
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
-    void updateFungibleToken(Token fungibleToken);
+    /**
+     * Update fungible or non-fungible token into the in-memory state.
+     * */
+    void updateToken(Token fungibleToken);
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.

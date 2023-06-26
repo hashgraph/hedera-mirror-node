@@ -18,8 +18,6 @@ package com.hedera.mirror.common.domain.token;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import org.junit.jupiter.api.Test;
 
 class TokenTest {
@@ -31,14 +29,5 @@ class TokenTest {
         token.setSymbol("abc" + (char) 0);
         assertThat(token.getName()).isEqualTo("abc�");
         assertThat(token.getSymbol()).isEqualTo("abc�");
-    }
-
-    @Test
-    void of() {
-        TokenId tokenId = new TokenId(EntityId.of(1, EntityType.TOKEN));
-        Token token = new Token();
-        token.setTokenId(tokenId);
-        Token actual = Token.of(tokenId.getTokenId());
-        assertThat(actual).isNotSameAs(token).extracting(Token::getTokenId).isEqualTo(tokenId);
     }
 }
