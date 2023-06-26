@@ -540,7 +540,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     /**
      * Returns a randomly-selected (and randomly-ordered) collection of CondensusNode elements from the
      * input, where the total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
-     * (Note: when the downloadRatio = BigDecimal.ONE, this will just randomly reorder the whole list).
      *
      * @param allNodes the entire set of ConsensusNodes
      * @return a randomly-ordered subcollection
@@ -548,28 +547,24 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     @VisibleForTesting
     Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
         var nodes = new ArrayList<ConsensusNode>(allNodes);
-        if (nodes == null || nodes.size() <= 1) {
+        var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
+        // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
+        if (nodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
             return nodes;
         }
         // shuffle nodes into a random order
         Collections.shuffle(nodes);
 
         // only keep "just enough" nodes to reach/exceed downloadRatio
-        BigDecimal neededStake = BigDecimal.valueOf(nodes.get(0).getTotalStake())
-                .multiply(downloaderProperties.getCommon().getDownloadRatio());
-        BigDecimal aggregateStake = BigDecimal.ZERO;
-        Iterator<ConsensusNode> itr = nodes.iterator();
-        while (itr.hasNext()) {
-            if (aggregateStake.compareTo(neededStake) >= 0) { // we've reached the downloadRatio already.
-                itr.remove();
-                itr.next();
-            } else {
-                aggregateStake = aggregateStake.add(BigDecimal.valueOf(itr.next().getStake()));
-            }
+        BigDecimal neededStake = BigDecimal.valueOf(nodes.get(0).getTotalStake()).multiply(downloadRatio);
+        BigDecimal aggregateStake = BigDecimal.ZERO; // sum of the stake of all nodes (evaluated so far)
+        int lastEntry = 0; // "right-most" value to keep in the collection
+        while (aggregateStake.compareTo(neededStake) == -1) {
+            aggregateStake = aggregateStake.add(BigDecimal.valueOf(nodes.get(lastEntry++).getStake()));
         }
 
-        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", nodes.size(), allNodes.size(),
+        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", lastEntry - 1, allNodes.size(),
                 aggregateStake, nodes.get(0).getTotalStake());
-        return nodes;
+        return nodes.subList(0, lastEntry);
     }
 }

@@ -63,11 +63,9 @@ public class CommonDownloaderProperties {
     @Min(0)
     private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), MATH_CONTEXT);
 
-    // defaults to consensusRatio + 15%, but never higher than 100%
-    @NotNull
     @Max(1)
     @Min(0)
-    private BigDecimal downloadRatio = BigDecimal.ONE.min(consensusRatio.add(new BigDecimal("0.15"), MATH_CONTEXT));
+    private BigDecimal downloadRatio = null;
 
     private String endpointOverride;
 
@@ -119,6 +117,13 @@ public class CommonDownloaderProperties {
                 source.setUri(URI.create(endpointOverride));
             }
             sources.add(0, source);
+        }
+
+        if (downloadRatio == null) {
+            // defaults to consensusRatio + 15%, but never higher than 100%
+            downloadRatio = BigDecimal.ONE.min(consensusRatio.add(new BigDecimal("0.15"), MATH_CONTEXT));
+        } else { // enforce that downloadRatio >= consensusRatio
+            downloadRatio = downloadRatio.max(consensusRatio);
         }
     }
 
