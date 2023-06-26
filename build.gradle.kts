@@ -47,7 +47,7 @@ dependencies {
         val testcontainersSpringBootVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:9.2.0")
+        api("com.esaulpaugh:headlong:9.3.0")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
