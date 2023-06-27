@@ -22,9 +22,9 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.*;
 
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
@@ -59,16 +59,16 @@ public class PrecompilePricingUtils {
     }
 
     final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
-    private final BasicHbarCentExchange exchange;
+    private final HbarCentExchange exchange;
     private final FeeCalculator feeCalculator;
-    private final BasicFcfsUsagePrices resourceCosts;
+    private final UsagePricesProvider resourceCosts;
     private final AccessorFactory accessorFactory;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
-            final BasicHbarCentExchange exchange,
+            final HbarCentExchange exchange,
             final FeeCalculator feeCalculator,
-            final BasicFcfsUsagePrices resourceCosts,
+            final UsagePricesProvider resourceCosts,
             final AccessorFactory accessorFactory) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;

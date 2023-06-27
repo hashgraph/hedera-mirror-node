@@ -98,6 +98,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
+    protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
 
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
@@ -184,10 +185,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         ercContractPersist();
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
-        final var tokenEntityId = fungibleTokenPersist(senderEntityId, KEY_PROTO);
+        final var tokenEntityId = fungibleTokenPersist(senderEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS);
+        final var notFrozenFungibleTokenEntityId =
+                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS);
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
         final var ethAccount = ethAccountPersist();
-        tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId);
+        tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(
+                spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         exchangeRatesPersist();
@@ -204,8 +209,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId fungibleTokenPersist(final EntityId senderEntityId, final byte[] key) {
-        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
+    private EntityId fungibleTokenPersist(final EntityId senderEntityId, final byte[] key, final Address tokenAddress) {
+        final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
         domainBuilder
@@ -226,7 +231,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .treasuryAccountId(EntityId.of(0, 0, senderEntityId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .kycKey(key)
-                        .freezeDefault(false)
+                        .freezeDefault(true)
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)
@@ -245,10 +250,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private void tokenAccountPersist(
-            final EntityId senderEntityId, final long ethAccount, final EntityId tokenEntityId) {
+            final EntityId senderEntityId,
+            final long ethAccount,
+            final EntityId tokenEntityId,
+            final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccount()
-                .customize(e -> e.freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                .customize(e -> e.freezeStatus(freezeStatus)
                         .accountId(senderEntityId.getId())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
@@ -257,7 +265,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder
                 .tokenAccount()
-                .customize(e -> e.freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                .customize(e -> e.freezeStatus(freezeStatus)
                         .accountId(ethAccount)
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED))
