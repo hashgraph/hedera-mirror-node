@@ -28,6 +28,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -60,7 +62,6 @@ import org.mockito.Mockito;
 
 class TransferLogicTest {
 
-    private final long initialBalance = 1_000_000L;
     private final long initialAllowance = 100L;
 
     private final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
@@ -81,15 +82,27 @@ class TransferLogicTest {
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
 
-    private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {
+    private final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {
         {
             put(payerNum, initialAllowance);
         }
     };
 
-    private TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {
+    private final TreeMap<EntityNum, Long> resultCryptoAllowances = new TreeMap<>() {
+        {
+            put(payerNum, 50L);
+        }
+    };
+
+    private final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {
         {
             put(fungibleAllowanceId, initialAllowance);
+        }
+    };
+
+    private final TreeMap<FcTokenAllowanceId, Long> resultFungibleAllowances = new TreeMap<>() {
+        {
+            put(fungibleAllowanceId, 50L);
         }
     };
 
@@ -244,12 +257,13 @@ class TransferLogicTest {
     void happyPathHbarAllowance() {
         final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
         var account = new Account(Id.fromGrpcAccount(owner), 0L).setCryptoAllowance(cryptoAllowances);
+        var spyAccount = spy(account);
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
-                .willReturn(account);
+                .willReturn(spyAccount);
 
         subject.doZeroSum(List.of(change), store, ids, asTypedEvmAddress(payer));
 
-        verify(store).updateAccount(account);
+        verify(spyAccount).setCryptoAllowance(resultCryptoAllowances);
     }
 
     @Test
@@ -258,10 +272,12 @@ class TransferLogicTest {
                 Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -50L), payer);
         given(hederaTokenStore.tryTokenChange(change)).willReturn(OK);
         var account = new Account(Id.fromGrpcAccount(owner), 0L).setFungibleTokenAllowances(fungibleAllowances);
+        var spyAccount = spy(account);
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
-                .willReturn(account);
+                .willReturn(spyAccount);
 
         assertDoesNotThrow(() -> subject.doZeroSum(List.of(change), store, ids, asTypedEvmAddress(payer)));
+        verify(spyAccount).setFungibleTokenAllowances(resultFungibleAllowances);
     }
 
     @Test
@@ -284,18 +300,20 @@ class TransferLogicTest {
                 nftTransfer(owner, revokedSpender, 2L),
                 payer);
         var nft = getEmptyUniqueToken();
+        var spyNft = spy(nft);
 
         given(hederaTokenStore.tryTokenChange(change1)).willReturn(OK);
         given(hederaTokenStore.tryTokenChange(change2)).willReturn(OK);
         given(hederaTokenStore.tryTokenChange(change3)).willReturn(OK);
-        given(store.getUniqueToken(nftId1, OnMissing.THROW)).willReturn(nft);
-        given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(nft);
+        given(store.getUniqueToken(nftId1, OnMissing.THROW)).willReturn(spyNft);
+        given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(spyNft);
         given(store.getUniqueToken(
                         NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 123L), OnMissing.THROW))
-                .willReturn(nft);
+                .willReturn(spyNft);
 
         assertDoesNotThrow(
                 () -> subject.doZeroSum(List.of(change1, change2, change3), store, ids, asTypedEvmAddress(payer)));
+        verify(spyNft, times(3)).setSpender(Id.DEFAULT);
     }
 
     private AccountAmount aliasedAa(final ByteString alias, final long amount) {
