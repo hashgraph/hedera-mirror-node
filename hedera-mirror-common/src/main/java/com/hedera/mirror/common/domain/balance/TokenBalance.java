@@ -18,11 +18,8 @@ package com.hedera.mirror.common.domain.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -64,10 +61,8 @@ public class TokenBalance implements Persistable<TokenBalance.Id> {
         private long consensusTimestamp;
 
         @Column(nullable = false, updatable = false) // set updatable = false to prevent additional hibernate query
-        @Convert(converter = AccountIdConverter.class)
         private EntityId accountId;
 
-        @Convert(converter = TokenIdConverter.class)
         private EntityId tokenId;
     }
 }

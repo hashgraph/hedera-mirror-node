@@ -31,18 +31,18 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -68,7 +68,7 @@ class AutoCreationLogicTest {
     private Store store;
 
     @Mock
-    private EntityIdSource ids;
+    private EntityAddressSequencer ids;
 
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
@@ -79,7 +79,7 @@ class AutoCreationLogicTest {
     private FeeCalculator feeCalculator;
 
     @Mock
-    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private EvmProperties evmProperties;
 
     private AutoCreationLogic subject;
 
@@ -90,7 +90,7 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         store = new StoreImpl(accessors);
         store.wrap();
-        subject = new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
+        subject = new AutoCreationLogic(feeCalculator, evmProperties);
 
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         aPrimitiveKey = key;
@@ -99,7 +99,7 @@ class AutoCreationLogicTest {
 
     @Test
     void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
-        given(mirrorNodeEvmProperties.isLazyCreationEnabled()).willReturn(false);
+        given(evmProperties.isLazyCreationEnabled()).willReturn(false);
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
@@ -123,9 +123,9 @@ class AutoCreationLogicTest {
     @Test
     void createsAsExpected() {
         // given
-        given(ids.newAccountId()).willReturn(created);
+        given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
-        given(mirrorNodeEvmProperties.isLazyCreationEnabled()).willReturn(true);
+        given(evmProperties.isLazyCreationEnabled()).willReturn(true);
 
         // when
         final var input1 = wellKnownTokenChange(edKeyAlias);

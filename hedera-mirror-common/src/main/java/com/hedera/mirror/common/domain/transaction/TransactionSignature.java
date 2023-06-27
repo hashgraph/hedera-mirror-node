@@ -17,11 +17,7 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import java.io.Serializable;
@@ -44,8 +40,6 @@ public class TransactionSignature implements Persistable<TransactionSignature.Id
     @jakarta.persistence.Id
     private long consensusTimestamp;
 
-    @Convert(converter = UnknownIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     @jakarta.persistence.Id

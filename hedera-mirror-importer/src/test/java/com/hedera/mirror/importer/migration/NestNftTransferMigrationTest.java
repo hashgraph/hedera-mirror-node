@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -39,6 +40,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +64,11 @@ class NestNftTransferMigrationTest extends IntegrationTest {
 
     @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
     private final Resource sql;
+
+    @BeforeEach
+    void setup() {
+        assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
+    }
 
     @AfterEach
     void teardown() {
@@ -284,10 +291,10 @@ class NestNftTransferMigrationTest extends IntegrationTest {
         // hardcode payer account id, the column is "not null" and it's not needed for the migration
         jdbcTemplate.batchUpdate(
                 """
-            insert into nft_transfer (consensus_timestamp, is_approval, payer_account_id, receiver_account_id,
-              sender_account_id, serial_number, token_id)
-              values (?, ?, 5000, ?, ?, ?, ?)
-            """,
+                        insert into nft_transfer (consensus_timestamp, is_approval, payer_account_id, receiver_account_id,
+                          sender_account_id, serial_number, token_id)
+                          values (?, ?, 5000, ?, ?, ?, ?)
+                        """,
                 nftTransfers,
                 nftTransfers.size(),
                 (ps, nftTransfer) -> {

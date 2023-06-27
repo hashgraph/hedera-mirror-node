@@ -17,7 +17,7 @@
 @ConverterRegistration(converter = EntityIdConverter.class)
 @TypeRegistration(basicClass = List.class, userType = ListArrayType.class)
 @TypeRegistration(basicClass = Range.class, userType = PostgreSQLGuavaRangeType.class)
-package com.hedera.mirror.common.domain;
+package com.hedera.mirror.grpc.domain;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityIdConverter;

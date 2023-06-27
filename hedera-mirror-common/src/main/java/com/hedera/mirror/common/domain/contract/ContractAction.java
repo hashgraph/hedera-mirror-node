@@ -17,13 +17,9 @@
 package com.hedera.mirror.common.domain.contract;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.ContractIdConverter;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -48,7 +44,6 @@ public class ContractAction implements Persistable<ContractAction.Id> {
 
     private int callDepth;
 
-    @Convert(converter = UnknownIdConverter.class)
     private EntityId caller;
 
     @Enumerated(EnumType.STRING)
@@ -72,16 +67,13 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     @ToString.Exclude
     private byte[] input;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId recipientAccount;
 
     @ToString.Exclude
     private byte[] recipientAddress;
 
-    @Convert(converter = ContractIdConverter.class)
     private EntityId recipientContract;
 
     @ToString.Exclude
