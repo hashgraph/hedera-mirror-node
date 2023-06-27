@@ -1625,7 +1625,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
                 .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
                 .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
                 .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
 
@@ -1850,7 +1850,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
                 .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
                 .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
                 .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
 
         assertThat(contractResultRepository.findAll())

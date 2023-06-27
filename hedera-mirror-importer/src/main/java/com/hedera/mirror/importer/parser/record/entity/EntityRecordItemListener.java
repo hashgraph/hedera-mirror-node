@@ -466,17 +466,24 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
 
+        List<TokenTransferList> tokenTransferListsList =
+                recordItem.getTransactionRecord().getTokenTransferListsList();
+        for (int i = 0; i < tokenTransferListsList.size(); i++) {
+            TokenTransferList tokenTransferList = tokenTransferListsList.get(i);
+
             if (tokenTransferList.getTransfersCount() > 0) {
-                insertFungibleTokenTransfers(
-                        recordItem, entityTokenId, payerAccountId, tokenTransferList.getTransfersList());
+                insertFungibleTokenTransfers(recordItem, tokenTransferList);
             }
 
             if (tokenTransferList.getNftTransfersCount() > 0) {
-                insertNonFungibleTokenTransfers(
-                        recordItem, tokenId, entityTokenId, payerAccountId, tokenTransferList.getNftTransfersList());
+                insertNonFungibleTokenTransfers(recordItem, transaction, tokenTransferList);
             }
 
             if (i == 0) {
+                var tokenId = tokenTransferList.getToken();
+                var entityTokenId = EntityId.of(tokenId);
+                var payerAccountId = recordItem.getPayerAccountId();
+
                 syntheticContractResultService.create(
                         new TransferContractResult(recordItem, entityTokenId, payerAccountId));
             }
