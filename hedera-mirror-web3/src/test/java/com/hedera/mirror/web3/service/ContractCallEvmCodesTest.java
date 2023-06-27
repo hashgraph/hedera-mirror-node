@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.service.utils;
+package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.web3.service.ContractCallTestSetup;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
