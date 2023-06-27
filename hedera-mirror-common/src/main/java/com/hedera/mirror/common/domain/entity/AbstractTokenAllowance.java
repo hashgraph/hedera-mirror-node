@@ -19,6 +19,7 @@ package com.hedera.mirror.common.domain.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
@@ -35,6 +36,7 @@ import lombok.experimental.SuperBuilder;
 @Upsertable(history = true)
 public abstract class AbstractTokenAllowance implements History {
 
+    @UpsertColumn(coalesce = "coalesce(e_{0}, 0) + coalesce({0}, 0)")
     private long amount;
 
     @jakarta.persistence.Id
