@@ -234,6 +234,11 @@ public class EvmConfiguration {
     }
 
     @Bean
+    EncodingFacade encodingFacade() {
+        return new EncodingFacade();
+    }
+
+    @Bean
     SyntheticTxnFactory syntheticTxnFactory() {
         return new SyntheticTxnFactory();
     }
