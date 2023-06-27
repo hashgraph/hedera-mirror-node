@@ -59,6 +59,9 @@ create index if not exists contract_result__id_timestamp
 create index if not exists contract_result__payer_timestamp
     on contract_result (payer_account_id, consensus_timestamp);
 
+create index if not exists contract_result__sender_timestamp
+    on contract_result (sender_id, consensus_timestamp);
+
 -- contract_state
 alter table if exists contract_state
     add constraint contract_state__pk primary key (contract_id, slot);
