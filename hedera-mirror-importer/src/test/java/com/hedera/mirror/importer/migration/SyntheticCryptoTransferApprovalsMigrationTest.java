@@ -18,6 +18,10 @@ package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
+import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.UPPER_BOUND_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -42,6 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,13 +63,16 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
 
-    private static final long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
-    private static final long UPPER_BOUND_TIMESTAMP = 1686243920981874003L;
     private AtomicLong count = new AtomicLong(100000);
 
     @BeforeEach
     void setup() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        mirrorProperties.setNetwork(MAINNET);
+    }
+
+    @AfterEach
+    void teardown() {
+        mirrorProperties.setNetwork(TESTNET);
     }
 
     @Test
@@ -259,7 +267,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // transfer that would have isApproval set to true, but the contract result consensus timestamp is outside the
         // upper bound
         var outsideUpperBoundTransfer =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, UPPER_BOUND_TIMESTAMP, false);
+                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, UPPER_BOUND_TIMESTAMP + 1, false);
         persistContractResult(contractId, outsideUpperBoundTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(outsideUpperBoundTransfer);
 
@@ -362,7 +370,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // transfer that would have isApproval set to true, but the contract result consensus timestamp is outside the
         // upper bound
         var outsideUpperBoundTransfer = getNftTransfer(currentKeyAffectedEntity.toEntityId(), false);
-        var upperBoundTransaction = persistTransaction(UPPER_BOUND_TIMESTAMP + 1, List.of(outsideUpperBoundTransfer));
+        var upperBoundTransaction = persistTransaction(UPPER_BOUND_TIMESTAMP + 2, List.of(outsideUpperBoundTransfer));
         persistContractResult(contractId, upperBoundTransaction.getConsensusTimestamp());
         unaffectedNftTransfers.add(outsideUpperBoundTransfer);
 
@@ -449,7 +457,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // isApproval
         // should not be affected
         var upperBoundTokenTransfer = persistTokenTransfer(
-                currentKeyAffectedEntity.toEntityId(), contractId2, UPPER_BOUND_TIMESTAMP + 2, false);
+                currentKeyAffectedEntity.toEntityId(), contractId2, UPPER_BOUND_TIMESTAMP + 3, false);
         persistContractResult(contractId, upperBoundTokenTransfer.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(upperBoundTokenTransfer);
 

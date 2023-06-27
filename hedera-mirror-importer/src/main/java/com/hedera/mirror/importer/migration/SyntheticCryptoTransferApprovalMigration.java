@@ -21,6 +21,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Optional;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
@@ -40,11 +40,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
-    private static final Long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
+    static final long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
     // This problem was fixed by services release 0.38.10, this is last timestamp before that release
-    private static final Long UPPER_BOUND_TIMESTAMP = 1686243920981874002L;
-    private static final Long TIMESTAMP_INCREMENT =
-            86_400_000_000_000L; // 1 day in nanoseconds which will yield 69 async iterations
+    static final long UPPER_BOUND_TIMESTAMP = 1686243920981874002L;
+    private static final long TIMESTAMP_INCREMENT =
+            Duration.ofDays(1).toNanos(); // 1 day in nanoseconds which will yield 69 async iterations
     private static final String TRANSFER_SQL =
             """
             with contractresults as (
@@ -146,12 +146,8 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         TOKEN_TRANSFER
     }
 
-    private static final DataClassRowMapper<SyntheticCryptoTransferApprovalMigration.ApprovalTransfer> resultRowMapper;
-
-    static {
-        resultRowMapper = new DataClassRowMapper<>(ApprovalTransfer.class);
-        resultRowMapper.setConversionService(new DefaultConversionService());
-    }
+    private static final DataClassRowMapper<SyntheticCryptoTransferApprovalMigration.ApprovalTransfer> resultRowMapper =
+            new DataClassRowMapper<>(ApprovalTransfer.class);
 
     private final MirrorProperties mirrorProperties;
     private final NamedParameterJdbcTemplate transferJdbcTemplate;
@@ -272,7 +268,6 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
 
     @Data
     static class ApprovalTransfer {
-        private Long amount;
         private Long consensusTimestamp;
         private Long contractId;
         private Integer index;
