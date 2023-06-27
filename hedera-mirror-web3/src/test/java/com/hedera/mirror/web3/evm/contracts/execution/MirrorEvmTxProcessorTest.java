@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaChainId;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -48,6 +49,7 @@ import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.MainnetEVMs;
@@ -124,6 +126,7 @@ class MirrorEvmTxProcessorTest {
         operations.forEach(operationRegistry::put);
         String EVM_VERSION_0_30 = "v0.30";
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
+        when(evmProperties.chainIdBytes32()).thenReturn(Bytes32.fromHexString(HederaChainId.TESTNET.getChainId()));
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessor(
                 worldState,

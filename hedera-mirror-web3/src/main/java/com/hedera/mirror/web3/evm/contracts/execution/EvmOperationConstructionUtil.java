@@ -24,7 +24,9 @@ import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiled
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
@@ -34,7 +36,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
@@ -104,16 +105,21 @@ public class EvmOperationConstructionUtil {
         var operationRegistry = new OperationRegistry();
         BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
-        registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        registerParisOperations(
+                operationRegistry,
+                gasCalculator,
+                mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
         Set.of(
                         new HederaBalanceOperation(gasCalculator, validator),
                         new HederaDelegateCallOperation(gasCalculator, validator),
+                        new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
+                        new HederaEvmCreate2Operation(
+                                gasCalculator, mirrorNodeEvmProperties, getDefaultCreateOperationExternalizer()),
+                        new HederaEvmCreateOperation(gasCalculator, getDefaultCreateOperationExternalizer()),
+                        new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        new HederaEvmSLoadOperation(gasCalculator),
-                        new HederaEvmCreate2Operation(
-                                gasCalculator, mirrorNodeEvmProperties, getDefaultCreateOperationExternalizer()))
+                        new HederaExtCodeSizeOperation(gasCalculator, validator))
                 .forEach(operationRegistry::put);
 
         return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
