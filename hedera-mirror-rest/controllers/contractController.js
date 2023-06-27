@@ -78,7 +78,6 @@ const ethereumTransactionType = Number(TransactionType.getProtoId('ETHEREUMTRANS
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
-const emptyBloomBuffer = Buffer.alloc(256);
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
@@ -456,7 +455,8 @@ class ContractController extends BaseController {
 
     let internal = false;
 
-    const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
+    const contractResultPayerFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
+    const contractResultSenderFullName = ContractResult.getFullName(ContractResult.SENDER_ID);
     const contractResultFromInValues = [];
 
     const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
@@ -485,13 +485,13 @@ class ContractController extends BaseController {
 
       switch (filter.key) {
         case filterKeys.FROM:
-          // handle repeated values
-          this.updateConditionsAndParamsWithInValues(
+          this.updateFromCondition(
             filter,
             contractResultFromInValues,
             params,
             conditions,
-            contractResultFromFullName,
+            contractResultPayerFullName,
+            contractResultSenderFullName,
             conditions.length + 1
           );
           break;
@@ -573,7 +573,13 @@ class ContractController extends BaseController {
     }
 
     // update query with repeated values
-    this.updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultFromFullName);
+    this.updateQueryFromWithInValues(
+      params,
+      conditions,
+      contractResultFromInValues,
+      contractResultPayerFullName,
+      contractResultSenderFullName
+    );
     this.updateQueryFiltersWithInValues(
       params,
       conditions,
@@ -1246,6 +1252,42 @@ class ContractController extends BaseController {
         next: nextLink,
       },
     };
+  };
+
+  updateFromCondition = (
+    filter,
+    invalues,
+    existingParams,
+    existingConditions,
+    payer,
+    sender,
+    position = existingParams.length
+  ) => {
+    if (filter.operator === utils.opsMap.eq) {
+      // aggregate '=' conditions and use the sql 'in' operator
+      invalues.push(filter.value);
+    } else {
+      existingParams.push(filter.value);
+      existingConditions.push(`(${payer}${filter.operator}$${position} or ${sender}${filter.operator}$${position})`);
+    }
+  };
+
+  updateQueryFromWithInValues = (
+    existingParams,
+    existingConditions,
+    invalues,
+    payer,
+    sender,
+    start = existingParams.length + 1
+  ) => {
+    if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
+      // add the condition 'c.id in ()'
+      existingParams.push(...invalues);
+      const positions = _.range(invalues.length)
+        .map((position) => position + start)
+        .map((position) => `$${position}`);
+      existingConditions.push(`(${payer} in (${positions}) or ${sender} in (${positions}))`);
+    }
   };
 
   setContractResultsResponse = (
