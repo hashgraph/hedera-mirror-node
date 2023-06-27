@@ -95,6 +95,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -649,7 +650,9 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     .totalStake(totalNodes)
                     .build());
         }
-        Collection<ConsensusNode> partial = downloader.partialCollection(allNodes);
+        // use ReflectionTestUtils to invoke the private Downloader::partialCollection() method
+        Collection<ConsensusNode> partial = ReflectionTestUtils.invokeMethod(downloader, Downloader.class,
+                "partialCollection", allNodes);
         assertThat(partial).hasSize(expectedNodes);
     }
 

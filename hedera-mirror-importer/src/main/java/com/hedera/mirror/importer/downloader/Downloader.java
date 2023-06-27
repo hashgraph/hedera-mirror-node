@@ -544,7 +544,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      * @param allNodes the entire set of ConsensusNodes
      * @return a randomly-ordered subcollection
      */
-    protected Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
+    private Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
         var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
         // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
         if (allNodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
