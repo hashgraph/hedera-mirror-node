@@ -17,11 +17,7 @@
 package com.hedera.mirror.common.domain.topic;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.Entity;
@@ -48,13 +44,9 @@ public class TopicMessageLookup {
     @jakarta.persistence.Id
     private String partition;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
     @UpsertColumn(coalesce = COALESCE_RANGE)
     private Range<Long> sequenceNumberRange;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
     @UpsertColumn(coalesce = COALESCE_RANGE)
     private Range<Long> timestampRange;
 

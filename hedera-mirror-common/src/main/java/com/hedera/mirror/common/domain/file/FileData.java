@@ -17,10 +17,8 @@
 package com.hedera.mirror.common.domain.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -44,7 +42,6 @@ public class FileData implements Persistable<Long> {
     @SuppressWarnings("java:S1700")
     private byte[] fileData;
 
-    @Convert(converter = FileIdConverter.class)
     private EntityId entityId;
 
     private Integer transactionType;

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.converter;
 
+import static com.hedera.mirror.common.converter.EntityIdDeserializer.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
@@ -25,33 +26,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@RequiredArgsConstructor
-abstract class AbstractEntityIdDeserializerTest {
+class EntityIdDeserializerTest {
 
     @Mock
     private JsonParser jsonParser;
 
-    private final AbstractEntityIdDeserializer deserializer;
-    private final EntityType entityType;
-
     @Test
     void deserialize() throws IOException {
         doReturn(98L).when(jsonParser).readValueAs(Long.class);
-        var actual = deserializer.deserialize(jsonParser, context());
-        assertThat(actual).isEqualTo(EntityId.of(98L, entityType));
+        var actual = INSTANCE.deserialize(jsonParser, context());
+        assertThat(actual).isEqualTo(EntityId.of(98L, EntityType.UNKNOWN));
     }
 
     @Test
     void deserializeNull() throws IOException {
         doReturn(null).when(jsonParser).readValueAs(Long.class);
-        assertThat(deserializer.deserialize(jsonParser, context())).isNull();
+        assertThat(INSTANCE.deserialize(jsonParser, context())).isNull();
     }
 
     private DeserializationContext context() {

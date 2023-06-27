@@ -240,35 +240,35 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
-    /**
-     * _to.transfer(msg.value) fails due to missing support of auto account creation, this will be
-     * supported with future release with gas_estimate support.
-     */
     @Test
     void transferThruContract() {
         // transferHbarsToAddress(address)
         final var stateChangePayable = "0x80b9f03c0000000000000000000000000000000000000000000000000000000000000742";
         final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var successfulReadResponse = "0x";
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        assertThat(contractCallService.processCall(params)).isEqualTo(successfulReadResponse);
     }
 
     @Test
-    void hollowAccountCreationIsNotSupported() {
+    void hollowAccountCreationWorks() {
         // transferHbarsToAddress(address)
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var transferHbarsInput = "0x80b9f03c00000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
         final var params =
                 serviceParameters(transferHbarsInput, 90L, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(params);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(params)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test

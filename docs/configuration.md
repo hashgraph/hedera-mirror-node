@@ -304,6 +304,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.addressbook.maxPageDelay`               | 250ms            | The maximum amount of time to sleep between paging for address book entries                                                      |
 | `hedera.mirror.grpc.addressbook.minPageDelay`               | 100ms            | The minimum amount of time to sleep between paging for address book entries                                                      |
 | `hedera.mirror.grpc.addressbook.pageSize`                   | 10               | The maximum number of address book entries to return in a single page                                                            |
+| `hedera.mirror.grpc.addressbook.nodeStakeCacheExpiry`       | 24h              | The amount of time to cache node stake assignments                                                                               |
+| `hedera.mirror.grpc.addressbook.nodeStakeCacheSize`         | 5                | The maximum number of versions of node stake assignments to cache                                                                |
 | `hedera.mirror.grpc.checkTopicExists`                       | true             | Whether to throw an error when the topic doesn't exist                                                                           |
 | `hedera.mirror.grpc.db.host`                                | 127.0.0.1        | The IP or hostname used to connect to the database                                                                               |
 | `hedera.mirror.grpc.db.name`                                | mirror_node      | The name of the database                                                                                                         |
@@ -540,8 +542,9 @@ The following table lists the available properties along with their default valu
  `hedera.mirror.rosetta.http.writeTimeout`          | 10000000000         | The maximum duration in nanoseconds before timing out writes of the response                        
  `hedera.mirror.rosetta.log.level`                  | info                | The log level                                                                                       
  `hedera.mirror.rosetta.network`                    | DEMO                | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`    
- `hedera.mirror.rosetta.nodes`                      | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value       
+ `hedera.mirror.rosetta.nodeRefreshInterval`        | 24h                 | The fixed period between scheduled network address book updates. Can accept values like `10m`, `2h` 
  `hedera.mirror.rosetta.nodeVersion`                | 0                   | The default canonical version of the node runtime                                                   
+ `hedera.mirror.rosetta.nodes`                      | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value       
  `hedera.mirror.rosetta.online`                     | true                | The default online mode of the Rosetta interface                                                    
  `hedera.mirror.rosetta.port`                       | 5700                | The REST API port                                                                                   
  `hedera.mirror.rosetta.realm`                      | 0                   | The default realm number within the shard                                                           

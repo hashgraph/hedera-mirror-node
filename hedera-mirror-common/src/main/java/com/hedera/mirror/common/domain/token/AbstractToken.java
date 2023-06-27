@@ -16,11 +16,7 @@
 
 package com.hedera.mirror.common.domain.token;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
@@ -88,8 +84,6 @@ public class AbstractToken implements History {
 
     private String symbol;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
 
     @Id

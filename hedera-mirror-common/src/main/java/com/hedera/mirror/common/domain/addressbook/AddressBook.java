@@ -16,10 +16,8 @@
 
 package com.hedera.mirror.common.domain.addressbook;
 
-import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -60,7 +58,6 @@ public class AddressBook {
     @ToString.Exclude
     private byte[] fileData;
 
-    @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
 
     private Integer nodeCount;

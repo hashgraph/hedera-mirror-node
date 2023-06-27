@@ -87,4 +87,17 @@ public class BitPackUtils {
     public static int getAlreadyUsedAutomaticAssociationsFrom(int autoAssociationMetadata) {
         return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) >>> 16;
     }
+
+    /**
+     * Set the higher-order 16 bits of automatic association Metadata
+     *
+     * @param autoAssociationMetadata metadata of already used automatic associations and max
+     *     allowed automatic associations
+     * @param alreadyUsedAutoAssociations new already used automatic associations to set
+     * @return metadata after changing the already used associations count.
+     */
+    public static int setAlreadyUsedAutomaticAssociationsTo(
+            int autoAssociationMetadata, int alreadyUsedAutoAssociations) {
+        return (alreadyUsedAutoAssociations << 16) | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+    }
 }
