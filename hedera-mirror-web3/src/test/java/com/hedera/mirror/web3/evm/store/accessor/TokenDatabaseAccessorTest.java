@@ -29,7 +29,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -55,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
+    com.hedera.mirror.common.domain.token.Token databaseToken;
 
     @InjectMocks
     private TokenDatabaseAccessor tokenDatabaseAccessor;
@@ -72,9 +72,6 @@ class TokenDatabaseAccessorTest {
     private EntityRepository entityRepository;
 
     private DomainBuilder domainBuilder;
-
-    com.hedera.mirror.common.domain.token.Token databaseToken;
-
     private Entity entity;
 
     @BeforeEach
@@ -194,7 +191,7 @@ class TokenDatabaseAccessorTest {
     }
 
     private void setupToken() {
-        final var tokenId = new TokenId(entity.toEntityId());
+        final var tokenId = entity.getId();
         databaseToken = domainBuilder.token().customize(t -> t.tokenId(tokenId)).get();
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
     }

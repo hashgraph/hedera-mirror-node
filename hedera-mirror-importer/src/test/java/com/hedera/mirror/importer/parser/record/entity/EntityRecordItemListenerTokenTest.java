@@ -22,6 +22,7 @@ import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.Lists;
@@ -38,7 +39,6 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -3274,15 +3274,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             byte[] keyData,
             TokenPauseStatusEnum pauseStatus,
             String... keyFields) {
-        Optional<Token> tokenOptional = tokenRepository.findById(new TokenId(EntityId.of(tokenID)));
+        Optional<Token> tokenOptional =
+                tokenRepository.findById(EntityId.of(tokenID).getId());
         if (present) {
             assertThat(tokenOptional)
                     .get()
-                    .returns(createdTimestamp, Token::getCreatedTimestamp)
-                    .returns(modifiedTimestamp, Token::getModifiedTimestamp)
-                    .returns(symbol, Token::getSymbol)
-                    .returns(pauseStatus, Token::getPauseStatus)
-                    .returns(totalSupply, Token::getTotalSupply);
+                    .returns(createdTimestamp, from(Token::getCreatedTimestamp))
+                    .returns(modifiedTimestamp, from(Token::getTimestampLower))
+                    .returns(symbol, from(Token::getSymbol))
+                    .returns(pauseStatus, from(Token::getPauseStatus))
+                    .returns(totalSupply, from(Token::getTotalSupply));
             if (keyFields.length != 0) {
                 assertThat(tokenOptional)
                         .get()

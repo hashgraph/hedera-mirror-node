@@ -20,12 +20,15 @@ import static com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties
 
 import jakarta.inject.Named;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.web3")
 @Data
 @Named
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class Web3Properties {
 

@@ -16,11 +16,6 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityIdUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -32,8 +27,14 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -129,12 +130,12 @@ public class HederaTokenStore {
     }
 
     public boolean exists(final TokenID id) {
-        final var token = store.getFungibleToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
+        final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
         return !token.getId().equals(Id.DEFAULT);
     }
 
     public Token get(final TokenID id) {
-        final var token = store.getFungibleToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
+        final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
 
         if (token.getId().equals(Id.DEFAULT)) {
             throw new IllegalArgumentException(
@@ -166,7 +167,7 @@ public class HederaTokenStore {
             }
 
             final var tid = nftId.tokenId();
-            final var tokenTreasury = store.getFungibleToken(asTypedEvmAddress(tid), OnMissing.THROW)
+            final var tokenTreasury = store.getToken(asTypedEvmAddress(tid), OnMissing.THROW)
                     .getTreasury()
                     .getId();
             var owner = nft.getOwner();

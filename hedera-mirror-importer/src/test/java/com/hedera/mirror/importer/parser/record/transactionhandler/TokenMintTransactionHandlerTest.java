@@ -73,8 +73,8 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
     }
 
     @Test
@@ -97,8 +97,8 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
 
         var nfts = assertThat(nft.getAllValues()).hasSize(expectedNfts);
         for (int i = 0; i < expectedNfts; i++) {

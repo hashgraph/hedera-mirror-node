@@ -90,7 +90,7 @@ public class SDKClient implements AutoCloseable {
     }
 
     @Override
-    public void close() throws TimeoutException {
+    public void close() {
         var createdAccountId = expandedOperatorAccountId.getAccountId();
         var operatorId = defaultOperator.getAccountId();
 
@@ -106,7 +106,11 @@ public class SDKClient implements AutoCloseable {
             }
         }
 
-        client.close();
+        try {
+            client.close();
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Client createClient() throws InterruptedException {
@@ -194,6 +198,7 @@ public class SDKClient implements AutoCloseable {
 
     private boolean validateNode(String endpoint, AccountId nodeAccountId) {
         boolean valid = false;
+        var stopwatch = Stopwatch.createStarted();
 
         try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
@@ -203,10 +208,10 @@ public class SDKClient implements AutoCloseable {
                     .setMaxAttempts(3)
                     .setMaxBackoff(Duration.ofSeconds(2))
                     .execute(client, Duration.ofSeconds(10L));
-            log.info("Validated node: {}", nodeAccountId);
+            log.info("Validated node {} in {}", nodeAccountId, stopwatch);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: {}", nodeAccountId, e.getMessage());
+            log.warn("Unable to validate node {} after {}: {}", nodeAccountId, stopwatch, e.getMessage());
         }
 
         return valid;

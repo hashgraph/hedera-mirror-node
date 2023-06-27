@@ -33,13 +33,17 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Copied model from hedera-services.
- * <p>
+ *
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -48,14 +52,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
  * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
  * signature for a {@code NON_FUNGIBLE_UNIQUE} is
- * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ * {@link Token#mint(TokenRelationship, List, RichInstant)}.
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
- * <p>
+ *
  * Differences from the original:
- * 1. Added factory method that returns empty instance
- * 2. Added mapToDomain method from TokenTypesManager
+ *     1. Added factory method that returns empty instance
+ *     2. Added mapToDomain method from TokenTypesManager
+ *     3. Removed OwnershipTracker
  */
 public class Token {
     private final Id id;
@@ -263,6 +268,49 @@ public class Token {
         } else {
             return TokenType.FUNGIBLE_COMMON;
         }
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated loadedUniqueTokens in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param loadedUniqueTokens
+     * @return the new instance of {@link Token} with updated {@link #loadedUniqueTokens} property
+     */
+    private Token createNewTokenWithLoadedUniqueTokens(Token oldToken, Map<Long, UniqueToken> loadedUniqueTokens) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                loadedUniqueTokens,
+                true,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -761,17 +809,13 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
      * @param treasuryRel      - the relationship between the treasury account and the token
      * @param metadata         - a list of user-defined metadata, related to the nft instances.
      * @param creationTime     - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<ByteString> metadata,
-            final RichInstant creationTime) {
+            final TokenRelationship treasuryRel, final List<ByteString> metadata, final RichInstant creationTime) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -789,7 +833,6 @@ public class Token {
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
-            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), newLastUsedSerialNumber));
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
         var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
@@ -813,15 +856,11 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param ownershipTracker - a tracker of changes made to the nft ownership
      * @param treasuryRel-     the relationship between the treasury account and the token
      * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
      *                         destroyed.
      */
-    public TokenModificationResult burn(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
@@ -831,7 +870,6 @@ public class Token {
 
             final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
             removedUniqueTokens.add(
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
@@ -874,15 +912,11 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
      * @param accountRel       - the relationship between the account, which owns the tokens, and the
      *                         token
      * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
      */
-    public TokenModificationResult wipe(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship accountRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
@@ -899,7 +933,6 @@ public class Token {
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
         for (final long serialNum : serialNumbers) {
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(
                     id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
         }
@@ -1154,6 +1187,10 @@ public class Token {
 
     public Map<Long, UniqueToken> getLoadedUniqueTokens() {
         return loadedUniqueTokens;
+    }
+
+    public Token setLoadedUniqueTokens(final Map<Long, UniqueToken> loadedUniqueTokens) {
+        return createNewTokenWithLoadedUniqueTokens(this, loadedUniqueTokens);
     }
 
     public boolean isBelievedToHaveBeenAutoRemoved() {

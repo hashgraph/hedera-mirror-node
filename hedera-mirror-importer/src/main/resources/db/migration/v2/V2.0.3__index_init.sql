@@ -198,6 +198,9 @@ create index if not exists staking_reward_transfer__account_timestamp
 -- token
 alter table token
     add constraint token__pk primary key (token_id);
+create index if not exists token_history__token_id_timestamp_range
+    on token_history (token_id, lower(timestamp_range));
+create index if not exists token_history__timestamp_range on token_history using gist (timestamp_range);
 
 -- token_account
 alter table token_account

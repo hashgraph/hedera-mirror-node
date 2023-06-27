@@ -43,7 +43,7 @@ import org.hyperledger.besu.datatypes.Address;
  *  while on Archive Node we are interested in transaction scope only
  *  2. Use abstraction for the state by introducing {@link Store} interface
  *  3. Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}
- *  4. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  4. Use copied models from hedera-services which are enhanced with additional constructors for easier setup,
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
  * */
 public class AssociateLogic {
@@ -57,7 +57,7 @@ public class AssociateLogic {
         /* Load the models */
         final var account = store.getAccount(accountAddress, OnMissing.THROW);
         final var tokens = tokensAddresses.stream()
-                .map(t -> store.getFungibleToken(t, OnMissing.THROW))
+                .map(t -> store.getToken(t, OnMissing.THROW))
                 .toList();
 
         /* Associate and commit the changes */

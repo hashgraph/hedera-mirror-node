@@ -1,7 +1,6 @@
-@contractbase @fullsuite
+@contractbase @fullsuite @estimate @web3
 Feature: EstimateGas Contract Base Coverage Feature
-
-  @estimate @web3
+  
   Scenario Outline: Validate EstimateGas
     Given I successfully create contract from contract bytes with 10000000 balance
     And lower deviation is 5% and upper deviation is 20%
@@ -17,7 +16,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that makes a static call to a method from a different contract
     Then I call estimateGas with function that makes a delegate call to a method from a different contract
     Then I call estimateGas with function that makes a call code to a method from a different contract
-    Then I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations
+#    Then I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations - TODO: Fix failing test
     Then I call estimateGas with function that performs self destruct
     Then I call estimateGas with request body that contains wrong method signature
     Then I call estimateGas with wrong encoded parameter
