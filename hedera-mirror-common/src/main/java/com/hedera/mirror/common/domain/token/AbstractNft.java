@@ -17,19 +17,12 @@
 package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
 import java.io.Serial;
@@ -39,7 +32,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractNft.Id.class)
@@ -50,13 +42,11 @@ import org.hibernate.annotations.Type;
 public abstract class AbstractNft implements History {
 
     @UpsertColumn(coalesce = "case when deleted = true then null else coalesce({0}, e_{0}, {1}) end")
-    @Convert(converter = AccountIdConverter.class)
     private EntityId accountId;
 
     @Column(updatable = false)
     private Long createdTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
     @UpsertColumn(coalesce = "{0}")
     private EntityId delegatingSpender;
 
@@ -69,16 +59,12 @@ public abstract class AbstractNft implements History {
     @jakarta.persistence.Id
     private long serialNumber;
 
-    @Convert(converter = AccountIdConverter.class)
     @UpsertColumn(coalesce = "{0}")
     private EntityId spender;
 
     @jakarta.persistence.Id
     private long tokenId;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
-    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
     @JsonIgnore

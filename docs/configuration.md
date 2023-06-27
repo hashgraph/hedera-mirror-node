@@ -540,8 +540,9 @@ The following table lists the available properties along with their default valu
  `hedera.mirror.rosetta.http.writeTimeout`          | 10000000000         | The maximum duration in nanoseconds before timing out writes of the response                        
  `hedera.mirror.rosetta.log.level`                  | info                | The log level                                                                                       
  `hedera.mirror.rosetta.network`                    | DEMO                | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`    
- `hedera.mirror.rosetta.nodes`                      | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value       
+ `hedera.mirror.rosetta.nodeRefreshInterval`        | 24h                 | The fixed period between scheduled network address book updates. Can accept values like `10m`, `2h` 
  `hedera.mirror.rosetta.nodeVersion`                | 0                   | The default canonical version of the node runtime                                                   
+ `hedera.mirror.rosetta.nodes`                      | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value       
  `hedera.mirror.rosetta.online`                     | true                | The default online mode of the Rosetta interface                                                    
  `hedera.mirror.rosetta.port`                       | 5700                | The REST API port                                                                                   
  `hedera.mirror.rosetta.realm`                      | 0                   | The default realm number within the shard                                                           

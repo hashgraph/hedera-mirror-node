@@ -36,6 +36,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.hyperledger.besu.datatypes.Address;
 @SuppressWarnings("java:S107")
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
+    private final AbstractAutoCreationLogic autoCreationLogic;
     private final MirrorNodeEvmProperties evmProperties;
     private final StaticBlockMetaSource blockMetaSource;
     private final PricesAndFeesImpl pricesAndFees;
@@ -60,6 +62,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
+            final AbstractAutoCreationLogic autoCreationLogic,
             final MirrorEntityAccess entityAccess,
             final MirrorNodeEvmProperties evmProperties,
             final TraceProperties traceProperties,
@@ -76,6 +79,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.traceProperties = traceProperties;
         this.pricesAndFees = pricesAndFees;
         this.gasCalculator = gasCalculator;
+        this.autoCreationLogic = autoCreationLogic;
         this.precompileMapper = precompileMapper;
         this.accountAccessor = accountAccessor;
         this.tokenAccessor = tokenAccessor;
@@ -117,7 +121,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 pricesAndFees,
                 evmProperties,
                 gasCalculator,
-                mcps(gasCalculator, evmProperties, precompileMapper),
+                mcps(
+                        gasCalculator,
+                        autoCreationLogic,
+                        entityAddressSequencer,
+                        mirrorEvmContractAliases,
+                        evmProperties,
+                        precompileMapper),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

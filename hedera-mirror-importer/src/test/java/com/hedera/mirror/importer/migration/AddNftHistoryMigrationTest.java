@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -54,23 +54,23 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
 
     private static final String REVERT_DDL =
             """
-            create table if not exists nft_transfer (
-              consensus_timestamp bigint not null,
-              is_approval         boolean,
-              payer_account_id    bigint not null,
-              receiver_account_id bigint,
-              sender_account_id   bigint,
-              serial_number       bigint not null,
-              token_id            bigint not null
-            );
-            create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp);
-            create index if not exists nft_transfer__token_serial_timestamp on nft_transfer (token_id, serial_number, consensus_timestamp);
-            truncate nft;
-            alter table if exists nft
-              drop column timestamp_range,
-              add column modified_timestamp bigint not null;
-            drop table if exists nft_history;
-            """;
+                    create table if not exists nft_transfer (
+                      consensus_timestamp bigint not null,
+                      is_approval         boolean,
+                      payer_account_id    bigint not null,
+                      receiver_account_id bigint,
+                      sender_account_id   bigint,
+                      serial_number       bigint not null,
+                      token_id            bigint not null
+                    );
+                    create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp);
+                    create index if not exists nft_transfer__token_serial_timestamp on nft_transfer (token_id, serial_number, consensus_timestamp);
+                    truncate nft;
+                    alter table if exists nft
+                      drop column timestamp_range,
+                      add column modified_timestamp bigint not null;
+                    drop table if exists nft_history;
+                    """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
 
@@ -276,13 +276,13 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
 
         public static MigrationNft fromDomainNft(Nft nft) {
             return MigrationNft.builder()
-                    .accountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(nft.getAccountId()))
+                    .accountId(EntityIdConverter.INSTANCE.convertToDatabaseColumn(nft.getAccountId()))
                     .createdTimestamp(nft.getCreatedTimestamp())
                     .deleted(nft.getDeleted())
-                    .delegatingSpender(AccountIdConverter.INSTANCE.convertToDatabaseColumn(nft.getDelegatingSpender()))
+                    .delegatingSpender(EntityIdConverter.INSTANCE.convertToDatabaseColumn(nft.getDelegatingSpender()))
                     .metadata(nft.getMetadata())
                     .modifiedTimestamp(nft.getTimestampLower())
-                    .spender(AccountIdConverter.INSTANCE.convertToDatabaseColumn(nft.getSpender()))
+                    .spender(EntityIdConverter.INSTANCE.convertToDatabaseColumn(nft.getSpender()))
                     .serialNumber(nft.getSerialNumber())
                     .tokenId(nft.getTokenId())
                     .build();

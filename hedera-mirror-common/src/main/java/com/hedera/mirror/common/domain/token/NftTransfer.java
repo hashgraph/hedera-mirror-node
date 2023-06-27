@@ -16,13 +16,6 @@
 
 package com.hedera.mirror.common.domain.token;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdDeserializer;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.TokenIdDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -33,24 +26,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // for Builder
 @Builder
 @Data
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @NoArgsConstructor
 public class NftTransfer {
+
     public static final long WILDCARD_SERIAL_NUMBER = -1;
 
     private Boolean isApproval;
 
-    @JsonDeserialize(using = AccountIdDeserializer.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
 
-    @JsonDeserialize(using = AccountIdDeserializer.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
 
     private Long serialNumber;
 
-    @JsonDeserialize(using = TokenIdDeserializer.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId tokenId;
 }
