@@ -37,7 +37,10 @@ import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
@@ -231,6 +234,11 @@ public class EvmConfiguration {
     }
 
     @Bean
+    SyntheticTxnFactory syntheticTxnFactory() {
+        return new SyntheticTxnFactory();
+    }
+
+    @Bean
     AssociateLogic associateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
@@ -245,6 +253,15 @@ public class EvmConfiguration {
     @Bean
     MintLogic mintLogic(final OptionValidator optionValidator) {
         return new MintLogic(optionValidator);
+    }
+
+    @Bean
+    BurnPrecompile burnPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final OptionValidator optionValidator) {
+        return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, optionValidator);
     }
 
     @Bean
