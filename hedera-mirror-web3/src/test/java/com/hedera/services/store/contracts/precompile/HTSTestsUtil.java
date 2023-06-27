@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
-import static com.hedera.services.store.contracts.precompile.FungibleTokenTransferTest.fungible;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asToken;
@@ -121,10 +120,6 @@ public class HTSTestsUtil {
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
 
-    //    public static final Bytes mintInput =
-    // Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN)).appendTo(ByteBuffer.wrap(expandByteArrayTo32Length(
-    //            EntityIdUtils.asEvmAddress(nftMint.tokenType())))).appendTo(ByteBuffer.wrap(expandByteArrayTo32Length(
-    //            Address.ZERO.toArray())));
     public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
