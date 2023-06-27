@@ -20,8 +20,11 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 
 @Named
 @RequiredArgsConstructor
@@ -36,20 +39,26 @@ public class SyntheticContractResultServiceImpl implements SyntheticContractResu
             return;
         }
 
-        long consensusTimestamp = result.getRecordItem().getConsensusTimestamp();
-        long gasLimit = result.getRecordItem().getTransactionBody().getTransactionFee();
+        RecordItem recordItem = result.getRecordItem();
+        TransactionBody transactionBody = recordItem.getTransactionBody();
+        TransactionRecord transactionRecord = recordItem.getTransactionRecord();
+
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        long gasLimit = 0;
 
         ContractResult contractResult = new ContractResult();
 
+        contractResult.setCallResult(Bytes.of(recordItem.isSuccessful() ? 1 : 0).toArrayUnsafe());
         contractResult.setConsensusTimestamp(consensusTimestamp);
         contractResult.setContractId(result.getEntityId().getId());
         contractResult.setSenderId(result.getSenderId());
         contractResult.setFunctionParameters(result.getFunctionParameters());
         contractResult.setGasLimit(gasLimit);
-        contractResult.setTransactionResult(0);
-        contractResult.setPayerAccountId(result.getRecordItem().getPayerAccountId());
-        contractResult.setTransactionHash(result.getRecordItem().getTransactionHash());
-        contractResult.setTransactionIndex(result.getRecordItem().getTransactionIndex());
+        contractResult.setTransactionResult(transactionRecord.getReceipt().getStatusValue());
+        contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        contractResult.setTransactionHash(recordItem.getTransactionHash());
+        contractResult.setTransactionIndex(recordItem.getTransactionIndex());
+        contractResult.setTransactionNonce(transactionBody.getTransactionID().getNonce());
 
         entityListener.onContractResult(contractResult);
     }

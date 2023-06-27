@@ -21,6 +21,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 public class TransferContractResult extends AbstractSyntheticContractResult {
     public TransferContractResult(RecordItem recordItem, EntityId entityId, EntityId senderId) {
-        super(recordItem, entityId, senderId, hexToBytes(TRANSFER_SIGNATURE));
+        super(recordItem, entityId, senderId, TRANSFER_SIGNATURE);
     }
 }

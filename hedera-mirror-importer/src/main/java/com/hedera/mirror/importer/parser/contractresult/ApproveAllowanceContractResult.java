@@ -21,6 +21,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 public class ApproveAllowanceContractResult extends AbstractSyntheticContractResult {
     public ApproveAllowanceContractResult(RecordItem recordItem, EntityId entityId, EntityId senderId) {
-        super(recordItem, entityId, senderId, hexToBytes(APPROVE_SIGNATURE));
+        super(recordItem, entityId, senderId, APPROVE_SIGNATURE);
     }
 }
