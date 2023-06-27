@@ -41,7 +41,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
@@ -68,61 +67,44 @@ class TransferLogicTest {
     private final AccountID owner = AccountID.newBuilder().setAccountNum(12347L).build();
     private final TokenID fungibleTokenID =
             TokenID.newBuilder().setTokenNum(1234L).build();
-
     private final TokenID anotherFungibleTokenID =
             TokenID.newBuilder().setTokenNum(12345L).build();
-
     private final TokenID nonFungibleTokenID =
             TokenID.newBuilder().setTokenNum(1235L).build();
-
     private final AccountID revokedSpender =
             AccountID.newBuilder().setAccountNum(12346L).build();
     private final EntityNum payerNum = EntityNum.fromAccountId(payer);
 
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
-
     private final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {
         {
             put(payerNum, initialAllowance);
         }
     };
-
     private final TreeMap<EntityNum, Long> resultCryptoAllowances = new TreeMap<>() {
         {
             put(payerNum, 50L);
         }
     };
-
     private final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {
         {
             put(fungibleAllowanceId, initialAllowance);
         }
     };
-
     private final TreeMap<FcTokenAllowanceId, Long> resultFungibleAllowances = new TreeMap<>() {
         {
             put(fungibleAllowanceId, 50L);
         }
     };
 
-    HederaTokenStore hederaTokenStore;
-
-    AutoCreationLogic autoCreationLogic;
-
-    MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    StoreImpl store;
-
     @Mock
     EntityIdSource ids;
 
-    @Mock
-    Account account;
-
-    @Mock
-    UniqueToken uniqueToken;
-
+    HederaTokenStore hederaTokenStore;
+    AutoCreationLogic autoCreationLogic;
+    MirrorEvmContractAliases mirrorEvmContractAliases;
+    StoreImpl store;
     private TransferLogic subject;
 
     @BeforeEach
@@ -165,7 +147,6 @@ class TransferLogicTest {
     @Test
     void autoCreatesWithNftTransferToAlias() {
         var account = new Account(Id.fromGrpcAccount(owner), 200L);
-
         final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
         final var transfer = NftTransfer.newBuilder()
                 .setSenderAccountID(payer)
@@ -176,14 +157,13 @@ class TransferLogicTest {
         final var nftTransfer = BalanceChange.changingNftOwnership(
                 Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
         final var changes = List.of(nftTransfer);
+
         given(store.getAccount(asTypedEvmAddress(nftTransfer.accountId()), OnMissing.THROW))
                 .willReturn(account);
         var nft = getEmptyUniqueToken();
         given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
-
         given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
                 .willReturn(Pair.of(OK, 100L));
-
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
@@ -199,17 +179,14 @@ class TransferLogicTest {
                 Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, aliasedAa(firstAlias, 10L), payer);
         final var anotherFungibleTransfer = BalanceChange.changingFtUnits(
                 Id.fromGrpcToken(anotherFungibleTokenID), anotherFungibleTokenID, aliasedAa(firstAlias, 10L), payer);
-
-        given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
-
         final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
 
+        given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
         given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
                 .willReturn(Pair.of(OK, 100L));
         given(autoCreationLogic.create(
                         eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
                 .willReturn(Pair.of(OK, 100L));
-
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
@@ -223,7 +200,6 @@ class TransferLogicTest {
     void replacesExistingAliasesInChanges() {
         try (MockedStatic<EntityNum> utilities = Mockito.mockStatic(EntityNum.class)) {
             final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
-
             utilities
                     .when(() -> fromEvmAddress(Address.wrap(Bytes.wrap(firstAlias.toByteArray()))))
                     .thenReturn(payerNum);
@@ -239,11 +215,12 @@ class TransferLogicTest {
                     Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
             final var changes = List.of(fungibleTransfer, nftTransfer);
             var nft = getEmptyUniqueToken();
-            given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
 
+            given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
             given(mirrorEvmContractAliases.resolveForEvm(any()))
                     .willReturn(Address.wrap(Bytes.wrap(firstAlias.toByteArray())));
             given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
+
             subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
 
             verify(autoCreationLogic, never())
