@@ -84,6 +84,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("insertColumns", metadata.columns("{0}"));
         velocityContext.put(
                 "notUpdatableColumn", metadata.column(c -> !c.isUpdatable(), "coalesce({0}, e_{0}) is not null"));
+        velocityContext.put("skipPartialUpdate", metadata.getUpsertable().skipPartialUpdate());
         velocityContext.put("updateColumns", metadata.columns(ColumnMetadata::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();

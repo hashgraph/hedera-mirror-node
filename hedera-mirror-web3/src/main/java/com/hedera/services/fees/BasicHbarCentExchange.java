@@ -25,7 +25,9 @@ import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Temporary extracted class from services.
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove unused methods: activeRate, activeRates, updateRates, fcActiveRates
+ *  2. Use RatesAndFeesLoader for the calculations
  */
 @Named
 @RequiredArgsConstructor

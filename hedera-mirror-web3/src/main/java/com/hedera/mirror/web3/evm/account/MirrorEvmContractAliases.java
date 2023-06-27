@@ -17,12 +17,17 @@
 package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.services.jproto.JECDSASecp256k1Key;
+import com.hedera.services.jproto.JKey;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,11 +39,37 @@ import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
+
     final Map<Address, Address> aliases = new HashMap<>();
     final Map<Address, Address> pendingAliases = new HashMap<>();
     final Set<Address> pendingRemovals = new HashSet<>();
 
     private final MirrorEntityAccess mirrorEntityAccess;
+
+    public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
+        final var evmAddress = tryAddressRecovery(key);
+        if (isRecoveredEvmAddress(evmAddress)) {
+            link(Address.wrap(Bytes.wrap(evmAddress)), address); // NOSONAR we have a null check
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Nullable
+    private byte[] tryAddressRecovery(@Nullable final JKey key) {
+        if (key != null) {
+            // Only compressed keys are stored at the moment
+            final var keyBytes = key.getECDSASecp256k1Key();
+            if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+                final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
+                if (isRecoveredEvmAddress(evmAddress)) {
+                    return evmAddress;
+                }
+            }
+        }
+        return null;
+    }
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {

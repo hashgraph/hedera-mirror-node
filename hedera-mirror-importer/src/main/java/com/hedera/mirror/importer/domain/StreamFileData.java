@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
@@ -52,11 +53,11 @@ public class StreamFileData {
 
     private final Instant lastModified;
 
-    public static StreamFileData from(@NonNull File file) {
+    private static StreamFileData readStreamFileData(File file, StreamFilename streamFilename) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             var lastModified = Instant.ofEpochMilli(file.lastModified());
-            return new StreamFileData(new StreamFilename(file.getName()), bytes, lastModified);
+            return new StreamFileData(streamFilename, bytes, lastModified);
         } catch (InvalidStreamFileException e) {
             throw e;
         } catch (Exception e) {
@@ -64,15 +65,24 @@ public class StreamFileData {
         }
     }
 
+    public static StreamFileData from(@NonNull File file) {
+        return readStreamFileData(file, StreamFilename.from(file.getPath(), File.separator));
+    }
+
+    public static StreamFileData from(@NonNull Path basePath, @NonNull StreamFilename streamFilename) {
+        var streamFile = new File(basePath.toFile(), streamFilename.getFilePath());
+        return readStreamFileData(streamFile, streamFilename);
+    }
+
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
         return new StreamFileData(
-                new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
+                StreamFilename.from(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, byte[] bytes) {
-        return new StreamFileData(new StreamFilename(filename), bytes, Instant.now());
+        return new StreamFileData(StreamFilename.from(filename), bytes, Instant.now());
     }
 
     public InputStream getInputStream() {
@@ -81,6 +91,10 @@ public class StreamFileData {
 
     public String getFilename() {
         return streamFilename.getFilename();
+    }
+
+    public String getFilePath() {
+        return streamFilename.getFilePath();
     }
 
     @Override

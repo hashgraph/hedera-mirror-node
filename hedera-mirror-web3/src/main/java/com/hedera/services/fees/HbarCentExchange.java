@@ -19,6 +19,10 @@ package com.hedera.services.fees;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove unused methods: activeRate, activeRates, updateRates, fcActiveRates
+ */
 public interface HbarCentExchange {
     ExchangeRate rate(Timestamp at);
 }

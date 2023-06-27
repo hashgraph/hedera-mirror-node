@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -55,8 +56,14 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_INT64 = "(address,int64)";
     private static final String KEY_VALUE = "((bool,address,bytes,bytes,address))";
     private static final String CUSTOM_FEE = "(bytes,bytes,bytes)";
+    private static final String ADDRESS_ARRAY_OF_ADDRESSES = "(address,address[])";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
+
+    public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
+    }
 
     public byte[] getContractBytes(final Path contractPath) {
         try {
@@ -135,6 +142,12 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[4])));
             case CUSTOM_FEE -> Tuple.of(parameters[0], parameters[1], parameters[2]);
             case ADDRESS_INT64 -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1]);
+            case ADDRESS_ARRAY_OF_ADDRESSES -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream(((Address[]) parameters[1]))
+                            .map(FunctionEncodeDecoder::convertAddress)
+                            .toList()
+                            .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]));
             default -> Tuple.EMPTY;
         };
     }
@@ -156,10 +169,5 @@ public class FunctionEncodeDecoder {
         } catch (IOException e) {
             return "Failed to parse";
         }
-    }
-
-    public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
-        return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

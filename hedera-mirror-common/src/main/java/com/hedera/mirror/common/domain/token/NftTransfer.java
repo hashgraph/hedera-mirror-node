@@ -16,49 +16,28 @@
 
 package com.hedera.mirror.common.domain.token;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.domain.Persistable;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // for Builder
 @Builder
 @Data
-@Entity
 @NoArgsConstructor
-public class NftTransfer implements Persistable<NftTransferId> {
+public class NftTransfer {
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private NftTransferId id;
+    public static final long WILDCARD_SERIAL_NUMBER = -1;
 
     private Boolean isApproval;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId payerAccountId;
-
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
 
-    @JsonIgnore
-    @Override
-    public boolean isNew() {
-        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
+    private Long serialNumber;
+
+    private EntityId tokenId;
 }

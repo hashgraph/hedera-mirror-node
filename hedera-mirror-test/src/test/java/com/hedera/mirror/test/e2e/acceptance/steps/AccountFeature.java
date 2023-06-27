@@ -57,8 +57,7 @@ public class AccountFeature extends AbstractFeature {
 
     @AfterAll
     public static void afterAll() {
-        long cost = AccountClient.getCost();
-        log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
+        AccountClient.cleanup();
     }
 
     @When("I create a new account with balance {long} tℏ")

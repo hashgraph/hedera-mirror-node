@@ -16,17 +16,25 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
@@ -65,42 +73,19 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
                 .contractResult()
                 .customize(cr -> cr.consensusTimestamp(ethTx1.getConsensusTimestamp()))
                 .persist();
-        domainBuilder
-                .transaction()
-                .customize(t ->
-                        t.consensusTimestamp(ethTx1.getConsensusTimestamp()).payerAccountId(ethTx1.getPayerAccountId()))
-                .persist();
+        var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
-        domainBuilder
-                .transaction()
-                .customize(t -> t.consensusTimestamp(ethTx2.getConsensusTimestamp())
-                        .payerAccountId(ethTx2.getPayerAccountId())
-                        .result(ResponseCodeEnum.DUPLICATE_TRANSACTION_VALUE))
-                .persist();
+        var transaction2 =
+                transaction(ethTx2.getConsensusTimestamp(), DUPLICATE_TRANSACTION, ethTx2.getPayerAccountId(), 0, 0);
         var ethTx3 = domainBuilder.ethereumTransaction(true).persist();
-        domainBuilder
-                .transaction()
-                .customize(t -> t.consensusTimestamp(ethTx3.getConsensusTimestamp())
-                        .payerAccountId(ethTx3.getPayerAccountId())
-                        .result(ResponseCodeEnum.WRONG_NONCE_VALUE))
-                .persist();
+        var transaction3 = transaction(ethTx3.getConsensusTimestamp(), WRONG_NONCE, ethTx3.getPayerAccountId(), 0, 0);
         var ethTx4 = domainBuilder.ethereumTransaction(false).persist();
-        var transaction4 = domainBuilder
-                .transaction()
-                .customize(t -> t.consensusTimestamp(ethTx4.getConsensusTimestamp())
-                        .index(4)
-                        .nonce(3)
-                        .payerAccountId(ethTx4.getPayerAccountId())
-                        .result(ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED_VALUE))
-                .persist();
+        var transaction4 =
+                transaction(ethTx4.getConsensusTimestamp(), CONSENSUS_GAS_EXHAUSTED, ethTx4.getPayerAccountId(), 4, 3);
         var ethTx5 = domainBuilder.ethereumTransaction(true).persist();
-        var transaction5 = domainBuilder
-                .transaction()
-                .customize(t -> t.consensusTimestamp(ethTx5.getConsensusTimestamp())
-                        .index(5)
-                        .payerAccountId(ethTx5.getPayerAccountId())
-                        .result(ResponseCodeEnum.INVALID_ACCOUNT_ID_VALUE))
-                .persist();
+        var transaction5 =
+                transaction(ethTx5.getConsensusTimestamp(), INVALID_ACCOUNT_ID, ethTx5.getPayerAccountId(), 5, 0);
+        persistTransactions(List.of(transaction1, transaction2, transaction3, transaction4, transaction5));
 
         // when
         runMigration();
@@ -128,6 +113,38 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Integ
                 .transactionNonce(transaction.getNonce())
                 .transactionResult(transaction.getResult())
                 .build();
+    }
+
+    private Transaction transaction(
+            long consensusTimestamp, ResponseCodeEnum result, EntityId payerAccountId, int index, int nonce) {
+        Transaction transaction = new Transaction();
+        transaction.setConsensusTimestamp(consensusTimestamp);
+        transaction.setIndex(index);
+        transaction.setNonce(nonce);
+        transaction.setPayerAccountId(payerAccountId);
+        transaction.setResult(result.getNumber());
+        transaction.setType(TransactionType.ETHEREUMTRANSACTION.getProtoId());
+        transaction.setValidStartNs(consensusTimestamp - 10);
+        return transaction;
+    }
+
+    private void persistTransactions(List<Transaction> transactions) {
+        jdbcTemplate.batchUpdate(
+                """
+                insert into transaction (consensus_timestamp, index, nonce, payer_account_id, result, type,
+                valid_start_ns) values (?, ?, ?, ?, ?, ?, ?)
+                """,
+                transactions,
+                transactions.size(),
+                (ps, transaction) -> {
+                    ps.setLong(1, transaction.getConsensusTimestamp());
+                    ps.setLong(2, transaction.getIndex());
+                    ps.setLong(3, transaction.getNonce());
+                    ps.setLong(4, transaction.getPayerAccountId().getId());
+                    ps.setLong(5, transaction.getResult());
+                    ps.setShort(6, transaction.getType().shortValue());
+                    ps.setLong(7, transaction.getValidStartNs());
+                });
     }
 
     @SneakyThrows

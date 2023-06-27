@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static org.awaitility.Awaitility.await;
+
 import com.google.common.base.Stopwatch;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
@@ -30,6 +32,10 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 import com.hedera.mirror.test.e2e.acceptance.response.*;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -41,13 +47,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.awaitility.Awaitility.await;
 
 @Log4j2
 @Named
@@ -304,7 +303,8 @@ public class MirrorNodeClient {
     }
 
     private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
-        return web3Client.post()
+        return web3Client
+                .post()
                 .uri(uri)
                 .body(Mono.just(request), request.getClass())
                 .accept(MediaType.APPLICATION_JSON)

@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -104,13 +104,13 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getFeeScheduleKey().toByteArray(), Token::getFeeScheduleKey)
                 .returns(transactionBody.getFreezeKey().toByteArray(), Token::getFreezeKey)
                 .returns(transactionBody.getKycKey().toByteArray(), Token::getKycKey)
-                .returns(timestamp, Token::getModifiedTimestamp)
+                .returns(timestamp, Token::getTimestampLower)
                 .returns(transactionBody.getName(), Token::getName)
                 .returns(transactionBody.getPauseKey().toByteArray(), Token::getPauseKey)
                 .returns(transactionBody.getSupplyKey().toByteArray(), Token::getSupplyKey)
                 .returns(transactionBody.getSymbol(), Token::getSymbol)
                 .returns(EntityId.of(transactionBody.getTreasury()), Token::getTreasuryAccountId)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId())
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
                 .returns(transactionBody.getWipeKey().toByteArray(), Token::getWipeKey);
     }
 
@@ -140,13 +140,13 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(token.getValue())
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
                 .returns(null, Token::getName)
                 .returns(null, Token::getPauseKey)
                 .returns(null, Token::getSupplyKey)
                 .returns(null, Token::getSymbol)
                 .returns(null, Token::getTreasuryAccountId)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId())
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
                 .returns(null, Token::getWipeKey);
     }
 

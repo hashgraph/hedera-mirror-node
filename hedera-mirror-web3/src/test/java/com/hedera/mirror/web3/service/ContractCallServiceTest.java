@@ -20,41 +20,26 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.function.ToLongFunction;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.operation.CallOperation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    private static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
-
-    @Autowired
-    private MeterRegistry meterRegistry;
-
-    @Autowired
-    private MirrorEvmTxProcessorFacadeImpl processor;
 
     @BeforeEach
     void setup() {
@@ -69,7 +54,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // multiplySimpleNumbers()
         final var pureFuncHash = "8070450f";
         final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
-        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -98,7 +83,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void estimateGasWithoutReceiver() {
-        final var serviceParameters = serviceParameters("", 0, ETH_ESTIMATE_GAS, true, 0, Address.ZERO);
+        final var serviceParameters = serviceParameters("", 0, ETH_ESTIMATE_GAS, false, 0, Address.ZERO);
 
         persistEntities(false);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
@@ -118,7 +103,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var successfulReadResponse =
                 "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047465737400000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -147,7 +132,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void transferFunds() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
-        final var serviceParameters = serviceParameters("0x", 7L, ETH_CALL, true, 0, RECEIVER_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", 7L, ETH_CALL, false, 0, RECEIVER_ADDRESS);
         persistEntities(true);
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
@@ -162,7 +147,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // getAccountBalance(address)
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000002e6";
         final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000004e20";
-        final var params = serviceParameters(balanceCall, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var params = serviceParameters(balanceCall, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -176,7 +161,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void estimateGasForBalanceCall() {
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var serviceParameters =
-                serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, false, 15_000_000L, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
@@ -191,7 +176,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters =
-                serviceParameters(revertFunctionSignature, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(revertFunctionSignature, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -208,7 +193,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @EnumSource(RevertFunctions.class)
     void testReverts(final RevertFunctions revertFunctions) {
         final var serviceParameters =
-                serviceParameters(revertFunctions.functionSignature, 0, ETH_CALL, true, 0, REVERTER_CONTRACT_ADDRESS);
+                serviceParameters(revertFunctions.functionSignature, 0, ETH_CALL, false, 0, REVERTER_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -225,7 +210,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var wrongFunctionSignature = "0x542ec32e";
         final var serviceParameters =
-                serviceParameters(wrongFunctionSignature, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(wrongFunctionSignature, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
@@ -239,7 +224,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void transferNegative() {
-        final var serviceParameters = serviceParameters("0x", -5L, ETH_CALL, true, 0, RECEIVER_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", -5L, ETH_CALL, false, 0, RECEIVER_ADDRESS);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -248,47 +233,42 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters = serviceParameters("0x", 210000L, ETH_CALL, true, 0, RECEIVER_ADDRESS);
+        final var serviceParameters = serviceParameters("0x", 210000L, ETH_CALL, false, 0, RECEIVER_ADDRESS);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
-    /**
-     * _to.transfer(msg.value) fails due to the static frame,{@link CallOperation} this will be
-     * supported with future release with gas_estimate support.
-     */
     @Test
     void transferThruContract() {
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
-
         // transferHbarsToAddress(address)
-        final var stateChangePayable = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
-        final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var stateChangePayable = "0x80b9f03c0000000000000000000000000000000000000000000000000000000000000742";
+        final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
+        final var successfulReadResponse = "0x";
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(InvalidTransactionException.class)
-                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString())
-                .hasFieldOrPropertyWithValue("data", "0x");
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
+        assertThat(contractCallService.processCall(params)).isEqualTo(successfulReadResponse);
     }
 
     @Test
-    void hollowAccountCreationIsNotSupported() {
+    void hollowAccountCreationWorks() {
         // transferHbarsToAddress(address)
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var transferHbarsInput = "0x80b9f03c00000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
         final var params =
                 serviceParameters(transferHbarsInput, 90L, ETH_ESTIMATE_GAS, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
+        final var expectedGasUsed = gasUsedAfterExecution(params);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(params)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test
@@ -358,22 +338,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void stateChangeFails() {
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
+    void stateChangeWorksWithDynamicEthCall() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+
+        final var updatedStorageValue =
+                "000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
 
         // writeToStorageSlot(string)
-        final var stateChangeHash =
-                "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
+        final var stateChangeHash = "0x9ac27b62" + updatedStorageValue;
         final var serviceParameters =
-                serviceParameters(stateChangeHash, 0, ETH_CALL, true, 0, ETH_CALL_CONTRACT_ADDRESS);
+                serviceParameters(stateChangeHash, 0, ETH_CALL, false, 0, ETH_CALL_CONTRACT_ADDRESS);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class)
-                .hasFieldOrPropertyWithValue("data", "0x");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x" + updatedStorageValue);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
     @Test
@@ -439,19 +419,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         }
 
         return gasUsedBeforeExecution;
-    }
-
-    private long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
-        return processor
-                .execute(
-                        serviceParameters.getSender(),
-                        serviceParameters.getReceiver(),
-                        serviceParameters.getGas(),
-                        serviceParameters.getValue(),
-                        serviceParameters.getCallData(),
-                        Instant.now(),
-                        serviceParameters.isStatic())
-                .getGasUsed();
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {

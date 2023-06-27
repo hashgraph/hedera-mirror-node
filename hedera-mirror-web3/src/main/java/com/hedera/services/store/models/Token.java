@@ -42,6 +42,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
+ * Copied model from hedera-services.
+ *
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -50,10 +52,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
  * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
  * signature for a {@code NON_FUNGIBLE_UNIQUE} is
- * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ * {@link Token#mint(TokenRelationship, List, RichInstant)}.
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences from the original:
+ *     1. Added factory method that returns empty instance
+ *     2. Added mapToDomain method from TokenTypesManager
+ *     3. Removed OwnershipTracker
  */
 public class Token {
     private final Id id;
@@ -87,6 +94,41 @@ public class Token {
     private final long autoRenewPeriod;
     private final long lastUsedSerialNumber;
     private final List<CustomFee> customFees;
+
+    public Token(Id id) {
+        this(
+                id,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                new HashMap<>(),
+                false,
+                null,
+                null,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                false,
+                false,
+                false,
+                0,
+                false,
+                null,
+                null,
+                null,
+                0,
+                0,
+                0,
+                Collections.emptyList());
+    }
 
     @SuppressWarnings("java:S107")
     public Token(
@@ -152,6 +194,123 @@ public class Token {
         this.autoRenewPeriod = autoRenewPeriod;
         this.lastUsedSerialNumber = lastUsedSerialNumber;
         this.customFees = customFees;
+    }
+
+    public static Token getEmptyToken() {
+        return new Token(Id.DEFAULT);
+    }
+
+    /**
+     * Creates a new instance of the model token, which is later persisted in state.
+     *
+     * @param tokenId            the new token id
+     * @param op                 the transaction body containing the necessary data for token creation
+     * @param treasury           treasury of the token
+     * @param autoRenewAccount   optional(nullable) account used for auto-renewal
+     * @param consensusTimestamp the consensus time of the token create transaction
+     * @return a new instance of the {@link Token} class
+     */
+    public static Token fromGrpcOpAndMeta(
+            final Id tokenId,
+            final TokenCreateTransactionBody op,
+            final Account treasury,
+            @Nullable final Account autoRenewAccount,
+            final long consensusTimestamp) {
+        final var tokenExpiry = op.hasAutoRenewAccount()
+                ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
+                : op.getExpiry().getSeconds();
+
+        final var freezeKey = asUsableFcKey(op.getFreezeKey());
+        final var adminKey = asUsableFcKey(op.getAdminKey());
+        final var kycKey = asUsableFcKey(op.getKycKey());
+        final var wipeKey = asUsableFcKey(op.getWipeKey());
+        final var supplyKey = asUsableFcKey(op.getSupplyKey());
+        final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
+        final var pauseKey = asUsableFcKey(op.getPauseKey());
+        return new Token(
+                tokenId,
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new HashMap<>(),
+                false,
+                mapToDomain(op.getTokenType()),
+                op.getSupplyType(),
+                0,
+                op.getMaxSupply(),
+                kycKey.orElse(null),
+                freezeKey.orElse(null),
+                supplyKey.orElse(null),
+                wipeKey.orElse(null),
+                adminKey.orElse(null),
+                feeScheduleKey.orElse(null),
+                pauseKey.orElse(null),
+                op.getFreezeDefault(),
+                treasury,
+                autoRenewAccount,
+                false,
+                false,
+                false,
+                tokenExpiry,
+                true,
+                op.getMemo(),
+                op.getName(),
+                op.getSymbol(),
+                op.getDecimals(),
+                op.getAutoRenewPeriod().getSeconds(),
+                0,
+                Collections.emptyList());
+    }
+
+    // copied from TokenTypesManager in services
+    private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
+        if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
+            return TokenType.NON_FUNGIBLE_UNIQUE;
+        } else {
+            return TokenType.FUNGIBLE_COMMON;
+        }
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated loadedUniqueTokens in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param loadedUniqueTokens
+     * @return the new instance of {@link Token} with updated {@link #loadedUniqueTokens} property
+     */
+    private Token createNewTokenWithLoadedUniqueTokens(Token oldToken, Map<Long, UniqueToken> loadedUniqueTokens) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                loadedUniqueTokens,
+                true,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -542,75 +701,6 @@ public class Token {
     }
 
     /**
-     * Creates a new instance of the model token, which is later persisted in state.
-     *
-     * @param tokenId            the new token id
-     * @param op                 the transaction body containing the necessary data for token creation
-     * @param treasury           treasury of the token
-     * @param autoRenewAccount   optional(nullable) account used for auto-renewal
-     * @param consensusTimestamp the consensus time of the token create transaction
-     * @return a new instance of the {@link Token} class
-     */
-    public static Token fromGrpcOpAndMeta(
-            final Id tokenId,
-            final TokenCreateTransactionBody op,
-            final Account treasury,
-            @Nullable final Account autoRenewAccount,
-            final long consensusTimestamp) {
-        final var tokenExpiry = op.hasAutoRenewAccount()
-                ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
-                : op.getExpiry().getSeconds();
-
-        final var freezeKey = asUsableFcKey(op.getFreezeKey());
-        final var adminKey = asUsableFcKey(op.getAdminKey());
-        final var kycKey = asUsableFcKey(op.getKycKey());
-        final var wipeKey = asUsableFcKey(op.getWipeKey());
-        final var supplyKey = asUsableFcKey(op.getSupplyKey());
-        final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
-        final var pauseKey = asUsableFcKey(op.getPauseKey());
-        return new Token(
-                tokenId,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new HashMap<>(),
-                false,
-                mapToDomain(op.getTokenType()),
-                op.getSupplyType(),
-                0,
-                op.getMaxSupply(),
-                kycKey.orElse(null),
-                freezeKey.orElse(null),
-                supplyKey.orElse(null),
-                wipeKey.orElse(null),
-                adminKey.orElse(null),
-                feeScheduleKey.orElse(null),
-                pauseKey.orElse(null),
-                op.getFreezeDefault(),
-                treasury,
-                autoRenewAccount,
-                false,
-                false,
-                false,
-                tokenExpiry,
-                true,
-                op.getMemo(),
-                op.getName(),
-                op.getSymbol(),
-                op.getDecimals(),
-                op.getAutoRenewPeriod().getSeconds(),
-                0,
-                Collections.emptyList());
-    }
-
-    // copied from TokenTypesManager in services
-    private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
-        if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
-            return TokenType.NON_FUNGIBLE_UNIQUE;
-        }
-        return TokenType.FUNGIBLE_COMMON;
-    }
-
-    /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
      * @param treasuryRel
@@ -633,17 +723,13 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
      * @param treasuryRel      - the relationship between the treasury account and the token
      * @param metadata         - a list of user-defined metadata, related to the nft instances.
      * @param creationTime     - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<ByteString> metadata,
-            final RichInstant creationTime) {
+            final TokenRelationship treasuryRel, final List<ByteString> metadata, final RichInstant creationTime) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -661,7 +747,6 @@ public class Token {
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
-            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), newLastUsedSerialNumber));
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
         var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
@@ -685,15 +770,11 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param ownershipTracker - a tracker of changes made to the nft ownership
      * @param treasuryRel-     the relationship between the treasury account and the token
      * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
      *                         destroyed.
      */
-    public TokenModificationResult burn(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
@@ -703,7 +784,6 @@ public class Token {
 
             final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
             removedUniqueTokens.add(
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
@@ -746,15 +826,11 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
      * @param accountRel       - the relationship between the account, which owns the tokens, and the
      *                         token
      * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
      */
-    public TokenModificationResult wipe(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship accountRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
@@ -771,7 +847,6 @@ public class Token {
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
         for (final long serialNum : serialNumbers) {
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(
                     id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
         }
@@ -875,30 +950,6 @@ public class Token {
         return createNewTokenWithDeletedFlag(this, isDeleted);
     }
 
-    public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {
-        return createNewTokenWithNewLastUsedSerialNumber(this, lastUsedSerialNumber);
-    }
-
-    public Token setType(TokenType tokenType) {
-        return createNewTokenWithTokenType(this, tokenType);
-    }
-
-    public Token setKycKey(JKey kycKey) {
-        return createNewTokenWithKycKey(this, kycKey);
-    }
-
-    public Token setFreezeKey(JKey freezeKey) {
-        return createNewTokenWithFreezeKey(this, freezeKey);
-    }
-
-    public Token setWipeKey(JKey wipeKey) {
-        return createNewTokenWithWipeKey(this, wipeKey);
-    }
-
-    public Token setSupplyKey(JKey supplyKey) {
-        return createNewTokenWithSupplyKey(this, supplyKey);
-    }
-
     public boolean hasAdminKey() {
         return adminKey != null;
     }
@@ -923,6 +974,10 @@ public class Token {
         return supplyKey;
     }
 
+    public Token setSupplyKey(JKey supplyKey) {
+        return createNewTokenWithSupplyKey(this, supplyKey);
+    }
+
     public boolean hasFreezeKey() {
         return freezeKey != null;
     }
@@ -939,12 +994,24 @@ public class Token {
         return wipeKey;
     }
 
+    public Token setWipeKey(JKey wipeKey) {
+        return createNewTokenWithWipeKey(this, wipeKey);
+    }
+
     public JKey getKycKey() {
         return kycKey;
     }
 
+    public Token setKycKey(JKey kycKey) {
+        return createNewTokenWithKycKey(this, kycKey);
+    }
+
     public JKey getFreezeKey() {
         return freezeKey;
+    }
+
+    public Token setFreezeKey(JKey freezeKey) {
+        return createNewTokenWithFreezeKey(this, freezeKey);
     }
 
     public JKey getPauseKey() {
@@ -976,6 +1043,10 @@ public class Token {
         return type;
     }
 
+    public Token setType(TokenType tokenType) {
+        return createNewTokenWithTokenType(this, tokenType);
+    }
+
     public boolean isFungibleCommon() {
         return type == TokenType.FUNGIBLE_COMMON;
     }
@@ -986,6 +1057,10 @@ public class Token {
 
     public long getLastUsedSerialNumber() {
         return lastUsedSerialNumber;
+    }
+
+    public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {
+        return createNewTokenWithNewLastUsedSerialNumber(this, lastUsedSerialNumber);
     }
 
     public List<CustomFee> getCustomFees() {
@@ -1018,6 +1093,10 @@ public class Token {
 
     public Map<Long, UniqueToken> getLoadedUniqueTokens() {
         return loadedUniqueTokens;
+    }
+
+    public Token setLoadedUniqueTokens(final Map<Long, UniqueToken> loadedUniqueTokens) {
+        return createNewTokenWithLoadedUniqueTokens(this, loadedUniqueTokens);
     }
 
     public boolean isBelievedToHaveBeenAutoRemoved() {

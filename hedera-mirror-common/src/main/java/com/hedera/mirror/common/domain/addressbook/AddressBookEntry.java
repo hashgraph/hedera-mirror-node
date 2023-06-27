@@ -18,11 +18,9 @@ package com.hedera.mirror.common.domain.addressbook;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.NonParsableKeyException;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -63,7 +61,6 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
 
     private String memo;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
     @ToString.Exclude
