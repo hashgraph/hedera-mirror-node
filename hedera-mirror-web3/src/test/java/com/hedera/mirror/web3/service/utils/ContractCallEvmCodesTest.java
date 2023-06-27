@@ -38,7 +38,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
+        persistEntities();
 
         return CallServiceParameters.builder()
                 .sender(sender)

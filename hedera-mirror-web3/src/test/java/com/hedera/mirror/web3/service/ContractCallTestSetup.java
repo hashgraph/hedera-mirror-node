@@ -170,13 +170,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected Path EVM_CODES_ABI_PATH;
 
     protected CallServiceParameters serviceParametersForExecution(
-            final Bytes callData, final Address contractAddress, CallType callType) {
+            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
+        persistEntities();
 
         return CallServiceParameters.builder()
                 .sender(sender)
-                .value(0L)
+                .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
                 .gas(15_000_000L)
@@ -199,11 +199,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .getGasUsed();
     }
 
-    protected void persistEntities(boolean isRegularTransfer) {
-        if (isRegularTransfer) {
-            performRegularTransfer();
-        }
+    protected void receiverPersist() {
+        final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
+        final var receiverEvmAddress = toEvmAddress(receiverEntityId);
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(receiverEntityId.getId())
+                        .num(receiverEntityId.getEntityNum())
+                        .evmAddress(receiverEvmAddress)
+                        .type(CONTRACT))
+                .persist();
+    }
 
+    protected void persistEntities() {
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -302,18 +310,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .evmAddress(spenderEvmAddress))
                 .persist();
         return spenderEntityId;
-    }
-
-    private void performRegularTransfer() {
-        final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
-        final var receiverEvmAddress = toEvmAddress(receiverEntityId);
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(receiverEntityId.getId())
-                        .num(receiverEntityId.getEntityNum())
-                        .evmAddress(receiverEvmAddress)
-                        .type(CONTRACT))
-                .persist();
     }
 
     private long ethAccountPersist() {
