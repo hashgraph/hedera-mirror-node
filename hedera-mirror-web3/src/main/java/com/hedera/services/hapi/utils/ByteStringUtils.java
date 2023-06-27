@@ -23,6 +23,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Protobuf related utilities shared by client and server. */
 public final class ByteStringUtils {
 
+    private ByteStringUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static ByteString wrapUnsafely(@NonNull final byte[] bytes) {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }

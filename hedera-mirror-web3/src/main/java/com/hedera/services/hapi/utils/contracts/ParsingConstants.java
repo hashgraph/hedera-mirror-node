@@ -16,8 +16,6 @@
 
 package com.hedera.services.hapi.utils.contracts;
 
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT32;
-
 import com.esaulpaugh.headlong.abi.TupleType;
 
 public final class ParsingConstants {
@@ -63,13 +61,13 @@ public final class ParsingConstants {
             + ",string"
             + ")";
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
-    public static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
-    public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
+    public static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType getTokenInfoType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
+    public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     // tuple types
     public static final TupleType addressTuple = TupleType.parse(ADDRESS);
     public static final TupleType booleanTuple = TupleType.parse(BOOL);
