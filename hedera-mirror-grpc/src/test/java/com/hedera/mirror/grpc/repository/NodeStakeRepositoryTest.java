@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,9 +72,13 @@ class NodeStakeRepositoryTest extends GrpcIntegrationTest {
         var nodeStake0_0 = nodeStake(consensusTimestamp, 0L, 0L);
         var nodeStake0_1 = nodeStake(consensusTimestamp, 1L, 1L);
 
-        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+        assertThat(nodeStakeRepository.findAllStakeByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 0 stakes")
-                .containsExactly(nodeStake0_0, nodeStake0_1);
+                .containsAllEntriesOf(Map.of(
+                        nodeStake0_0.getNodeId(),
+                        nodeStake0_0.getStake(),
+                        nodeStake0_1.getNodeId(),
+                        nodeStake0_1.getStake()));
 
         // Clear cache and load the next day's node stake info
         reset();
@@ -82,9 +87,13 @@ class NodeStakeRepositoryTest extends GrpcIntegrationTest {
         var nodeStake1_0 = nodeStake(consensusTimestamp, 0L, 10L);
         var nodeStake1_1 = nodeStake(consensusTimestamp, 1L, 11L);
 
-        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+        assertThat(nodeStakeRepository.findAllStakeByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 1 stakes")
-                .containsExactly(nodeStake1_0, nodeStake1_1);
+                .containsAllEntriesOf(Map.of(
+                        nodeStake1_0.getNodeId(),
+                        nodeStake1_0.getStake(),
+                        nodeStake1_1.getNodeId(),
+                        nodeStake1_1.getStake()));
     }
 
     private NodeStake nodeStake(long consensusTimestamp, long nodeId, long stake) {
