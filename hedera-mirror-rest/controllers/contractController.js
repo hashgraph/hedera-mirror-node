@@ -35,7 +35,7 @@ import {
   TransactionResult,
   TransactionType,
 } from '../model';
-import {ContractService, FileDataService, RecordFileService, TransactionService} from '../service';
+import {ContractService, EntityService, FileDataService, RecordFileService, TransactionService} from '../service';
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
@@ -392,7 +392,7 @@ class ContractController extends BaseController {
    * @param {string} contractId encoded contract ID
    * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
    */
-  extractContractResultsByIdQuery = async (filters, contractId) => {
+  extractContractResultsByIdQuery = async (filters, contractId, fromEntity) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
     const conditions = [];
@@ -434,6 +434,10 @@ class ContractController extends BaseController {
 
       switch (filter.key) {
         case filterKeys.FROM:
+          if (_.isNil(filter.value)) {
+            // utils.buildAndValidateFilters returns null for evm addresses
+            filter.value = await EntityService.getEncodedId(fromEntity);
+          }
           this.updateFromCondition(
             filter,
             contractResultFromInValues,
@@ -823,7 +827,11 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(
+      filters,
+      contractId,
+      req.query[filterKeys.FROM]
+    );
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
@@ -1005,7 +1013,12 @@ class ContractController extends BaseController {
       acceptedContractResultsParameters,
       contractResultsFilterValidityChecks
     );
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
+
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(
+      filters,
+      '',
+      req.query[filterKeys.FROM]
+    );
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {

@@ -1,6 +1,16 @@
 {
   "description": "Contract results api call for all contracts with from specified as payer and sender",
   "setup": {
+    "accounts": [
+      {
+        "num": 5999,
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
+      },
+      {
+        "num": 6001,
+        "evm_address": "fbb9a1be370150759408cd7af48e9eda2b8ead57"
+      }
+    ],
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -82,7 +92,16 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/results?from=0x5d5702FABeCeE60f775C51973C0b7f241362486B"
+    "/api/v1/contracts/results?from=0x000000000000000000000000000000000000176F",
+    "/api/v1/contracts/results?from=5999",
+    "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57",
+    "/api/v1/contracts/results?from=0xebb9a1be370150759408cd7af48e9eda2b8ead57",
+    "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57",
+    "/api/v1/contracts/results?from=0x0000000000000000000000000000000000001771",
+    "/api/v1/contracts/results?from=6001",
+    "/api/v1/contracts/results?from=fbb9a1be370150759408cd7af48e9eda2b8ead57",
+    "/api/v1/contracts/results?from=0xfbb9a1be370150759408cd7af48e9eda2b8ead57",
+    "/api/v1/contracts/results?from=fbb9a1be370150759408cd7af48e9eda2b8ead57"
   ],
   "responseStatus": 200,
   "responseJson": {
