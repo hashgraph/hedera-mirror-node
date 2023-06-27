@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,37 +30,61 @@ class NodeStakeRepositoryTest extends GrpcIntegrationTest {
     private final NodeStakeRepository nodeStakeRepository;
 
     @Test
-    void findLatestTimeStampEmptyTable() {
-        Optional<Long> latestTimestampOpt = nodeStakeRepository.findLatestTimeStamp();
-        assertThat(latestTimestampOpt).isEmpty();
+    void emptyTableTest() {
+        assertThat(nodeStakeRepository.findLatestTimestamp()).isEmpty();
+        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(0L)).isEmpty();
+        assertThat(nodeStakeRepository.findAllStakeByConsensusTimestamp(0L)).isEmpty();
     }
 
     @Test
     void findLatestTimeStamp() {
         nodeStake(1L, 0L, 0L);
-        assertThat(nodeStakeRepository.findLatestTimeStamp()).contains(1L);
+        assertThat(nodeStakeRepository.findLatestTimestamp()).contains(1L);
 
         nodeStake(2L, 0L, 0L);
-        assertThat(nodeStakeRepository.findLatestTimeStamp()).contains(2L);
+        assertThat(nodeStakeRepository.findLatestTimestamp()).contains(2L);
     }
 
     @Test
-    void findStakeByConsensusTimestampAndNodeId() {
+    void findAllByConsensusTimestamp() {
         long consensusTimestamp = 0L;
-        nodeStake(consensusTimestamp, 0L, 0L);
-        nodeStake(consensusTimestamp, 1L, 1L);
+        var nodeStake0_0 = nodeStake(consensusTimestamp, 0L, 0L);
+        var nodeStake0_1 = nodeStake(consensusTimestamp, 1L, 1L);
+
+        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+                .as("Latest timestamp 0 stakes")
+                .containsExactly(nodeStake0_0, nodeStake0_1);
+
+        // Load the next day's node stake info. This repository method is not cached.
+        consensusTimestamp++;
+        var nodeStake1_0 = nodeStake(consensusTimestamp, 0L, 10L);
+        var nodeStake1_1 = nodeStake(consensusTimestamp, 1L, 11L);
+
+        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+                .as("Latest timestamp 1 stakes")
+                .containsExactly(nodeStake1_0, nodeStake1_1);
+    }
+
+    @Test
+    void findAllStakeByConsensusTimestamp() {
+        long consensusTimestamp = 0L;
+        var nodeStake0_0 = nodeStake(consensusTimestamp, 0L, 0L);
+        var nodeStake0_1 = nodeStake(consensusTimestamp, 1L, 1L);
+
+        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+                .as("Latest timestamp 0 stakes")
+                .containsExactly(nodeStake0_0, nodeStake0_1);
+
+        // Clear cache and load the next day's node stake info
+        reset();
 
         consensusTimestamp++;
-        nodeStake(consensusTimestamp, 0L, 10L);
-        nodeStake(consensusTimestamp, 1L, 11L);
+        var nodeStake1_0 = nodeStake(consensusTimestamp, 0L, 10L);
+        var nodeStake1_1 = nodeStake(consensusTimestamp, 1L, 11L);
 
-        assertThat(nodeStakeRepository.findStakeByConsensusTimestampAndNodeId(consensusTimestamp, 0L))
-                .as("Latest node 0 stake")
-                .contains(10L);
-
-        assertThat(nodeStakeRepository.findStakeByConsensusTimestampAndNodeId(consensusTimestamp, 1L))
-                .as("Latest node 1 stake")
-                .contains(11L);
+        assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
+                .as("Latest timestamp 1 stakes")
+                .containsExactly(nodeStake1_0, nodeStake1_1);
     }
 
     private NodeStake nodeStake(long consensusTimestamp, long nodeId, long stake) {

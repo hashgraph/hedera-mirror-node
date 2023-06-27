@@ -187,7 +187,7 @@ class NetworkServiceTest extends GrpcIntegrationTest {
     @Test
     void overrideStakeToZeroWhenEmptyNodeStakeTable() {
         var addressBook = addressBook();
-        var addressBookEntry = addressBookEntry(10L); // Persisted stake
+        var addressBookEntry = addressBookEntry(10L); // Persist stake
         addressBookEntry.setStake(0L); // Now expected
 
         var filter = AddressBookFilter.builder().fileId(addressBook.getFileId()).build();
@@ -206,6 +206,7 @@ class NetworkServiceTest extends GrpcIntegrationTest {
         nodeStake(addressBookEntry1.getNodeId(), nodeStakeTableStake);
         nodeStake(addressBookEntry2.getNodeId(), nodeStakeTableStake);
 
+        // Set in memory entries expected stake values for assertion
         addressBookEntry1.setStake(nodeStakeTableStake);
         addressBookEntry2.setStake(nodeStakeTableStake);
         // No node_stake row defined for addressBookEntry3 node ID, so stake expected to be overridden as zero.

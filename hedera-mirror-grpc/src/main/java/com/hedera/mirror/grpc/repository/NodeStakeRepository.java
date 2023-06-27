@@ -18,18 +18,24 @@ package com.hedera.mirror.grpc.repository;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.grpc.config.CacheConfiguration;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id> {
-
     @Query(value = "select max(consensus_timestamp) from node_stake", nativeQuery = true)
-    Optional<Long> findLatestTimeStamp();
+    Optional<Long> findLatestTimestamp();
 
-    // All results, including nulls, are cached as not all nodes may be present in the table
+    List<NodeStake> findAllByConsensusTimestamp(long consensusTimestamp);
+
+    // An empty map may be cached, indicating the node_stake table is empty
     @Cacheable(cacheManager = CacheConfiguration.NODE_STAKE_CACHE, cacheNames = "node_stake")
-    @Query(value = "select stake from node_stake where consensus_timestamp = ? and node_id = ? ", nativeQuery = true)
-    Optional<Long> findStakeByConsensusTimestampAndNodeId(long consensusTimestamp, long nodeId);
+    default Map<Long, Long> findAllStakeByConsensusTimestamp(long consensusTimestamp) {
+        return findAllByConsensusTimestamp(consensusTimestamp).stream()
+                .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, NodeStake::getStake));
+    }
 }

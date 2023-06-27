@@ -26,6 +26,7 @@ import com.hedera.mirror.grpc.repository.AddressBookRepository;
 import com.hedera.mirror.grpc.repository.NodeStakeRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,8 +69,9 @@ public class NetworkServiceImpl implements NetworkService {
         long addressBookTimestamp = addressBookRepository
                 .findLatestTimestamp(fileId.getId())
                 .orElseThrow(() -> new EntityNotFoundException(fileId));
-        long nodeStakeTimestamp = nodeStakeRepository.findLatestTimeStamp().orElse(NODE_STAKE_EMPTY_TABLE_TIMESTAMP);
-        var context = new AddressBookContext(addressBookTimestamp, nodeStakeTimestamp);
+        long nodeStakeTimestamp = nodeStakeRepository.findLatestTimestamp().orElse(NODE_STAKE_EMPTY_TABLE_TIMESTAMP);
+        var nodeStakeMap = nodeStakeRepository.findAllStakeByConsensusTimestamp(nodeStakeTimestamp);
+        var context = new AddressBookContext(addressBookTimestamp, nodeStakeMap);
 
         return Flux.defer(() -> page(context))
                 .repeatWhen(Repeat.onlyIf(c -> !context.isComplete())
@@ -85,22 +87,19 @@ public class NetworkServiceImpl implements NetworkService {
     private Flux<AddressBookEntry> page(AddressBookContext context) {
         return transactionOperations.execute(t -> {
             var addressBookTimestamp = context.getAddressBookTimestamp();
-            var nodeStakeTimestamp = context.getNodeStakeTimestamp();
+            var nodeStakeMap = context.getNodeStakeMap();
             var nextNodeId = context.getNextNodeId();
             var pageSize = addressBookProperties.getPageSize();
             var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(
                     addressBookTimestamp, nextNodeId, pageSize);
             var endpoints = new AtomicInteger(0);
 
-            for (var node : nodes) {
-                // Replace address book entry node stake with latest present in node_stake table
-                var nodeStake = nodeStakeRepository
-                        .findStakeByConsensusTimestampAndNodeId(nodeStakeTimestamp, node.getNodeId())
-                        .orElse(0L);
-                node.setStake(nodeStake);
+            nodes.forEach(node -> {
+                // Override node stake
+                node.setStake(nodeStakeMap.getOrDefault(node.getNodeId(), 0L));
                 // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
                 endpoints.addAndGet(node.getServiceEndpoints().size());
-            }
+            });
 
             if (nodes.size() < pageSize) {
                 context.completed();
@@ -117,13 +116,13 @@ public class NetworkServiceImpl implements NetworkService {
     }
 
     @Value
-    private class AddressBookContext {
+    private static class AddressBookContext {
 
         private final AtomicBoolean complete = new AtomicBoolean(false);
         private final AtomicLong count = new AtomicLong(0L);
         private final AtomicReference<AddressBookEntry> last = new AtomicReference<>();
         private final long addressBookTimestamp;
-        private final long nodeStakeTimestamp;
+        private final Map<Long, Long> nodeStakeMap;
 
         void onNext(AddressBookEntry entry) {
             count.incrementAndGet();
