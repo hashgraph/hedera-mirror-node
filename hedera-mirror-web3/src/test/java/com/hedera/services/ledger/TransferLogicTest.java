@@ -18,12 +18,19 @@ package com.hedera.services.ledger;
 
 import static com.hedera.services.store.models.UniqueToken.getEmptyUniqueToken;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityNum.fromEvmAddress;
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -42,9 +49,14 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.TreeMap;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class TransferLogicTest {
 
@@ -55,6 +67,9 @@ class TransferLogicTest {
     private final AccountID owner = AccountID.newBuilder().setAccountNum(12347L).build();
     private final TokenID fungibleTokenID =
             TokenID.newBuilder().setTokenNum(1234L).build();
+
+    private final TokenID anotherFungibleTokenID =
+            TokenID.newBuilder().setTokenNum(12345L).build();
 
     private final TokenID nonFungibleTokenID =
             TokenID.newBuilder().setTokenNum(1235L).build();
@@ -80,10 +95,8 @@ class TransferLogicTest {
 
     HederaTokenStore hederaTokenStore;
 
-    @Mock
     AutoCreationLogic autoCreationLogic;
 
-    @Mock
     MirrorEvmContractAliases mirrorEvmContractAliases;
 
     StoreImpl store;
@@ -101,9 +114,130 @@ class TransferLogicTest {
 
     @BeforeEach
     void setUp() {
+        autoCreationLogic = mock(AutoCreationLogic.class);
+        mirrorEvmContractAliases = mock(MirrorEvmContractAliases.class);
         hederaTokenStore = mock(HederaTokenStore.class);
         subject = new TransferLogic(hederaTokenStore, autoCreationLogic, mirrorEvmContractAliases);
         store = mock(StoreImpl.class);
+    }
+
+    @Test
+    void throwsIseOnNonEmptyAliasWithNullAutoCreationLogic() {
+        final var firstAmount = 1_000L;
+        final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
+        final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+
+        subject = new TransferLogic(hederaTokenStore, null, mirrorEvmContractAliases);
+
+        final var triggerList = List.of(inappropriateTrigger);
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.doZeroSum(triggerList, store, ids, asTypedEvmAddress(payer)));
+    }
+
+    @Test
+    void failedAutoCreation() {
+        final var firstAmount = 1_000L;
+        final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
+        final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+        final var changes = List.of(failingTrigger);
+
+        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+                .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
+
+        assertFailsWith(
+                () -> subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer)), INSUFFICIENT_ACCOUNT_BALANCE);
+    }
+
+    @Test
+    void autoCreatesWithNftTransferToAlias() {
+        var account = new Account(Id.fromGrpcAccount(owner), 200L);
+
+        final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
+        final var transfer = NftTransfer.newBuilder()
+                .setSenderAccountID(payer)
+                .setReceiverAccountID(
+                        AccountID.newBuilder().setAlias(firstAlias).build())
+                .setSerialNumber(20L)
+                .build();
+        final var nftTransfer = BalanceChange.changingNftOwnership(
+                Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
+        final var changes = List.of(nftTransfer);
+        given(store.getAccount(asTypedEvmAddress(nftTransfer.accountId()), OnMissing.THROW))
+                .willReturn(account);
+        var nft = getEmptyUniqueToken();
+        given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
+
+        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+                .willReturn(Pair.of(OK, 100L));
+
+        given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
+
+        subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
+
+        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+    }
+
+    @Test
+    void autoCreatesWithFungibleTokenTransferToAlias() {
+        var account = new Account(Id.fromGrpcAccount(owner), 200L);
+        final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
+        final var fungibleTransfer = BalanceChange.changingFtUnits(
+                Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, aliasedAa(firstAlias, 10L), payer);
+        final var anotherFungibleTransfer = BalanceChange.changingFtUnits(
+                Id.fromGrpcToken(anotherFungibleTokenID), anotherFungibleTokenID, aliasedAa(firstAlias, 10L), payer);
+
+        given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
+
+        final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
+
+        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+                .willReturn(Pair.of(OK, 100L));
+        given(autoCreationLogic.create(
+                        eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+                .willReturn(Pair.of(OK, 100L));
+
+        given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
+
+        subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
+
+        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+        verify(autoCreationLogic)
+                .create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+    }
+
+    @Test
+    void replacesExistingAliasesInChanges() {
+        try (MockedStatic<EntityNum> utilities = Mockito.mockStatic(EntityNum.class)) {
+            final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
+
+            utilities
+                    .when(() -> fromEvmAddress(Address.wrap(Bytes.wrap(firstAlias.toByteArray()))))
+                    .thenReturn(payerNum);
+            final var fungibleTransfer = BalanceChange.changingFtUnits(
+                    Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, aliasedAa(firstAlias, 10L), payer);
+            final var transfer = NftTransfer.newBuilder()
+                    .setSenderAccountID(payer)
+                    .setReceiverAccountID(
+                            AccountID.newBuilder().setAlias(firstAlias).build())
+                    .setSerialNumber(20L)
+                    .build();
+            final var nftTransfer = BalanceChange.changingNftOwnership(
+                    Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, transfer, payer);
+            final var changes = List.of(fungibleTransfer, nftTransfer);
+            var nft = getEmptyUniqueToken();
+            given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
+
+            given(mirrorEvmContractAliases.resolveForEvm(any()))
+                    .willReturn(Address.wrap(Bytes.wrap(firstAlias.toByteArray())));
+            given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
+            subject.doZeroSum(changes, store, ids, asTypedEvmAddress(payer));
+
+            verify(autoCreationLogic, never())
+                    .create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+            verify(autoCreationLogic, never())
+                    .create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+        }
     }
 
     @Test
@@ -162,6 +296,13 @@ class TransferLogicTest {
 
         assertDoesNotThrow(
                 () -> subject.doZeroSum(List.of(change1, change2, change3), store, ids, asTypedEvmAddress(payer)));
+    }
+
+    private AccountAmount aliasedAa(final ByteString alias, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAlias(alias))
+                .setAmount(amount)
+                .build();
     }
 
     private AccountAmount allowanceAA(final AccountID accountID, final long amount) {

@@ -183,8 +183,8 @@ public class TransferLogic {
         final var alias = change.getNonEmptyAliasIfPresent();
 
         if (alias != null) {
-            final var aliasNum = fromEvmAddress(
-                    mirrorEvmContractAliases.resolveForEvm(Address.wrap(Bytes.wrap(alias.toByteArray()))));
+            Address address = mirrorEvmContractAliases.resolveForEvm(Address.wrap(Bytes.wrap(alias.toByteArray())));
+            final var aliasNum = address != null ? fromEvmAddress(address) : EntityNum.MISSING_NUM;
             if (aliasNum != EntityNum.MISSING_NUM) {
                 change.replaceNonEmptyAliasWith(aliasNum);
             }
