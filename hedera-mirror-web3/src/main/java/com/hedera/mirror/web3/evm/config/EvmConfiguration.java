@@ -127,12 +127,12 @@ public class EvmConfiguration {
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
-            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
+            final BasicFcfsUsagePrices usagePricesProvider, final BasicHbarCentExchange hbarCentExchange) {
         return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicFcfsUsagePrices basicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicFcfsUsagePrices(ratesAndFeesLoader);
     }
 
@@ -148,7 +148,7 @@ public class EvmConfiguration {
 
     @Bean
     PricedUsageCalculator pricedUsageCalculator(
-            AccessorBasedUsages accessorBasedUsages, OverflowCheckingCalc overflowCheckingCalc) {
+            final AccessorBasedUsages accessorBasedUsages, final OverflowCheckingCalc overflowCheckingCalc) {
         return new PricedUsageCalculator(accessorBasedUsages, overflowCheckingCalc);
     }
 
@@ -164,10 +164,10 @@ public class EvmConfiguration {
 
     @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
-            HbarCentExchange hbarCentExchange,
-            UsagePricesProvider usagePricesProvider,
-            PricedUsageCalculator pricedUsageCalculator,
-            List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
+            final HbarCentExchange hbarCentExchange,
+            final UsagePricesProvider usagePricesProvider,
+            final PricedUsageCalculator pricedUsageCalculator,
+            final List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         // queryUsageEstimators and txnResourceUsegaEstimator will be implemented in separate PR
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators = new HashMap<>();
 
@@ -206,7 +206,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicHbarCentExchange basicHbarCentExchange(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 
@@ -228,27 +228,27 @@ public class EvmConfiguration {
     }
 
     @Bean
-    OptionValidator optionValidator(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    OptionValidator optionValidator(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new ContextOptionValidator(mirrorNodeEvmProperties);
     }
 
     @Bean
-    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    AssociateLogic associateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+    AutoCreationLogic autocreationLogic(final FeeCalculator feeCalculator, final EvmProperties evmProperties) {
         return new AutoCreationLogic(feeCalculator, evmProperties);
     }
 
     @Bean
-    MintLogic mintLogic(OptionValidator optionValidator) {
+    MintLogic mintLogic(final OptionValidator optionValidator) {
         return new MintLogic(optionValidator);
     }
 
     @Bean
-    BurnLogic burnLogic(OptionValidator optionValidator) {
+    BurnLogic burnLogic(final OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
     }
 
