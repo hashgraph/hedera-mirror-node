@@ -639,7 +639,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         // restore default download ratio: 1/3 + 15%, which == 29/60
         BigDecimal defaultDownloadRatio = commonDownloaderProperties.getConsensusRatio().add(new BigDecimal("0.15"));
         commonDownloaderProperties.setDownloadRatio(defaultDownloadRatio);
-        commonDownloaderProperties.validateRatios();
+        commonDownloaderProperties.init();
 
         ArrayList<ConsensusNode> allNodes = new ArrayList<>();
         for (long i = 0; i < totalNodes; i++) {
@@ -657,7 +657,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     void testDownloadRatioSetTooLow() throws Exception {
         BigDecimal problematicDownloadRatio = new BigDecimal("0.10");
         commonDownloaderProperties.setDownloadRatio(problematicDownloadRatio);
-        assertThrows(IllegalArgumentException.class, () -> commonDownloaderProperties.validateRatios());
+        assertThrows(IllegalArgumentException.class, () -> commonDownloaderProperties.init());
     }
 
     @SneakyThrows

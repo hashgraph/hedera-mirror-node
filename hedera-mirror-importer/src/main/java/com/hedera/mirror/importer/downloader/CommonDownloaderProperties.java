@@ -122,8 +122,7 @@ public class CommonDownloaderProperties {
         validateRatios();
     }
 
-    @PostConstruct
-    public void validateRatios() {
+    private void validateRatios() {
         if (downloadRatio == null) {
             // defaults to consensusRatio + 15%, but never higher than 100%
             downloadRatio = BigDecimal.ONE.min(consensusRatio.add(new BigDecimal("0.15"), MATH_CONTEXT));

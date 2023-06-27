@@ -547,14 +547,11 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
         var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
         // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
-        if (allNodes == null || allNodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
+        if (allNodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
             return allNodes;
         }
 
-        // ensure downloadRatio >= consensusRatio
-        downloaderProperties.getCommon().validateRatios();
         var nodes = new ArrayList<ConsensusNode>(allNodes);
-
         // shuffle nodes into a random order
         Collections.shuffle(nodes);
 
@@ -563,7 +560,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         long neededStake = BigDecimal.valueOf(totalStake).multiply(downloadRatio).setScale(0, RoundingMode.CEILING)
                 .longValue();
         long aggregateStake = 0; // sum of the stake of all nodes evaluated so far
-        int lastEntry = 0; // "right-most" value to keep in the collection
+        int lastEntry = 0;
         while (aggregateStake < neededStake) {
             aggregateStake += nodes.get(lastEntry++).getStake();
         }
