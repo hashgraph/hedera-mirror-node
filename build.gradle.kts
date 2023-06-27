@@ -35,7 +35,7 @@ extra.apply {
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.0-RC8")
-    set("vertxVersion", "4.4.3")
+    set("vertxVersion", "4.4.4")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -47,7 +47,7 @@ dependencies {
         val testcontainersSpringBootVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:9.2.0")
+        api("com.esaulpaugh:headlong:9.3.0")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
@@ -70,7 +70,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.12.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.56.0")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.4.4")
+        api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.0")
         api("io.projectreactor:reactor-core-micrometer:1.0.7")
         api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.87")
+        api("software.amazon.awssdk:bom:2.20.92")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

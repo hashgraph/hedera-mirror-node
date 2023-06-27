@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
@@ -42,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -236,8 +238,8 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        return new AutoCreationLogic(feeCalculator, mirrorNodeEvmProperties);
+    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+        return new AutoCreationLogic(feeCalculator, evmProperties);
     }
 
     @Bean
@@ -248,5 +250,10 @@ public class EvmConfiguration {
     @Bean
     BurnLogic burnLogic(OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
+    }
+
+    @Bean
+    DissociateLogic dissociateLogic() {
+        return new DissociateLogic();
     }
 }

@@ -16,17 +16,32 @@
 
 package com.hedera.mirror.common.converter;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 @Converter
 @ConfigurationPropertiesBinding
-public class AccountIdConverter extends AbstractEntityIdConverter {
+@SuppressWarnings("java:S6548")
+public class EntityIdConverter implements AttributeConverter<EntityId, Long> {
 
-    public static final AccountIdConverter INSTANCE = new AccountIdConverter();
+    public static final EntityIdConverter INSTANCE = new EntityIdConverter();
 
-    public AccountIdConverter() {
-        super(EntityType.ACCOUNT);
+    @Override
+    public Long convertToDatabaseColumn(EntityId entityId) {
+        if (EntityId.isEmpty(entityId)) {
+            return null;
+        }
+        return entityId.getId();
+    }
+
+    @Override
+    public EntityId convertToEntityAttribute(Long encodedId) {
+        if (encodedId == null) {
+            return null;
+        }
+        return EntityId.of(encodedId, EntityType.UNKNOWN);
     }
 }

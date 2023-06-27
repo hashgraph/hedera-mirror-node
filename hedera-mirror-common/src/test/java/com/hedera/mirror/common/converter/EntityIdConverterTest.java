@@ -16,26 +16,27 @@
 
 package com.hedera.mirror.common.converter;
 
+import static com.hedera.mirror.common.converter.EntityIdConverter.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-abstract class AbstractEntityConverterTest {
-    protected static AbstractEntityIdConverter converter;
+class EntityIdConverterTest {
 
     @Test
     void testToDatabaseColumn() {
-        Assertions.assertThat(converter.convertToDatabaseColumn(null)).isNull();
-        Assertions.assertThat(converter.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, converter.getEntityType())))
+        Assertions.assertThat(INSTANCE.convertToDatabaseColumn(null)).isNull();
+        Assertions.assertThat(INSTANCE.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, EntityType.UNKNOWN)))
                 .isEqualTo(2814792716779530L);
     }
 
     @Test
     void testToEntityAttribute() {
-        assertThat(converter.convertToEntityAttribute(null)).isNull();
-        assertThat(converter.convertToEntityAttribute(9223372036854775807L))
-                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, converter.getEntityType()));
+        assertThat(INSTANCE.convertToEntityAttribute(null)).isNull();
+        assertThat(INSTANCE.convertToEntityAttribute(9223372036854775807L))
+                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, EntityType.UNKNOWN));
     }
 }

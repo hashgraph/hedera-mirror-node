@@ -17,10 +17,7 @@
 package com.hedera.mirror.common.domain.contract;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import java.io.Serializable;
@@ -46,7 +43,6 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @jakarta.persistence.Id
     private long consensusTimestamp;
 
-    @Convert(converter = ContractIdConverter.class)
     private EntityId contractId;
 
     @ToString.Exclude
@@ -55,10 +51,8 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @jakarta.persistence.Id
     private int index;
 
-    @Convert(converter = ContractIdConverter.class)
     private EntityId rootContractId;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     private byte[] topic0;

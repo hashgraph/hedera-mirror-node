@@ -118,6 +118,15 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
+        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
+                        .getAccount()
+                        .getId()
+                        .num()
+                > 0;
+    }
+
+    @Override
     public void commit() {
         if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
             stackedStateFrames.top().commit();

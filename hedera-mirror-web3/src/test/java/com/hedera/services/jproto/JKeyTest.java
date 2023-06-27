@@ -33,18 +33,6 @@ import org.junit.jupiter.api.Test;
 class JKeyTest {
 
     @Test
-    void negativeConvertJKeyTest() {
-        // given:
-        var jKeyTooDeep = nestJKeys(JKey.MAX_KEY_DEPTH);
-
-        // expect:
-        assertThrows(
-                DecoderException.class,
-                () -> JKey.convertJKey(jKeyTooDeep, 1),
-                "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
-    }
-
-    @Test
     void positiveConvertKeyTest() {
         // given:
         final var bytes = new byte[33];
@@ -65,6 +53,18 @@ class JKeyTest {
         assertThrows(
                 DecoderException.class,
                 () -> JKey.convertKey(keyTooDeep, 1),
+                "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+    }
+
+    @Test
+    void negativeConvertJKeyTest() {
+        // given:
+        var jKeyTooDeep = nestJKeys(JKey.MAX_KEY_DEPTH);
+
+        // expect:
+        assertThrows(
+                DecoderException.class,
+                () -> JKey.convertJKey(jKeyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
     }
 
