@@ -92,6 +92,7 @@ public class Token {
     private final String symbol;
     private final int decimals;
     private final long autoRenewPeriod;
+    private final long createdTimestamp;
     private final long lastUsedSerialNumber;
     private final List<CustomFee> customFees;
 
@@ -119,6 +120,7 @@ public class Token {
                 false,
                 false,
                 false,
+                0,
                 0,
                 false,
                 null,
@@ -155,6 +157,7 @@ public class Token {
             boolean paused,
             boolean autoRemoved,
             long expiry,
+            long createdTimestamp,
             boolean isNew,
             String memo,
             String name,
@@ -186,6 +189,7 @@ public class Token {
         this.paused = paused;
         this.autoRemoved = autoRemoved;
         this.expiry = expiry;
+        this.createdTimestamp = createdTimestamp;
         this.isNew = isNew;
         this.memo = memo;
         this.name = name;
@@ -255,6 +259,7 @@ public class Token {
                 false,
                 false,
                 tokenExpiry,
+                0,
                 true,
                 op.getMemo(),
                 op.getName(),
@@ -307,6 +312,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -350,6 +356,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -393,6 +400,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -436,6 +444,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -479,6 +488,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -522,6 +532,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -565,6 +576,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -608,6 +620,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -651,6 +664,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -694,6 +708,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -1137,6 +1152,10 @@ public class Token {
 
     public long getAutoRenewPeriod() {
         return autoRenewPeriod;
+    }
+
+    public long getCreatedTimestamp() {
+        return this.createdTimestamp;
     }
 
     /* NOTE: The object methods below are only overridden to improve

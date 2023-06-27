@@ -62,6 +62,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         if (databaseToken == null) {
             return null;
         }
+
         return new Token(
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 Collections.emptyList(),
@@ -90,6 +91,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
                 entity.getEffectiveExpiration(),
+                entity.getCreatedTimestamp(),
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),

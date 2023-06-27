@@ -259,6 +259,7 @@ class TokenAccessorImplTest {
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(bytes)).build();
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getKey()).thenReturn(key.toByteArray());
         when(token.getWipeKey()).thenReturn(key.toByteArray());
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);

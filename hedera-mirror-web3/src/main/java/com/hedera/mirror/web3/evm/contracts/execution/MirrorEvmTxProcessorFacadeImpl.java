@@ -25,7 +25,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -35,11 +34,9 @@ import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import jakarta.inject.Named;
@@ -101,11 +98,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final boolean isStatic) {
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
-        final Store store = new StoreImpl(databaseAccessors);
-        final MirrorEntityAccess mirrorEntityAccess =
+        final var store = new StoreImpl(databaseAccessors);
+        final var mirrorEntityAccess =
                 new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
-        final TokenAccessor tokenAccessor = new TokenAccessorImpl(evmProperties, mirrorEntityAccess, store);
-        final AccountAccessor accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
+        final var tokenAccessor = new TokenAccessorImpl(evmProperties, mirrorEntityAccess, store);
+        final var accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorEvmContractAliases = new MirrorEvmContractAliases(mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);

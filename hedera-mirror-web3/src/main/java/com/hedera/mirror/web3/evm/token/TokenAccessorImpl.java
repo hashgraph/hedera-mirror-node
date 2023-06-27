@@ -21,7 +21,6 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddr
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -68,12 +67,11 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         final var ledgerId = properties.getNetwork().getLedgerId();
-        final var entityAddress = nft.getOwner() != null ? nft.getOwner().asEvmAddress() : Address.ZERO;
+        final var owner = nft.getOwner() != null ? nft.getOwner().asEvmAddress() : Address.ZERO;
         final var creationTime = nft.getCreationTime();
         final var metadata = nft.getMetadata();
         final var spender = nft.getSpender() != null ? nft.getSpender().asEvmAddress() : Address.ZERO;
-        final var nftInfo =
-                new EvmNftInfo(serialNo, entityAddress, creationTime.getSeconds(), metadata, spender, ledgerId);
+        final var nftInfo = new EvmNftInfo(serialNo, owner, creationTime.getSeconds(), metadata, spender, ledgerId);
         return Optional.of(nftInfo);
     }
 
@@ -167,8 +165,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
 
         final var account = store.getAccount(owner, OnMissing.DONT_THROW);
-        if (account.isEmptyAccount()) return 0L;
-        return account.getFungibleTokenAllowances().get(fcTokenAllowanceId);
+        return account.getFungibleTokenAllowances().getOrDefault(fcTokenAllowanceId, 0L);
     }
 
     @Override
@@ -234,46 +231,43 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
-        final var tokenEntity = store.getToken(address, OnMissing.DONT_THROW);
-        final var entityOptional = mirrorEntityAccess.findEntity(address);
+        final var token = store.getToken(address, OnMissing.DONT_THROW);
 
-        if (tokenEntity.isEmptyToken() || entityOptional.isEmpty()) {
+        if (token.isEmptyToken()) {
             return Optional.empty();
         }
-
-        final var entity = entityOptional.get();
         final var ledgerId = ledgerId();
-        final var expirationTimeInSec = expirationTimeSeconds(entity);
+        final var expirationTimeInSec = expirationTimeSeconds(token);
         final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                 ledgerId,
-                tokenEntity.getSupplyType().ordinal(),
-                entity.getDeleted(),
-                tokenEntity.getSymbol(),
-                tokenEntity.getName(),
-                entity.getMemo(),
-                tokenEntity.getTreasury().getAccountAddress(),
-                tokenEntity.getTotalSupply(),
-                tokenEntity.getMaxSupply(),
-                tokenEntity.getDecimals(),
+                token.getSupplyType().ordinal(),
+                token.isDeleted(),
+                token.getSymbol(),
+                token.getName(),
+                token.getMemo(),
+                token.getTreasury().getAccountAddress(),
+                token.getTotalSupply(),
+                token.getMaxSupply(),
+                token.getDecimals(),
                 expirationTimeInSec);
-        evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
-        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.isFrozenByDefault());
+        evmTokenInfo.setAutoRenewPeriod(token.getAutoRenewPeriod());
+        evmTokenInfo.setDefaultFreezeStatus(token.isFrozenByDefault());
         evmTokenInfo.setCustomFees(getCustomFees(address));
-        setEvmKeys(entity, tokenEntity, evmTokenInfo);
-        final var isPaused = tokenEntity.isPaused();
+        setEvmKeys(token, evmTokenInfo);
+        final var isPaused = token.isPaused();
         evmTokenInfo.setIsPaused(isPaused);
 
-        if (tokenEntity.getAutoRenewAccount() != null) {
-            evmTokenInfo.setAutoRenewAccount(tokenEntity.getAutoRenewAccount().getAccountAddress());
+        if (token.getAutoRenewAccount() != null) {
+            evmTokenInfo.setAutoRenewAccount(token.getAutoRenewAccount().getAccountAddress());
         }
 
         return Optional.of(evmTokenInfo);
     }
 
-    private Long expirationTimeSeconds(Entity entity) {
-        Long createdTimestamp = entity.getCreatedTimestamp();
-        Long autoRenewPeriod = entity.getAutoRenewPeriod();
-        Long expirationTimestamp = entity.getExpirationTimestamp();
+    private Long expirationTimeSeconds(Token token) {
+        Long createdTimestamp = token.getCreatedTimestamp();
+        Long autoRenewPeriod = token.getAutoRenewPeriod();
+        Long expirationTimestamp = token.getExpiry();
 
         if (expirationTimestamp != null) {
             return expirationTimestamp / NANOS_PER_SECOND;
@@ -289,20 +283,16 @@ public class TokenAccessorImpl implements TokenAccessor {
         return store.getToken(address, OnMissing.DONT_THROW).getCustomFees();
     }
 
-    private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
+    private void setEvmKeys(final Token token, final EvmTokenInfo evmTokenInfo) {
         try {
-            asKeyUnchecked(tokenEntity.getAdminKey()).toByteArray();
-            final var adminKey = evmKey(entity.getKey());
-            final var kycKey = evmKey(asKeyUnchecked(tokenEntity.getAdminKey()).toByteArray());
-            final var supplyKey =
-                    evmKey(asKeyUnchecked(tokenEntity.getSupplyKey()).toByteArray());
-            final var freezeKey =
-                    evmKey(asKeyUnchecked(tokenEntity.getFreezeKey()).toByteArray());
-            final var wipeKey = evmKey(asKeyUnchecked(tokenEntity.getWipeKey()).toByteArray());
-            final var pauseKey =
-                    evmKey(asKeyUnchecked(tokenEntity.getPauseKey()).toByteArray());
+            final var adminKey = evmKey(asKeyUnchecked(token.getAdminKey()).toByteArray());
+            final var kycKey = evmKey(asKeyUnchecked(token.getKycKey()).toByteArray());
+            final var supplyKey = evmKey(asKeyUnchecked(token.getSupplyKey()).toByteArray());
+            final var freezeKey = evmKey(asKeyUnchecked(token.getFreezeKey()).toByteArray());
+            final var wipeKey = evmKey(asKeyUnchecked(token.getWipeKey()).toByteArray());
+            final var pauseKey = evmKey(asKeyUnchecked(token.getPauseKey()).toByteArray());
             final var feeScheduleKey =
-                    evmKey(asKeyUnchecked(tokenEntity.getFeeScheduleKey()).toByteArray());
+                    evmKey(asKeyUnchecked(token.getFeeScheduleKey()).toByteArray());
 
             evmTokenInfo.setAdminKey(adminKey);
             evmTokenInfo.setKycKey(kycKey);

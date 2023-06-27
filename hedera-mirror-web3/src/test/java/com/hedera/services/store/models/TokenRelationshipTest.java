@@ -75,6 +75,7 @@ class TokenRelationshipTest {
                 false,
                 false,
                 defaultIntValue,
+                defaultIntValue,
                 true,
                 "the mother",
                 "bitcoin",

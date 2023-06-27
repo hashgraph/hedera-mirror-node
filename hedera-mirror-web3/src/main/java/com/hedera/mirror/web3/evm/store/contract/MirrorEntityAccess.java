@@ -43,30 +43,31 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isUsable(final Address address) {
-        final var optionalEntity = findEntity(address);
+        final var account = store.getAccount(address, OnMissing.DONT_THROW);
+        final var balance = account.getBalance();
 
-        if (optionalEntity.isEmpty()) {
-            return false;
+        if (!account.isEmptyAccount()) {
+            return !(balance < 0L);
+        } else {
+            final var token = store.getToken(address, OnMissing.DONT_THROW);
+            if (token.isEmptyToken()) {
+                return false;
+            }
+
+            final var expirationTimestamp = token.getExpiry();
+            final var createdTimestamp = token.getCreatedTimestamp();
+            final var autoRenewPeriod = token.getAutoRenewPeriod();
+
+            final var currentTime = Instant.now().getEpochSecond();
+
+            if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
+                return false;
+            }
+
+            return createdTimestamp == 0L
+                    || autoRenewPeriod == 0L
+                    || (createdTimestamp + autoRenewPeriod) > currentTime;
         }
-
-        final var entity = optionalEntity.get();
-        final var balance = entity.getBalance();
-        if (balance != null && balance > 0) {
-            return true;
-        }
-
-        final var expirationTimestamp = entity.getExpirationTimestamp();
-        final var createdTimestamp = entity.getCreatedTimestamp();
-        final var autoRenewPeriod = entity.getAutoRenewPeriod();
-        final var currentTime = Instant.now().getEpochSecond();
-
-        if (expirationTimestamp != null && expirationTimestamp <= currentTime) {
-            return false;
-        }
-
-        return createdTimestamp == null
-                || autoRenewPeriod == null
-                || (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override
@@ -122,11 +123,15 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
-    private Long fetchEntityId(final Address address) {
-        if (isMirror(address.toArrayUnsafe())) return entityIdNumFromEvmAddress(address);
-        return findEntity(address).map(AbstractEntity::getId).orElse(0L);
-    }
-
+    /**
+     * This method does not use {@link Store} and reads directly from the database.
+     * The returned entity does not contain the most recent changes from the transaction.
+     * We should use this data only for fields that are not contained in {@link com.hedera.services.store.models.Token}
+     * and {@link com.hedera.services.store.models.Account} as they cannot be modified during the transaction.
+     * We can also check if entity exists as we cannot remove entity during a transaction.
+     * @param address of the entity
+     * @return entity from the database
+     */
     public Optional<Entity> findEntity(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
@@ -135,5 +140,12 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
+    }
+
+    private Long fetchEntityId(final Address address) {
+        if (isMirror(address.toArrayUnsafe())) {
+            return entityIdNumFromEvmAddress(address);
+        }
+        return findEntity(address).map(AbstractEntity::getId).orElse(0L);
     }
 }
