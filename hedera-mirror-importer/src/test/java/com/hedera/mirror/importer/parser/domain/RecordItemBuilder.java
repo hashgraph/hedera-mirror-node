@@ -312,8 +312,7 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .build())
                 .setSenderId(accountId())
-                .addContractNonces(nonceInfo(contractId, 2))
-                .addContractNonces(nonceInfo(createdContract, 1));
+                .addContractNonces(nonceInfo(contractId, 1));
     }
 
     @SuppressWarnings("deprecation")
