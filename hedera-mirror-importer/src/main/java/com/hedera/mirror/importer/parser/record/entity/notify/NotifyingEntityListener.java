@@ -16,10 +16,9 @@
 
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
-import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
+import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -49,7 +48,6 @@ import org.springframework.jdbc.core.PreparedStatementCallback;
 public class NotifyingEntityListener implements BatchEntityListener {
 
     private static final String SQL = "select pg_notify('topic_message', ?)";
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setPropertyNamingStrategy(SNAKE_CASE);
 
     private final NotifyProperties notifyProperties;
     private final JdbcTemplate jdbcTemplate;

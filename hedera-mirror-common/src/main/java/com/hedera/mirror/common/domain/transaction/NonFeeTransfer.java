@@ -17,11 +17,7 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
@@ -43,13 +39,10 @@ public class NonFeeTransfer implements Persistable<Long> {
     @Id
     private Long consensusTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     private Boolean isApproval;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @JsonIgnore

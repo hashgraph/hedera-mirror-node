@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
+import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
+
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
@@ -78,8 +80,8 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
             PGNotification[] notifications = pgConnection.getNotifications(100);
             if (notifications != null) {
                 for (PGNotification pgNotification : notifications) {
-                    TopicMessage topicMessage = NotifyingEntityListener.OBJECT_MAPPER.readValue(
-                            pgNotification.getParameter(), TopicMessage.class);
+                    TopicMessage topicMessage =
+                            OBJECT_MAPPER.readValue(pgNotification.getParameter(), TopicMessage.class);
                     topicMessages.add(topicMessage);
                 }
             }

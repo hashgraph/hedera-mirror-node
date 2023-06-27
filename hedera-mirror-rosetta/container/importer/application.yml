@@ -1,0 +1,3 @@
+spring:
+  flyway:
+    locations: "classpath:db/migration/v1,filesystem:/app/importer/sql"

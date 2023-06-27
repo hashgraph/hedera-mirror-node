@@ -30,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.operation.CallOperation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -230,10 +229,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
-    /**
-     * _to.transfer(msg.value) fails due to the static frame,{@link CallOperation} this will be
-     * supported with future release with gas_estimate support.
-     */
     @Test
     void transferThruContract() {
         // transferHbarsToAddress(address)
@@ -241,21 +236,25 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(stateChangePayable), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @Test
-    void hollowAccountCreationIsNotSupported() {
+    void hollowAccountCreationWorks() {
         // transferHbarsToAddress(address)
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var transferHbarsInput = "0x80b9f03c00000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 90L);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Auto account creation is not supported.");
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     @Test
@@ -320,7 +319,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void stateChangeWorks() {
+    void stateChangeWorksWithDynamicEthCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
         // writeToStorageSlot(string)

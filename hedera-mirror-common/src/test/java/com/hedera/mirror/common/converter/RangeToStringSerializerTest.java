@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.converter;
 
+import static com.hedera.mirror.common.converter.RangeToStringSerializer.INSTANCE;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Range;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
@@ -32,8 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RangeToStringSerializerTest {
 
-    private static final RangeToStringSerializer serializer = new RangeToStringSerializer();
-
     @Mock
     private JsonGenerator jsonGenerator;
 
@@ -41,13 +41,13 @@ class RangeToStringSerializerTest {
     @ValueSource(strings = {"[0,1]", "[0,1)", "(0,1]", "(0,1)", "[0,)", "(,1]", "empty"})
     void serialize(String text) throws IOException {
         Range<Long> range = PostgreSQLGuavaRangeType.longRange(text);
-        serializer.serialize(range, jsonGenerator, null);
+        INSTANCE.serialize(range, jsonGenerator, null);
         Mockito.verify(jsonGenerator).writeString(text);
     }
 
     @Test
     void serializeNull() throws IOException {
-        serializer.serialize(null, jsonGenerator, null);
+        INSTANCE.serialize(null, jsonGenerator, null);
         Mockito.verify(jsonGenerator, Mockito.never()).writeString(ArgumentMatchers.anyString());
     }
 }

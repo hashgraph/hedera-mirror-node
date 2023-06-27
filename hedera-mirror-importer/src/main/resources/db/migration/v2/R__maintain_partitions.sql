@@ -25,6 +25,7 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.event_file';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.file_data';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft';
+update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_allowance';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_allowance_history';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.non_fee_transfer';
@@ -32,6 +33,7 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.schedule';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.staking_reward_transfer';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.token';
+update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.token_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.token_account';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.token_account_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.token_allowance';
