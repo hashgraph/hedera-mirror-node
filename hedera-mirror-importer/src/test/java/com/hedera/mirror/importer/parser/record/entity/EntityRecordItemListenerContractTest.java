@@ -1496,6 +1496,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var builder = domainBuilder.entity().customize(c -> c.evmAddress(evmAddress)
                 .id(entityId.getId())
                 .num(entityId.getEntityNum())
+                .ethereumNonce(2L)
                 .type(CONTRACT));
         if (customizer != null) {
             builder.customize(customizer);
