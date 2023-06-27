@@ -17,6 +17,8 @@
 package com.hedera.services.utils;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.services.jproto.JKey.mapJKey;
+import static com.hedera.services.jproto.JKey.mapKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
@@ -51,8 +53,13 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -142,9 +149,17 @@ public final class MiscUtils {
         }
     }
 
+    public static Key asKeyUnchecked(final JKey fcKey) {
+        try {
+            return mapJKey(fcKey);
+        } catch (final Exception impossible) {
+            return Key.getDefaultInstance();
+        }
+    }
+
     public static JKey asFcKeyUnchecked(final Key key) {
         try {
-            return JKey.mapKey(key);
+            return mapKey(key);
         } catch (final DecoderException impermissible) {
             throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
@@ -152,7 +167,7 @@ public final class MiscUtils {
 
     public static Optional<JKey> asUsableFcKey(final Key key) {
         try {
-            final var fcKey = JKey.mapKey(key);
+            final var fcKey = mapKey(key);
             if (!fcKey.isValid()) {
                 return Optional.empty();
             }
@@ -160,6 +175,23 @@ public final class MiscUtils {
         } catch (final DecoderException ignore) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Returns a {@link TxnAccessor} for the given in-progress synthetic op.
+     *
+     * @param syntheticOp the synthetic op
+     * @return an accessor for the synthetic op
+     */
+    public static @NonNull TxnAccessor synthAccessorFor(@NonNull final TransactionBody.Builder syntheticOp) {
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(syntheticOp.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
+        return SignedTxnAccessor.uncheckedFrom(txn);
     }
 
     public static boolean isRecoveredEvmAddress(final byte[] address) {

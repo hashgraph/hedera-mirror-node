@@ -58,12 +58,6 @@ class AssociateLogicTest {
     private Account account;
 
     @Mock
-    private Id accountId;
-
-    @Mock
-    private TokenRelationship tokenRelationship;
-
-    @Mock
     private Token token;
 
     private AssociateLogic associateLogic;
@@ -116,11 +110,7 @@ class AssociateLogicTest {
         setupToken();
 
         final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
-                .thenReturn(tokenRelationship);
-        when(tokenRelationship.getAccount()).thenReturn(account);
-        when(accountId.num()).thenReturn(1L);
-
+        when(store.hasAssociation(tokenRelationShipKey)).thenReturn(true);
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(com.hedera.node.app.service.evm.exceptions.InvalidTransactionException.class)
                 .hasMessage(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.name());
@@ -132,10 +122,6 @@ class AssociateLogicTest {
         final var modifiedAccount = setupAccount(1);
         setupToken();
 
-        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
-                .thenReturn(tokenRelationship);
-        when(tokenRelationship.getAccount()).thenReturn(account);
         associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount));
@@ -149,11 +135,6 @@ class AssociateLogicTest {
 
         setupToken();
 
-        final var tokenRelationShipKey = new TokenRelationshipKey(tokenAddress, accountAddress);
-        when(store.getTokenRelationship(tokenRelationShipKey, OnMissing.DONT_THROW))
-                .thenReturn(tokenRelationship);
-        when(tokenRelationship.getAccount()).thenReturn(account);
-
         associateLogic.associate(accountAddress, tokenAddresses, store);
 
         verify(store).updateAccount(modifiedAccount);
@@ -163,7 +144,6 @@ class AssociateLogicTest {
     private Account setupAccount(int numOfAssociations) {
         when(store.getAccount(accountAddress, OnMissing.THROW)).thenReturn(account);
         when(account.getAccountAddress()).thenReturn(accountAddress);
-        when(account.getId()).thenReturn(accountId);
         Account modifiedAccount = mock(Account.class);
         when(account.setNumAssociations(numOfAssociations)).thenReturn(modifiedAccount);
         return modifiedAccount;

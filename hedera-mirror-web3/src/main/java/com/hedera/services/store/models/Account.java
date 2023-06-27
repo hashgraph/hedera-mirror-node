@@ -16,8 +16,11 @@
 
 package com.hedera.services.store.models;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -191,6 +194,63 @@ public class Account extends HederaEvmAccount {
                 oldAccount.ethereumNonce);
     }
 
+    /**
+     *
+     * Creates new instance of {@link Account} with updated autoAssociationMetadata in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param updatedAutoAssociationMetadata
+     * @return the new instance of {@link Account} with updated {@link #autoAssociationMetadata} property
+     */
+    private Account createNewAccountWithNewAutoAssociationMetadata(
+            Account oldAccount, int updatedAutoAssociationMetadata) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                updatedAutoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
+    /**
+     *
+     * Creates new instance of {@link Account} with updated balance in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newBalance
+     * @return the new instance of {@link Account} with updated {@link #balance} property
+     */
+    private Account createNewAccountWithNewBalance(Account oldAccount, long newBalance) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                newBalance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -267,6 +327,22 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }
 
+    public Account setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+        validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        final var updatedAutoAssociationMetadata =
+                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+        return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
+    }
+
+    public Account decrementUsedAutomaticAssociations() {
+        var count = getAlreadyUsedAutomaticAssociations();
+        return setAlreadyUsedAutomaticAssociations(--count);
+    }
+
+    public Account setBalance(long balance) {
+        return createNewAccountWithNewBalance(this, balance);
+    }
+
     @Override
     public boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
@@ -294,5 +370,9 @@ public class Account extends HederaEvmAccount {
                 .add("numAssociations", numAssociations)
                 .add("numPositiveBalances", numPositiveBalances)
                 .toString();
+    }
+
+    private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+        return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
     }
 }
