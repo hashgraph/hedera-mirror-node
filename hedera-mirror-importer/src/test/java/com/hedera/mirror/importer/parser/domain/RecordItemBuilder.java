@@ -282,13 +282,12 @@ public class RecordItemBuilder {
 
     @SuppressWarnings("deprecation")
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
-        var createdContract = contractId();
         return ContractFunctionResult.newBuilder()
                 .setAmount(5_000L)
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
-                .addCreatedContractIDs(createdContract)
+                .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
                 .setFunctionParameters(bytes(64))
                 .setGas(10_000L)
@@ -312,7 +311,10 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .build())
                 .setSenderId(accountId())
-                .addContractNonces(nonceInfo(contractId, 1));
+                .addContractNonces(ContractNonceInfo.newBuilder()
+                        .setContractId(contractId)
+                        .setNonce(1)
+                        .build());
     }
 
     @SuppressWarnings("deprecation")
@@ -760,13 +762,6 @@ public class RecordItemBuilder {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
-    }
-
-    private ContractNonceInfo nonceInfo(ContractID contractId, long nonce) {
-        return ContractNonceInfo.newBuilder()
-                .setContractId(contractId)
-                .setNonce(nonce)
-                .build();
     }
 
     private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
