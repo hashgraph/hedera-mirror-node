@@ -253,9 +253,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractNonce(ContractFunctionResult functionResult) {
-        var nonceInfos = functionResult.getContractNoncesList();
-        if (!nonceInfos.isEmpty()) {
-            nonceInfos.forEach(nonceInfo -> {
+        functionResult.getContractNoncesList().forEach(nonceInfo -> {
                 var contractId =
                         entityIdService.lookup(nonceInfo.getContractId()).orElse(EntityId.EMPTY);
                 Entity entity = contractId.toEntity();
