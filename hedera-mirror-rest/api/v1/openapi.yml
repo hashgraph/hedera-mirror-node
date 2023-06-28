@@ -916,7 +916,7 @@ paths:
             type: string
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParamDesc"
-        - name: sequenceNumber
+        - name: sequencenumber
           in: query
           example: 2
           schema:
