@@ -46,27 +46,27 @@ public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
-    private static Runnable CLEANUP = () -> {};
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private final Collection<ExpandedAccountId> accountIds = new CopyOnWriteArrayList<>();
+    private final long initialBalance;
     private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        final long initialBalance = getBalance();
+        initialBalance = getBalance();
         log.info("Operator account {} initial balance is {}", sdkClient.getExpandedOperatorAccountId(), initialBalance);
-
-        CLEANUP = () -> {
-            deleteAccounts();
-            var cost = initialBalance - getBalance();
-            sdkClient.close();
-            log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
-        };
     }
 
-    public static synchronized void cleanup() {
-        CLEANUP.run();
+    @Override
+    public void clean() {
+        log.info("Deleting {} accounts", accountIds.size());
+        accountIds.forEach(this::delete);
+        accountIds.clear();
+        accountMap.clear();
+
+        var cost = initialBalance - getBalance();
+        log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
     }
 
     public synchronized ExpandedAccountId getTokenTreasuryAccount() {
@@ -78,18 +78,15 @@ public class AccountClient extends AbstractNetworkClient {
         return tokenTreasuryAccount;
     }
 
-    private void deleteAccounts() {
-        accountIds.forEach(accountId -> {
-            var accountDeleteTransaction = new AccountDeleteTransaction()
-                    .setAccountId(accountId.getAccountId())
-                    .setTransferAccountId(client.getOperatorAccountId())
-                    .freezeWith(client)
-                    .sign(accountId.getPrivateKey());
-            executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
-            log.info("Deleted account {}", accountId);
-        });
-        accountIds.clear();
-        accountMap.clear();
+    public NetworkTransactionResponse delete(ExpandedAccountId accountId) {
+        var accountDeleteTransaction = new AccountDeleteTransaction()
+                .setAccountId(accountId.getAccountId())
+                .setTransferAccountId(client.getOperatorAccountId())
+                .freezeWith(client)
+                .sign(accountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
+        log.info("Deleted account {} via {}", accountId, response.getTransactionId());
+        return response;
     }
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
