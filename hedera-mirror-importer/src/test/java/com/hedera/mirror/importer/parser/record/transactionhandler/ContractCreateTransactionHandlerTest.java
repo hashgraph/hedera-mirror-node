@@ -271,7 +271,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verify(entityListener).onEntity(entityCaptor.capture());
         assertThat(entityCaptor.getValue())
                 .isNotNull()
-                .returns(false, Entity::getDeclineReward)
+                .returns(false, Entity::isDeclineReward)
                 .returns(accountID.getAccountNum(), Entity::getStakedAccountId)
                 .returns(null, Entity::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
@@ -294,7 +294,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verify(entityListener).onEntity(entityCaptor.capture());
         assertThat(entityCaptor.getValue())
                 .isNotNull()
-                .returns(true, Entity::getDeclineReward)
+                .returns(true, Entity::isDeclineReward)
                 .returns(null, Entity::getStakedAccountId)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);

@@ -191,10 +191,6 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
             updated = true;
         }
 
-        if (entity.getDeclineReward() == null) {
-            entity.setDeclineReward(false);
-        }
-
         // Accounts can't be undeleted
         if (entity.getDeleted() == null
                 || (entity.getDeleted() != accountInfo.getDeleted() && accountInfo.getDeleted())) {

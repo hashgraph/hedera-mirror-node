@@ -639,10 +639,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         dest.addBalance(src.getBalance());
-
-        if (dest.getDeclineReward() == null) {
-            dest.setDeclineReward(src.getDeclineReward());
-        }
+        dest.setDeclineReward(src.isDeclineReward());
 
         if (dest.getDeleted() == null) {
             dest.setDeleted(src.getDeleted());

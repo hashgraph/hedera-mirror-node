@@ -357,7 +357,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
                         .returns(expectedAutoRenewAccount, Entity::getAutoRenewAccountId)
                         .returns(entity.getCreatedTimestamp(), Entity::getCreatedTimestamp)
-                        .returns(false, Entity::getDeclineReward));
+                        .returns(false, Entity::isDeclineReward));
     }
 
     @Test
@@ -1028,7 +1028,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(createdId.getType(), Entity::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
-        contractAssert.returns(contractCreateInstance.getDeclineReward(), Entity::getDeclineReward);
+        contractAssert.returns(contractCreateInstance.getDeclineReward(), Entity::isDeclineReward);
 
         if (contractCreateInstance.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET) {
             return;
