@@ -119,7 +119,7 @@ class MirrorEvmContractAliasesTest {
     void resolveForEvmForAccountWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
         when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         when(store.getAccount(ALIAS, OnMissing.THROW)).thenReturn(account);
-        when(account.getId()).thenReturn(id);
+        when(account.getAccountAddress()).thenReturn(Address.wrap(Bytes.wrap(toEvmAddress(entityId))));
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
     }

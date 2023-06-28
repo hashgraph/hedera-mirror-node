@@ -60,7 +60,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
-    private final EntityRepository entityRepository;
     private final TraceProperties traceProperties;
 
     @SuppressWarnings("java:S107")
@@ -87,7 +86,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.entityAddressSequencer = entityAddressSequencer;
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
-        this.entityRepository = entityRepository;
         this.databaseAccessors = databaseAccessors;
     }
 

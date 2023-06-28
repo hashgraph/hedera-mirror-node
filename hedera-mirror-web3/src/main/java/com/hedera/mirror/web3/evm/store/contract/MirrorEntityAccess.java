@@ -42,7 +42,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         final var balance = account.getBalance();
 
         if (!account.isEmptyAccount()) {
-            return !(balance < 0L);
+            return balance >= 0L;
         } else {
             final var token = store.getToken(address, OnMissing.DONT_THROW);
             if (token.isEmptyToken()) {

@@ -16,18 +16,14 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
-import com.hedera.services.store.models.Id;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,18 +88,17 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Address resolveFromEntityAccess(Address addressOrAlias) {
-        final EntityId entityId;
-        Id id;
+        final Address resolvedAddress;
         final var token = store.getToken(addressOrAlias, OnMissing.DONT_THROW);
-        if (token.isEmptyToken()) { // if token is missing - check for account
-            id = store.getAccount(addressOrAlias, OnMissing.THROW).getId(); // if token and account are missing - throw
-            entityId =
-                    new EntityId(id.shard(), id.realm(), id.num(), EntityType.TOKEN); // if account is present - get id
-        } else { // if token is present - get id
-            id = token.getId();
-            entityId = new EntityId(id.shard(), id.realm(), id.num(), EntityType.ACCOUNT);
+        // if token is missing - check for account
+        if (token.isEmptyToken()) {
+            // if token and account are missing - throw
+            final var account = store.getAccount(addressOrAlias, OnMissing.THROW);
+            resolvedAddress = account.getAccountAddress();
+        } else {
+            // if token is present - get id
+            resolvedAddress = token.getId().asEvmAddress();
         }
-        final var resolvedAddress = Address.wrap(Bytes.wrap(toEvmAddress(entityId)));
         link(addressOrAlias, resolvedAddress);
 
         return resolvedAddress;
