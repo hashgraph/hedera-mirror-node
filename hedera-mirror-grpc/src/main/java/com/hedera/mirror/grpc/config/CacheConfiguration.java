@@ -33,6 +33,7 @@ import org.springframework.context.annotation.Primary;
 public class CacheConfiguration {
 
     public static final String ADDRESS_BOOK_ENTRY_CACHE = "addressBookEntryCache";
+    public static final String NODE_STAKE_CACHE = "nodeStakeCache";
     public static final String ENTITY_CACHE = "entityCache";
 
     @Bean(ADDRESS_BOOK_ENTRY_CACHE)
@@ -41,6 +42,15 @@ public class CacheConfiguration {
         caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(addressBookProperties.getCacheExpiry())
                 .maximumSize(addressBookProperties.getCacheSize()));
+        return caffeineCacheManager;
+    }
+
+    @Bean(NODE_STAKE_CACHE)
+    CacheManager nodeStakeCache(AddressBookProperties addressBookProperties) {
+        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
+                .expireAfterWrite(addressBookProperties.getNodeStakeCacheExpiry())
+                .maximumSize(addressBookProperties.getNodeStakeCacheSize()));
         return caffeineCacheManager;
     }
 
