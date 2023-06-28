@@ -106,16 +106,6 @@ public class ERCContractFeature extends AbstractFeature {
                     null);
         }
 
-        for (TokenId tokenId : tokenIds) {
-            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-            try {
-                tokenClient.delete(admin, tokenId);
-            } catch (Exception ex) {
-                log.warn("Error cleaning up token {} error: {}", tokenId, ex);
-            }
-        }
-
-        tokenIds.clear();
         tokenSerialNumbers.clear();
     }
 

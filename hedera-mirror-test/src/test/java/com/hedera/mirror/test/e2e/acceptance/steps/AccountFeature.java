@@ -24,6 +24,7 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.Cleanable;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
@@ -31,15 +32,18 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.AfterAll;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.OrderComparator;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
@@ -47,8 +51,11 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountFeature extends AbstractFeature {
 
+    private static Runnable CLEANUP;
+
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
+    private final Collection<Cleanable> cleanables;
 
     private AccountId receiverAccountId;
     private ExpandedAccountId senderAccountId;
@@ -56,8 +63,18 @@ public class AccountFeature extends AbstractFeature {
     private long startingBalance;
 
     @AfterAll
-    public static void afterAll() {
-        AccountClient.cleanup();
+    public static void cleanup() {
+        if (CLEANUP != null) {
+            CLEANUP.run();
+        }
+    }
+
+    @Before
+    public synchronized void setup() {
+        // This hack allows us to invoke non-static beans in a static @AfterAll
+        if (CLEANUP == null) {
+            CLEANUP = () -> cleanables.stream().sorted(OrderComparator.INSTANCE).forEach(Cleanable::clean);
+        }
     }
 
     @When("I create a new account with balance {long} tℏ")
