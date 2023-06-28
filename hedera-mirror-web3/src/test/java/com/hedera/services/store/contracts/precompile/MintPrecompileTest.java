@@ -212,8 +212,6 @@ class MintPrecompileTest {
                 new MintPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, contextOptionValidator);
         precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));
 
-        precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));
-
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
