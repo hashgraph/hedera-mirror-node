@@ -265,4 +265,46 @@ class TokenAccessorImplTest {
         assertThat(result).isNotNull();
         assertArrayEquals(key.getECDSASecp256K1().toByteArray(), result.getECDSASecp256K1());
     }
+
+    @Test
+    void symbolOfWithMissingToken() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.empty());
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
+        final var result = tokenAccessor.symbolOf(TOKEN);
+        assertEquals("", result);
+    }
+
+    @Test
+    void symbolOf() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
+        when(token.getSymbol()).thenReturn("symbol");
+        final var result = tokenAccessor.symbolOf(TOKEN);
+        assertEquals("symbol", result);
+    }
+
+    @Test
+    void nameOfWithMissingToken() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.empty());
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
+        final var result = tokenAccessor.nameOf(TOKEN);
+        assertEquals("", result);
+    }
+
+    @Test
+    void nameOf() {
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
+        when(token.getName()).thenReturn("name");
+        final var result = tokenAccessor.nameOf(TOKEN);
+        assertEquals("name", result);
+    }
 }
