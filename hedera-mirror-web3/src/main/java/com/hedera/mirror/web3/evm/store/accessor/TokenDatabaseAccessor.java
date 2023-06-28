@@ -64,6 +64,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
 
         return new Token(
+                entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -111,7 +112,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     }
 
     private Account getAutoRenewAccount(Entity entity) {
-        return new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance());
+        return new Account(
+                entity.getId(), new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance());
     }
 
     private Account getTreasury(EntityId treasuryId) {
@@ -120,8 +122,10 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
         return entityRepository
                 .findByIdAndDeletedIsFalse(treasuryId.getId())
-                .map(entity ->
-                        new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
+                .map(entity -> new Account(
+                        entity.getId(),
+                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                        entity.getBalance()))
                 .orElse(null);
     }
 

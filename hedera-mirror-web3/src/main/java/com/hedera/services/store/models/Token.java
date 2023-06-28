@@ -63,6 +63,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *     3. Removed OwnershipTracker
  */
 public class Token {
+    private final Long entityId;
     private final Id id;
     private final List<UniqueToken> mintedUniqueTokens;
     private final List<UniqueToken> removedUniqueTokens;
@@ -98,6 +99,7 @@ public class Token {
 
     public Token(Id id) {
         this(
+                0L,
                 id,
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -134,6 +136,7 @@ public class Token {
 
     @SuppressWarnings("java:S107")
     public Token(
+            Long entityId,
             Id id,
             List<UniqueToken> mintedUniqueTokens,
             List<UniqueToken> removedUniqueTokens,
@@ -166,6 +169,7 @@ public class Token {
             long autoRenewPeriod,
             long lastUsedSerialNumber,
             List<CustomFee> customFees) {
+        this.entityId = entityId;
         this.id = id;
         this.mintedUniqueTokens = mintedUniqueTokens;
         this.removedUniqueTokens = removedUniqueTokens;
@@ -236,6 +240,7 @@ public class Token {
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
         return new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -289,6 +294,7 @@ public class Token {
      */
     private Token createNewTokenWithLoadedUniqueTokens(Token oldToken, Map<Long, UniqueToken> loadedUniqueTokens) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -333,6 +339,7 @@ public class Token {
      */
     private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -377,6 +384,7 @@ public class Token {
      */
     private Token createNewTokenWithNewTreasury(Token oldToken, Account treasury) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -421,6 +429,7 @@ public class Token {
      */
     private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -461,10 +470,12 @@ public class Token {
      *
      * @param oldToken
      * @param isDeleted
+     * oldToken.entityId,
      * @return new instance of {@link Token} with {@link #deleted} property
      */
     private Token createNewTokenWithDeletedFlag(Token oldToken, boolean isDeleted) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -509,6 +520,7 @@ public class Token {
      */
     private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -553,6 +565,7 @@ public class Token {
      */
     private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -597,6 +610,7 @@ public class Token {
      */
     private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -641,6 +655,7 @@ public class Token {
      */
     private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -685,6 +700,7 @@ public class Token {
      */
     private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -1052,6 +1068,10 @@ public class Token {
 
     public boolean isPaused() {
         return paused;
+    }
+
+    public Long getEntityId() {
+        return entityId;
     }
 
     public Id getId() {

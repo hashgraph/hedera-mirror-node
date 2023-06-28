@@ -97,7 +97,7 @@ public class TokenRelationship {
     }
 
     public static TokenRelationship getEmptyTokenRelationship() {
-        return new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L));
+        return new TokenRelationship(new Token(Id.DEFAULT), new Account(0L, Id.DEFAULT, 0L));
     }
 
     public boolean isEmptyTokenRelationship() {

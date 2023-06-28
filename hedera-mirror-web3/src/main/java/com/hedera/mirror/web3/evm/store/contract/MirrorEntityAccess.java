@@ -20,16 +20,12 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import java.time.Instant;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,7 +34,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
-    private final EntityRepository entityRepository;
     private final Store store;
 
     @Override
@@ -123,29 +118,14 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
-    /**
-     * This method does not use {@link Store} and reads directly from the database.
-     * The returned entity does not contain the most recent changes from the transaction.
-     * We should use this data only for fields that are not contained in {@link com.hedera.services.store.models.Token}
-     * and {@link com.hedera.services.store.models.Account} as they cannot be modified during the transaction.
-     * We can also check if entity exists as we cannot remove entity during a transaction.
-     * @param address of the entity
-     * @return entity from the database
-     */
-    public Optional<Entity> findEntity(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress(address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
-        } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-        }
-    }
-
     private Long fetchEntityId(final Address address) {
         if (isMirror(address.toArrayUnsafe())) {
             return entityIdNumFromEvmAddress(address);
         }
-        return findEntity(address).map(AbstractEntity::getId).orElse(0L);
+        var entityId = store.getAccount(address, OnMissing.DONT_THROW).getEntityId();
+        if (entityId == 0L) {
+            entityId = store.getToken(address, OnMissing.DONT_THROW).getEntityId();
+        }
+        return entityId;
     }
 }

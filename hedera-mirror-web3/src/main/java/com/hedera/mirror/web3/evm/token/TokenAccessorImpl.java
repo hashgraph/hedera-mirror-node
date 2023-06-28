@@ -27,7 +27,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -50,7 +49,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenAccessorImpl implements TokenAccessor {
 
     private final MirrorNodeEvmProperties properties;
-    private final MirrorEntityAccess mirrorEntityAccess;
     private final Store store;
 
     @Override

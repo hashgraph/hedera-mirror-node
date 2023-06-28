@@ -70,6 +70,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private Account accountFromEntity(Entity entity) {
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
+                entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 entity.getEffectiveExpiration(),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),

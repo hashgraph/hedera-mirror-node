@@ -21,7 +21,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.services.store.models.Account;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,13 +44,19 @@ class AccountAccessorImplTest {
     private static final byte[] DATA = BYTES.toArrayUnsafe();
 
     @Mock
-    private MirrorEntityAccess mirrorEntityAccess;
+    private HederaEvmEntityAccess mirrorEntityAccess;
+
+    @Mock
+    private Store store;
+
+    @Mock
+    private Account account;
 
     public AccountAccessorImpl accountAccessor;
 
     @BeforeEach
     void setUp() {
-        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
+        accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
     }
 
     @Test
@@ -66,24 +75,28 @@ class AccountAccessorImplTest {
 
     @Test
     void canonicalAddress() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
 
     @Test
     void canonicalAliasAddress() {
+        when(store.getAccount(ALIAS_ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }
 
     @Test
     void missingCanonicalAliasAddressResolvesToItself() {
+        when(store.getAccount(ALIAS_ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }
 
     @Test
     void isExtantTrue() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         when(mirrorEntityAccess.isExtant(ADDRESS)).thenReturn(true);
         when(mirrorEntityAccess.alias(ADDRESS)).thenReturn(EMPTY);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
@@ -92,6 +105,7 @@ class AccountAccessorImplTest {
 
     @Test
     void alias() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         when(mirrorEntityAccess.isExtant(ADDRESS)).thenReturn(true);
         when(mirrorEntityAccess.alias(ADDRESS)).thenReturn(ByteString.copyFrom(DATA));
         final var result = accountAccessor.canonicalAddress(ADDRESS);
@@ -100,6 +114,7 @@ class AccountAccessorImplTest {
 
     @Test
     void aliasDifferentFromEvmAddressSize() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         when(mirrorEntityAccess.isExtant(ADDRESS)).thenReturn(true);
         when(mirrorEntityAccess.alias(ADDRESS)).thenReturn(ByteString.copyFrom(new byte[32]));
         final var result = accountAccessor.canonicalAddress(ADDRESS);

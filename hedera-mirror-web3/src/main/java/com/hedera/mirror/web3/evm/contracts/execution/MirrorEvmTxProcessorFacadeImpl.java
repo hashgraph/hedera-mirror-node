@@ -103,12 +103,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final var store = new StoreImpl(databaseAccessors);
-        final var mirrorEntityAccess =
-                new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
-        final var tokenAccessor = new TokenAccessorImpl(evmProperties, mirrorEntityAccess, store);
-        final var accountAccessor = new AccountAccessorImpl(mirrorEntityAccess);
+        final var mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+        final var tokenAccessor = new TokenAccessorImpl(evmProperties, store);
+        final var accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
-        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(mirrorEntityAccess);
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
         final var worldState = new HederaEvmWorldState(

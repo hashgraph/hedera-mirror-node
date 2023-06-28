@@ -22,7 +22,6 @@ import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -30,7 +29,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import java.time.Instant;
@@ -58,16 +56,10 @@ class MirrorEntityAccessTest {
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
 
     @Mock
-    private EntityRepository entityRepository;
-
-    @Mock
     private ContractRepository contractRepository;
 
     @Mock
     private ContractStateRepository contractStateRepository;
-
-    @Mock
-    private Entity entity;
 
     @Mock
     private Account account;
@@ -82,8 +74,7 @@ class MirrorEntityAccessTest {
 
     @BeforeEach
     void setUp() {
-        mirrorEntityAccess =
-                new MirrorEntityAccess(contractStateRepository, contractRepository, entityRepository, store);
+        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
     }
 
     @Test
@@ -261,6 +252,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void getStorageFailsForNonMirrorAddress() {
+        when(store.getAccount(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var key = Bytes.fromHexString(NON_MIRROR_ADDRESS.toHexString());
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(NON_MIRROR_ADDRESS, key));
         assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
@@ -281,9 +274,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void fetchCodeIfPresentForNonMirrorEvm() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe()))
-                .thenReturn(Optional.of(entity));
-        when(entity.getId()).thenReturn(ENTITY_ID);
+        when(store.getAccount(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getEntityId()).thenReturn(ENTITY_ID);
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
         final var result = mirrorEntityAccess.fetchCodeIfPresent(NON_MIRROR_ADDRESS);
         assertThat(result).isEqualTo(BYTES);
