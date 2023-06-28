@@ -16,6 +16,11 @@
 
 package com.hedera.services.store.tokens;
 
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.utils.EntityIdUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -27,14 +32,8 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityIdUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -52,10 +51,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class HederaTokenStore {
 
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
+    static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
     private final ContextOptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final Store store;
-    TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 
     public HederaTokenStore(
             final ContextOptionValidator validator,

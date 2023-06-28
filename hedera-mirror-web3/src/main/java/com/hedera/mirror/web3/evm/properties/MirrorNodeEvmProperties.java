@@ -95,19 +95,15 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private Duration rateLimit = Duration.ofSeconds(100L);
 
     @Getter
-    @NotNull
     private boolean atLeastOneAutoRenewTargetType = false;
 
     @Getter
-    @NotNull
     private boolean expireAccounts = false;
 
     @Getter
-    @NotNull
     private boolean expireContracts = false;
 
     @Getter
-    @NotNull
     private boolean limitTokenAssociations = false;
 
     @Override
