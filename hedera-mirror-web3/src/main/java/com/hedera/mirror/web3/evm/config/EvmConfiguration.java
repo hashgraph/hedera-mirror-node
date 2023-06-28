@@ -31,6 +31,7 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
@@ -39,7 +40,9 @@ import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
@@ -163,6 +166,11 @@ public class EvmConfiguration {
     }
 
     @Bean
+    TokenDissociateResourceUsage tokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
+        return new TokenDissociateResourceUsage(estimatorFactory);
+    }
+
+    @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
@@ -174,6 +182,9 @@ public class EvmConfiguration {
         for (final var estimator : txnResourceUsageEstimators) {
             if (estimator.toString().contains("TokenAssociate")) {
                 txnUsageEstimators.put(HederaFunctionality.TokenAssociateToAccount, List.of(estimator));
+            }
+            if (estimator.toString().contains("TokenDissociate")) {
+                txnUsageEstimators.put(HederaFunctionality.TokenDissociateFromAccount, List.of(estimator));
             }
         }
 
@@ -255,5 +266,15 @@ public class EvmConfiguration {
     @Bean
     DissociateLogic dissociateLogic() {
         return new DissociateLogic();
+    }
+
+    @Bean
+    DissociatePrecompile dissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
+        return new DissociatePrecompile(precompilePricingUtils);
+    }
+
+    @Bean
+    MultiDissociatePrecompile multiDissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
+        return new MultiDissociatePrecompile(precompilePricingUtils);
     }
 }
