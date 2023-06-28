@@ -2,6 +2,8 @@
 Feature: eth_call Contract Base Coverage Feature
 
   Scenario Outline: Validate eth_call
+    Given I successfully create a new fungible token
+    Given I successfully create a new non-fungible token
     Given I successfully create ERC contract
     Given I successfully create Precompile contract
     Given I successfully create EstimateGas contract

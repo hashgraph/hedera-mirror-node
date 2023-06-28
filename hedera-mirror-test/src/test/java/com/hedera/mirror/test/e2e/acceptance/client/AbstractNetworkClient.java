@@ -45,7 +45,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.springframework.retry.support.RetryTemplate;
 
 @Data
-public abstract class AbstractNetworkClient {
+public abstract class AbstractNetworkClient implements Cleanable {
 
     private static final int MEMO_BYTES_MAX_LENGTH = 100;
 
@@ -63,6 +63,11 @@ public abstract class AbstractNetworkClient {
         if (!log.isDebugEnabled()) {
             Configurator.setLevel(LogManager.getLogger(TransactionReceiptQuery.class), Level.ERROR);
         }
+    }
+
+    @Override
+    public void clean() {
+        // Nothing to clean up
     }
 
     @SneakyThrows
