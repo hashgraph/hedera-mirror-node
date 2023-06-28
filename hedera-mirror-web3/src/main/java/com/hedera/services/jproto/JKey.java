@@ -17,6 +17,7 @@
 package com.hedera.services.jproto;
 
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
@@ -26,6 +27,8 @@ import org.apache.commons.codec.DecoderException;
  */
 public abstract class JKey {
 
+    private static final byte[] MISSING_ED25519_KEY = new byte[0];
+    private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
     static final int MAX_KEY_DEPTH = 15;
 
     /**
@@ -40,8 +43,18 @@ public abstract class JKey {
     }
 
     /**
-     * Converts a key up to a given level of depth. Both the signature and the key may be complex
-     * with multiple levels.
+     * Maps a JKey instance to a proto Key instance.
+     *
+     * @param jkey the JKey to be converted
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    public static Key mapJKey(JKey jkey) throws DecoderException {
+        return convertJKey(jkey, 1);
+    }
+
+    /**
+     * Converts a key up to a given level of depth. Both the signature and the key may be complex with multiple levels.
      *
      * @param key   the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
@@ -64,6 +77,30 @@ public abstract class JKey {
             }
             return new JKeyList(jkeys);
         }
+    }
+
+    /**
+     * Converts a JKey to proto Key for up to a given level of depth.
+     *
+     * @param jkey  the current JKey to be converted
+     * @param depth current level that is to be verified. The first level has a value of 1.
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
+        if (depth > MAX_KEY_DEPTH) {
+            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+        }
+
+        List<JKey> jKeys = jkey.getKeyList().getKeysList();
+        List<Key> tkeys = new ArrayList<>();
+        for (JKey aKey : jKeys) {
+            Key res = convertJKey(aKey, depth + 1);
+            tkeys.add(res);
+        }
+        KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
+        Key result = Key.newBuilder().setKeyList(keys).build();
+        return (result);
     }
 
     /**
@@ -96,4 +133,16 @@ public abstract class JKey {
      * @return whether the key is valid
      */
     public abstract boolean isValid();
+
+    public byte[] getECDSASecp256k1Key() {
+        return MISSING_ECDSA_SECP256K1_KEY;
+    }
+
+    public byte[] getEd25519() {
+        return MISSING_ED25519_KEY;
+    }
+
+    public JKeyList getKeyList() {
+        return null;
+    }
 }

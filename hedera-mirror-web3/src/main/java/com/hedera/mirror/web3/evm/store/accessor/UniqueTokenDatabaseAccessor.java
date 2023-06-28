@@ -18,15 +18,16 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Optional;
-import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -44,10 +45,10 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
-        Id tokenId = idFromEntityId(nft.getId().getTokenId());
+        var tokenId = idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN));
         return new UniqueToken(
                 tokenId,
-                nft.getId().getSerialNumber(),
+                nft.getSerialNumber(),
                 mapNanosToRichInstant(nft.getCreatedTimestamp()),
                 idFromEntityId(nft.getAccountId()),
                 idFromEntityId(nft.getSpender()),

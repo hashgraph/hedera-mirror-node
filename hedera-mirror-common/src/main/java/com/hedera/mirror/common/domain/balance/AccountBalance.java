@@ -18,11 +18,9 @@ package com.hedera.mirror.common.domain.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -81,7 +79,6 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
 
         private long consensusTimestamp;
 
-        @Convert(converter = AccountIdConverter.class)
         private EntityId accountId;
     }
 }

@@ -35,11 +35,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -90,7 +89,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
-        final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
+        final var nftOptional = nftRepository.findById(
+                new AbstractNft.Id(serialNo, fromEvmAddress(nft.toArrayUnsafe()).getId()));
         if (nftOptional.isEmpty()) {
             return Optional.empty();
         }
@@ -129,13 +129,13 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean defaultFreezeStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getFreezeDefault).orElse(false);
     }
 
     @Override
     public boolean defaultKycStatus(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getKycKey).isPresent();
     }
 
@@ -158,7 +158,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
 
         return tokenRepository
                 .findById(tokenId)
@@ -185,25 +185,25 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String nameOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getName).orElse("");
     }
 
     @Override
     public String symbolOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getSymbol).orElse("");
     }
 
     @Override
     public long totalSupplyOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getTotalSupply).orElse(0L);
     }
 
     @Override
     public int decimalsOf(final Address token) {
-        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        final var tokenId = entityIdFromEvmAddress(token).getId();
         return tokenRepository.findById(tokenId).map(Token::getDecimals).orElse(0);
     }
 
@@ -234,7 +234,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
         final var spenderEntity = nftRepository.findById(nftId).map(Nft::getSpender);
 
         if (spenderEntity.isEmpty()) {
@@ -259,7 +260,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
         final var ownerEntity = nftRepository.findById(nftId).map(Nft::getAccountId);
 
         if (ownerEntity.isEmpty()) {
@@ -276,7 +278,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String metadataOf(final Address nft, long serialNo) {
-        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var nftId =
+                new AbstractNft.Id(serialNo, entityIdFromEvmAddress(nft).getId());
 
         return nftRepository
                 .findById(nftId)
@@ -290,7 +293,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
-        final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
+        final var tokenEntityOptional =
+                tokenRepository.findById(fromEvmAddress(token.toArray()).getId());
         final var entityOptional = entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(token));
 
         if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {

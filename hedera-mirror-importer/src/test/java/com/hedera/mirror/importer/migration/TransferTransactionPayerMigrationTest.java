@@ -26,8 +26,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -39,7 +37,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -51,6 +48,7 @@ import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +81,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final TransactionRepository transactionRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
-    private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final TokenTransferRepository tokenTransferRepository;
 
@@ -100,7 +97,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
         assertThat(transactionRepository.count()).isZero();
         assertThat(cryptoTransferRepository.count()).isZero();
-        assertThat(nftTransferRepository.count()).isZero();
+        assertThat(findNftTransfers()).isEmpty();
         assertThat(nonFeeTransferRepository.count()).isZero();
         assertThat(tokenTransferRepository.count()).isZero();
     }
@@ -334,21 +331,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
         persistNftTransfers(List.of(
                 // nft transfer
-                domainBuilder
-                        .nftTransfer()
-                        .customize(n -> n.id(new NftTransferId(transfer3.getConsensusTimestamp(), 1L, tokenId))
-                                .payerAccountId(null)
-                                .receiverAccountId(receiverId)
-                                .senderAccountId(senderId))
-                        .get(),
+                nftTransfer(transfer3.getConsensusTimestamp(), receiverId, senderId, 1L, tokenId),
                 // all transfers
-                domainBuilder
-                        .nftTransfer()
-                        .customize(n -> n.id(new NftTransferId(transfer5.getConsensusTimestamp(), 2L, tokenId))
-                                .payerAccountId(null)
-                                .receiverAccountId(receiverId)
-                                .senderAccountId(senderId))
-                        .get()));
+                nftTransfer(transfer5.getConsensusTimestamp(), receiverId, senderId, 2L, tokenId)));
 
         persistTokenTransfers(List.of(
                 // token transfer
@@ -457,6 +442,19 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
+    private MigrationNftTransfer nftTransfer(
+            long consensusTimestamp, EntityId receiver, EntityId sender, long serialNumber, EntityId tokenId) {
+        Long receiverAccountId = EntityId.isEmpty(receiver) ? null : receiver.getId();
+        Long senderAccountId = EntityId.isEmpty(sender) ? null : sender.getId();
+        return MigrationNftTransfer.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .receiverAccountId(receiverAccountId)
+                .senderAccountId(senderAccountId)
+                .serialNumber(serialNumber)
+                .tokenId(tokenId.getId())
+                .build();
+    }
+
     private void persistAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees) throws IOException {
         for (AssessedCustomFee assessedCustomFee : assessedCustomFees) {
             var id = assessedCustomFee.getId();
@@ -482,18 +480,19 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistNftTransfers(List<NftTransfer> nftTransfers) {
-        for (NftTransfer nftTransfer : nftTransfers) {
-            var id = nftTransfer.getId();
+    private void persistNftTransfers(List<MigrationNftTransfer> nftTransfers) {
+        for (var nftTransfer : nftTransfers) {
             jdbcOperations.update(
-                    "insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, "
-                            + "serial_number, token_id)"
-                            + " values (?,?,?,?,?)",
-                    id.getConsensusTimestamp(),
-                    nftTransfer.getReceiverAccountId().getId(),
-                    nftTransfer.getSenderAccountId().getId(),
-                    id.getSerialNumber(),
-                    id.getTokenId().getId());
+                    """
+                            insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id,
+                            serial_number, token_id)
+                            values (?,?,?,?,?)
+                            """,
+                    nftTransfer.getConsensusTimestamp(),
+                    nftTransfer.getReceiverAccountId(),
+                    nftTransfer.getSenderAccountId(),
+                    nftTransfer.getSerialNumber(),
+                    nftTransfer.getTokenId());
         }
     }
 
@@ -559,9 +558,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
             SharedTransfer sharedTransfer = new SharedTransfer(
                     rs.getLong("serial_number"),
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
-                    EntityIdEndec.decode(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
+                    EntityId.of(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
             return sharedTransfer;
         });
     }
@@ -654,20 +653,20 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         return longs == null ? "" : "{" + StringUtils.join(longs, ",") + "}";
     }
 
-    // custom class with shared attributes for all transfer classes prior to migration
+    @AllArgsConstructor
+    @Builder
     @Data
     @NoArgsConstructor
-    @AllArgsConstructor
-    private class SharedTransfer {
-        private long amount;
-        private long consensusTimeStamp;
-        private EntityId payerAccountId;
-        private EntityId receiver;
-        private EntityId sender;
+    private static class MigrationNftTransfer {
+        long consensusTimestamp;
+        Long receiverAccountId;
+        Long senderAccountId;
+        long serialNumber;
+        long tokenId;
     }
 
     @Data
-    private class MigrationTransaction {
+    private static class MigrationTransaction {
         private Long consensusTimestamp;
         private Long entityId;
         private Long nodeAccountId;
@@ -675,5 +674,17 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         private Integer result;
         private Integer type;
         private Long validStartNs;
+    }
+
+    // custom class with shared attributes for all transfer classes prior to migration
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class SharedTransfer {
+        private long amount;
+        private long consensusTimeStamp;
+        private EntityId payerAccountId;
+        private EntityId receiver;
+        private EntityId sender;
     }
 }

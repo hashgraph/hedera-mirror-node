@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-import {filterKeys} from '../constants';
-
 class NftTransfer {
   /**
-   * Parses nft_transfer table columns into object
+   * Parses nft_transfer from element in transaction.nft_transfer jsonb column
    */
   constructor(nftTransfer) {
-    this.consensusTimestamp = nftTransfer.consensus_timestamp;
     this.isApproval = nftTransfer.is_approval;
     this.receiverAccountId = nftTransfer.receiver_account_id;
     this.senderAccountId = nftTransfer.sender_account_id;
@@ -29,30 +26,11 @@ class NftTransfer {
     this.tokenId = nftTransfer.token_id;
   }
 
-  static tableAlias = 'nft_tr';
-  static tableName = 'nft_transfer';
-
-  static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
   static IS_APPROVAL = `is_approval`;
-  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
   static SERIAL_NUMBER = `serial_number`;
   static TOKEN_ID = `token_id`;
-
-  static FILTER_MAP = {
-    [filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
-  };
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
 }
 
 export default NftTransfer;

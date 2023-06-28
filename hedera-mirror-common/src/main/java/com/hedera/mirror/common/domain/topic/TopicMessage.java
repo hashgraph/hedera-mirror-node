@@ -19,15 +19,7 @@ package com.hedera.mirror.common.domain.topic;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.AccountIdDeserializer;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.TopicIdConverter;
-import com.hedera.mirror.common.converter.TopicIdDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
@@ -45,7 +37,6 @@ import org.springframework.data.domain.Persistable;
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor
-@ToString(exclude = {"initialTransactionId", "message", "runningHash"})
 public class TopicMessage implements Persistable<Long>, StreamMessage {
 
     private Integer chunkNum;
@@ -55,24 +46,21 @@ public class TopicMessage implements Persistable<Long>, StreamMessage {
     @Id
     private long consensusTimestamp;
 
+    @ToString.Exclude
     private byte[] initialTransactionId;
 
+    @ToString.Exclude
     private byte[] message;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    @JsonDeserialize(using = AccountIdDeserializer.class)
     private EntityId payerAccountId;
 
+    @ToString.Exclude
     private byte[] runningHash;
 
     private int runningHashVersion;
 
     private long sequenceNumber;
 
-    @Convert(converter = TopicIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    @JsonDeserialize(using = TopicIdDeserializer.class)
     private EntityId topicId;
 
     private Long validStartTimestamp;

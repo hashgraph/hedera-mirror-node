@@ -16,10 +16,12 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -62,24 +64,31 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                         .totalSupply(100_000L - token1DissociateAmount)
                         .treasuryAccountId(treasury))
                 .persist();
-        var token1EntityId = token1.getTokenId().getTokenId();
+        var token1EntityId = EntityId.of(token1.getTokenId(), TOKEN);
         var token2 = domainBuilder
                 .token()
-                .customize(t -> t.treasuryAccountId(treasury))
+                .customize(t -> t.initialSupply(1_000_000_000L)
+                        .totalSupply(1_000_000_000L)
+                        .treasuryAccountId(treasury))
                 .persist();
-        var token2EntityId = token2.getTokenId().getTokenId();
+        var token2EntityId = EntityId.of(token2.getTokenId(), TOKEN);
         var token3 = domainBuilder
                 .token()
-                .customize(t -> t.initialSupply(0L).treasuryAccountId(treasury).type(NON_FUNGIBLE_UNIQUE))
+                .customize(t -> t.initialSupply(0L)
+                        .totalSupply(1_000_000_000L)
+                        .treasuryAccountId(treasury)
+                        .type(NON_FUNGIBLE_UNIQUE))
                 .persist(); // nft
-        var token3EntityId = token3.getTokenId().getTokenId();
+        var token3EntityId = EntityId.of(token3.getTokenId(), TOKEN);
         // token4 created after the last account balance file
         var token4 = domainBuilder
                 .token()
                 .customize(t -> t.createdTimestamp(plus(lastTimestamp, Duration.ofSeconds(-1)))
+                        .initialSupply(1_000_000_000L)
+                        .totalSupply(1_000_000_000L)
                         .treasuryAccountId(treasury))
                 .persist();
-        var token4EntityId = token4.getTokenId().getTokenId();
+        var token4EntityId = EntityId.of(token4.getTokenId(), TOKEN);
 
         domainBuilder
                 .recordFile()

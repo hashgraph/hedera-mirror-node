@@ -18,21 +18,23 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.NftTransfer;
 import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
-import jakarta.persistence.Convert;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
@@ -49,8 +51,6 @@ public class Transaction implements Persistable<Long> {
 
     private Long chargedTxFee;
 
-    @Convert(converter = UnknownIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     @Enumerated(EnumType.STRING)
@@ -66,16 +66,16 @@ public class Transaction implements Persistable<Long> {
 
     private Long maxFee;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
+    @JsonSerialize(using = ObjectToStringSerializer.class)
+    @Type(JsonBinaryType.class)
+    private List<NftTransfer> nftTransfer;
+
     private EntityId nodeAccountId;
 
     private Integer nonce;
 
     private Long parentConsensusTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     private Integer result;
@@ -93,6 +93,14 @@ public class Transaction implements Persistable<Long> {
     private Long validDurationSeconds;
 
     private Long validStartNs;
+
+    public void addNftTransfer(@NonNull NftTransfer nftTransfer) {
+        if (this.nftTransfer == null) {
+            this.nftTransfer = new ArrayList<>();
+        }
+
+        this.nftTransfer.add(nftTransfer);
+    }
 
     @JsonIgnore
     @Override

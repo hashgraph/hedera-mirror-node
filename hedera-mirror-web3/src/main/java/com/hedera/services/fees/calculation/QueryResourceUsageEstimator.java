@@ -16,13 +16,16 @@
 
 package com.hedera.services.fees.calculation;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ */
 public interface QueryResourceUsageEstimator {
     /**
      * Flags whether the estimator applies to the given query.
@@ -37,13 +40,12 @@ public interface QueryResourceUsageEstimator {
      * world and response type.
      *
      * @param query the query in question
-     * @param state
-     * @param type  the response type of the given query
+     * @param store
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGivenType(final Query query, final StackedStateFrames<?> state, final ResponseType type) {
-        return usageGiven(query, state);
+    default FeeData usageGivenType(final Query query, Store store) {
+        return usageGiven(query, store);
     }
 
     /**
@@ -51,12 +53,12 @@ public interface QueryResourceUsageEstimator {
      * world.
      *
      * @param query the query in question
-     * @param state
+     * @param store
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGiven(final Query query, final StackedStateFrames<?> state) {
-        return usageGiven(query, state, null);
+    default FeeData usageGiven(final Query query, Store store) {
+        return usageGiven(query, store, null);
     }
 
     /**
@@ -65,11 +67,10 @@ public interface QueryResourceUsageEstimator {
      * the query answer flow.
      *
      * @param query    the query in question
-     * @param state
+     * @param store
      * @param queryCtx the context of the query being answered
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    FeeData usageGiven(
-            final Query query, final StackedStateFrames<?> state, @Nullable final Map<String, Object> queryCtx);
+    FeeData usageGiven(final Query query, final Store store, @Nullable final Map<String, Object> queryCtx);
 }

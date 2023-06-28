@@ -30,7 +30,7 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "transfers": [],
-        "nft_transfer_list": [
+        "nft_transfer": [
           {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
@@ -72,6 +72,7 @@
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000000",
         "valid_duration_seconds": "11",

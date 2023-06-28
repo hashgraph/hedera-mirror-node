@@ -135,14 +135,14 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                         end
                         else e_kyc_status
                     end kyc_status,
-                    coalesce(timestamp_range, e_timestamp_range, null),
+                    coalesce(existing.timestamp_range, e_timestamp_range, null),
                     coalesce(existing.token_id, e_token_id, null)
                   from
                     existing
                     join token on existing.token_id = token.token_id
                   where
                     (existing.created_timestamp is not null or e_created_timestamp is not null) and
-                    (existing.timestamp_range is not null and upper(timestamp_range) is not null)
+                    (existing.timestamp_range is not null and upper(existing.timestamp_range) is not null)
                 )
                 insert into
                   token_account (

@@ -13,5 +13,8 @@ insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from existing
 where $notUpdatableColumn
+#if($skipPartialUpdate)
+and coalesce(e_created_timestamp, created_timestamp) is not null
+#end
 on conflict ($conflictColumns)
 do update set $updateColumns

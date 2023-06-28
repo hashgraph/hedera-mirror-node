@@ -21,9 +21,18 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import java.io.IOException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EntityIdSerializer extends JsonSerializer<EntityId> {
+
     public static final EntityIdSerializer INSTANCE = new EntityIdSerializer();
+
+    @Override
+    public Class<EntityId> handledType() {
+        return EntityId.class;
+    }
 
     @Override
     public void serialize(EntityId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {

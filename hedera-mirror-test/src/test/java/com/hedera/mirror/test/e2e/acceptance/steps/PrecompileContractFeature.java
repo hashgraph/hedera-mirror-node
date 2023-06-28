@@ -20,7 +20,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -28,14 +30,33 @@ import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.*;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.*;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -51,6 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -65,27 +87,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
-    public static final String IS_TOKEN_SELECTOR = "bff9834f";
-    public static final String IS_TOKEN_FROZEN_SELECTOR = "565ca6fa";
-    public static final String IS_KYC_GRANTED_SELECTOR = "bc2fb00e";
-    public static final String GET_TOKEN_DEFAULT_FREEZE_SELECTOR = "319a8723";
-    public static final String GET_TOKEN_DEFAULT_KYC_SELECTOR = "fd4d1c26";
-    public static final String GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR = "44f38bc8";
-    public static final String GET_INFORMATION_FOR_TOKEN_SELECTOR = "35589a13";
-    public static final String GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR = "59c16f5a";
-    public static final String GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR = "8e5e7996";
-    public static final String GET_TYPE_SELECTOR = "f429f19b";
-    public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
-    public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "1955de0b";
-    public static final String NAME_SELECTOR = "06fdde03";
-    public static final String SYMBOL_SELECTOR = "95d89b41";
-    public static final String DECIMALS_SELECTOR = "313ce567";
-    public static final String TOTAL_SUPPLY_SELECTOR = "18160ddd";
-    public static final String BALANCE_OF_SELECTOR = "70a08231";
-    public static final String ALLOWANCE_SELECTOR = "dd62ed3e";
-    public static final String OWNER_OF_SELECTOR = "6352211e";
-    public static final String GET_APPROVED_SELECTOR = "081812fc";
-    public static final String IS_APPROVED_FOR_ALL_SELECTOR = "e985e9c5";
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -156,11 +157,17 @@ public class PrecompileContractFeature extends AbstractFeature {
         customFixedFee.setAmount(10);
         customFixedFee.setFeeCollectorAccountId(admin.getAccountId());
 
+        CustomRoyaltyFee customRoyaltyFee = new CustomRoyaltyFee();
+        customRoyaltyFee.setNumerator(5);
+        customRoyaltyFee.setDenominator(10);
+        customRoyaltyFee.setFallbackFee(new CustomFixedFee().setHbarAmount(new Hbar(1)));
+        customRoyaltyFee.setFeeCollectorAccountId(admin.getAccountId());
+
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.INFINITE,
-                List.of(customFixedFee));
+                List.of(customFixedFee, customRoyaltyFee));
     }
 
     @Given("I create an ecdsa account and associate it to the tokens")
@@ -190,7 +197,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -204,7 +212,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -217,7 +226,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Then("the contract call REST API to is token with invalid account id should return an error")
     public void checkIfInvalidAccountIsToken() {
-        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil.to32BytesString(ZERO_ADDRESS);
+        String selectorWithData =
+                ContractMethods.IS_TOKEN_SELECTOR.getSelector() + TestUtil.to32BytesString(ZERO_ADDRESS);
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
         String contractClientAddress = contractClient.getClientAddress();
 
@@ -235,7 +245,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API to is token with valid account id should return an error")
     public void checkIfValidAccountIsToken() {
-        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR
+        String selectorWithData = ContractMethods.IS_TOKEN_SELECTOR.getSelector()
                 + TestUtil.to32BytesString(
                         accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
         String contractIdAsSolidityAddress = contractId.toSolidityAddress();
@@ -256,7 +266,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("verify fungible token isn't frozen")
     public void verifyFungibleTokenIsNotFrozen() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -272,7 +282,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("verify non fungible token isn't frozen")
     public void verifyNonFungibleTokenIsNotFrozen() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -299,7 +309,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if non fungible token is frozen")
     public void checkIfTokenIsFrozen() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -326,7 +336,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if non fungible token is unfrozen")
     public void checkIfTokenIsUnfrozen() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -352,7 +362,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
 
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()))
                 .from(contractClient.getClientAddress())
@@ -378,7 +388,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
 
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_TOKEN_FROZEN_SELECTOR
+                .data(ContractMethods.IS_TOKEN_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()))
                 .from(contractClient.getClientAddress())
@@ -402,7 +412,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if fungible token is kyc granted")
     public void checkIfFungibleTokenIsKycGranted() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_KYC_GRANTED_SELECTOR
+                .data(ContractMethods.IS_KYC_GRANTED_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -418,7 +428,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if non fungible token is kyc granted")
     public void checkIfNonFungibleTokenIsKycGranted() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_KYC_GRANTED_SELECTOR
+                .data(ContractMethods.IS_KYC_GRANTED_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -433,7 +443,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default freeze for a fungible token")
     public void getDefaultFreezeOfFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                .data(ContractMethods.GET_TOKEN_DEFAULT_FREEZE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -447,7 +457,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default freeze for a non fungible token")
     public void getDefaultFreezeOfNonFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                .data(ContractMethods.GET_TOKEN_DEFAULT_FREEZE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -461,7 +471,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a fungible token")
     public void getDefaultKycOfFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR
+                .data(ContractMethods.GET_TOKEN_DEFAULT_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -475,7 +485,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the default kyc for a non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_DEFAULT_KYC_SELECTOR
+                .data(ContractMethods.GET_TOKEN_DEFAULT_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -489,7 +499,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the information for token for a fungible token")
     public void getInformationForTokenOfFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_INFORMATION_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_INFORMATION_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -509,7 +519,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the information for token for a non fungible token")
     public void getInformationForTokenOfNonFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_INFORMATION_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_INFORMATION_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -525,7 +535,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the information for a fungible token")
     public void getInformationForFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR
+                .data(ContractMethods.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -547,7 +557,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the information for a non fungible token")
     public void getInformationForNonFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR
+                .data(ContractMethods.GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
@@ -578,7 +588,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the type for a fungible token")
     public void getTypeForFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -591,7 +602,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the type for a non fungible token")
     public void getTypeForNonFungibleToken() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -604,7 +616,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the expiry token info for a fungible token")
     public void getExpiryTokenInfoForFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -618,7 +630,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the expiry token info for a non fungible token")
     public void getExpiryTokenInfoForNonFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -632,7 +644,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the token key for a fungible token")
     public void getTokenKeyForFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_KEY_PUBLIC_SELECTOR
+                .data(ContractMethods.GET_TOKEN_KEY_PUBLIC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
@@ -650,7 +662,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the token key for a non fungible token")
     public void getTokenKeyForNonFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_TOKEN_KEY_PUBLIC_SELECTOR
+                .data(ContractMethods.GET_TOKEN_KEY_PUBLIC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
@@ -691,7 +703,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the name by direct call for a fungible token")
     public void getFungibleTokenNameByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(NAME_SELECTOR)
+                .data(ContractMethods.NAME_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -703,7 +715,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the symbol by direct call for a fungible token")
     public void getFungibleTokenSymbolByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(SYMBOL_SELECTOR)
+                .data(ContractMethods.SYMBOL_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -715,7 +727,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the decimals by direct call for a  fungible token")
     public void getFungibleTokenDecimalsByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(DECIMALS_SELECTOR)
+                .data(ContractMethods.DECIMALS_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -727,7 +739,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the total supply by direct call for a  fungible token")
     public void getFungibleTokenTotalSupplyByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(TOTAL_SUPPLY_SELECTOR)
+                .data(ContractMethods.TOTAL_SUPPLY_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -739,7 +751,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the balanceOf by direct call for a fungible token")
     public void getFungibleTokenBalanceOfByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(BALANCE_OF_SELECTOR + to32BytesString(contractClient.getClientAddress()))
+                .data(ContractMethods.BALANCE_OF_SELECTOR.getSelector()
+                        + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -751,7 +764,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the allowance by direct call for a fungible token")
     public void getFungibleTokenAllowanceByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ALLOWANCE_SELECTOR
+                .data(ContractMethods.ALLOWANCE_SELECTOR.getSelector()
                         + to32BytesString(contractClient.getClientAddress())
                         + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
@@ -765,7 +778,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the name by direct call for a non fungible token")
     public void getNonFungibleTokenNameByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(NAME_SELECTOR)
+                .data(ContractMethods.NAME_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -777,7 +790,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the symbol by direct call for a non fungible token")
     public void getNonFungibleTokenSymbolByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(SYMBOL_SELECTOR)
+                .data(ContractMethods.SYMBOL_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -789,7 +802,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the total supply by direct call for a non fungible token")
     public void getNonFungibleTokenTotalSupplyByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(TOTAL_SUPPLY_SELECTOR)
+                .data(ContractMethods.TOTAL_SUPPLY_SELECTOR.getSelector())
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(1).toSolidityAddress())
                 .estimate(false)
@@ -801,7 +814,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the ownerOf by direct call for a non fungible token")
     public void getNonFungibleTokenOwnerOfByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(OWNER_OF_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)))
+                .data(ContractMethods.OWNER_OF_SELECTOR.getSelector()
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(1).toSolidityAddress())
                 .estimate(false)
@@ -814,7 +828,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_APPROVED_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)))
+                .data(ContractMethods.GET_APPROVED_SELECTOR.getSelector()
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
                 .to(tokenIds.get(0).toSolidityAddress())
                 .estimate(false)
@@ -824,9 +839,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token")
-    public void getNonFungibleTokenIsApprovedForAllByDirectCall() throws Exception {
+    public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(IS_APPROVED_FOR_ALL_SELECTOR
+                .data(ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR.getSelector()
                         + to32BytesString(contractClient.getClientAddress())
                         + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
@@ -840,7 +855,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("the contract call REST API should return the custom fees for a fungible token")
     public void getCustomFeesForFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -859,16 +874,14 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat((long) fractionalFee.get(1)).isEqualTo(10);
         assertThat((long) fractionalFee.get(2)).isZero();
         assertThat((long) fractionalFee.get(3)).isZero();
-        assertFalse((boolean) fractionalFee.get(4));
-        contractClient.validateAddress(
-                fractionalFee.get(5).toString().toLowerCase().replace("0x", ""));
+        assertThat((boolean) fractionalFee.get(4)).isFalse();
         assertThat(royaltyFees).isEmpty();
     }
 
     @And("the contract call REST API should return the custom fees for a non fungible token")
     public void getCustomFeesForNonFungibleToken() throws Exception {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR
+                .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -881,7 +894,90 @@ public class PrecompileContractFeature extends AbstractFeature {
         Tuple[] fractionalFees = result.get(1);
         Tuple[] royaltyFees = result.get(2);
         assertThat(fractionalFees).isEmpty();
-        assertThat(royaltyFees).isEmpty();
+        assertThat(royaltyFees).isNotEmpty();
+    }
+
+    // ETHCALL-032
+    @And(
+            "I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token")
+    public void getCustomFeesForFungibleTokenFractionalAndFixedFees() throws Exception {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
+
+        Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+        assertThat(result).isNotEmpty();
+        baseFixedFeeCheck(result.get(0));
+        Tuple[] fractionalFees = result.get(1);
+        Tuple fractionalFee = fractionalFees[0];
+        assertThat(fractionalFees).isNotEmpty();
+        assertThat((long) fractionalFee.get(0)).isOne();
+        assertThat((long) fractionalFee.get(1)).isEqualTo(10);
+        assertThat((long) fractionalFee.get(2)).isZero();
+        assertThat((long) fractionalFee.get(3)).isZero();
+        assertFalse((boolean) fractionalFee.get(4));
+        assertThat(fractionalFee.get(5).toString().toLowerCase())
+                .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
+    }
+
+    // ETHCALL-033
+    @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee")
+    public void getCustomFeesForFungibleTokenRoyaltyFee() throws Exception {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
+
+        Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+        assertThat(result).isNotEmpty();
+        Tuple[] royaltyFees = result.get(2);
+        Tuple royaltyFee = royaltyFees[0];
+        assertThat((long) royaltyFee.get(0)).isEqualTo(5);
+        assertThat((long) royaltyFee.get(1)).isEqualTo(10);
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
+                .isEqualTo("0x"
+                        + tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress());
+    }
+
+    // ETHCALL-034
+    @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback")
+    public void getCustomFeesForFungibleTokenRoyaltyFeeAndFallback() throws Exception {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
+
+        Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+        assertThat(result).isNotEmpty();
+        Tuple[] royaltyFees = result.get(2);
+        Tuple royaltyFee = royaltyFees[0];
+        assertThat((long) royaltyFee.get(2)).isEqualTo(new Hbar(1).toTinybars());
+        assertThat(royaltyFee.get(3).toString()).hasToString(ZERO_ADDRESS);
+        assertTrue((boolean) royaltyFee.get(4));
+        assertThat(royaltyFee.get(5).toString().toLowerCase())
+                .hasToString("0x"
+                        + tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress());
     }
 
     private void tokenKeyCheck(final Tuple result) {
@@ -1018,5 +1114,32 @@ public class PrecompileContractFeature extends AbstractFeature {
         } catch (Exception e) {
             throw new Exception("Function not found in abi.");
         }
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    private enum ContractMethods {
+        IS_TOKEN_SELECTOR("bff9834f"),
+        IS_TOKEN_FROZEN_SELECTOR("565ca6fa"),
+        IS_KYC_GRANTED_SELECTOR("bc2fb00e"),
+        GET_TOKEN_DEFAULT_FREEZE_SELECTOR("319a8723"),
+        GET_TOKEN_DEFAULT_KYC_SELECTOR("fd4d1c26"),
+        GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR("44f38bc8"),
+        GET_INFORMATION_FOR_TOKEN_SELECTOR("35589a13"),
+        GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR("59c16f5a"),
+        GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR("8e5e7996"),
+        GET_TYPE_SELECTOR("f429f19b"),
+        GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR("1de8edad"),
+        GET_TOKEN_KEY_PUBLIC_SELECTOR("1955de0b"),
+        NAME_SELECTOR("06fdde03"),
+        SYMBOL_SELECTOR("95d89b41"),
+        DECIMALS_SELECTOR("313ce567"),
+        TOTAL_SUPPLY_SELECTOR("18160ddd"),
+        BALANCE_OF_SELECTOR("70a08231"),
+        ALLOWANCE_SELECTOR("dd62ed3e"),
+        OWNER_OF_SELECTOR("6352211e"),
+        GET_APPROVED_SELECTOR("081812fc"),
+        IS_APPROVED_FOR_ALL_SELECTOR("e985e9c5");
+        private final String selector;
     }
 }

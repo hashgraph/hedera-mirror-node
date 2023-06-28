@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
@@ -53,7 +52,7 @@ public class HederaEvmStackedWorldStateUpdater
     private final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
-            final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
+            final AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> updater,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
@@ -97,6 +96,13 @@ public class HederaEvmStackedWorldStateUpdater
         return super.getAccount(address);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void trackLazilyCreatedAccount(final Address address) {
+        persistAccount(address, 0L, Wei.ZERO);
+        final UpdateTrackingAccount newMutable = new UpdateTrackingAccount<>(address, null);
+        track(newMutable);
+    }
+
     private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
@@ -128,12 +134,12 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     /**
-     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
-     * the given address is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based address value of a given account.
+     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if the given address
+     * is the mirror address of an account with an EIP-1014 address. We refer to canonicalAddress as the alias/evm based
+     * address value of a given account.
      *
      * @param evmAddress an EVM address
-     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
-     *     this account
+     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for this account
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));

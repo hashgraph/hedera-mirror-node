@@ -28,6 +28,8 @@ paths:
       summary: Get account by alias, id, or evm address
       description: |
         Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
+        When the timestamp parameter is supplied, we will return transactions and account state for the relevant timestamp query. Balance information will be accurate to within 15 minutes of the provided timestamp query.
+        Historical stake and reward information is not currently available so these fields contain current data. Historical ethereum nonce information is also currently not available and may not be the exact value at a provided timestamp.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
@@ -306,16 +308,17 @@ paths:
 
         **The table below defines the restrictions and support for the endpoint**
 
-        | Estimate         | Operation Type                                               | Services Version | Mirror Node Version                 |
-        | -------------    | ------------------------------------------------------------ | ---------------- | ---------------------------------   |
-        | false            | static contract state reads for non precompile functions     | 0.36+             | 0.78+                              |
-        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll  | 0.37+   | 0.78+             |
-        |                  | static contract state reads for precompile functions with allowance  | 0.37+  | 0.79+                                 |
-        |                  | static contract state reads for precompile functions with isApprovedForAll | 0.38+ | 0.81+                            |
-        |                  | non-static contract state reads for non precompile functions | 0.37+ | 0.80+                                          |
-        |                  | non-static contract state reads for precompile functions | Not supported  | Not supported                             |
-        | true             | non-static contract state reads or modifications for non precompile functions     | Not supported  | Not supported    |
-        |                  | non-static contract state reads or modifications for precompile functions     | Not supported  | Not supported        |
+        | Estimate         | Operation Type                                                                                               | Mirror Node Version                     |
+        | -------------    | -----------------------------------------------------------------------------------------------------------  | ----------------------------------------|
+        | false            | static contract state reads for non precompile functions                                                     | 0.78+                                   |
+        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll                       | 0.78+                                   |
+        |                  | static contract state reads for precompile functions with allowance                                          | 0.79+                                   |
+        |                  | static contract state reads for precompile functions with isApprovedForAll                                   | 0.81+                                   |
+        |                  | non-static contract state reads for non precompile functions                                                 | 0.83+                                   |
+        |                  | non-static contract state reads for precompile functions                                                     | 0.83+                                   |
+        | true             | non-static contract state reads and modifications for non precompile functions except lazy account creation  | 0.83+                                   |
+        |                  | non-static contract state reads and modifications for non precompile functions with lazy account creation    | Not supported                           |
+        |                  | non-static contract state reads and modifications for precompile functions                                   | Not supported                           |
 
         The operations types which are not currently supported should return 501 error status.
 
@@ -1255,7 +1258,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.83.0-SNAPSHOT
+  version: 0.84.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -2784,24 +2787,30 @@ components:
         nonce:
           type: integer
           minimum: 0
-        transaction_id:
-          type: string
         receiver_account_id:
           $ref: "#/components/schemas/EntityId"
         sender_account_id:
           $ref: "#/components/schemas/EntityId"
+        transaction_id:
+          type: string
         type:
           $ref: "#/components/schemas/TransactionTypes"
-        token_id:
-          $ref: "#/components/schemas/EntityId"
       example:
         consensus_timestamp: "1618591023.997420021"
-        id: "0.0.19789-1618591023-997420021"
         is_approval: false
+        nonce: 0
         receiver_account_id: "0.0.11"
         sender_account_id: "0.0.10"
+        transaction_id: "0.0.19789-1618591023-997420021"
         type: "CRYPTOTRANSFER"
-        token_id: "0.0.1000"
+      required:
+        - consensus_timestamp
+        - is_approval
+        - nonce
+        - receiver_account_id
+        - sender_account_id
+        - transaction_id
+        - type
     Block:
       type: object
       properties:
@@ -2866,6 +2875,9 @@ components:
             $ref: "#/components/schemas/NftTransactionTransfer"
         links:
           $ref: "#/components/schemas/Links"
+      required:
+        - transactions
+        - links
     Schedule:
       type: object
       properties:
@@ -3328,6 +3340,29 @@ components:
           type: string
         name:
           $ref: "#/components/schemas/TransactionTypes"
+        nft_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              is_approval:
+                type: boolean
+              receiver_account_id:
+                $ref: "#/components/schemas/EntityId"
+              sender_account_id:
+                $ref: "#/components/schemas/EntityId"
+              serial_number:
+                example: 1
+                format: int64
+                type: integer
+              token_id:
+                $ref: "#/components/schemas/EntityId"
+            required:
+              - is_approval
+              - receiver_account_id
+              - sender_account_id
+              - token_id
+              - serial_number
         node:
           $ref: "#/components/schemas/EntityId"
         nonce:
@@ -3391,6 +3426,17 @@ components:
         max_fee: 33
         memo_base64: null
         name: CRYPTOTRANSFER
+        nft_transfers:
+          - is_approval: true
+            receiver_account_id: 0.0.121
+            sender_account_id: 0.0.122
+            serial_number: 1
+            token_id: 0.0.123
+          - is_approval: true
+            receiver_account_id: 0.0.321
+            sender_account_id: 0.0.422
+            serial_number: 2
+            token_id: 0.0.123
         node: 0.0.3
         nonce: 0
         parent_consensus_timestamp: "1234567890.000000007"
@@ -3451,25 +3497,6 @@ components:
                       $ref: "#/components/schemas/EntityId"
                   token_id:
                     $ref: "#/components/schemas/EntityId"
-            nft_transfers:
-              type: array
-              items:
-                type: object
-                properties:
-                  is_approval:
-                    type: boolean
-                  receiver_account_id:
-                    $ref: "#/components/schemas/EntityId"
-                  sender_account_id:
-                    $ref: "#/components/schemas/EntityId"
-                  serial_number:
-                    format: int64
-                    type: integer
-                  token_id:
-                    $ref: "#/components/schemas/EntityId"
-                required:
-                  - serial_number
-                  - token_id
       example:
         assessed_custom_fees:
           - amount: 100

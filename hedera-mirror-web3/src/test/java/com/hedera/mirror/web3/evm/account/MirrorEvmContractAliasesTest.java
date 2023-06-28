@@ -19,21 +19,32 @@ package com.hedera.mirror.web3.evm.account;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.services.jproto.JKey;
+import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -223,5 +234,27 @@ class MirrorEvmContractAliasesTest {
     @Test
     void isInUseShouldBeFalseIfNotInAliasesOrPending() {
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
+    }
+
+    @Test
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
+        final byte[] ECDSA_PUBLIC_KEY =
+                Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+        Address recoveredAddress = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        JKey jKey = JKey.mapKey(key);
+        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, ADDRESS);
+
+        try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
+            utilities
+                    .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
+                    .thenReturn(new byte[0]);
+            assertTrue(mirrorEvmContractAliases.isInUse(recoveredAddress));
+        }
+    }
+
+    @Test
+    void ignoresNullKeys() {
+        assertFalse(mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS));
     }
 }

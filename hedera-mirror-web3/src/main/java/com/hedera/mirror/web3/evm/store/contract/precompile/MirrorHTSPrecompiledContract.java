@@ -16,72 +16,27 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
-import static com.hedera.mirror.web3.evm.store.contract.precompile.PrecompileMapper.UNSUPPORTED_ERROR;
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.store.contracts.precompile.Precompile;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.function.UnaryOperator;
-import lombok.CustomLog;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-@CustomLog
+/**
+ * This class would serve as a bridge between hedera-evm and the other libraries from services that would contain the precompile logic.
+ * Currently, the adapter implementation resides in com.hedera.services package but would be removed once we start depending on the new modules from services.
+ */
 public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
-    public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
-            null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
-    private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-    private final MirrorNodeEvmProperties evmProperties;
-    private final EvmInfrastructureFactory infrastructureFactory;
-    private final PrecompileMapper precompileMapper;
-    private Precompile precompile;
-    private long gasRequirement = 0L;
-    private HederaEvmStackedWorldStateUpdater updater;
-    private ViewGasCalculator viewGasCalculator;
-    private TokenAccessor tokenAccessor;
+    private final HTSPrecompiledContractAdapter htsPrecompiledContractAdapter;
 
     public MirrorHTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
-            final MirrorNodeEvmProperties evmProperties,
-            final PrecompileMapper precompileMapper) {
+            final HTSPrecompiledContractAdapter htsPrecompiledContractAdapter) {
         super(infrastructureFactory);
-        this.infrastructureFactory = infrastructureFactory;
-        this.evmProperties = evmProperties;
-        this.precompileMapper = precompileMapper;
-    }
-
-    private static boolean isDelegateCall(final MessageFrame frame) {
-        final var contract = frame.getContractAddress();
-        final var recipient = frame.getRecipientAddress();
-        return !contract.equals(recipient);
-    }
-
-    static boolean isToken(final MessageFrame frame, final Address address) {
-        final var account = frame.getWorldUpdater().get(address);
-        if (account != null) {
-            return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
-        }
-        return false;
+        this.htsPrecompiledContractAdapter = htsPrecompiledContractAdapter;
     }
 
     @Override
@@ -90,138 +45,6 @@ public class MirrorHTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final MessageFrame frame,
             final ViewGasCalculator viewGasCalculator,
             final TokenAccessor tokenAccessor) {
-        this.viewGasCalculator = viewGasCalculator;
-        this.tokenAccessor = tokenAccessor;
-
-        if (frame.isStatic()) {
-            if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
-                frame.setRevertReason(STATIC_CALL_REVERT_REASON);
-                return Pair.of(defaultGas(), null);
-            }
-
-            return super.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
-        }
-        final var result = computePrecompile(input, frame);
-        return Pair.of(gasRequirement, result.getOutput());
-    }
-
-    @NonNull
-    @Override
-    public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
-        /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
-        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
-        After the Precompile classes are implemented, this workaround won't be needed. */
-        if (isTokenProxyRedirect(input) || isViewFunction(input)) {
-            return handleReadsFromDynamicContext(input, frame);
-        }
-
-        if (unqualifiedDelegateDetected(frame)) {
-            frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
-            return INVALID_DELEGATE;
-        }
-        prepareFields(frame);
-        try {
-            prepareComputation(input, updater::unaliased);
-        } catch (final NoSuchElementException e) {
-            final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
-            frame.setExceptionalHaltReason(Optional.of(haltReason));
-            return PrecompileContractResult.halt(null, Optional.of(haltReason));
-        }
-
-        final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now);
-        final Bytes result = computeInternal(frame);
-
-        return result == null
-                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompiledContract.PrecompileContractResult.success(result);
-    }
-
-    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
-        // if the first message frame is not a delegate, it's not a delegate
-        if (!isDelegateCall(frame)) {
-            return false;
-        }
-
-        final var recipient = frame.getRecipientAddress();
-        // but we accept delegates iff the token redirect contract calls us,
-        // so if they are not a token, or on the permitted callers list, then
-        // we are a delegate and we are done.
-        if (isToken(frame, recipient)) {
-            // make sure we have a parent calling context
-            final var stack = frame.getMessageFrameStack();
-            final var frames = stack.iterator();
-            frames.next();
-            if (!frames.hasNext()) {
-                // Impossible to get here w/o a catastrophic EVM bug
-                log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
-                return false;
-            }
-            // If the token redirect contract was called via delegate, then it's a delegate
-            return isDelegateCall(frames.next());
-        }
-        return true;
-    }
-
-    protected Bytes computeInternal(final MessageFrame frame) {
-        Bytes result;
-        try {
-            validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
-
-            precompile.handleSentHbars(frame);
-            precompile.run(frame);
-
-            result = precompile.getSuccessResultFor();
-        } catch (final InvalidTransactionException e) {
-            final var status = e.getResponseCode();
-            result = precompile.getFailureResultFor(status);
-            if (e.isReverting()) {
-                frame.setState(MessageFrame.State.REVERT);
-                frame.setRevertReason(e.getRevertReason());
-            }
-        } catch (final Exception e) {
-            log.warn("Internal precompile failure", e);
-            result = precompile.getFailureResultFor(FAIL_INVALID);
-        }
-
-        return result;
-    }
-
-    void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final int functionId = input.getInt(0);
-        this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-
-        precompile.body(input, aliasResolver);
-        gasRequirement = defaultGas();
-    }
-
-    void prepareFields(final MessageFrame frame) {
-        this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-        this.updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
-    }
-
-    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
-            final Bytes input, @NonNull final MessageFrame frame) {
-        Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
-        if (isTokenProxyRedirect(input)) {
-            final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
-            resultFromExecutor = executor.computeCosted();
-
-            if (resultFromExecutor.getRight() == null) {
-                throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-            }
-
-        } else if (isViewFunction(input)) {
-            final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
-            resultFromExecutor = executor.computeCosted();
-        }
-        return resultFromExecutor == null
-                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
-    }
-
-    private long defaultGas() {
-        return evmProperties.getHtsDefaultGasCost();
+        return htsPrecompiledContractAdapter.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
     }
 }

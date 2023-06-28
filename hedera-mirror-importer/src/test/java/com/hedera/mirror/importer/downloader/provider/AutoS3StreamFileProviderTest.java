@@ -85,6 +85,18 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         return TestUtils.nodePath(node, nodeInfo.pathType, StreamType.RECORD);
     }
 
+    @Override
+    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
+        var nodeInfo = getNodeInfo(node);
+        return nodeInfo.pathType == PathType.ACCOUNT_ID
+                ? TestUtils.accountIdStreamFileProviderPath(node, StreamType.RECORD, fileName)
+                : TestUtils.nodeIdStreamFileProviderPath(
+                        node,
+                        StreamType.RECORD,
+                        fileName,
+                        properties.getMirrorProperties().getNetwork());
+    }
+
     @Test
     void nodeAccountIdToNodeIdListTransition() throws Exception {
         var node = node("0.0.3");

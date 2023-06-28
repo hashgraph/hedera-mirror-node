@@ -23,8 +23,10 @@ import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
 import com.hedera.mirror.grpc.repository.AddressBookRepository;
+import com.hedera.mirror.grpc.repository.NodeStakeRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,12 +49,14 @@ import reactor.retry.Repeat;
 public class NetworkServiceImpl implements NetworkService {
 
     static final String INVALID_FILE_ID = "Not a valid address book file";
+    private static final long NODE_STAKE_EMPTY_TABLE_TIMESTAMP = 0L;
     private static final Collection<EntityId> VALID_FILE_IDS =
             Set.of(EntityId.of(0L, 0L, 101L, EntityType.FILE), EntityId.of(0L, 0L, 102L, EntityType.FILE));
 
     private final AddressBookProperties addressBookProperties;
     private final AddressBookRepository addressBookRepository;
     private final AddressBookEntryRepository addressBookEntryRepository;
+    private final NodeStakeRepository nodeStakeRepository;
     private final TransactionOperations transactionOperations;
 
     @Override
@@ -62,10 +66,12 @@ public class NetworkServiceImpl implements NetworkService {
             throw new IllegalArgumentException(INVALID_FILE_ID);
         }
 
-        long timestamp = addressBookRepository
+        long addressBookTimestamp = addressBookRepository
                 .findLatestTimestamp(fileId.getId())
                 .orElseThrow(() -> new EntityNotFoundException(fileId));
-        var context = new AddressBookContext(timestamp);
+        long nodeStakeTimestamp = nodeStakeRepository.findLatestTimestamp().orElse(NODE_STAKE_EMPTY_TABLE_TIMESTAMP);
+        var nodeStakeMap = nodeStakeRepository.findAllStakeByConsensusTimestamp(nodeStakeTimestamp);
+        var context = new AddressBookContext(addressBookTimestamp, nodeStakeMap);
 
         return Flux.defer(() -> page(context))
                 .repeatWhen(Repeat.onlyIf(c -> !context.isComplete())
@@ -80,14 +86,20 @@ public class NetworkServiceImpl implements NetworkService {
 
     private Flux<AddressBookEntry> page(AddressBookContext context) {
         return transactionOperations.execute(t -> {
-            var timestamp = context.getTimestamp();
+            var addressBookTimestamp = context.getAddressBookTimestamp();
+            var nodeStakeMap = context.getNodeStakeMap();
             var nextNodeId = context.getNextNodeId();
             var pageSize = addressBookProperties.getPageSize();
-            var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
+            var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(
+                    addressBookTimestamp, nextNodeId, pageSize);
             var endpoints = new AtomicInteger(0);
 
-            // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
-            nodes.forEach(e -> endpoints.addAndGet(e.getServiceEndpoints().size()));
+            nodes.forEach(node -> {
+                // Override node stake
+                node.setStake(nodeStakeMap.getOrDefault(node.getNodeId(), 0L));
+                // This hack ensures that the nested serviceEndpoints is loaded eagerly and voids lazy init exceptions
+                endpoints.addAndGet(node.getServiceEndpoints().size());
+            });
 
             if (nodes.size() < pageSize) {
                 context.completed();
@@ -97,19 +109,20 @@ public class NetworkServiceImpl implements NetworkService {
                     "Retrieved {} address book entries and {} endpoints for timestamp {} and node ID {}",
                     nodes.size(),
                     endpoints,
-                    timestamp,
+                    addressBookTimestamp,
                     nextNodeId);
             return Flux.fromIterable(nodes);
         });
     }
 
     @Value
-    private class AddressBookContext {
+    private static class AddressBookContext {
 
         private final AtomicBoolean complete = new AtomicBoolean(false);
         private final AtomicLong count = new AtomicLong(0L);
         private final AtomicReference<AddressBookEntry> last = new AtomicReference<>();
-        private final long timestamp;
+        private final long addressBookTimestamp;
+        private final Map<Long, Long> nodeStakeMap;
 
         void onNext(AddressBookEntry entry) {
             count.incrementAndGet();
