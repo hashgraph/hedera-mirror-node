@@ -16,22 +16,6 @@
 
 package com.hedera.services.store.tokens;
 
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
-import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.exceptions.MissingEntityException;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.models.*;
-import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.utils.BitPackUtils.*;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -41,6 +25,25 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.exceptions.MissingEntityException;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.*;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class HederaTokenStoreTest {
     //    private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
@@ -55,8 +58,8 @@ class HederaTokenStoreTest {
     private static final long expiry = CONSENSUS_NOW + 1_234_567L;
     private static final long treasuryBalance = 50_000L;
     private static final long sponsorBalance = 1_000L;
-    private static final TokenID misc = IdUtils.asToken("0.0.1");
-    private static final TokenID nonfungible = IdUtils.asToken("0.0.2");
+    private static final TokenID misc = EntityIdUtils.asToken("0.0.1");
+    private static final TokenID nonfungible = EntityIdUtils.asToken("0.0.2");
     private static final int maxAutoAssociations = 1234;
     private static final int alreadyUsedAutoAssocitaions = 123;
     private static final long newAutoRenewPeriod = 2_000_000L;
@@ -69,8 +72,8 @@ class HederaTokenStoreTest {
     private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
     private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
     private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
-    private static final TokenID created = IdUtils.asToken("0.0.666666");
-    private static final TokenID pending = IdUtils.asToken("0.0.555555");
+    private static final TokenID created = EntityIdUtils.asToken("0.0.666666");
+    private static final TokenID pending = EntityIdUtils.asToken("0.0.555555");
     private static final TokenRelationshipKey sponsorMisc = asTokenRelationshipKey(sponsor, misc);
     private static final TokenRelationshipKey treasuryNft = asTokenRelationshipKey(primaryTreasury, nonfungible);
     private static final TokenRelationshipKey newTreasuryNft = asTokenRelationshipKey(newTreasury, nonfungible);
@@ -186,8 +189,7 @@ class HederaTokenStoreTest {
 
     @Test
     void getThrowsIseOnMissing() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
         assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
     }
@@ -211,8 +213,7 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsMissingToken() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
                 .willReturn(new Account(Id.fromGrpcAccount(sponsor), 0));
 
@@ -238,8 +239,7 @@ class HederaTokenStoreTest {
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, account));
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         final var status = subject.autoAssociate(sponsor, misc);
 
@@ -255,8 +255,7 @@ class HederaTokenStoreTest {
                 .willReturn(new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L)));
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
                 .willReturn(account.setNumAssociations(associatedTokensCount));
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(mirrorNodeEvmProperties.isLimitTokenAssociations()).willReturn(true);
         given(mirrorNodeEvmProperties.getMaxTokensPerAccount()).willReturn(associatedTokensCount);
 
@@ -277,8 +276,7 @@ class HederaTokenStoreTest {
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L)));
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         var status = subject.autoAssociate(sponsor, misc);
         assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
@@ -408,8 +406,7 @@ class HederaTokenStoreTest {
                         updated1CounterpartyAccount);
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
 
-        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.THROW)).willReturn(token);
         given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.DONT_THROW))
                 .willReturn(token);
 
@@ -706,8 +703,7 @@ class HederaTokenStoreTest {
         var account = new Account(Id.fromGrpcAccount(sponsor), 0);
 
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
         final var status = subject.adjustBalance(sponsor, misc, 1);
 
@@ -720,8 +716,7 @@ class HederaTokenStoreTest {
         var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         final var status = subject.adjustBalance(treasury, misc, 1);
 
@@ -734,8 +729,7 @@ class HederaTokenStoreTest {
         var token = new Token(Id.fromGrpcToken(misc)).setPaused(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         final var status = subject.adjustBalance(treasury, misc, 1);
 
@@ -748,8 +742,7 @@ class HederaTokenStoreTest {
         var token = new Token(Id.fromGrpcToken(misc)).setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
         final var status = subject.adjustBalance(treasury, misc, 1);
 
@@ -763,8 +756,7 @@ class HederaTokenStoreTest {
         var tokenRelationship = new TokenRelationship(token, account).setFrozen(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
         given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
@@ -782,8 +774,7 @@ class HederaTokenStoreTest {
         var tokenRelationship = new TokenRelationship(token, account).setKycGranted(false);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW))
-                .willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
         given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
@@ -818,7 +809,8 @@ class HederaTokenStoreTest {
                 .setAutoAssociationMetadata(setMaxAutomaticAssociationsTo(0, 0));
         var token = new Token(Id.fromGrpcToken(misc));
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+                .willReturn(account);
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
@@ -829,8 +821,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitReached() {
-        var account = new Account(Id.fromGrpcAccount(anotherFeeCollector), 0)
-                .setNumAssociations(1);
+        var account = new Account(Id.fromGrpcAccount(anotherFeeCollector), 0).setNumAssociations(1);
         account = account.setAutoAssociationMetadata(
                 setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
         account = account.setAutoAssociationMetadata(
@@ -841,7 +832,8 @@ class HederaTokenStoreTest {
                 .setKycGranted(true)
                 .setBalance(0);
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+                .willReturn(account);
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
@@ -871,22 +863,13 @@ class HederaTokenStoreTest {
                 .setBalance(0);
 
         var updatedTokenRelationship = tokenRelationship.setBalance(1);
-        var updatedAccount1 = account
-                .setNumAssociations(associatedTokensCount + 1)
+        var updatedAccount1 = account.setNumAssociations(associatedTokensCount + 1)
                 .setAutoAssociationMetadata(
-                        setAlreadyUsedAutomaticAssociationsTo(
-                                account.getAutoAssociationMetadata(), 4));
+                        setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 4));
         var updatedAccount2 = updatedAccount1.setNumPositiveBalances(numPositiveBalances + 1);
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW)).willReturn(
-                account,
-                account,
-                account,
-                account,
-                account,
-                account,
-                updatedAccount1
-        );
+        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+                .willReturn(account, account, account, account, account, account, updatedAccount1);
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
@@ -900,34 +883,58 @@ class HederaTokenStoreTest {
         verify(store).updateAccount(updatedAccount1);
         verify(store).updateAccount(updatedAccount2);
     }
-    //
-    //    @Test
-    //    void performsValidAdjustment() {
-    //        given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(1L);
-    //        given(accountsLedger.get(treasury, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-    //        given(accountsLedger.get(treasury, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
-    //
-    //        subject.adjustBalance(treasury, misc, -1);
-    //
-    //        verify(tokenRelsLedger).set(treasuryMisc, TOKEN_BALANCE, 0L);
-    //        verify(accountsLedger).set(treasury, NUM_POSITIVE_BALANCES, numPositiveBalances - 1);
-    //    }
-    //
-    //    @Test
-    //    void adaptsBehaviorToFungibleType() {
-    //        final var aa =
-    //                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-    //        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
-    //        fungibleChange.setExpectedDecimals(2);
-    //        given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(5);
-    //        given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(2);
-    //
-    //        assertEquals(2, subject.get(misc).decimals());
-    //        assertEquals(2, fungibleChange.getExpectedDecimals());
-    //
-    //        final var result = subject.tryTokenChange(fungibleChange);
-    //        Assertions.assertEquals(OK, result);
-    //    }
+
+    @Test
+    void performsValidAdjustment() {
+        var account = new Account(Id.fromGrpcAccount(treasury), 0)
+                .setNumAssociations(associatedTokensCount)
+                .setNumPositiveBalances(numPositiveBalances);
+        var token = new Token(Id.fromGrpcToken(misc));
+        var tokenRelationship = new TokenRelationship(token, account).setBalance(1);
+
+        var updatedAccount = account.setNumPositiveBalances(numPositiveBalances - 1);
+        var updatedTokenRelationship = tokenRelationship.setBalance(0);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+                .willReturn(tokenRelationship);
+
+        subject.adjustBalance(treasury, misc, -1);
+
+        verify(store).updateTokenRelationship(updatedTokenRelationship);
+        verify(store).updateAccount(updatedAccount);
+    }
+
+    @Test
+    void adaptsBehaviorToFungibleType() {
+        var account = new Account(Id.fromGrpcAccount(sponsor), 0)
+                .setNumAssociations(5)
+                .setNumPositiveBalances(2);
+        var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
+        var tokenRelationship =
+                new TokenRelationship(token, account).setFrozen(false).setKycGranted(true);
+
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+        fungibleChange.setExpectedDecimals(2);
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.THROW))
+                .willReturn(tokenRelationship);
+        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+
+        assertEquals(2, subject.get(misc).getDecimals());
+        assertEquals(2, fungibleChange.getExpectedDecimals());
+
+        final var result = subject.tryTokenChange(fungibleChange);
+        assertEquals(OK, result);
+    }
     //
     //    @Test
     //    void failsIfMismatchingDecimals() {

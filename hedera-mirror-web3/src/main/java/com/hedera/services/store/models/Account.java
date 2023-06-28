@@ -165,7 +165,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                false);
+                oldAccount.isSmartContract);
     }
 
     /**
@@ -193,7 +193,7 @@ public class Account extends HederaEvmAccount {
                 newNumPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                false);
+                oldAccount.isSmartContract);
     }
 
     /**

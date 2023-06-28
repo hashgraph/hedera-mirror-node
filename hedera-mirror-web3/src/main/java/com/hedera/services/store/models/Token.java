@@ -33,17 +33,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Copied model from hedera-services.
- *
+ * <p>
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -56,11 +52,11 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
- *
+ * <p>
  * Differences from the original:
- *     1. Added factory method that returns empty instance
- *     2. Added mapToDomain method from TokenTypesManager
- *     3. Removed OwnershipTracker
+ * 1. Added factory method that returns empty instance
+ * 2. Added mapToDomain method from TokenTypesManager
+ * 3. Removed OwnershipTracker
  */
 public class Token {
     private final Id id;
@@ -719,7 +715,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 oldToken.supplyKey,
                 oldToken.wipeKey,
@@ -762,7 +758,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 oldToken.supplyKey,
                 oldToken.wipeKey,
@@ -781,6 +777,49 @@ public class Token {
                 oldToken.name,
                 oldToken.symbol,
                 oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param decimals
+     * @return new instance of {@link Token} with updated {@link #decimals} property
+     */
+    private Token createNewTokenWithDecimals(Token oldToken, int decimals) {
+        return new Token(
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
                 oldToken.customFees);
@@ -809,9 +848,9 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param treasuryRel      - the relationship between the treasury account and the token
-     * @param metadata         - a list of user-defined metadata, related to the nft instances.
-     * @param creationTime     - the consensus time of the token mint transaction
+     * @param treasuryRel  - the relationship between the treasury account and the token
+     * @param metadata     - a list of user-defined metadata, related to the nft instances.
+     * @param creationTime - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
@@ -856,9 +895,9 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param treasuryRel-     the relationship between the treasury account and the token
-     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
-     *                         destroyed.
+     * @param treasuryRel-  the relationship between the treasury account and the token
+     * @param serialNumbers - the serial numbers, representing the unique tokens which will be
+     *                      destroyed.
      */
     public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -912,9 +951,9 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param accountRel       - the relationship between the account, which owns the tokens, and the
-     *                         token
-     * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     * @param accountRel    - the relationship between the account, which owns the tokens, and the
+     *                      token
+     * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
      */
     public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -1223,6 +1262,10 @@ public class Token {
 
     public int getDecimals() {
         return decimals;
+    }
+
+    public Token setDecimals(int decimals) {
+        return createNewTokenWithDecimals(this, decimals);
     }
 
     public long getAutoRenewPeriod() {
