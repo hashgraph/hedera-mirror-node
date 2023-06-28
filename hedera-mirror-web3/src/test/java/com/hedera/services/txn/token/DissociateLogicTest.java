@@ -16,6 +16,12 @@
 
 package com.hedera.services.txn.token;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
+
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -25,20 +31,13 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DissociateLogicTest {
@@ -196,7 +195,8 @@ class DissociateLogicTest {
 
     @Test
     void verifyDecrementedAutoAssociations() {
-        var newAccount = new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false);
+        var newAccount =
+                new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
@@ -213,7 +213,8 @@ class DissociateLogicTest {
 
     @Test
     void verifyUpdagtedNumPositiveBalance() {
-        var newAccount = new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false);
+        var newAccount =
+                new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =

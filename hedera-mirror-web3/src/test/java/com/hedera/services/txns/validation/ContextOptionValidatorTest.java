@@ -16,6 +16,11 @@
 
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -29,22 +34,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class ContextOptionValidatorTest {
 
     private final Id id = new Id(0, 0, 13);
     private final AccountID accountId = toGrpcAccountId(id);
     private final Address address = id.asEvmAddress();
+
     @Mock
     MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     Account account;
+
     @Mock
     private StoreImpl store;
+
     private ContextOptionValidator subject;
 
     @BeforeEach
@@ -61,14 +65,14 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsInvalidMetadata() {
         given(mirrorNodeEvmProperties.getMaxNftMetadataBytes()).willReturn(2);
-        assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+        assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[] {1, 2, 3, 4}));
     }
 
     @Test
     void shortCircuitsLedgerExpiryCheckIfNoExpiryEnabled() {
         account = new Account(id, 0);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
-        given(mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()).willReturn(false);
+        given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(false);
 
         assertEquals(OK, subject.expiryStatusGiven(store, accountId));
     }
@@ -77,7 +81,7 @@ class ContextOptionValidatorTest {
     void shortCircuitsLedgerExpiryCheckIfBalanceIsNonZero() {
         account = new Account(id, 1);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
-        given(mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 
         assertEquals(OK, subject.expiryStatusGiven(store, accountId));
     }
@@ -86,7 +90,7 @@ class ContextOptionValidatorTest {
     void shortCircuitsIfBalanceIsZeroButNotDetached() {
         account = new Account(id, 0).setExpiry(System.currentTimeMillis() / 1000 + 1000);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
-        given(mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 
         assertEquals(OK, subject.expiryStatusGiven(store, accountId));
     }
@@ -97,7 +101,7 @@ class ContextOptionValidatorTest {
                 .setExpiry(System.currentTimeMillis() / 1000 - 1000)
                 .setIsSmartContract(true);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
-        given(mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         assertEquals(OK, subject.expiryStatusGiven(store, accountId));
     }
 
@@ -107,8 +111,8 @@ class ContextOptionValidatorTest {
                 .setExpiry(System.currentTimeMillis() / 1000 - 1000)
                 .setIsSmartContract(true);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
-        given(mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()).willReturn(true);
-        given(mirrorNodeEvmProperties.isExpireContracts()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewContracts()).willReturn(true);
         assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expiryStatusGiven(store, accountId));
     }
 
@@ -126,14 +130,14 @@ class ContextOptionValidatorTest {
 
     @Test
     void contractIsExpiredIfZeroBalanceAndPastExpiry() {
-        given(mirrorNodeEvmProperties.isExpireContracts()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewContracts()).willReturn(true);
         final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
     void accountIsExpiredIfZeroBalanceAndDetached() {
-        given(mirrorNodeEvmProperties.isExpireAccounts()).willReturn(true);
+        given(mirrorNodeEvmProperties.shouldAutoRenewAccounts()).willReturn(true);
         final var status = subject.expiryStatusGiven(0, true, false);
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
     }

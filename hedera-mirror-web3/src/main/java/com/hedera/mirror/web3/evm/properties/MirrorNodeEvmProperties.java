@@ -19,9 +19,12 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.*;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -94,17 +97,22 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
-    @Getter
-    private boolean atLeastOneAutoRenewTargetType = false;
-
-    @Getter
-    private boolean expireAccounts = false;
-
-    @Getter
-    private boolean expireContracts = false;
+    private List<EntityType> autoRenewTargetTypes = new ArrayList<>();
 
     @Getter
     private boolean limitTokenAssociations = false;
+
+    public boolean shouldAutoRenewAccounts() {
+        return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
+    }
+
+    public boolean shouldAutoRenewContracts() {
+        return autoRenewTargetTypes.contains(EntityType.CONTRACT);
+    }
+
+    public boolean shouldAutoRenewSomeEntityType() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {

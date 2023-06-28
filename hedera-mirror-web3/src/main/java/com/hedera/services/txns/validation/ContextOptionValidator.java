@@ -16,14 +16,14 @@
 
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Copied Logic type from hedera-services. Unnecessary methods are deleted.
@@ -65,7 +65,7 @@ public class ContextOptionValidator implements OptionValidator {
 
     public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
         var account = store.getAccount(asTypedEvmAddress(id), OnMissing.THROW);
-        if (!mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()) {
+        if (!mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()) {
             return OK;
         }
         final var balance = account.getBalance();
@@ -95,7 +95,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     private boolean isExpiryDisabled(final boolean isContract) {
-        return (isContract && !mirrorNodeEvmProperties.isExpireContracts())
-                || (!isContract && !mirrorNodeEvmProperties.isExpireAccounts());
+        return (isContract && !mirrorNodeEvmProperties.shouldAutoRenewContracts())
+                || (!isContract && !mirrorNodeEvmProperties.shouldAutoRenewAccounts());
     }
 }
