@@ -40,9 +40,6 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
 
-    @NotNull
-    private HederaChainId chainId = HederaChainId.TESTNET;
-
     @Getter
     @Positive
     private long estimateGasIterationThreshold = 4200L;
@@ -120,7 +117,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return Bytes32.fromHexString(chainId.getChainId());
+        return Bytes32.fromHexString(network.getHederaChainId().chainId);
     }
 
     @Override
@@ -141,12 +138,13 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(unhex("00")),
-        TESTNET(unhex("01")),
-        PREVIEWNET(unhex("02")),
-        OTHER(unhex("03"));
+        MAINNET(unhex("00"), HederaChainId.MAINNET),
+        TESTNET(unhex("01"), HederaChainId.TESTNET),
+        PREVIEWNET(unhex("02"), HederaChainId.PREVIEWNET),
+        OTHER(unhex("03"), HederaChainId.OTHER);
 
         private final byte[] ledgerId;
+        private final HederaChainId hederaChainId;
     }
 
     @Getter
