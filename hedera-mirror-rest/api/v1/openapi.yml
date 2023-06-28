@@ -916,7 +916,7 @@ paths:
             type: string
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParamDesc"
-        - name: sequencenumber
+        - name: sequenceNumber
           in: query
           example: 2
           schema:
@@ -944,7 +944,7 @@ paths:
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
         - $ref: "#/components/parameters/topicIdPathParam"
-        - name: sequencenumber
+        - name: sequenceNumber
           in: path
           required: true
           description: Topic message sequence number
