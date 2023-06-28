@@ -79,7 +79,7 @@ public class AssociateLogic {
             TokenRelationshipKey tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
-            validateFalse(hasAssociation(tokenRelationshipKey, store), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
             final var newRel = new TokenRelationship(token, updatedAccount);
             numAssociations++;
@@ -105,13 +105,5 @@ public class AssociateLogic {
 
     private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
         return totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
-    }
-
-    private boolean hasAssociation(final TokenRelationshipKey tokenRelationshipKey, final Store store) {
-        return store.getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
-                        .getAccount()
-                        .getId()
-                        .num()
-                > 0;
     }
 }

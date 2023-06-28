@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.repository;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import jakarta.inject.Named;
@@ -35,16 +35,17 @@ public class CustomFeeRepositoryImpl implements CustomFeeRepositoryExtra {
 
     public static final String SELECT_QUERY =
             "select * from custom_fee  where token_id = :tokenId and created_timestamp = (select created_timestamp from custom_fee  where token_id = :tokenId order by created_timestamp desc limit 1)";
-    private final NamedParameterJdbcTemplate jdbcTemplate;
     private static final DataClassRowMapper<CustomFee> rowMapper;
 
     static {
         var defaultConversionService = new DefaultConversionService();
         defaultConversionService.addConverter(
-                Long.class, EntityId.class, AccountIdConverter.INSTANCE::convertToEntityAttribute);
+                Long.class, EntityId.class, EntityIdConverter.INSTANCE::convertToEntityAttribute);
         rowMapper = new DataClassRowMapper<>(CustomFee.class);
         rowMapper.setConversionService(defaultConversionService);
     }
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
     public List<CustomFee> findByTokenId(Long tokenId) {

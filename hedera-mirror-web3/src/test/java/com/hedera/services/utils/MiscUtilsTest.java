@@ -143,6 +143,24 @@ class MiscUtilsTest {
     }
 
     @Test
+    void canGetSynthAccessor() {
+        final var synth = MiscUtils.synthAccessorFor(
+                TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance()));
+
+        assertEquals(CryptoTransfer, synth.getFunction());
+    }
+
+    @Test
+    void testAsPrimitiveKeyUnchecked() {
+        final var ecdsaKeyBytes = unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+        final var ecdsaKey = Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(ecdsaKeyBytes))
+                .build();
+
+        assertEquals(ecdsaKey, MiscUtils.asPrimitiveKeyUnchecked(ecdsaKey.toByteString()));
+    }
+
+    @Test
     void getsExpectedTxnFunctionality() {
         final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, Builder>> setters = new HashMap<>() {
             {

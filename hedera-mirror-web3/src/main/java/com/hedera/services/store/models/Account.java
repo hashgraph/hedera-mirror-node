@@ -16,18 +16,20 @@
 
 package com.hedera.services.store.models;
 
-import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociationsFrom;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
+
+import java.util.SortedMap;
+import java.util.SortedSet;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.BitPackUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 
 /**
  * Copied Account model from hedera-services.
@@ -280,12 +282,47 @@ public class Account extends HederaEvmAccount {
                 isSmartContract);
     }
 
+    /**
+     * Creates new instance of {@link Account} with updated balance in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newBalance
+     * @return the new instance of {@link Account} with updated {@link #balance} property
+     */
+    private Account createNewAccountWithNewBalance(Account oldAccount, long newBalance) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                newBalance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
 
     public int getAlreadyUsedAutomaticAssociations() {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+    }
+
+    public Account setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+        validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        final var updatedAutoAssociationMetadata =
+                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+        return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
     }
 
     public int getAutoAssociationMetadata() {
@@ -310,6 +347,10 @@ public class Account extends HederaEvmAccount {
 
     public long getBalance() {
         return balance;
+    }
+
+    public Account setBalance(long balance) {
+        return createNewAccountWithNewBalance(this, balance);
     }
 
     public boolean isDeleted() {
@@ -376,6 +417,11 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }
 
+    public Account decrementUsedAutomaticAssociations() {
+        var count = getAlreadyUsedAutomaticAssociations();
+        return setAlreadyUsedAutomaticAssociations(--count);
+    }
+
     @Override
     public boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
@@ -403,5 +449,9 @@ public class Account extends HederaEvmAccount {
                 .add("numAssociations", numAssociations)
                 .add("numPositiveBalances", numPositiveBalances)
                 .toString();
+    }
+
+    private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+        return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
     }
 }

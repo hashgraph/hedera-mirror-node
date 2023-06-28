@@ -19,7 +19,9 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -34,6 +36,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastruct
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -74,6 +77,9 @@ public class EvmOperationConstructionUtil {
 
     public static Map<String, Provider<MessageCallProcessor>> mcps(
             final GasCalculator gasCalculator,
+            final AbstractAutoCreationLogic autoCreationLogic,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
@@ -83,7 +89,12 @@ public class EvmOperationConstructionUtil {
                 () -> new MessageCallProcessor(evm, new PrecompileContractRegistry()),
                 EVM_VERSION_0_34,
                 () -> new MirrorEvmMessageCallProcessor(
-                        evm, new PrecompileContractRegistry(), precompiles(mirrorNodeEvmProperties, precompileMapper)));
+                        autoCreationLogic,
+                        entityAddressSequencer,
+                        mirrorEvmContractAliases,
+                        evm,
+                        new PrecompileContractRegistry(),
+                        precompiles(mirrorNodeEvmProperties, precompileMapper)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(

@@ -17,10 +17,8 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -58,7 +56,6 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
     private Boolean isApproval;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @JsonIgnore

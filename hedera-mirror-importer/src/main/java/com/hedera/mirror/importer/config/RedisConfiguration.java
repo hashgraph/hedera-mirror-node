@@ -17,6 +17,10 @@
 package com.hedera.mirror.importer.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.hedera.mirror.common.converter.EntityIdDeserializer;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.StreamMessage;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
@@ -39,7 +43,14 @@ class RedisConfiguration {
 
     @Bean
     RedisSerializer<StreamMessage> redisSerializer() {
-        return new Jackson2JsonRedisSerializer<>(new ObjectMapper(new MessagePackFactory()), StreamMessage.class);
+        var module = new SimpleModule();
+        module.addDeserializer(EntityId.class, EntityIdDeserializer.INSTANCE);
+        module.addSerializer(EntityIdSerializer.INSTANCE);
+
+        var objectMapper = new ObjectMapper(new MessagePackFactory());
+        objectMapper.registerModule(module);
+
+        return new Jackson2JsonRedisSerializer<>(objectMapper, StreamMessage.class);
     }
 
     @Bean

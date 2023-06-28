@@ -17,10 +17,7 @@
 package com.hedera.mirror.common.domain.contract;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import java.io.Serial;
@@ -44,13 +41,11 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
     @jakarta.persistence.Id
     private long consensusTimestamp;
 
-    @Convert(converter = ContractIdConverter.class)
     @jakarta.persistence.Id
     private long contractId;
 
     private boolean migration;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @jakarta.persistence.Id
