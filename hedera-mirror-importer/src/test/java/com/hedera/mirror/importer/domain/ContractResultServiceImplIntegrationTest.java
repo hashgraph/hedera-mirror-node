@@ -164,9 +164,18 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
-    // @Test
-    void processChildContractNonce() {
-        RecordItem recordItem = recordItemBuilder.contractCall().build();
+    @Test
+    void processContractNonce() {
+
+        // given
+        var entity = domainBuilder.entity().persist();
+
+        domainBuilder.contract().customize(c -> c.id(entity.getId())).persist();
+
+        RecordItem recordItem = recordItemBuilder
+                .contractCall(
+                        ContractID.newBuilder().setContractNum(entity.getId()).build())
+                .build();
 
         process(recordItem);
 
@@ -175,18 +184,11 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
 
-        assertThat(contractRepository.count()).isZero();
+        assertThat(contractRepository.count()).isEqualTo(1);
         assertThat(entityRepository.findAll())
                 .hasSize(1)
                 .first()
-                .returns(400000000L, Entity::getBalance)
-                .returns(
-                        recordItem
-                                .getTransactionRecord()
-                                .getContractCallResult()
-                                .getContractID()
-                                .getContractNum(),
-                        Entity::getId)
+                .returns(entity.getId(), Entity::getId)
                 .returns(1L, Entity::getEthereumNonce);
     }
 
