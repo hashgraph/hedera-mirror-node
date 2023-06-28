@@ -256,7 +256,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         functionResult.getContractNoncesList().forEach(nonceInfo -> {
                 var contractId = EntityId.of(nonceInfo.getContractId());
                 Entity entity = contractId.toEntity();
-                entity.setBalance(0L);
                 entity.setEthereumNonce(nonceInfo.getNonce());
                 entity.setTimestampRange(null);
                 entityListener.onEntity(entity);
