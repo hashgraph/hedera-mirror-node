@@ -982,7 +982,6 @@ if (utils.isTestEnv()) {
     nftSelectQuery,
     tokenAccountCte,
     tokenAccountJoinQuery,
-    tokenBalancesSelectQuery,
     tokensSelectQuery,
     validateSerialNumberParam,
     validateTokenInfoFilter,
