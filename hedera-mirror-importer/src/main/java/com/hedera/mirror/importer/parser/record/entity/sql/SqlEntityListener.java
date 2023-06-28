@@ -400,6 +400,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // Create a non-history entity update when there's no such entity in state
             var entity = Entity.builder()
                     .id(stakingRewardTransfer.getAccountId())
+                    .memo("")
                     .stakePeriodStart(stakePeriodStart)
                     .build();
             onEntity(entity);
