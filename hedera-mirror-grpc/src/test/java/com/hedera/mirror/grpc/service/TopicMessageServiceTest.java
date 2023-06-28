@@ -18,12 +18,12 @@ package com.hedera.mirror.grpc.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
@@ -462,7 +462,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         Mockito.when(entityRepository.findById(retrieverFilter.getTopicId().getId()))
-                .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
+                .thenReturn(optionalEntity());
 
         Mockito.when(topicMessageRetriever.retrieve(
                         ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
@@ -503,7 +503,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage afterMissing = topicMessage(4);
 
         Mockito.when(entityRepository.findById(filter.getTopicId().getId()))
-                .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
+                .thenReturn(optionalEntity());
         Mockito.when(topicMessageRetriever.retrieve(filter, true)).thenReturn(Flux.empty());
         Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
         Mockito.when(topicMessageRetriever.retrieve(
@@ -602,7 +602,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage afterMissing3 = topicMessage(10);
 
         Mockito.when(entityRepository.findById(retrieverFilter.getTopicId().getId()))
-                .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
+                .thenReturn(optionalEntity());
 
         TopicMessageFilter listenerFilter = TopicMessageFilter.builder()
                 .startTime(retrieved2.getConsensusTimestampInstant())
@@ -655,7 +655,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         // mock entity type check
         Mockito.when(entityRepository.findById(filter.getTopicId().getId()))
-                .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
+                .thenReturn(optionalEntity());
         Mockito.when(topicMessageRetriever.retrieve(filter, true)).thenReturn(Flux.just(retrieved1, retrieved2));
 
         TopicMessageFilter listenerFilter = TopicMessageFilter.builder()
@@ -689,5 +689,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(100)
                 .runningHashVersion(2)
                 .build();
+    }
+
+    private Optional<Entity> optionalEntity() {
+        return Optional.of(Entity.builder()
+                .type(EntityType.TOPIC)
+                .memo("memo")
+                .build());
     }
 }

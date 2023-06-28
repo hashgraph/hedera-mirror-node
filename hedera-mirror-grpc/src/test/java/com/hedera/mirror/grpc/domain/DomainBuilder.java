@@ -17,6 +17,7 @@
 package com.hedera.mirror.grpc.domain;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -59,8 +62,10 @@ public class DomainBuilder {
         return entity(e -> {});
     }
 
-    public Mono<Entity> entity(Consumer<Entity.EntityBuilder> customizer) {
-        Entity.EntityBuilder builder = Entity.builder()
+    public Mono<Entity> entity(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
+        Entity.EntityBuilder<?, ?> builder = Entity.builder()
+                .declineReward(RandomUtils.nextBoolean())
+                .memo(text(16))
                 .num(0L)
                 .realm(0L)
                 .shard(0L)
@@ -125,5 +130,9 @@ public class DomainBuilder {
     private Mono<TopicMessage> insert(TopicMessage topicMessage) {
         return Mono.defer(() -> Mono.just(topicMessageRepository.save(topicMessage)))
                 .doOnNext(t -> log.trace("Inserted: {}", t));
+    }
+
+    public String text(int characters) {
+        return RandomStringUtils.randomAlphanumeric(characters);
     }
 }

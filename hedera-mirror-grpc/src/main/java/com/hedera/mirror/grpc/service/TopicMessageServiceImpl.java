@@ -17,10 +17,10 @@
 package com.hedera.mirror.grpc.service;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcProperties;
-import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
@@ -97,7 +97,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                         grpcProperties.isCheckTopicExists()
                                 ? Mono.error(new EntityNotFoundException(topicId))
                                 : Mono.just(
-                                        Entity.builder().type(EntityType.TOPIC).build()))
+                                        Entity.builder().memo("").type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }

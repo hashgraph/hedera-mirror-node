@@ -27,10 +27,13 @@ import java.util.concurrent.TimeUnit;
 import net.devh.boot.grpc.server.serverfactory.GrpcServerConfigurer;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EntityScan({"com.hedera.mirror.common.domain.addressbook", "com.hedera.mirror.grpc.domain"})
+@ComponentScan({"com.hedera.mirror.common.converter", "com.hedera.mirror.common.domain.entity"})
+@EntityScan({"com.hedera.mirror.common.domain.addressbook", "com.hedera.mirror.common.domain.entity",
+             "com.hedera.mirror.grpc.domain"})
 class GrpcConfiguration {
 
     @Bean

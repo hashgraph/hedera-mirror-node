@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.grpc.converter;
+package com.hedera.mirror.common.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
