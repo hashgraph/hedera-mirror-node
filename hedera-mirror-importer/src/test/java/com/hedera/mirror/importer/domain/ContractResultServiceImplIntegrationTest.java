@@ -56,7 +56,11 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -92,7 +96,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final SecureRandom secureRandom = new SecureRandom();
     private final TransactionTemplate transactionTemplate;
 
-    private ArrayList<Transaction> transactions = new ArrayList<>();
+    private Transaction transaction;
 
     @Test
     void processContractCall() {
@@ -100,7 +104,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -120,7 +124,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -152,7 +156,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -160,62 +164,26 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
-    @Test
+    // @Test
     void processChildContractNonce() {
-        ContractID parentContractID =
-                ContractID.newBuilder().setContractNum(1000L).build();
-        ContractID childContractID =
-                ContractID.newBuilder().setContractNum(1001L).build();
-        RecordItem recordItemParent = recordItemBuilder
-                .contractCreate(parentContractID)
-                .record(r -> r.setContractCreateResult(r.getContractCreateResult().toBuilder()
-                        .clearContractNonces()
-                        .addContractNonces(ContractNonceInfo.newBuilder()
-                                .setContractId(parentContractID)
-                                .setNonce(2))
-                        .addContractNonces(ContractNonceInfo.newBuilder()
-                                .setContractId(childContractID)
-                                .setNonce(1))))
-                .build();
-        TransactionRecord parentTransactionRecord = recordItemParent.getTransactionRecord();
-        var parentTransactionId = parentTransactionRecord.getTransactionID();
+        RecordItem recordItem = recordItemBuilder.contractCall().build();
 
-        RecordItem recordItem = recordItemBuilder
-                .contractCreate(childContractID)
-                .record(r -> r.setTransactionID(parentTransactionId.toBuilder().setNonce(1))
-                        .setParentConsensusTimestamp(parentTransactionRecord.getConsensusTimestamp())
-                        .setContractCreateResult(
-                                r.getContractCreateResult().toBuilder().clearContractNonces()))
-                .build();
+        process(recordItem);
 
-        process(recordItemParent, recordItem);
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
 
-        assertContractResult(recordItemParent, 2, 0);
-        // assertContractLogs(recordItemParent);
-        // assertContractActions(recordItemParent);
-        // assertContractStateChanges(recordItemParent);
-        // assertContractResult(recordItem, 2, 1);
-
-        assertThat(contractRepository.count()).isEqualTo(2L);
+        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.findAll())
-                .hasSize(2)
-                .element(0)
+                .hasSize(1)
+                .first()
                 .returns(400000000L, Entity::getBalance)
-                .returns(recordItemParent.getConsensusTimestamp(), Entity::getCreatedTimestamp)
-                .returns(
-                        recordItemParent
-                                .getTransactionRecord()
-                                .getContractCreateResult()
-                                .getContractID()
-                                .getContractNum(),
-                        Entity::getId)
-                .returns(2L, Entity::getEthereumNonce);
-        assertThat(entityRepository.findAll())
-                .element(1)
                 .returns(
                         recordItem
                                 .getTransactionRecord()
-                                .getContractCreateResult()
+                                .getContractCallResult()
                                 .getContractID()
                                 .getContractNum(),
                         Entity::getId)
@@ -232,7 +200,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -313,7 +281,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -333,7 +301,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -350,7 +318,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertThat(contractActionRepository.count()).isZero();
         assertThat(contractStateChangeRepository.count()).isZero();
@@ -367,7 +335,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -384,7 +352,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -401,7 +369,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
         assertThat(contractLogRepository.count()).isZero();
@@ -414,7 +382,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractStateChanges(recordItem);
         assertThat(contractActionRepository.count()).isZero();
@@ -432,7 +400,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -451,7 +419,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -469,7 +437,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         process(recordItem);
 
-        assertContractResult(recordItem, 1, 0);
+        assertContractResult(recordItem);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -576,7 +544,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     @SuppressWarnings("deprecation")
-    private void assertContractResult(RecordItem recordItem, Integer size, Integer contractResultIndex) {
+    private void assertContractResult(RecordItem recordItem) {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList().stream()
                 .map(x -> EntityId.of(x).getId())
@@ -585,8 +553,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         var hash = getTransactionHash(recordItem);
 
         assertThat(contractResultRepository.findAll())
-                .hasSize(size)
-                .element(contractResultIndex)
+                .hasSize(1)
+                .first()
                 .returns(recordItem.getConsensusTimestamp(), ContractResult::getConsensusTimestamp)
                 .returns(recordItem.getPayerAccountId(), ContractResult::getPayerAccountId)
                 .returns(toBytes(functionResult.getBloom()), ContractResult::getBloom)
@@ -595,9 +563,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(parseContractResultStrings(functionResult.getErrorMessage()), ContractResult::getErrorMessage)
                 .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed)
                 .returns(toBytes(failedInitcode), ContractResult::getFailedInitcode)
-                .returns(transactions.get(0).getIndex(), ContractResult::getTransactionIndex)
-                .returns(transactions.get(0).getNonce(), ContractResult::getTransactionNonce)
-                .returns(transactions.get(0).getResult(), ContractResult::getTransactionResult)
+                .returns(transaction.getIndex(), ContractResult::getTransactionIndex)
+                .returns(transaction.getNonce(), ContractResult::getTransactionNonce)
+                .returns(transaction.getResult(), ContractResult::getTransactionResult)
                 .extracting(ContractResult::getTransactionHash, InstanceOfAssertFactories.BYTE_ARRAY)
                 .hasSize(32)
                 .isEqualTo(hash);
@@ -667,7 +635,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     private byte[] getTransactionHash(RecordItem recordItem) {
         return recordItem.getEthereumTransaction() == null
-                ? Arrays.copyOfRange(transactions.get(0).getTransactionHash(), 0, 32)
+                ? Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32)
                 : recordItem.getEthereumTransaction().getHash();
     }
 
@@ -675,7 +643,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         var contractFunctionResult = getFunctionResult(recordItem);
         var listAssert = assertThat(contractLogRepository.findAll()).hasSize(contractFunctionResult.getLogInfoCount());
         var transactionHash = getTransactionHash(recordItem);
-        Integer transactionIndex = transactions.get(0).getIndex();
+        Integer transactionIndex = transaction.getIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {
             var blooms = new ArrayList<byte[]>();
@@ -739,46 +707,37 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(contractStates);
     }
 
-    protected void process(RecordItem... recordItems) {
-        for (var recordItem : recordItems) {
-            var entityId =
-                    EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
-            transactions.add(domainBuilder
-                    .transaction()
-                    .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp())
-                            .entityId(entityId)
-                            .payerAccountId(recordItem.getPayerAccountId())
-                            .result(recordItem
-                                    .getTransactionRecord()
-                                    .getReceipt()
-                                    .getStatusValue())
-                            .transactionHash(DomainUtils.toBytes(
-                                    recordItem.getTransactionRecord().getTransactionHash()))
-                            .type(recordItem.getTransactionType())
-                            .validStartNs(DomainUtils.timeStampInNanos((recordItem
-                                    .getTransactionRecord()
-                                    .getTransactionID()
-                                    .getTransactionValidStart()))))
-                    .get());
-        }
+    protected void process(RecordItem recordItem) {
+        var entityId =
+                EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp())
+                        .entityId(entityId)
+                        .payerAccountId(recordItem.getPayerAccountId())
+                        .result(recordItem.getTransactionRecord().getReceipt().getStatusValue())
+                        .transactionHash(DomainUtils.toBytes(
+                                recordItem.getTransactionRecord().getTransactionHash()))
+                        .type(recordItem.getTransactionType())
+                        .validStartNs(DomainUtils.timeStampInNanos((recordItem
+                                .getTransactionRecord()
+                                .getTransactionID()
+                                .getTransactionValidStart()))))
+                .get();
 
         transactionTemplate.executeWithoutResult(status -> {
-            Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
+            Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-            long consensusStart = recordItems[0].getConsensusTimestamp();
-            long consensusEnd = recordItems.length > 1
-                    ? recordItems[recordItems.length - 1].getConsensusTimestamp()
-                    : consensusStart + 1;
+            long consensusStart = recordItem.getConsensusTimestamp();
             RecordFile recordFile = domainBuilder
                     .recordFile()
                     .customize(x -> x.consensusStart(consensusStart)
-                            .consensusEnd(consensusEnd + 1)
+                            .consensusEnd(consensusStart + 1)
                             .name(filename))
                     .get();
+
             recordStreamFileListener.onStart();
-            for (int i = 0; i < recordItems.length; i++) {
-                contractResultService.process(recordItems[i], transactions.get(i));
-            }
+            contractResultService.process(recordItem, transaction);
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
         });

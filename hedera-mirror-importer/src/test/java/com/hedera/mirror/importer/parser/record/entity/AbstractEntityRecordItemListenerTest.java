@@ -70,6 +70,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import jakarta.annotation.Resource;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -204,15 +205,18 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         assertThat(dbEntity.getType()).isEqualTo(EntityType.ACCOUNT);
     }
 
-    protected void parseRecordItemAndCommit(RecordItem recordItem) {
+    protected void parseRecordItemAndCommit(RecordItem... recordItems) {
         transactionTemplate.executeWithoutResult(status -> {
-            Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+            Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-            long consensusStart = recordItem.getConsensusTimestamp();
-            RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
+            long consensusStart = recordItems[0].getConsensusTimestamp();
+            long consensusEnd = recordItems.length > 1
+                    ? recordItems[recordItems.length - 1].getConsensusTimestamp()
+                    : consensusStart + 1;
+            RecordFile recordFile = recordFile(consensusStart, consensusEnd + 1, filename);
 
             recordStreamFileListener.onStart();
-            entityRecordItemListener.onItem(recordItem);
+            Arrays.stream(recordItems).forEach(r -> entityRecordItemListener.onItem(r));
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
         });
