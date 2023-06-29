@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.82.1'
+      version: '0.83.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -57,8 +57,4 @@ spec:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
       enabled: true
-    web3:
-      env:
-        HEDERA_MIRROR_WEB3_EVM_ALLOWANCEENABLED: "true"
-        HEDERA_MIRROR_WEB3_EVM_APPROVEDFORALLENABLED: "true"
 
