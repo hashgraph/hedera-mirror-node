@@ -17,8 +17,8 @@
 package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.store.models.Id.fromGrpcToken;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;

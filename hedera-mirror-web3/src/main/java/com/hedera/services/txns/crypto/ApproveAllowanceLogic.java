@@ -48,6 +48,14 @@ public class ApproveAllowanceLogic {
     private final Map<Long, Account> accountsChanged;
     private final Map<NftId, UniqueToken> nftsTouched;
 
+    public Map<Long, Account> getAccountsChanged() {
+        return accountsChanged;
+    }
+
+    public Map<NftId, UniqueToken> getNftsTouched() {
+        return nftsTouched;
+    }
+
     public ApproveAllowanceLogic(final Store store) {
         this.store = store;
         this.accountsChanged = new TreeMap<>();

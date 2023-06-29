@@ -27,6 +27,8 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -105,7 +107,7 @@ public class Account extends HederaEvmAccount {
      * Used for treasury accounts as those are the only fields we need.
      */
     public Account(Id id, long balance) {
-        this(id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L);
+        this(id, 0L, balance, false, 0L, 0L, null, 0, new TreeMap<>(), new TreeMap<>(), new TreeSet<>(), 0, 0, 0, 0L);
     }
 
     public static Account getEmptyAccount() {
@@ -473,5 +475,9 @@ public class Account extends HederaEvmAccount {
 
     private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
         return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+    }
+
+    public int getTotalAllowances() {
+        return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
     }
 }

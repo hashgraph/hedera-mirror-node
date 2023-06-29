@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.IdUtils.asContract;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
@@ -75,12 +76,11 @@ public class DecodingFacade {
             final var keyType = (int) tokenKeyTuple.get(0);
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
+            final var contractId = asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
+                    asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
                     new KeyValueWrapper(
