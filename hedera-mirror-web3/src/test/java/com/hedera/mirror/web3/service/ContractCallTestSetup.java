@@ -22,6 +22,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 import com.google.common.collect.Range;
@@ -37,7 +38,9 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -112,6 +115,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
     protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
     protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260, CONTRACT));
+    protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
 
@@ -158,6 +162,29 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/EthCall/State.bin")
     protected Path STATE_CONTRACT_BYTES_PATH;
 
+    @Value("classpath:contracts/EvmCodes/EvmCodes.bin")
+    protected Path EVM_CODES_BYTES_PATH;
+
+    @Value("classpath:contracts/EvmCodes/EvmCodes.json")
+    protected Path EVM_CODES_ABI_PATH;
+
+    protected CallServiceParameters serviceParametersForExecution(
+            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        persistEntities();
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .value(value)
+                .receiver(contractAddress)
+                .callData(callData)
+                .gas(15_000_000L)
+                .isStatic(false)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .build();
+    }
+
     protected long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
         return processor
                 .execute(
@@ -171,11 +198,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .getGasUsed();
     }
 
-    protected void persistEntities(boolean isRegularTransfer) {
-        if (isRegularTransfer) {
-            performRegularTransfer();
-        }
+    protected void receiverPersist() {
+        final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
+        final var receiverEvmAddress = toEvmAddress(receiverEntityId);
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(receiverEntityId.getId())
+                        .num(receiverEntityId.getEntityNum())
+                        .evmAddress(receiverEvmAddress)
+                        .type(CONTRACT))
+                .persist();
+    }
 
+    protected void persistEntities() {
+        evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
         stateContractPersist();
@@ -303,18 +339,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private void performRegularTransfer() {
-        final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
-        final var receiverEvmAddress = toEvmAddress(receiverEntityId);
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(receiverEntityId.getId())
-                        .num(receiverEntityId.getEntityNum())
-                        .evmAddress(receiverEvmAddress)
-                        .type(CONTRACT))
-                .persist();
-    }
-
     private long ethAccountPersist() {
         final var ethAccount = 358L;
 
@@ -415,6 +439,31 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .owner(senderEntityId.getEntityNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
+                .persist();
+    }
+
+    private void evmCodesContractPersist() {
+        final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(EVM_CODES_BYTES_PATH);
+        final var evmCodesContractEntityId = fromEvmAddress(EVM_CODES_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(evmCodesContractEntityId.getId())
+                        .num(evmCodesContractEntityId.getEntityNum())
+                        .evmAddress(evmCodesContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(evmCodesContractEntityId.getId()).runtimeBytecode(evmCodesContractBytes))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(evmCodesContractBytes))
                 .persist();
     }
 
