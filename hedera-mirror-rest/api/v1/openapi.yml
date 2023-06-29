@@ -944,7 +944,7 @@ paths:
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
         - $ref: "#/components/parameters/topicIdPathParam"
-        - name: sequencenumber
+        - name: sequenceNumber
           in: path
           required: true
           description: Topic message sequence number

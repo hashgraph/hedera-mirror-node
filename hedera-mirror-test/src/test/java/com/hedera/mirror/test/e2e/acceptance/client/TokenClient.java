@@ -46,15 +46,42 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class TokenClient extends AbstractNetworkClient {
 
+    private final Collection<TokenAccount> tokenAccounts = new CopyOnWriteArrayList<>();
+    private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
+
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
+    }
+
+    @Override
+    public void clean() {
+        var admin = sdkClient.getExpandedOperatorAccountId();
+        log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), tokenAccounts.size());
+
+        for (var tokenId : tokenIds) {
+            delete(admin, tokenId);
+        }
+
+        for (var tokenAccount : tokenAccounts) {
+            dissociate(tokenAccount.accountId, tokenAccount.tokenId);
+        }
+
+        tokenIds.clear();
+        tokenAccounts.clear();
+    }
+
+    @Override
+    public int getOrder() {
+        return -1;
     }
 
     public NetworkTransactionResponse createToken(
@@ -171,6 +198,8 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
         log.info("Created new fungible token {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        tokenIds.add(tokenId);
+        tokenAccounts.add(new TokenAccount(tokenId, treasuryAccount));
         return response;
     }
 
@@ -199,6 +228,8 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
         log.info("Created new NFT {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        tokenIds.add(tokenId);
+        tokenAccounts.add(new TokenAccount(tokenId, treasuryAccount));
         return response;
     }
 
@@ -211,6 +242,7 @@ public class TokenClient extends AbstractNetworkClient {
         var keyList = KeyList.of(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
         log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
+        tokenAccounts.add(new TokenAccount(token, accountId));
         return response;
     }
 
@@ -448,6 +480,7 @@ public class TokenClient extends AbstractNetworkClient {
         var keyList = KeyList.of(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
         log.info("Dissociated account {} from token {} via {}", accountId, token, response.getTransactionId());
+        tokenAccounts.remove(new TokenAccount(token, accountId));
         return response;
     }
 
@@ -458,6 +491,7 @@ public class TokenClient extends AbstractNetworkClient {
         var keyList = KeyList.of(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
         log.info("Deleted token {} via {}", token, response.getTransactionId());
+        tokenIds.remove(token);
         return response;
     }
 
@@ -482,4 +516,6 @@ public class TokenClient extends AbstractNetworkClient {
         log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
         return balance;
     }
+
+    private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
 }
