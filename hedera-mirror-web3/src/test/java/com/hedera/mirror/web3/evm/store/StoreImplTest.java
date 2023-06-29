@@ -22,28 +22,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenAccountDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.*;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.mirror.web3.repository.NftAllowanceRepository;
-import com.hedera.mirror.web3.repository.NftRepository;
-import com.hedera.mirror.web3.repository.TokenAccountRepository;
-import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
-import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -162,6 +150,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
         final var account = subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW);
@@ -180,13 +169,13 @@ class StoreImplTest {
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        final var token = subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
+        final var token = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
         assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
     }
 
     @Test
     void getTokenThrowIfMissing() {
-        assertThatThrownBy(() -> subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.THROW))
+        assertThatThrownBy(() -> subject.getToken(TOKEN_ADDRESS, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 
@@ -199,6 +188,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
         final var tokenRelationship = subject.getTokenRelationship(

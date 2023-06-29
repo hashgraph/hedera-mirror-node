@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
+    private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 
     private EntityIdUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -193,6 +195,14 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static AccountID toGrpcAccountId(final Id id) {
+        return AccountID.newBuilder()
+                .setShardNum(id.shard())
+                .setRealmNum(id.realm())
+                .setAccountNum(id.num())
+                .build();
+    }
+
     private static long[] parseLongTriple(final String dotDelimited) {
         final long[] triple = new long[3];
         int i = 0;
@@ -237,5 +247,27 @@ public final class EntityIdUtils {
             return null;
         }
         return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+    }
+
+    public static String readableId(final Object o) {
+        if (o instanceof Id id) {
+            return String.format(ENTITY_ID_FORMAT, id.shard(), id.realm(), id.num());
+        }
+        if (o instanceof AccountID id) {
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+        }
+        if (o instanceof TokenID id) {
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+        }
+        if (o instanceof NftID id) {
+            final var tokenID = id.getTokenID();
+            return String.format(
+                    ENTITY_ID_FORMAT + ".%d",
+                    tokenID.getShardNum(),
+                    tokenID.getRealmNum(),
+                    tokenID.getTokenNum(),
+                    id.getSerialNumber());
+        }
+        return String.valueOf(o);
     }
 }

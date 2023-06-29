@@ -108,10 +108,7 @@ func newBlockchainOnlineRouter(
 	constructionAPIService, err := services.NewConstructionAPIService(
 		accountRepo,
 		baseService,
-		network.Network,
-		rosettaConfig.Nodes,
-		rosettaConfig.Shard,
-		rosettaConfig.Realm,
+		rosettaConfig,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
@@ -152,10 +149,7 @@ func newBlockchainOfflineRouter(
 	constructionAPIService, err := services.NewConstructionAPIService(
 		nil,
 		baseService,
-		network.Network,
-		rosettaConfig.Nodes,
-		rosettaConfig.Shard,
-		rosettaConfig.Realm,
+		rosettaConfig,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {

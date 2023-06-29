@@ -21,7 +21,6 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
@@ -58,8 +57,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     }
 
     private Token tokenFromEntity(Entity entity) {
-        final var databaseToken =
-                tokenRepository.findById(new TokenId(entity.toEntityId())).orElse(null);
+        final var databaseToken = tokenRepository.findById(entity.getId()).orElse(null);
 
         if (databaseToken == null) {
             return null;

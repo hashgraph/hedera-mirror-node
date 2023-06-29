@@ -18,15 +18,11 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -55,8 +51,6 @@ public class Transaction implements Persistable<Long> {
 
     private Long chargedTxFee;
 
-    @Convert(converter = UnknownIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     @Enumerated(EnumType.STRING)
@@ -73,20 +67,15 @@ public class Transaction implements Persistable<Long> {
     private Long maxFee;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @ToString.Exclude
     @Type(JsonBinaryType.class)
     private List<NftTransfer> nftTransfer;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
     private Integer nonce;
 
     private Long parentConsensusTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     private Integer result;

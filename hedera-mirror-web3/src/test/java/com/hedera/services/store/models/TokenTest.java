@@ -22,10 +22,8 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -41,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class TokenTest {
     private final JKey someKey = asFcKeyUnchecked(
@@ -71,7 +68,8 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
     private Account nonTreasuryAccount = new Account(
             nonTreasuryId,
             defaultLongValue,
@@ -87,7 +85,8 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -307,20 +306,16 @@ class TokenTest {
                         new UniqueToken(subject.getId(), 11L, null, treasuryId, null, new byte[] {})));
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        final var ownershipTracker = mock(OwnershipTracker.class);
         final long serialNumber0 = 10L;
         final long serialNumber1 = 11L;
 
-        var tokenModificationResult =
-                subject.burn(ownershipTracker, treasuryRel, List.of(serialNumber0, serialNumber1));
+        var tokenModificationResult = subject.burn(treasuryRel, List.of(serialNumber0, serialNumber1));
         subject = tokenModificationResult.token();
         treasuryRel = tokenModificationResult.tokenRelationship();
         treasuryAccount = treasuryRel.getAccount();
 
         assertEquals(initialSupply - 2, subject.getTotalSupply());
         assertEquals(-2, treasuryRel.getBalanceChange());
-        verify(ownershipTracker).add(subject.getId(), OwnershipTracker.forRemoving(treasuryId, serialNumber0));
-        verify(ownershipTracker).add(subject.getId(), OwnershipTracker.forRemoving(treasuryId, serialNumber1));
         assertTrue(subject.hasRemovedUniqueTokens());
         final var removedUniqueTokens = subject.removedUniqueTokens();
         assertEquals(2, removedUniqueTokens.size());
@@ -334,20 +329,15 @@ class TokenTest {
         treasuryRel = new TokenRelationship(subject, treasuryAccount, 0, false, false, false, false, true, 0);
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        final var ownershipTracker = mock(OwnershipTracker.class);
 
         var tokenModificationResult = subject.mint(
-                ownershipTracker,
-                treasuryRel,
-                List.of(ByteString.copyFromUtf8("memo")),
-                RichInstant.fromJava(Instant.now()));
+                treasuryRel, List.of(ByteString.copyFromUtf8("memo")), RichInstant.fromJava(Instant.now()));
         subject = tokenModificationResult.token();
         treasuryRel = tokenModificationResult.tokenRelationship();
         treasuryAccount = treasuryRel.getAccount();
 
         assertEquals(initialSupply + 1, subject.getTotalSupply());
         assertEquals(1, treasuryRel.getBalanceChange());
-        verify(ownershipTracker).add(eq(subject.getId()), Mockito.any());
         assertTrue(subject.hasMintedUniqueTokens());
         assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
         assertEquals(1, subject.getLastUsedSerialNumber());
@@ -471,16 +461,14 @@ class TokenTest {
         subject.getLoadedUniqueTokens().putAll(loadedUniqueTokensMap);
 
         nonTreasuryRel = nonTreasuryRel.setBalance(100);
-        final var ownershipTracker = mock(OwnershipTracker.class);
 
-        var tokenModificationResult = subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
+        var tokenModificationResult = subject.wipe(nonTreasuryRel, List.of(1L));
         subject = tokenModificationResult.token();
         nonTreasuryRel = tokenModificationResult.tokenRelationship();
 
         assertEquals(initialSupply - 1, subject.getTotalSupply());
         assertEquals(99, nonTreasuryRel.getBalanceChange());
         assertEquals(99, nonTreasuryRel.getBalance());
-        verify(ownershipTracker).add(eq(subject.getId()), Mockito.any());
         assertTrue(subject.hasRemovedUniqueTokens());
         assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
         assertTrue(subject.hasChangedSupply());
@@ -495,58 +483,52 @@ class TokenTest {
         final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
         subject.getLoadedUniqueTokens().putAll(loadedUniqueTokensMap);
 
-        final var ownershipTracker = mock(OwnershipTracker.class);
         final var singleSerialNumber = List.of(1L);
 
         /* Invalid to wipe serial numbers for a FUNGIBLE_COMMON token */
-        assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber), FAIL_INVALID);
+        assertFailsWith(() -> subject.wipe(nonTreasuryRel, singleSerialNumber), FAIL_INVALID);
 
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         /* Must have a wipe key */
-        assertFailsWith(() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber), TOKEN_HAS_NO_WIPE_KEY);
+        assertFailsWith(() -> subject.wipe(treasuryRel, singleSerialNumber), TOKEN_HAS_NO_WIPE_KEY);
 
         subject = subject.setWipeKey(someKey);
         /* Not allowed to wipe treasury */
-        assertFailsWith(
-                () -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
-                CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+        assertFailsWith(() -> subject.wipe(treasuryRel, singleSerialNumber), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
     }
 
     @Test
     void uniqueBurnFailsAsExpected() {
         subject = subject.setSupplyKey(someKey);
-        final var ownershipTracker = mock(OwnershipTracker.class);
         final List<Long> emptySerialNumber = List.of();
         final var singleSerialNumber = List.of(1L);
 
         assertThrows(InvalidTransactionException.class, () -> {
-            subject.burn(ownershipTracker, treasuryRel, singleSerialNumber);
+            subject.burn(treasuryRel, singleSerialNumber);
         });
 
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertFailsWith(
-                () -> subject.burn(ownershipTracker, treasuryRel, emptySerialNumber), INVALID_TOKEN_BURN_METADATA);
+        assertFailsWith(() -> subject.burn(treasuryRel, emptySerialNumber), INVALID_TOKEN_BURN_METADATA);
     }
 
     @Test
     void canOnlyBurnTokensOwnedByTreasury() {
         // setup:
-        final var ownershipTracker = mock(OwnershipTracker.class);
         var oneToBurn = new UniqueToken(subject.getId(), 1L, null, nonTreasuryId, null, new byte[] {});
 
         // given:
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
+        subject.getLoadedUniqueTokens().put(1L, oneToBurn);
 
         // expect:
-        assertFailsWith(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)), TREASURY_MUST_OWN_BURNED_NFT);
+        assertFailsWith(() -> subject.burn(treasuryRel, List.of(1L)), TREASURY_MUST_OWN_BURNED_NFT);
 
         // and when:
 
         oneToBurn = new UniqueToken(subject.getId(), 1L, null, treasuryId, null, new byte[] {});
-        subject.getLoadedUniqueTokens().putAll(Map.of(1L, oneToBurn));
-        assertDoesNotThrow(() -> subject.burn(ownershipTracker, treasuryRel, List.of(1L)));
+        subject.getLoadedUniqueTokens().put(1L, oneToBurn);
+        assertDoesNotThrow(() -> subject.burn(treasuryRel, List.of(1L)));
     }
 
     @Test
@@ -558,8 +540,7 @@ class TokenTest {
         subject = subject.setLastUsedSerialNumber(MAX_NUM_ALLOWED - 1);
 
         assertFailsWith(
-                () -> subject.mint(null, treasuryRel, twoMeta, RichInstant.MISSING_INSTANT),
-                SERIAL_NUMBER_LIMIT_REACHED);
+                () -> subject.mint(treasuryRel, twoMeta, RichInstant.MISSING_INSTANT), SERIAL_NUMBER_LIMIT_REACHED);
     }
 
     @Test
@@ -597,17 +578,16 @@ class TokenTest {
                 defaultLongValue,
                 defaultLongValue,
                 Collections.emptyList());
-        final var ownershipTracker = mock(OwnershipTracker.class);
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
 
         assertThrows(InvalidTransactionException.class, () -> {
-            subject.mint(ownershipTracker, treasuryRel, metadata, RichInstant.fromJava(Instant.now()));
+            subject.mint(treasuryRel, metadata, RichInstant.fromJava(Instant.now()));
         });
 
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         assertThrows(InvalidTransactionException.class, () -> {
-            subject.mint(ownershipTracker, treasuryRel, emptyMetadata, RichInstant.fromJava(Instant.now()));
+            subject.mint(treasuryRel, emptyMetadata, RichInstant.fromJava(Instant.now()));
         });
     }
 

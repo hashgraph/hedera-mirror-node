@@ -335,6 +335,10 @@ public class BalanceChange {
         return token == null;
     }
 
+    public boolean affectsAccount(final AccountID accountId) {
+        return accountId.equals(this.accountId);
+    }
+
     @Override
     public boolean equals(final Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);

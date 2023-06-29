@@ -58,43 +58,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AccountDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
-
-    private Entity entity;
-
-    @InjectMocks
-    private AccountDatabaseAccessor accountAccessor;
-
-    @Mock
-    private EntityDatabaseAccessor entityDatabaseAccessor;
-
-    @Mock
-    private NftAllowanceRepository nftAllowanceRepository;
-
-    @Mock
-    private NftRepository nftRepository;
-
-    @Mock
-    private TokenAllowanceRepository tokenAllowanceRepository;
-
-    @Mock
-    private CryptoAllowanceRepository cryptoAllowanceRepository;
-
-    @Mock
-    private TokenAccountRepository tokenAccountRepository;
-
     private static final long SHARD = 0L;
-
     private static final long REALM = 1L;
     private static final long EXPIRATION_TIMESTAMP = 2L;
     private static final long BALANCE = 3L;
     private static final long AUTO_RENEW_PERIOD = 4L;
     private static final EntityId PROXY_ACCOUNT_ID = new EntityId(SHARD, REALM, 5L, EntityType.ACCOUNT);
-
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
-
     private static final int POSITIVE_BALANCES = 7;
     private static final int NEGATIVE_BALANCES = 8;
-
     private static final List<TokenAccountAssociationsCount> associationsCount = Arrays.asList(
             new TokenAccountAssociationsCount() {
                 @Override
@@ -118,6 +90,28 @@ class AccountDatabaseAccessorTest {
                     return false;
                 }
             });
+    private Entity entity;
+
+    @InjectMocks
+    private AccountDatabaseAccessor accountAccessor;
+
+    @Mock
+    private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @Mock
+    private NftAllowanceRepository nftAllowanceRepository;
+
+    @Mock
+    private NftRepository nftRepository;
+
+    @Mock
+    private TokenAllowanceRepository tokenAllowanceRepository;
+
+    @Mock
+    private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Mock
+    private TokenAccountRepository tokenAccountRepository;
 
     @BeforeEach
     void setup() {
@@ -133,6 +127,7 @@ class AccountDatabaseAccessorTest {
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
         entity.setProxyAccountId(PROXY_ACCOUNT_ID);
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
+        entity.setType(EntityType.ACCOUNT);
         when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
     }
 

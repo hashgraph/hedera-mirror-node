@@ -61,6 +61,8 @@ select create_distributed_table('staking_reward_transfer', 'account_id', colocat
 
 select create_distributed_table('token', 'token_id', colocate_with => 'entity');
 
+select create_distributed_table('token_history', 'token_id', colocate_with => 'token');
+
 select create_distributed_table('token_account', 'account_id', colocate_with => 'entity');
 
 select create_distributed_table('token_account_history', 'account_id', colocate_with => 'token_account');

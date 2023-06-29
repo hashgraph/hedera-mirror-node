@@ -19,20 +19,22 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied model from hedera-services.
- *
+ * <p>
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
- *
+ * <p>
  * Differences from the original:
- *  1. Added address field for convenience
- *  2. Added factory method that returns empty instance
+ * 1. Added address field for convenience
+ * 2. Added factory method that returns empty instance
  */
 public class UniqueToken {
     private final Id tokenId;
@@ -60,6 +62,26 @@ public class UniqueToken {
         return new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]);
     }
 
+    private UniqueToken createNewUniqueTokenWithNewOwner(UniqueToken oldUniqueToken, Id newOwner) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                newOwner,
+                oldUniqueToken.spender,
+                oldUniqueToken.metadata);
+    }
+
+    private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                oldUniqueToken.owner,
+                newSpender,
+                oldUniqueToken.metadata);
+    }
+
     public NftId getNftId() {
         return nftId;
     }
@@ -84,12 +106,30 @@ public class UniqueToken {
         return owner;
     }
 
+    public UniqueToken setOwner(Id newOwner) {
+        return createNewUniqueTokenWithNewOwner(this, newOwner);
+    }
+
+    public UniqueToken setSpender(Id newSpender) {
+        return createNewUniqueTokenWithNewSpender(this, newSpender);
+    }
+
     public Id getSpender() {
         return spender;
     }
 
     public byte[] getMetadata() {
         return metadata;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override

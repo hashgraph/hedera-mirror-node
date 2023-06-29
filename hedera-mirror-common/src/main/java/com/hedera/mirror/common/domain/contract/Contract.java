@@ -16,10 +16,8 @@
 
 package com.hedera.mirror.common.domain.contract;
 
-import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -34,7 +32,6 @@ import lombok.experimental.SuperBuilder;
 public class Contract {
 
     @Column(updatable = false)
-    @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
 
     @Id

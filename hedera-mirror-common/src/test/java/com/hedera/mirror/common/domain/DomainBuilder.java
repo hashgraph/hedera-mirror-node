@@ -64,7 +64,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenHistory;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
@@ -719,25 +719,50 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Token, Token.TokenBuilder> token() {
+    public DomainWrapper<Token, Token.TokenBuilder<?, ?>> token() {
         long timestamp = timestamp();
         var builder = Token.builder()
                 .createdTimestamp(timestamp)
-                .decimals(1000)
+                .decimals((int) id())
                 .feeScheduleKey(key())
                 .freezeDefault(false)
                 .freezeKey(key())
-                .initialSupply(1_000_000_000L)
+                .initialSupply(1_000_000_000L + id())
                 .kycKey(key())
-                .modifiedTimestamp(timestamp)
-                .name("Hbars")
+                .name(text(8))
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                 .supplyKey(key())
                 .supplyType(TokenSupplyTypeEnum.INFINITE)
-                .symbol("HBAR")
-                .tokenId(new TokenId(entityId(TOKEN)))
-                .totalSupply(1_000_000_000L)
+                .symbol(text(8))
+                .timestampRange(Range.atLeast(timestamp))
+                .tokenId(entityId(TOKEN).getId())
+                .totalSupply(1_000_000_000L + id())
+                .treasuryAccountId(entityId(ACCOUNT))
+                .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                .wipeKey(key());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenHistory, TokenHistory.TokenHistoryBuilder<?, ?>> tokenHistory() {
+        long timestamp = timestamp();
+        var builder = TokenHistory.builder()
+                .createdTimestamp(timestamp)
+                .decimals((int) id())
+                .feeScheduleKey(key())
+                .freezeDefault(false)
+                .freezeKey(key())
+                .initialSupply(1_000_000_000L + id())
+                .kycKey(key())
+                .name(text(8))
+                .pauseKey(key())
+                .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
+                .supplyKey(key())
+                .supplyType(TokenSupplyTypeEnum.INFINITE)
+                .symbol(text(8))
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .tokenId(entityId(TOKEN).getId())
+                .totalSupply(1_000_000_000L + id())
                 .treasuryAccountId(entityId(ACCOUNT))
                 .type(TokenTypeEnum.FUNGIBLE_COMMON)
                 .wipeKey(key());
