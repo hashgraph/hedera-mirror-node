@@ -88,6 +88,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -115,8 +116,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void before() {
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setTrackEntityTransaction(true);
         entityProperties.getPersist().setTransactionBytes(false);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setTrackEntityTransaction(true);
     }
 
     @Test
