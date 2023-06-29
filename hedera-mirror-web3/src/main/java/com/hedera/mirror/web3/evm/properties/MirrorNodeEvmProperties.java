@@ -23,8 +23,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -97,7 +97,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
-    private List<EntityType> autoRenewTargetTypes = new ArrayList<>();
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
 
     @Getter
     private boolean limitTokenAssociations = false;

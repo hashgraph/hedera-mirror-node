@@ -44,5 +44,9 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.isLazyCreationEnabled()).isTrue();
         assertThat(properties.isCreate2Enabled()).isTrue();
         assertThat(properties.chainIdBytes32()).isEqualTo(CHAIN_ID);
+        assertThat(properties.isLimitTokenAssociations()).isFalse();
+        assertThat(properties.shouldAutoRenewAccounts()).isFalse();
+        assertThat(properties.shouldAutoRenewContracts()).isFalse();
+        assertThat(properties.shouldAutoRenewSomeEntityType()).isFalse();
     }
 }
