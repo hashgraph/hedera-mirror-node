@@ -389,7 +389,7 @@ public class Token {
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
                 oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
+                true,
                 oldToken.type,
                 oldToken.supplyType,
                 totalSupply,

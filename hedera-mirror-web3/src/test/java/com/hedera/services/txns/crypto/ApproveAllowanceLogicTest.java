@@ -103,8 +103,8 @@ class ApproveAllowanceLogicTest {
     private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
     private List<TokenAllowance> tokenAllowances = new ArrayList<>();
     private List<NftAllowance> nftAllowances = new ArrayList<>();
-    private Account payerAccount = new Account(fromGrpcAccount(payerId), 0L);
-    private Account ownerAccount = new Account(fromGrpcAccount(ownerId), 0L);
+    private Account payerAccount = new Account(0L, fromGrpcAccount(payerId), 0L);
+    private Account ownerAccount = new Account(0L, fromGrpcAccount(ownerId), 0L);
     private UniqueToken nft1 = new UniqueToken(tokenId1, serial1, null, fromGrpcAccount(ownerId), null, null);
     private UniqueToken nft2 = new UniqueToken(tokenId2, serial2, null, fromGrpcAccount(ownerId), null, null);
 
@@ -252,7 +252,7 @@ class ApproveAllowanceLogicTest {
 
     @Test
     void skipsTxnWhenKeyExistsAndAmountGreaterThanZero() {
-        var ownerAccount = new Account(fromGrpcAccount(ownerId), 0L);
+        var ownerAccount = new Account(0L, fromGrpcAccount(ownerId), 0L);
         ownerAccount = setUpOwnerWithExistingKeys(ownerAccount);
 
         assertEquals(1, ownerAccount.getCryptoAllowances().size());
@@ -301,7 +301,7 @@ class ApproveAllowanceLogicTest {
         nftAllowances.add(nftAllowance);
         nftAllowances.add(nftAllowance1);
 
-        var ownerAcccount = new Account(fromGrpcAccount(ownerId), 0L);
+        var ownerAcccount = new Account(0L, fromGrpcAccount(ownerId), 0L);
 
         givenValidTxnCtx();
 
