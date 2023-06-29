@@ -92,6 +92,8 @@ class EthereumTransactionHandler implements TransactionHandler {
         entityListener.onEthereumTransaction(ethereumTransaction);
         updateAccountNonce(recordItem, ethereumTransaction);
         recordItem.setEthereumTransaction(ethereumTransaction);
+
+        recordItem.addEntityTransactionFor(ethereumTransaction.getCallDataId());
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
@@ -114,6 +116,8 @@ class EthereumTransactionHandler implements TransactionHandler {
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
+
+            recordItem.addEntityTransactionFor(senderId);
         }
     }
 

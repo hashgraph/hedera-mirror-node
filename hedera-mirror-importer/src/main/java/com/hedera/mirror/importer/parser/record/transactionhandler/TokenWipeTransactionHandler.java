@@ -71,5 +71,7 @@ class TokenWipeTransactionHandler implements TransactionHandler {
                     .build();
             entityListener.onNft(nft);
         });
+
+        recordItem.addEntityTransactionFor(EntityId.of(transactionBody.getAccount()));
     }
 }

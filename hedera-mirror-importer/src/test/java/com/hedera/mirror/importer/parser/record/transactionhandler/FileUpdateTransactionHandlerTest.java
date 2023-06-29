@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
@@ -77,6 +77,7 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transaction.getEntityId(), FileData::getEntityId)
                 .returns(transactionBody.getContents().toByteArray(), FileData::getFileData)
                 .returns(transaction.getType(), FileData::getTransactionType);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -94,6 +95,7 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(transaction.getEntityId());
         verifyNoMoreInteractions(addressBookService);
         verify(entityListener, never()).onFileData(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -115,6 +117,7 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(systemFileId);
         verifyNoMoreInteractions(addressBookService);
         verify(entityListener).onFileData(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -134,6 +137,7 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(fileId);
         verifyNoMoreInteractions(addressBookService);
         verify(entityListener).onFileData(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -154,5 +158,6 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(systemFileId);
         verify(addressBookService).update(any());
         verify(entityListener, never()).onFileData(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

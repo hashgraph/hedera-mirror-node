@@ -69,6 +69,9 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
                 syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(
                         recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
             }
+
+            recordItem.addEntityTransactionFor(ownerId);
+            recordItem.addEntityTransactionFor(tokenId);
         }
     }
 }

@@ -59,5 +59,6 @@ class TokenGrantKycTransactionHandler implements TransactionHandler {
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());
         entityListener.onTokenAccount(tokenAccount);
+        recordItem.addEntityTransactionFor(tokenId);
     }
 }

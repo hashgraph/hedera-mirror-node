@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -226,7 +227,7 @@ public class DomainBuilder {
         id.setConsensusTimestamp(timestamp());
         var builder = AssessedCustomFee.builder()
                 .amount(100L)
-                .effectivePayerAccountIds(List.of(entityId(ACCOUNT).getId()))
+                .effectivePayerAccountIds(List.of(id(), id()))
                 .id(id)
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenId(entityId(TOKEN));
@@ -452,6 +453,16 @@ public class DomainBuilder {
                 .stakedNodeIdStart(-1L)
                 .stakedToMe(0L)
                 .stakeTotalStart(0L);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityTransaction, EntityTransaction.EntityTransactionBuilder> entityTransaction() {
+        var builder = EntityTransaction.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(entityId(ACCOUNT))
+                .type(TransactionType.CRYPTOCREATEACCOUNT.getProtoId())
+                .result(ResponseCodeEnum.SUCCESS_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

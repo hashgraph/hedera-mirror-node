@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -65,6 +65,7 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         assertThat(liveHash.getValue())
                 .returns(transaction.getConsensusTimestamp(), LiveHash::getConsensusTimestamp)
                 .returns(transactionBody.getLiveHash().getHash().toByteArray(), LiveHash::getLivehash);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -79,5 +80,6 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

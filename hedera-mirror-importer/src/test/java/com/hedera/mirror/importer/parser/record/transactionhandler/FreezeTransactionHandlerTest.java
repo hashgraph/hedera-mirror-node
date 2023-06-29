@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -56,5 +57,6 @@ class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

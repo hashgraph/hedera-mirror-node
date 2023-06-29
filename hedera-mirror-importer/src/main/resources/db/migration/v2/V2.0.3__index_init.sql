@@ -112,6 +112,10 @@ create index if not exists entity_history__id_lower_timestamp on entity_history 
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
 
+-- entity_transaction
+alter table if exists entity_transaction
+    add constraint entity_transaction__pk primary key (entity_id, consensus_timestamp);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);

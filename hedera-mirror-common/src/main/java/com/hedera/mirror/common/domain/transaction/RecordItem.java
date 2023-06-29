@@ -22,6 +22,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -33,7 +35,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,6 +77,14 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private final long consensusTimestamp = DomainUtils.timestampInNanosMax(transactionRecord.getConsensusTimestamp());
 
+    @Builder.Default
+    @NonFinal
+    @Setter
+    private Set<EntityId> entityTransactionExclusion = Collections.emptySet();
+
+    @Builder.Default
+    private final Map<Long, EntityTransaction> entityTransactions = new HashMap<>();
+
     @Getter(lazy = true)
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap = parseTransaction(transaction);
 
@@ -83,16 +95,19 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private boolean successful = checkSuccess();
 
+    @NonFinal
+    @Setter
+    private boolean trackEntityTransaction;
+
     @Getter(lazy = true)
     private final int transactionType = getTransactionType(getTransactionBody());
+
+    @Getter(lazy = true)
+    private final int transactionStatus = getTransactionRecord().getReceipt().getStatusValue();
 
     // Mutable fields
     @Getter(PRIVATE)
     private final AtomicInteger logIndex = new AtomicInteger(0);
-
-    public int getAndIncrementLogIndex() {
-        return logIndex.getAndIncrement();
-    }
 
     @NonFinal
     @Setter
@@ -133,6 +148,30 @@ public class RecordItem implements StreamItem {
         } catch (InvalidProtocolBufferException e) {
             throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
+    }
+
+    public void addEntityTransactionFor(EntityId entityId) {
+        if (!trackEntityTransaction) {
+            return;
+        }
+
+        if (EntityId.isEmpty(entityId)
+                || entityId.getType() == EntityType.TOPIC
+                || entityTransactionExclusion.contains(entityId)) {
+            return;
+        }
+
+        entityTransactions.computeIfAbsent(entityId.getId(), id -> EntityTransaction.builder()
+                .consensusTimestamp(getConsensusTimestamp())
+                .entityId(id)
+                .payerAccountId(getPayerAccountId())
+                .result(getTransactionStatus())
+                .type(getTransactionType())
+                .build());
+    }
+
+    public int getAndIncrementLogIndex() {
+        return logIndex.getAndIncrement();
     }
 
     public SignatureMap getSignatureMap() {

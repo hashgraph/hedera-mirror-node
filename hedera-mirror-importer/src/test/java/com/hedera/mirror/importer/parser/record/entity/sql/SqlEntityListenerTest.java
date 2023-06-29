@@ -68,6 +68,7 @@ import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
@@ -127,6 +128,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final DomainBuilder domainBuilder;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
+    private final EntityTransactionRepository entityTransactionRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
@@ -835,6 +837,22 @@ class SqlEntityListenerTest extends IntegrationTest {
         mergedUpdate.setTimestampUpper(entityDelete.getTimestampLower());
         assertThat(entityRepository.findAll()).containsExactly(mergedDelete);
         assertThat(findHistory(Entity.class)).containsExactly(mergedCreate, mergedUpdate);
+    }
+
+    @Test
+    void onEntityTransaction() {
+        // given
+        var entityTransaction1 = domainBuilder.entityTransaction().get();
+        var entityTransaction2 = domainBuilder.entityTransaction().get();
+
+        // when
+        sqlEntityListener.onEntityTransaction(entityTransaction1);
+        sqlEntityListener.onEntityTransaction(entityTransaction2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrder(entityTransaction1, entityTransaction2);
     }
 
     @Test

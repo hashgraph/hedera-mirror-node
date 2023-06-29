@@ -20,9 +20,12 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSEN
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULECREATE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -45,6 +48,13 @@ public class EntityProperties {
 
         private boolean cryptoTransferAmounts = true;
 
+        /**
+         * A set of entity ids to exclude from entity_transaction table
+         */
+        @NotNull
+        private Set<EntityId> entityTransactionExclusion =
+                Set.copyOf(List.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT)));
+
         private boolean ethereumTransactions = true;
 
         private boolean files = true;
@@ -66,6 +76,8 @@ public class EntityProperties {
         private boolean topicMessageLookups = true;
 
         private boolean trackBalance = true;
+
+        private boolean trackEntityTransaction = true;
 
         private boolean transactionHash = false;
 

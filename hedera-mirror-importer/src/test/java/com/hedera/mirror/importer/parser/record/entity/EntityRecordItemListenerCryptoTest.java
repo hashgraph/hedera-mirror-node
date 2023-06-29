@@ -47,6 +47,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
+import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -105,6 +106,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     private final ContractRepository contractRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
+    private final EntityTransactionRepository entityTransactionRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
@@ -134,6 +136,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         // then
         assertAllowances(recordItem, expectedNfts);
+        assertThat(entityTransactionRepository.findAll()).isEmpty();
     }
 
     @Test

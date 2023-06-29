@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.ListToStringSerializer;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EmbeddedId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction.Id;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,26 +30,36 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
 @Data
 @Entity
+@IdClass(EntityTransaction.Id.class)
 @NoArgsConstructor
-public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
+public class EntityTransaction implements Persistable<Id> {
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
+    @Column(updatable = false)
+    @jakarta.persistence.Id
+    private Long consensusTimestamp;
 
-    private long amount;
+    @Column(updatable = false)
+    @jakarta.persistence.Id
+    private Long entityId;
 
-    @Builder.Default
-    @JsonSerialize(using = ListToStringSerializer.class)
-    private List<Long> effectivePayerAccountIds = Collections.emptyList();
-
-    private EntityId tokenId;
-
+    @Column(updatable = false)
     private EntityId payerAccountId;
+
+    @Column(updatable = false)
+    private Integer result;
+
+    @Column(updatable = false)
+    private Integer type;
+
+    @JsonIgnore
+    @Override
+    public Id getId() {
+        return new Id(consensusTimestamp, entityId);
+    }
 
     @JsonIgnore
     @Override
@@ -62,17 +67,15 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
-    @Data
-    @Embeddable
     @AllArgsConstructor
+    @Data
     @NoArgsConstructor
     public static class Id implements Serializable {
 
         @Serial
-        private static final long serialVersionUID = -636368167561206418L;
-
-        private EntityId collectorAccountId;
+        private static final long serialVersionUID = -3010905088908209508L;
 
         private long consensusTimestamp;
+        private long entityId;
     }
 }

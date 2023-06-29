@@ -284,6 +284,7 @@ abstract class AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     protected void testGetEntityIdHelper(

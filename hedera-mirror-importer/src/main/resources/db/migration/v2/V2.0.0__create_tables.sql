@@ -277,6 +277,16 @@ create table if not exists entity_stake
 ) partition by range (id);
 comment on table entity_stake is 'Network entity stake state';
 
+create table if not exists entity_transaction
+(
+  consensus_timestamp bigint not null,
+  entity_id           bigint not null,
+  payer_account_id    bigint not null,
+  result              smallint not null,
+  type                smallint not null
+) partition by range (entity_id);
+comment on table entity_transaction is 'Network entity transaction lookup table';
+
 create table if not exists ethereum_transaction
 (
     access_list              bytea    null,

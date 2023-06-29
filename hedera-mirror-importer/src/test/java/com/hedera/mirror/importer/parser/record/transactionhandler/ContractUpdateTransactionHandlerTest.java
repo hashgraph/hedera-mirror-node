@@ -18,8 +18,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,7 +30,7 @@ import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +92,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void updateTransactionSuccessful() {
+        // given
         var recordItem = recordItemBuilder.contractUpdate().build();
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
@@ -98,8 +101,15 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
-        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var aliasAccount =
+                recordItem.getTransactionBody().getContractUpdateInstance().getAutoRenewAccountId();
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertContractUpdate(timestamp, contractId, t -> assertThat(t)
                 .returns(10L, Entity::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
@@ -109,6 +119,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
     }
 
     @ParameterizedTest
@@ -119,7 +131,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
-                .transactionBody(body -> body.clear().setStakedAccountId(accountId))
+                .transactionBody(body -> body.setStakedAccountId(accountId).clearDeclineReward())
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(accountNum, Entity::getStakedAccountId)
@@ -166,6 +178,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder
                 .contractUpdate()
@@ -178,9 +191,14 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+                .thenReturn(Optional.of(aliasAccountId));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertContractUpdate(timestamp, contractId, t -> assertThat(t)
                 .returns(10L, Entity::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
@@ -190,6 +208,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
     }
 
     @ParameterizedTest
@@ -225,6 +245,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, null));
     }
 
     @Test
@@ -297,6 +319,20 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         () -> extraAssert.accept(t))));
     }
 
+    @SuppressWarnings("deprecation")
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(
+            RecordItem recordItem, EntityId autoRenewAccountId) {
+        var body = recordItem.getTransactionBody().getContractUpdateInstance();
+        if (EntityId.isEmpty(autoRenewAccountId)) {
+            autoRenewAccountId = EntityId.of(body.getAutoRenewAccountId());
+        }
+        return toEntityTransactions(
+                recordItem,
+                autoRenewAccountId,
+                EntityId.of(body.getStakedAccountId()),
+                EntityId.of(body.getProxyAccountID()));
+    }
+
     private void setupForContractUpdateTransactionTest(RecordItem recordItem, Consumer<Entity> extraAssertions) {
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
@@ -305,8 +341,11 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
-        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(aliasAccountId));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContractUpdate(timestamp, contractId, extraAssertions);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
     }
 }

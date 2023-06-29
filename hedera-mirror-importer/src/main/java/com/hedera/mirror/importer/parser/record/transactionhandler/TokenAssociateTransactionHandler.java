@@ -62,6 +62,8 @@ class TokenAssociateTransactionHandler implements TransactionHandler {
             tokenAccount.setTimestampLower(consensusTimestamp);
             tokenAccount.setTokenId(tokenId.getId());
             entityListener.onTokenAccount(tokenAccount);
+
+            recordItem.addEntityTransactionFor(tokenId);
         });
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,8 +30,10 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -43,6 +46,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
+import java.util.Map;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -139,6 +143,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .onEntity(argThat(e -> e.getId() == senderId
                         && e.getTimestampRange() == null
                         && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -157,6 +163,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         verify(entityListener).onEthereumTransaction(any());
         verify(entityListener, never()).onEntity(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -183,16 +191,19 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(emptyBytes, EthereumTransaction::getMaxFeePerGas)
                 .returns(emptyBytes, EthereumTransaction::getMaxPriorityFeePerGas)
                 .returns(emptyBytes, EthereumTransaction::getValue);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void updateTransactionSkipNonceOnFailure(boolean create) {
-        var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
+    void updateTransactionSkipNonceOnFailure(boolean hasInitCodeInBody) {
+        var ethereumTransaction =
+                domainBuilder.ethereumTransaction(hasInitCodeInBody).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         var recordItem = recordItemBuilder
-                .ethereumTransaction(create)
+                .ethereumTransaction(!hasInitCodeInBody)
                 .record(x -> x.clearContractCreateResult().clearContractCallResult())
                 .status(ResponseCodeEnum.WRONG_NONCE)
                 .build();
@@ -202,6 +213,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         verify(entityListener).onEthereumTransaction(any());
         verify(entityListener, never()).onEntity(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -226,6 +239,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .onEntity(argThat(e -> e.getId() == senderId
                         && e.getTimestampRange() == null
                         && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -238,6 +253,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .isInstanceOf(InvalidDatasetException.class);
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -251,6 +267,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
         verify(ethereumTransactionParser, never()).decode(any());
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @SuppressWarnings("java:S2699")
@@ -261,5 +278,15 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {
         return create ? record.getContractCreateResult() : record.getContractCallResult();
+    }
+
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+        var record = recordItem.getTransactionRecord();
+        return toEntityTransactions(
+                recordItem,
+                EntityId.of(record.getContractCallResult().getSenderId()),
+                EntityId.of(record.getContractCreateResult().getSenderId()),
+                EntityId.of(
+                        recordItem.getTransactionBody().getEthereumTransaction().getCallData()));
     }
 }

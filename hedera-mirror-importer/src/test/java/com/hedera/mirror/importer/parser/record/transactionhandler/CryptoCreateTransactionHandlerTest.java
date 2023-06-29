@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -27,6 +28,7 @@ import com.google.protobuf.Message;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -42,6 +44,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
@@ -124,6 +127,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(false, Entity::getDeclineReward)
                 .returns(stakedAccountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -146,6 +151,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -161,6 +168,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         assertEntity(accountId, recordItem.getConsensusTimestamp()).returns(alias, Entity::getAlias);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     @Test
@@ -181,6 +190,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(alias, Entity::getAlias)
                 .returns(alias, Entity::getKey)
                 .returns(evmAddress, Entity::getEvmAddress);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
     }
 
     private static Stream<Arguments> provideAlias() {
@@ -255,6 +266,13 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(ACCOUNT, Entity::getType)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(null, Entity::getObtainerId);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+        var body = recordItem.getTransactionBody().getCryptoCreateAccount();
+        return toEntityTransactions(
+                recordItem, EntityId.of(body.getStakedAccountId()), EntityId.of(body.getProxyAccountID()));
     }
 
     private Transaction transaction(RecordItem recordItem) {

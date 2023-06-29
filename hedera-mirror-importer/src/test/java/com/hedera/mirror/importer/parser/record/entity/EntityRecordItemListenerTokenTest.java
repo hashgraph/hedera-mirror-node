@@ -354,7 +354,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR, one effective payer
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(12300L);
-        assessedCustomFee3.setEffectivePayerEntityIds(List.of(FEE_PAYER_1));
+        assessedCustomFee3.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId()));
         assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee3.setPayerAccountId(PAYER_ACCOUNT_ID);
 
@@ -362,7 +362,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         AssessedCustomFee assessedCustomFee4 = new AssessedCustomFee();
         assessedCustomFee4.setAmount(8790L);
         assessedCustomFee4.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee4.setEffectivePayerEntityIds(List.of(FEE_PAYER_1, FEE_PAYER_2));
+        assessedCustomFee4.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId(), FEE_PAYER_2.getId()));
         assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee4.setPayerAccountId(PAYER_ACCOUNT_ID);
         List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4);

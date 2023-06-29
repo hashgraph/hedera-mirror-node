@@ -40,7 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -49,8 +53,17 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -127,6 +140,33 @@ class RecordItemTest {
                 .transaction(Transaction.newBuilder().build())
                 .build();
         assertThat(recordItem.isSuccessful()).isEqualTo(expected);
+    }
+
+    @Test
+    void testAddEntityTransactionFor() {
+        // given, when
+        var state = setupEntityTransactionTest(true, Collections.emptySet());
+
+        // then
+        assertThat(state.actual).containsExactlyEntriesOf(state.expected);
+    }
+
+    @Test
+    void testAddEntityTransactionForWhenDisabled() {
+        // given, when
+        var state = setupEntityTransactionTest(false, Collections.emptySet());
+
+        // then
+        assertThat(state.actual).isEmpty();
+    }
+
+    @Test
+    void testAddEntityTransactionForWithExclusion() {
+        // given, when
+        var state = setupEntityTransactionTest(true, Set.of(EntityId.of(3, EntityType.ACCOUNT)));
+
+        // then
+        assertThat(state.actual).containsExactlyEntriesOf(state.expected);
     }
 
     @Test
@@ -528,4 +568,70 @@ class RecordItemTest {
         assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
         assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
+
+    private EntityTransactionTestState setupEntityTransactionTest(
+            boolean trackEntityTransaction, Set<EntityId> excluded) {
+        var random = new SecureRandom();
+        long id = random.nextLong(2000) + 2000L;
+        var now = Instant.now();
+        var payerAccountId = AccountID.newBuilder().setAccountNum(id++).build();
+        long consensusTimestamp = now.getEpochSecond() * 1_000_000_000 + now.getNano();
+        var validStart =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond() - 1).setNanos(now.getNano());
+        var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart))
+                .build();
+        var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+        var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.toByteString())
+                .build();
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var recordItem = RecordItem.builder()
+                .entityTransactionExclusion(excluded)
+                .trackEntityTransaction(trackEntityTransaction)
+                .transaction(transaction)
+                .transactionRecord(transactionRecord)
+                .build();
+        var payer = EntityId.of(payerAccountId);
+        var contract = EntityId.of(id++, EntityType.CONTRACT);
+        var file = EntityId.of(id++, EntityType.FILE);
+        var token = EntityId.of(id++, EntityType.TOKEN);
+        var topic = EntityId.of(id++, EntityType.TOPIC);
+        var schedule = EntityId.of(id, EntityType.SCHEDULE);
+        var expected = Stream.of(payer, contract, file, token, schedule)
+                .map(entityId -> EntityTransaction.builder()
+                        .consensusTimestamp(consensusTimestamp)
+                        .entityId(entityId.getId())
+                        .payerAccountId(payer)
+                        .type(TransactionType.CRYPTOTRANSFER.getProtoId())
+                        .result(ResponseCodeEnum.SUCCESS_VALUE)
+                        .build())
+                .collect(Collectors.toMap(EntityTransaction::getEntityId, Function.identity()));
+
+        // when
+        recordItem.addEntityTransactionFor(null);
+        recordItem.addEntityTransactionFor(EntityId.EMPTY);
+        recordItem.addEntityTransactionFor(payer);
+        recordItem.addEntityTransactionFor(contract);
+        recordItem.addEntityTransactionFor(contract); // duplicate
+        recordItem.addEntityTransactionFor(file);
+        recordItem.addEntityTransactionFor(token);
+        recordItem.addEntityTransactionFor(topic);
+        recordItem.addEntityTransactionFor(schedule);
+        excluded.forEach(recordItem::addEntityTransactionFor);
+
+        return new EntityTransactionTestState(recordItem.getEntityTransactions(), expected);
+    }
+
+    private record EntityTransactionTestState(
+            Map<Long, EntityTransaction> actual, Map<Long, EntityTransaction> expected) {}
 }

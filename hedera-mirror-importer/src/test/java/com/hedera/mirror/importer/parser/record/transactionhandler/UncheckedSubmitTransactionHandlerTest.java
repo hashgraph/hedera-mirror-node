@@ -58,5 +58,6 @@ class UncheckedSubmitTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

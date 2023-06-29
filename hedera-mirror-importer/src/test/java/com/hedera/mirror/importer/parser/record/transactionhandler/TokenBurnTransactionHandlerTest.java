@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -79,6 +79,7 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getSerialNumbers(0), AbstractNft::getSerialNumber)
                 .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -93,5 +94,6 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

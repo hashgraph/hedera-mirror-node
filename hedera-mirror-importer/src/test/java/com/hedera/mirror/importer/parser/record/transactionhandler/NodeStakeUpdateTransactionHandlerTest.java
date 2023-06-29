@@ -123,6 +123,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
                 .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -140,6 +141,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, never()).onNodeStake(nodeStakes.capture());
         verify(consensusNodeService, never()).refresh();
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -75,6 +75,7 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
                 .returns((int) receipt.getTopicRunningHashVersion(), TopicMessage::getRunningHashVersion)
                 .returns(receipt.getTopicSequenceNumber(), TopicMessage::getSequenceNumber)
                 .returns(transaction.getEntityId(), TopicMessage::getTopicId);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -89,5 +90,6 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

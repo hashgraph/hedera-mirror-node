@@ -43,8 +43,9 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
         var transactionBody = recordItem.getTransactionBody().getConsensusCreateTopic();
 
         if (transactionBody.hasAutoRenewAccount()) {
-            entity.setAutoRenewAccountId(
-                    EntityId.of(transactionBody.getAutoRenewAccount()).getId());
+            var autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccountId(autoRenewAccountId.getId());
+            recordItem.addEntityTransactionFor(autoRenewAccountId);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

@@ -68,6 +68,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -89,6 +90,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -104,6 +106,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -119,5 +122,6 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }

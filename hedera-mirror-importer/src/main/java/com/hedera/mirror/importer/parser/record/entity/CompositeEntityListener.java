@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -116,6 +117,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onEntity(Entity entity) throws ImporterException {
         onEach(EntityListener::onEntity, entity);
+    }
+
+    @Override
+    public void onEntityTransaction(EntityTransaction entityTransaction) throws ImporterException {
+        onEach(EntityListener::onEntityTransaction, entityTransaction);
     }
 
     @Override

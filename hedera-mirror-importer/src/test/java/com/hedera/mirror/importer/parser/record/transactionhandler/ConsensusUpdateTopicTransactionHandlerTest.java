@@ -18,8 +18,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +35,6 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -72,17 +70,21 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
-        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+        assertConsensusTopicUpdate(timestamp, topicId, autoRenewAccountId.getId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(toEntityTransactions(recordItem, autoRenewAccountId));
     }
 
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
         var recordItem = recordItemBuilder
                 .consensusUpdateTopic()
-                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .transactionBody(b -> b.setAutoRenewAccount(aliasAccountId))
                 .build();
         var topicId = EntityId.of(
                 recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
@@ -91,10 +93,12 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(aliasAccountId)).thenReturn(Optional.of(autoRenewAccountId));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+        assertConsensusTopicUpdate(timestamp, topicId, autoRenewAccountId.getId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyEntriesOf(toEntityTransactions(recordItem, autoRenewAccountId));
     }
 
     @ParameterizedTest
@@ -102,9 +106,10 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     void updateTransactionEntityIdEmpty(EntityId entityId) {
         // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
         var recordItem = recordItemBuilder
                 .consensusUpdateTopic()
-                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .transactionBody(b -> b.setAutoRenewAccount(aliasAccountId))
                 .build();
         var topicId = EntityId.of(
                 recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
@@ -113,13 +118,15 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.ofNullable(entityId));
+        when(entityIdService.lookup(aliasAccountId)).thenReturn(Optional.ofNullable(entityId));
         var expectedId = entityId == null ? null : entityId.getId();
 
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(expectedId, id));
+        // then
+        assertConsensusTopicUpdate(timestamp, topicId, expectedId);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -136,14 +143,14 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(0L, id));
+        assertConsensusTopicUpdate(timestamp, topicId, 0L);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
-    @SuppressWarnings("java:S6103")
-    private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Consumer<Long> assertAutoRenewAccountId) {
+    private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Long expectedAutoRenewAccountId) {
         verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .satisfies(e -> assertAutoRenewAccountId.accept(e.getAutoRenewAccountId()))
+                .returns(expectedAutoRenewAccountId, Entity::getAutoRenewAccountId)
                 .satisfies(e -> assertThat(e.getAutoRenewPeriod()).isPositive())
                 .returns(null, Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)

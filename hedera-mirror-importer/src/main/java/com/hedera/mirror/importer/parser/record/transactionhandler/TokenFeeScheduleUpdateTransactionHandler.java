@@ -62,7 +62,7 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
-        updateCustomFees(transaction, transactionBody.getCustomFeesList());
+        updateCustomFees(transactionBody.getCustomFeesList(), recordItem, transaction);
     }
 
     /**
@@ -73,7 +73,9 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
      * @return A list of collectors automatically associated with the token if it's a token create transaction
      */
     Set<EntityId> updateCustomFees(
-            Transaction transaction, Collection<com.hederahashgraph.api.proto.java.CustomFee> customFeeList) {
+            Collection<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
+            RecordItem recordItem,
+            Transaction transaction) {
         var autoAssociatedAccounts = new HashSet<EntityId>();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
@@ -116,6 +118,9 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             }
 
             entityListener.onCustomFee(customFee);
+
+            recordItem.addEntityTransactionFor(collector);
+            recordItem.addEntityTransactionFor(customFee.getDenominatingTokenId());
         }
 
         // For empty custom fees, add a single row with only the timestamp and tokenId.

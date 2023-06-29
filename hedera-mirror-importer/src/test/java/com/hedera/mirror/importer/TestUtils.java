@@ -18,13 +18,16 @@ package com.hedera.mirror.importer;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
+import static org.springframework.data.util.Predicates.negate;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
@@ -52,8 +55,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.springframework.jdbc.core.DataClassRowMapper;
@@ -199,6 +205,23 @@ public class TestUtils {
         }
 
         return contractId.build();
+    }
+
+    public static EntityTransaction toEntityTransaction(EntityId entityId, RecordItem recordItem) {
+        return EntityTransaction.builder()
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .entityId(entityId.getId())
+                .payerAccountId(recordItem.getPayerAccountId())
+                .result(recordItem.getTransactionStatus())
+                .type(recordItem.getTransactionType())
+                .build();
+    }
+
+    public static Map<Long, EntityTransaction> toEntityTransactions(RecordItem recordItem, EntityId... entityIds) {
+        return Stream.of(entityIds)
+                .filter(negate(EntityId::isEmpty))
+                .map(id -> toEntityTransaction(id, recordItem))
+                .collect(Collectors.toMap(EntityTransaction::getEntityId, Function.identity(), (a, b) -> a));
     }
 
     public TransactionID toTransactionId(String transactionId) {
