@@ -145,7 +145,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                 record.getContractCreateResult().getContractID().getContractNum())
                         .get()
                         .getEthereumNonce()
-                        .equals(2)),
+                        .equals(1)),
                 () -> assertContractCreateResult(transactionBody, record),
                 () -> assertContractStateChanges(recordItem));
     }
