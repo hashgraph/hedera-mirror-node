@@ -284,7 +284,7 @@ create table if not exists entity_transaction
   payer_account_id    bigint not null,
   result              smallint not null,
   type                smallint not null
-) partition by range (entity_id);
+) partition by range (consensus_timestamp);
 comment on table entity_transaction is 'Network entity transaction lookup table';
 
 create table if not exists ethereum_transaction
