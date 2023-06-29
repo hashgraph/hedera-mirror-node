@@ -471,13 +471,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < tokenTransferListsList.size(); i++) {
             TokenTransferList tokenTransferList = tokenTransferListsList.get(i);
 
-            if (tokenTransferList.getTransfersCount() > 0) {
-                insertFungibleTokenTransfers(recordItem, tokenTransferList);
-            }
-
-            if (tokenTransferList.getNftTransfersCount() > 0) {
-                insertNonFungibleTokenTransfers(recordItem, transaction, tokenTransferList);
-            }
+            insertFungibleTokenTransfers(recordItem, tokenTransferList);
+            insertNonFungibleTokenTransfers(recordItem, transaction, tokenTransferList);
 
             if (i == 0) {
                 var tokenId = tokenTransferList.getToken();

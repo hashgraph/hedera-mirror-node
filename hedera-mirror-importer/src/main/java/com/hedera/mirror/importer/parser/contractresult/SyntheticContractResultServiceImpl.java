@@ -44,21 +44,19 @@ public class SyntheticContractResultServiceImpl implements SyntheticContractResu
         TransactionRecord transactionRecord = recordItem.getTransactionRecord();
 
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        long gasLimit = 0;
-
         ContractResult contractResult = new ContractResult();
 
         contractResult.setCallResult(Bytes.of(recordItem.isSuccessful() ? 1 : 0).toArrayUnsafe());
         contractResult.setConsensusTimestamp(consensusTimestamp);
         contractResult.setContractId(result.getEntityId().getId());
-        contractResult.setSenderId(result.getSenderId());
         contractResult.setFunctionParameters(result.getFunctionParameters());
-        contractResult.setGasLimit(gasLimit);
-        contractResult.setTransactionResult(transactionRecord.getReceipt().getStatusValue());
+        contractResult.setGasLimit(0L);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        contractResult.setSenderId(result.getSenderId());
         contractResult.setTransactionHash(recordItem.getTransactionHash());
         contractResult.setTransactionIndex(recordItem.getTransactionIndex());
         contractResult.setTransactionNonce(transactionBody.getTransactionID().getNonce());
+        contractResult.setTransactionResult(transactionRecord.getReceipt().getStatusValue());
 
         entityListener.onContractResult(contractResult);
     }
