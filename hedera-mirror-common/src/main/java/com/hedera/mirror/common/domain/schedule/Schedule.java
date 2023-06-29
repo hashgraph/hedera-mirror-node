@@ -16,11 +16,9 @@
 
 package com.hedera.mirror.common.domain.schedule;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
@@ -42,7 +40,6 @@ public class Schedule {
     private Long consensusTimestamp;
 
     @Column(updatable = false)
-    @Convert(converter = AccountIdConverter.class)
     private EntityId creatorAccountId;
 
     private Long executedTimestamp;
@@ -51,7 +48,6 @@ public class Schedule {
     private Long expirationTime;
 
     @Column(updatable = false)
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @Id

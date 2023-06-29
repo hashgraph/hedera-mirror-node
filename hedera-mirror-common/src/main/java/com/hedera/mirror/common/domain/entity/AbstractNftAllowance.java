@@ -17,23 +17,15 @@
 package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
 import java.io.Serializable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
 @Data
 @IdClass(AbstractNftAllowance.Id.class)
@@ -48,15 +40,11 @@ public abstract class AbstractNftAllowance implements History {
     @jakarta.persistence.Id
     private long owner;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @jakarta.persistence.Id
     private long spender;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
-    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
     @jakarta.persistence.Id

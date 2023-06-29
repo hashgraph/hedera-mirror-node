@@ -43,7 +43,7 @@ import org.hyperledger.besu.datatypes.Address;
  *  while on Archive Node we are interested in transaction scope only
  *  2. Use abstraction for the state by introducing {@link Store} interface
  *  3. Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}
- *  4. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  4. Use copied models from hedera-services which are enhanced with additional constructors for easier setup,
  *  those are {@link Account}, {@link Token}, {@link TokenRelationship}
  * */
 public class AssociateLogic {
@@ -57,7 +57,7 @@ public class AssociateLogic {
         /* Load the models */
         final var account = store.getAccount(accountAddress, OnMissing.THROW);
         final var tokens = tokensAddresses.stream()
-                .map(t -> store.getFungibleToken(t, OnMissing.THROW))
+                .map(t -> store.getToken(t, OnMissing.THROW))
                 .toList();
 
         /* Associate and commit the changes */
@@ -79,7 +79,7 @@ public class AssociateLogic {
             TokenRelationshipKey tokenRelationshipKey =
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
-            validateFalse(hasAssociation(tokenRelationshipKey, store), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
             final var newRel = new TokenRelationship(token, updatedAccount);
             numAssociations++;
@@ -105,13 +105,5 @@ public class AssociateLogic {
 
     private boolean exceedsTokenAssociationLimit(final int totalAssociations) {
         return totalAssociations > mirrorNodeEvmProperties.getMaxTokensPerAccount();
-    }
-
-    private boolean hasAssociation(final TokenRelationshipKey tokenRelationshipKey, final Store store) {
-        return store.getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
-                        .getAccount()
-                        .getId()
-                        .num()
-                > 0;
     }
 }

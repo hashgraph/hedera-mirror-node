@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,28 +26,46 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
- * Copied validator type from hedera-services.
- * <p>
- * Relies on a State to determine whether various options are permissible.
- * <p>
- * Differences with the original:
- * <ol>
- * <li>Deleted unnecessary fields</li>
- * <li>Use abstraction for the state by introducing {@link Store} interface</li>
- * <li>Use Mirror Node specific properties - {@link MirrorNodeEvmProperties}</li>
- * <li>Calculates `isDetached` by using System.currentTimeMillis</li>
- * </ol>
+ * Copied Logic type from hedera-services. Unnecessary methods are deleted.
  */
-public class ContextOptionValidator {
+public class ContextOptionValidator implements OptionValidator {
+
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     public ContextOptionValidator(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
+    public static ResponseCodeEnum batchSizeCheck(final int length, final int limit) {
+        return lengthCheck(length, limit, ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED);
+    }
+
+    private static ResponseCodeEnum lengthCheck(final long length, final long limit, final ResponseCodeEnum onFailure) {
+        if (length > limit) {
+            return onFailure;
+        }
+        return OK;
+    }
+
+    @Override
+    public ResponseCodeEnum maxBatchSizeBurnCheck(final int length) {
+        return batchSizeCheck(length, mirrorNodeEvmProperties.getMaxBatchSizeBurn());
+    }
+
+    @Override
+    public ResponseCodeEnum maxBatchSizeMintCheck(final int length) {
+        return batchSizeCheck(length, mirrorNodeEvmProperties.getMaxBatchSizeMint());
+    }
+
+    @Override
+    public ResponseCodeEnum nftMetadataCheck(final byte[] metadata) {
+        return lengthCheck(
+                metadata.length, mirrorNodeEvmProperties.getMaxNftMetadataBytes(), ResponseCodeEnum.METADATA_TOO_LONG);
+    }
+
     public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
         var account = store.getAccount(asTypedEvmAddress(id), OnMissing.THROW);
-        if (!mirrorNodeEvmProperties.isAtLeastOneAutoRenewTargetType()) {
+        if (!mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()) {
             return OK;
         }
         final var balance = account.getBalance();
@@ -77,7 +95,7 @@ public class ContextOptionValidator {
     }
 
     private boolean isExpiryDisabled(final boolean isContract) {
-        return (isContract && !mirrorNodeEvmProperties.isExpireContracts())
-                || (!isContract && !mirrorNodeEvmProperties.isExpireAccounts());
+        return (isContract && !mirrorNodeEvmProperties.shouldAutoRenewContracts())
+                || (!isContract && !mirrorNodeEvmProperties.shouldAutoRenewAccounts());
     }
 }

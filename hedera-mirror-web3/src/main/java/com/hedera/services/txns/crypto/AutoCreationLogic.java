@@ -17,8 +17,8 @@
 package com.hedera.services.txns.crypto;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import org.hyperledger.besu.datatypes.Address;
@@ -33,8 +33,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class AutoCreationLogic extends AbstractAutoCreationLogic {
 
-    public AutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        super(feeCalculator, mirrorNodeEvmProperties);
+    public AutoCreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+        super(feeCalculator, evmProperties);
     }
 
     @Override

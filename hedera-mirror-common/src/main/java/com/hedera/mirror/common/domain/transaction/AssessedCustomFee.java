@@ -19,12 +19,9 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
-import com.hedera.mirror.common.converter.TokenIdConverter;
+import com.hedera.mirror.common.converter.EntityIdConverter;
+import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import io.hypersistence.utils.hibernate.type.array.ListArrayType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -36,7 +33,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -53,14 +49,11 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
     private long amount;
 
     @Builder.Default
-    @Type(ListArrayType.class)
-    @JsonSerialize(using = LongListToStringSerializer.class)
+    @JsonSerialize(using = ListToStringSerializer.class)
     private List<Long> effectivePayerAccountIds = Collections.emptyList();
 
-    @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @JsonIgnore
@@ -71,7 +64,7 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
     public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
         effectivePayerAccountIds = effectivePayerEntityIds.stream()
-                .map(AccountIdConverter.INSTANCE::convertToDatabaseColumn)
+                .map(EntityIdConverter.INSTANCE::convertToDatabaseColumn)
                 .toList();
     }
 
@@ -83,7 +76,6 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
         private static final long serialVersionUID = -636368167561206418L;
 
-        @Convert(converter = AccountIdConverter.class)
         private EntityId collectorAccountId;
 
         private long consensusTimestamp;

@@ -19,9 +19,12 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.*;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -61,6 +64,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private long htsDefaultGasCost = 10000;
 
+    @Getter
+    @Min(1)
+    private int maxBatchSizeBurn = 10;
+
+    @Getter
+    @Min(1)
+    private int maxBatchSizeMint = 10;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
@@ -69,6 +80,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 100;
+
+    @Getter
+    private int maxNftMetadataBytes = 100;
 
     @Getter
     @Min(1)
@@ -83,21 +97,22 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
-    @Getter
-    @NotNull
-    private boolean atLeastOneAutoRenewTargetType = false;
+    private List<EntityType> autoRenewTargetTypes = new ArrayList<>();
 
     @Getter
-    @NotNull
-    private boolean expireAccounts = false;
-
-    @Getter
-    @NotNull
-    private boolean expireContracts = false;
-
-    @Getter
-    @NotNull
     private boolean limitTokenAssociations = false;
+
+    public boolean shouldAutoRenewAccounts() {
+        return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
+    }
+
+    public boolean shouldAutoRenewContracts() {
+        return autoRenewTargetTypes.contains(EntityType.CONTRACT);
+    }
+
+    public boolean shouldAutoRenewSomeEntityType() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {

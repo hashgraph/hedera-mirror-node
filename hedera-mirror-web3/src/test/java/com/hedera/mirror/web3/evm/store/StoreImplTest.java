@@ -169,13 +169,13 @@ class StoreImplTest {
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        final var token = subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
+        final var token = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
         assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
     }
 
     @Test
     void getTokenThrowIfMissing() {
-        assertThatThrownBy(() -> subject.getFungibleToken(TOKEN_ADDRESS, OnMissing.THROW))
+        assertThatThrownBy(() -> subject.getToken(TOKEN_ADDRESS, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 

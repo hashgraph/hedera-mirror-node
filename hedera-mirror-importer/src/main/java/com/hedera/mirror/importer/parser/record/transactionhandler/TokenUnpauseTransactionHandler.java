@@ -50,9 +50,10 @@ class TokenUnpauseTransactionHandler implements TransactionHandler {
             return;
         }
 
-        Token token = Token.of(transaction.getEntityId());
+        Token token = new Token();
         token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
-        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+        token.setTimestampLower(recordItem.getConsensusTimestamp());
+        token.setTokenId(transaction.getEntityId().getId());
         entityListener.onToken(token);
     }
 }

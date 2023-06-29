@@ -18,11 +18,8 @@ package com.hedera.mirror.common.domain.contract;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
+import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import io.hypersistence.utils.hibernate.type.array.ListArrayType;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import java.util.Collections;
@@ -32,7 +29,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 @Data
@@ -55,8 +51,7 @@ public class ContractResult implements Persistable<Long> {
     private long contractId;
 
     @Builder.Default
-    @Type(ListArrayType.class)
-    @JsonSerialize(using = LongListToStringSerializer.class)
+    @JsonSerialize(using = ListToStringSerializer.class)
     private List<Long> createdContractIds = Collections.emptyList();
 
     private String errorMessage;
@@ -73,10 +68,8 @@ public class ContractResult implements Persistable<Long> {
 
     private Long gasUsed;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId senderId;
 
     private byte[] transactionHash;

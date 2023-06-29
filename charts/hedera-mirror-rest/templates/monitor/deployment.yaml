@@ -16,6 +16,9 @@ spec:
     metadata:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/monitor/secret.yaml") . | sha256sum }}
+        {{- if or .Values.podAnnotations .Values.global.podAnnotations }}
+        {{- tpl (mergeOverwrite .Values.podAnnotations .Values.global.podAnnotations | toYaml) $ | nindent 8 }}
+        {{- end }}
       labels: {{ include "hedera-mirror-rest-monitor.selectorLabels" . | nindent 8 }}
     spec:
       containers:

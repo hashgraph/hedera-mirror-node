@@ -21,10 +21,16 @@ temp_history as (
   select distinct $coalesceColumns
   from existing
   where timestamp_range is not null and upper(timestamp_range) is not null
+#if($skipPartialUpdate)
+  and coalesce(e_created_timestamp, created_timestamp) is not null
+#end
 )
 insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from existing
 where (e_timestamp_range is not null and timestamp_range is null) or (timestamp_range is not null and upper(timestamp_range) is null)
+#if($skipPartialUpdate)
+and coalesce(e_created_timestamp, created_timestamp) is not null
+#end
 on conflict ($conflictColumns)
 do update set $updateColumns

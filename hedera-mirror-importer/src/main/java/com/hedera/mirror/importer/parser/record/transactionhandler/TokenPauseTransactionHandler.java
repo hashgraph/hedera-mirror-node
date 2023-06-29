@@ -50,9 +50,10 @@ class TokenPauseTransactionHandler implements TransactionHandler {
             return;
         }
 
-        Token token = Token.of(transaction.getEntityId());
+        Token token = new Token();
         token.setPauseStatus(TokenPauseStatusEnum.PAUSED);
-        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+        token.setTimestampLower(recordItem.getConsensusTimestamp());
+        token.setTokenId(transaction.getEntityId().getId());
         entityListener.onToken(token);
     }
 }

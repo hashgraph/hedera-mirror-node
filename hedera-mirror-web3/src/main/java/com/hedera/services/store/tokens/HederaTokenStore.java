@@ -51,10 +51,10 @@ import java.util.function.Function;
 public class HederaTokenStore {
 
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
+    static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
     private final ContextOptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final Store store;
-    TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 
     public HederaTokenStore(
             final ContextOptionValidator validator,
@@ -129,12 +129,12 @@ public class HederaTokenStore {
     }
 
     public boolean exists(final TokenID id) {
-        final var token = store.getFungibleToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
+        final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
         return !token.getId().equals(Id.DEFAULT);
     }
 
     public Token get(final TokenID id) {
-        final var token = store.getFungibleToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
+        final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
 
         if (token.getId().equals(Id.DEFAULT)) {
             throw new IllegalArgumentException(
@@ -166,7 +166,7 @@ public class HederaTokenStore {
             }
 
             final var tid = nftId.tokenId();
-            final var tokenTreasury = store.getFungibleToken(asTypedEvmAddress(tid), OnMissing.THROW)
+            final var tokenTreasury = store.getToken(asTypedEvmAddress(tid), OnMissing.THROW)
                     .getTreasury()
                     .getId();
             var owner = nft.getOwner();

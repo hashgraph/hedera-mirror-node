@@ -31,6 +31,10 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
             .thenComparingLong(NftId::shard)
             .thenComparingLong(NftId::realm);
 
+    public static NftId withDefaultShardRealm(final long num, final long serialNo) {
+        return new NftId(0, 0, num, serialNo);
+    }
+
     public TokenID tokenId() {
         return TokenID.newBuilder()
                 .setShardNum(shard)

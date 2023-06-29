@@ -125,6 +125,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
+    private final Collection<Token> tokens;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
@@ -138,7 +139,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<AbstractNft.Id, Nft> nftState;
     private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<Long, Schedule> schedules;
-    private final Map<Long, Token> tokens;
+    private final Map<Long, Token> tokenState;
     private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
@@ -191,6 +192,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
+        tokens = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
@@ -203,7 +205,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nftState = new HashMap<>();
         nftAllowanceState = new HashMap<>();
         schedules = new HashMap<>();
-        tokens = new HashMap<>();
+        tokenState = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
     }
@@ -406,8 +408,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        // tokens could experience multiple updates in a single record file, handle updates in memory for this case
-        tokens.merge(token.getTokenId().getTokenId().getId(), token, this::mergeToken);
+        var merged = tokenState.merge(token.getTokenId(), token, this::mergeToken);
+        tokens.add(merged);
     }
 
     @Override
@@ -503,6 +505,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenAllowances.clear();
             tokenAllowanceState.clear();
             tokens.clear();
+            tokenState.clear();
             deletedTokenDissociateTransfers.clear();
             tokenTransfers.clear();
             transactions.clear();
@@ -546,7 +549,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
-            batchPersister.persist(tokens.values());
+            batchPersister.persist(tokens);
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
             batchPersister.persist(tokenAccounts);
             batchPersister.persist(tokenAllowances);
@@ -574,7 +577,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void flushNftState() {
         try {
             // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            batchPersister.persist(tokens.values());
+            batchPersister.persist(tokens);
             batchPersister.persist(tokenAccounts);
             batchPersister.persist(nfts);
         } catch (ParserException e) {
@@ -584,6 +587,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             tokens.clear();
             tokenAccounts.clear();
+            tokenState.clear();
             nftState.clear();
             nfts.clear();
         }
@@ -772,59 +776,77 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return cachedSchedule;
     }
 
-    private Token mergeToken(Token cachedToken, Token newToken) {
-        if (newToken.getFreezeKey() != null) {
-            cachedToken.setFreezeKey(newToken.getFreezeKey());
+    /**
+     * Merges two token objects into one. The previous may or not be an initial create with all fields while the current
+     * will always be a partial update. Copy immutable fields from the previous to the current and close the previous'
+     * timestamp range. Copy other fields from the previous if not set in current.
+     *
+     * @param previous token to merge into the current
+     * @param current  token
+     * @return the merged token
+     */
+    private Token mergeToken(Token previous, Token current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setDecimals(previous.getDecimals());
+        current.setFreezeDefault(previous.getFreezeDefault());
+        current.setInitialSupply(previous.getInitialSupply());
+        current.setMaxSupply(previous.getMaxSupply());
+        current.setSupplyType(previous.getSupplyType());
+        current.setType(previous.getType());
+
+        if (current.getFeeScheduleKey() == null) {
+            current.setFeeScheduleKey(previous.getFeeScheduleKey());
         }
 
-        if (newToken.getKycKey() != null) {
-            cachedToken.setKycKey(newToken.getKycKey());
+        if (current.getFreezeKey() == null) {
+            current.setFreezeKey(previous.getFreezeKey());
         }
 
-        if (newToken.getName() != null) {
-            cachedToken.setName(newToken.getName());
+        if (current.getKycKey() == null) {
+            current.setKycKey(previous.getKycKey());
         }
 
-        if (newToken.getPauseKey() != null) {
-            cachedToken.setPauseKey(newToken.getPauseKey());
+        if (current.getName() == null) {
+            current.setName(previous.getName());
         }
 
-        if (newToken.getPauseStatus() != null) {
-            cachedToken.setPauseStatus(newToken.getPauseStatus());
+        if (current.getPauseKey() == null) {
+            current.setPauseKey(previous.getPauseKey());
         }
 
-        if (newToken.getSupplyKey() != null) {
-            cachedToken.setSupplyKey(newToken.getSupplyKey());
+        if (current.getPauseStatus() == null) {
+            current.setPauseStatus(previous.getPauseStatus());
         }
 
-        if (newToken.getSymbol() != null) {
-            cachedToken.setSymbol(newToken.getSymbol());
+        if (current.getSupplyKey() == null) {
+            current.setSupplyKey(previous.getSupplyKey());
         }
 
-        if (newToken.getTotalSupply() != null) {
-            Long newTotalSupply = newToken.getTotalSupply();
-            if (cachedToken.getTotalSupply() != null && newTotalSupply < 0) {
-                // if the cached token has total supply set, and the new total supply is negative because it's an update
-                // from the token transfer of a token dissociate of a deleted token, aggregate the change
-                cachedToken.setTotalSupply(cachedToken.getTotalSupply() + newTotalSupply);
-            } else {
-                // if the cached token doesn't have total supply or the new total supply is non-negative, set it to the
-                // new token's total supply. Later step should apply the change on the current total supply in db if
-                // the value is negative.
-                cachedToken.setTotalSupply(newToken.getTotalSupply());
-            }
+        if (current.getSymbol() == null) {
+            current.setSymbol(previous.getSymbol());
         }
 
-        if (newToken.getTreasuryAccountId() != null) {
-            cachedToken.setTreasuryAccountId(newToken.getTreasuryAccountId());
+        if (current.getTreasuryAccountId() == null) {
+            current.setTreasuryAccountId(previous.getTreasuryAccountId());
         }
 
-        if (newToken.getWipeKey() != null) {
-            cachedToken.setWipeKey(newToken.getWipeKey());
+        if (current.getWipeKey() == null) {
+            current.setWipeKey(previous.getWipeKey());
         }
 
-        cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
-        return cachedToken;
+        Long currentTotalSupply = current.getTotalSupply();
+        Long previousTotalSupply = previous.getTotalSupply();
+
+        if (currentTotalSupply == null) {
+            current.setTotalSupply(previousTotalSupply);
+        } else if (previousTotalSupply != null && currentTotalSupply < 0) {
+            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
+            current.setTotalSupply(previousTotalSupply + currentTotalSupply);
+        }
+
+        return current;
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {

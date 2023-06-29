@@ -16,21 +16,21 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.*;
@@ -47,14 +47,19 @@ import org.hyperledger.besu.datatypes.Address;
  * 4. Remove UsageLimits and GlobalDynamicProperties
  * 5. trackAliases consumes 2 Addresses
  * 6. The class is stateless and the arguments are passed into the functions
+ * 7. Use {@link EntityAddressSequencer} in place of EntityIdSource
  */
 public abstract class AbstractAutoCreationLogic {
-    private final FeeCalculator feeCalculator;
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    public static final String AUTO_MEMO = "auto-created account";
+    private static final String LAZY_MEMO = "lazy-created account";
+    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    private final FeeCalculator feeCalculator;
+    private final EvmProperties evmProperties;
+
+    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
         this.feeCalculator = feeCalculator;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.evmProperties = evmProperties;
     }
 
     /**
@@ -73,9 +78,9 @@ public abstract class AbstractAutoCreationLogic {
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
-            final EntityIdSource ids,
+            final EntityAddressSequencer ids,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        if (change.isForToken() && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
+        if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
         }
         final var alias = change.getNonEmptyAliasIfPresent();
@@ -83,11 +88,22 @@ public abstract class AbstractAutoCreationLogic {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
 
-        final var key = asPrimitiveKeyUnchecked(alias);
-        final JKey jKey = asFcKeyUnchecked(key);
-        var fee = autoCreationFeeFor(jKey, store, timestamp);
+        TransactionBody.Builder syntheticCreation;
+        JKey jKey = null;
+        final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
+        if (isAliasEVMAddress) {
+            syntheticCreation = createHollowAccount(alias, 0L);
+        } else {
+            final var key = asPrimitiveKeyUnchecked(alias);
+            jKey = asFcKeyUnchecked(key);
+            syntheticCreation = createAccount(alias, key, 0L, 0);
+        }
+        var fee = autoCreationFeeFor(syntheticCreation, store, timestamp);
+        if (isAliasEVMAddress) {
+            fee += getLazyCreationFinalizationFee(store, timestamp);
+        }
 
-        final var newId = ids.newAccountId();
+        final var newId = ids.getNewAccountId();
         final var account = new Account(
                 Id.fromGrpcAccount(newId),
                 0L,
@@ -121,19 +137,67 @@ public abstract class AbstractAutoCreationLogic {
         change.replaceNonEmptyAliasWith(fromAccountId(newAccountId));
     }
 
-    private long autoCreationFeeFor(final JKey payerKey, final Store store, Timestamp timestamp) {
+    private long getLazyCreationFinalizationFee(Store store, Timestamp timestamp) {
+        // an AccountID is already accounted for in the
+        // fee estimator, so we just need to pass a stub ECDSA key
+        // in the synthetic crypto update body
         final var updateTxnBody =
                 CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
-        final var cryptoCreateTxn = TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody);
-        final var signedTxn = SignedTransaction.newBuilder()
-                .setBodyBytes(cryptoCreateTxn.build().toByteString())
-                .setSigMap(SignatureMap.getDefaultInstance())
-                .build();
-        final var txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(signedTxn.toByteString())
-                .build();
-        final var accessor = uncheckedFrom(txn);
-        final var fees = feeCalculator.computeFee(accessor, payerKey, store, timestamp);
+        return autoCreationFeeFor(TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody), store, timestamp);
+    }
+
+    private long autoCreationFeeFor(
+            final TransactionBody.Builder cryptoCreateTxn, final Store store, Timestamp timestamp) {
+        final var accessor = synthAccessorFor(cryptoCreateTxn);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+    }
+
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
+     * @param alias
+     * @param balance
+     * @return
+     */
+    private TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
+     * @param alias
+     * @param key
+     * @param balance
+     * @param maxAutoAssociations
+     * @return
+     */
+    private TransactionBody.Builder createAccount(
+            final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    /**
+     * This logic is copied from hedera-services.
+     * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
+     * @param balance
+     * @return
+     */
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 }

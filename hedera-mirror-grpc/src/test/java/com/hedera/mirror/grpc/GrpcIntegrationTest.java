@@ -53,7 +53,7 @@ public abstract class GrpcIntegrationTest {
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
-    private void reset() {
+    protected void reset() {
         cacheManagers.forEach(
                 c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
     }

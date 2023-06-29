@@ -22,7 +22,11 @@ import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUs
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.store.models.*;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -47,7 +51,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public Token getFungibleToken(final Address address, final OnMissing throwIfMissing) {
+    public Token getToken(final Address address, final OnMissing throwIfMissing) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         final var token = tokenAccessor.get(address);
 
@@ -108,7 +112,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void updateFungibleToken(final Token fungibleToken) {
+    public void updateToken(final Token fungibleToken) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         tokenAccessor.set(fungibleToken.getId().asEvmAddress(), fungibleToken);
     }
@@ -117,6 +121,15 @@ public class StoreImpl implements Store {
     public void updateUniqueToken(final UniqueToken updatedUniqueToken) {
         final var uniqueTokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
         uniqueTokenAccessor.set(updatedUniqueToken.getNftId(), updatedUniqueToken);
+    }
+
+    @Override
+    public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
+        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
+                        .getAccount()
+                        .getId()
+                        .num()
+                > 0;
     }
 
     @Override

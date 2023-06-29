@@ -61,9 +61,10 @@ class TokenMintTransactionHandler implements TransactionHandler {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
 
-        var token = Token.of(tokenId);
+        var token = new Token();
+        token.setTimestampLower(consensusTimestamp);
+        token.setTokenId(tokenId.getId());
         token.setTotalSupply(newTotalSupply);
-        token.setModifiedTimestamp(consensusTimestamp);
         entityListener.onToken(token);
 
         var serialNumbers = recordItem.getTransactionRecord().getReceipt().getSerialNumbersList();
