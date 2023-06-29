@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -130,7 +131,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-
+        var entityId = EntityId.of(record.getContractCreateResult().getContractID());
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
@@ -139,13 +140,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertContractEntity(recordItem),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertThat(entityRepository
-                        .findById(
-                                record.getContractCreateResult().getContractID().getContractNum())
+                () -> assertThat(entityRepository.findById(entityId.getEntityNum()))
                         .get()
-                        .getEthereumNonce()
-                        .equals(1)),
+                        .returns(1L, Entity::getEthereumNonce),
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
                 () -> assertContractStateChanges(recordItem));
     }
@@ -156,10 +154,21 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 ContractID.newBuilder().setContractNum(1000L).build();
         ContractID childContractID =
                 ContractID.newBuilder().setContractNum(1001L).build();
-        var parentRecordItem =
-                recordItemBuilder.contractCreate(parentContractID).build();
+        var parentRecordItem = recordItemBuilder
+                .contractCreate(parentContractID)
+                .record(r -> r.setContractCreateResult(r.getContractCreateResult().toBuilder()
+                        .clearContractNonces()
+                        .addContractNonces(ContractNonceInfo.newBuilder()
+                                .setContractId(parentContractID)
+                                .setNonce(2))
+                        .addContractNonces(ContractNonceInfo.newBuilder()
+                                .setContractId(childContractID)
+                                .setNonce(1))))
+                .build();
         var record = parentRecordItem.getTransactionRecord();
         var transactionBody = parentRecordItem.getTransactionBody().getContractCreateInstance();
+        EntityId parentId = EntityId.of(parentContractID);
+        EntityId createdId = EntityId.of(childContractID);
 
         var childRecordItem = recordItemBuilder
                 .contractCreate(childContractID)
@@ -169,7 +178,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .setContractCreateResult(
                                 r.getContractCreateResult().toBuilder().clearContractNonces()))
                 .build();
-        parseRecordItemAndCommit(parentRecordItem, childRecordItem);
+        parseRecordItemsAndCommit(List.of(parentRecordItem, childRecordItem));
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
@@ -177,18 +186,63 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertContractEntity(parentRecordItem),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(2),
-                () -> assertThat(entityRepository
-                        .findById(parentContractID.getContractNum())
+                () -> assertContractCreateResult(transactionBody, record),
+                () -> assertThat(entityRepository.findById(createdId.getEntityNum()))
                         .get()
-                        .getEthereumNonce()
-                        .equals(2)),
-                () -> assertThat(entityRepository
-                        .findById(childContractID.getContractNum())
+                        .returns(1L, Entity::getEthereumNonce),
+                () -> assertThat(entityRepository.findById(parentId.getEntityNum()))
                         .get()
-                        .getEthereumNonce()
-                        .equals(1)),
-                () -> assertContractCreateResult(transactionBody, record));
+                        .returns(2L, Entity::getEthereumNonce));
+    }
+
+    @Test
+    void contractCallChildNonce() {
+        ContractID childContractID =
+                ContractID.newBuilder().setContractNum(1001L).build();
+
+        var setupResult = setupContract(CONTRACT_ID, ContractIdType.PLAIN, true, true);
+        var parentId = setupResult.entity.toEntityId();
+        var parentRecordItem = recordItemBuilder
+                .contractCall()
+                .receipt(r -> r.setContractID(CONTRACT_ID))
+                .transactionBody(b -> b.setContractID(setupResult.protoContractId))
+                .record(r -> r.clearContractCallResult()
+                        .setContractCallResult(recordItemBuilder
+                                .contractFunctionResult(CONTRACT_ID)
+                                .clearContractNonces()
+                                .addContractNonces(ContractNonceInfo.newBuilder()
+                                        .setContractId(CONTRACT_ID)
+                                        .setNonce(2))
+                                .addContractNonces(ContractNonceInfo.newBuilder()
+                                        .setContractId(childContractID)
+                                        .setNonce(1))))
+                .build();
+        var record = parentRecordItem.getTransactionRecord();
+        var transactionBody = parentRecordItem.getTransactionBody().getContractCall();
+        EntityId createdId = EntityId.of(childContractID);
+        var childRecordItem = recordItemBuilder
+                .contractCreate(childContractID)
+                .record(r -> r.setTransactionID(
+                                record.getTransactionID().toBuilder().setNonce(1))
+                        .setParentConsensusTimestamp(record.getConsensusTimestamp())
+                        .setContractCreateResult(
+                                r.getContractCreateResult().toBuilder().clearContractNonces()))
+                .build();
+
+        parseRecordItemsAndCommit(List.of(parentRecordItem, childRecordItem));
+
+        assertAll(
+                () -> assertEquals(2, transactionRepository.count()),
+                () -> assertEquals(3, contractRepository.count()),
+                () -> assertEquals(2, contractResultRepository.count()),
+                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertContractCallResult(transactionBody, record),
+                () -> assertThat(entityRepository.findById(createdId.getEntityNum()))
+                        .get()
+                        .returns(1L, Entity::getEthereumNonce),
+                () -> assertThat(entityRepository.findById(parentId.getEntityNum()))
+                        .get()
+                        .returns(2L, Entity::getEthereumNonce));
     }
     // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
     @Test
@@ -807,16 +861,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         childRecordItem.getTransactionBody(), childRecordItem.getTransactionRecord()),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity),
                 () -> assertCreatedContract(childRecordItem),
-                () -> assertThat(entityRepository
-                        .findById(parentId.getEntityNum())
-                        .get()
-                        .getEthereumNonce()
-                        .equals(2)),
-                () -> assertThat(entityRepository
-                        .findById(childContractId.getContractNum())
-                        .get()
-                        .getEthereumNonce()
-                        .equals(1)),
                 () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
                 () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
