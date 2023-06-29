@@ -54,7 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
-    com.hedera.mirror.common.domain.token.Token databaseToken;
+    private static final Address ADDRESS_ZERO = Address.ZERO;
 
     @InjectMocks
     private TokenDatabaseAccessor tokenDatabaseAccessor;
@@ -72,6 +72,12 @@ class TokenDatabaseAccessorTest {
     private EntityRepository entityRepository;
 
     private DomainBuilder domainBuilder;
+
+    com.hedera.mirror.common.domain.token.Token databaseToken;
+
+    @Mock
+    private Entity defaultEntity;
+
     private Entity entity;
 
     @BeforeEach
@@ -81,13 +87,12 @@ class TokenDatabaseAccessorTest {
                 .entity()
                 .customize(e -> e.id(entityIdNumFromEvmAddress(ADDRESS)))
                 .get();
-        when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
     }
 
     @Test
     void getTokenMappeddValues() {
         setupToken();
-
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
                 .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
@@ -109,6 +114,7 @@ class TokenDatabaseAccessorTest {
     void getCustomFees() {
         setupToken();
         List<CustomFee> customFees = singletonList(new CustomFee());
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         when(customFeeDatabaseAccessor.get(entity.getId())).thenReturn(Optional.of(customFees));
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS))
@@ -122,6 +128,7 @@ class TokenDatabaseAccessorTest {
         databaseToken.setTreasuryAccountId(treasuryId);
 
         Entity treasuryEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         when(treasuryEntity.getShard()).thenReturn(11L);
         when(treasuryEntity.getRealm()).thenReturn(12L);
         when(treasuryEntity.getNum()).thenReturn(13L);
@@ -137,14 +144,18 @@ class TokenDatabaseAccessorTest {
     void getTokenDefaultValues() {
         setupToken();
         databaseToken.setTreasuryAccountId(null);
-
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+        when(entityDatabaseAccessor.get(ADDRESS_ZERO)).thenReturn(Optional.ofNullable(defaultEntity));
+        when(defaultEntity.getShard()).thenReturn(0L);
+        when(defaultEntity.getRealm()).thenReturn(0L);
+        when(defaultEntity.getNum()).thenReturn(0L);
+        when(defaultEntity.getBalance()).thenReturn(0L);
+        assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO)).hasValueSatisfying(token -> assertThat(token)
                 .returns(emptyList(), Token::mintedUniqueTokens)
                 .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                 .returns(false, Token::hasChangedSupply)
                 .returns(null, Token::getTreasury)
-                .returns(null, Token::getAutoRenewAccount)
+                .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
                 .returns(null, Token::getTreasury)
@@ -155,6 +166,7 @@ class TokenDatabaseAccessorTest {
     @Test
     void getTokenKeysValues() {
         setupToken();
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(parseJkey(entity.getKey()), Token::getAdminKey)
@@ -176,6 +188,7 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenEmptyWhenDatabaseTokenNotFound() {
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
@@ -184,6 +197,8 @@ class TokenDatabaseAccessorTest {
     @Test
     void keyIsNullIfNotParsable() {
         setupToken();
+
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         databaseToken.setKycKey("wrOng".getBytes());
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS))
@@ -191,8 +206,8 @@ class TokenDatabaseAccessorTest {
     }
 
     private void setupToken() {
-        final var tokenId = entity.getId();
-        databaseToken = domainBuilder.token().customize(t -> t.tokenId(tokenId)).get();
+        databaseToken =
+                domainBuilder.token().customize(t -> t.tokenId(entity.getId())).get();
         when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
     }
 }

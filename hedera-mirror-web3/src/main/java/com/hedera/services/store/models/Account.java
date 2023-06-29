@@ -46,8 +46,10 @@ import org.hyperledger.besu.datatypes.Address;
  *     3. Changed collection types to SortedMap and SortedSet
  *     4. Added constructors and set methods for creating new instances and achieve immutability
  *     6. Added factory method that returns empty instance
+ *     7. Added isEmptyAccount() method
  */
 public class Account extends HederaEvmAccount {
+    private final Long entityId;
     private final Id id;
     private final long expiry;
     private final long balance;
@@ -68,6 +70,7 @@ public class Account extends HederaEvmAccount {
     @Builder(toBuilder = true)
     @SuppressWarnings("java:S107")
     public Account(
+            Long entityId,
             Id id,
             long expiry,
             long balance,
@@ -84,6 +87,7 @@ public class Account extends HederaEvmAccount {
             int numTreasuryTitles,
             long ethereumNonce) {
         super(id.asEvmAddress());
+        this.entityId = entityId;
         this.id = id;
         this.expiry = expiry;
         this.balance = balance;
@@ -106,12 +110,32 @@ public class Account extends HederaEvmAccount {
      * Create a partial account with only ID and balance values.
      * Used for treasury accounts as those are the only fields we need.
      */
-    public Account(Id id, long balance) {
-        this(id, 0L, balance, false, 0L, 0L, null, 0, new TreeMap<>(), new TreeMap<>(), new TreeSet<>(), 0, 0, 0, 0L);
+    public Account(Long entityId, Id id, long balance) {
+        this(
+                entityId,
+                id,
+                0L,
+                balance,
+                false,
+                0L,
+                0L,
+                null,
+                0,
+                new TreeMap<>(),
+                new TreeMap<>(),
+                new TreeSet<>(),
+                0,
+                0,
+                0,
+                0L);
     }
 
     public static Account getEmptyAccount() {
-        return new Account(Id.DEFAULT, 0L);
+        return new Account(0L, Id.DEFAULT, 0L);
+    }
+
+    public boolean isEmptyAccount() {
+        return this.equals(getEmptyAccount());
     }
 
     /**
@@ -124,6 +148,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewOwnedNfts(final Account oldAccount, final long ownedNfts) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -151,6 +176,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNumAssociations(final Account oldAccount, final int numAssociations) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -179,6 +205,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewPositiveBalances(Account oldAccount, int newNumPositiveBalances) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -208,6 +235,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewAutoAssociationMetadata(
             Account oldAccount, int updatedAutoAssociationMetadata) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -236,6 +264,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewBalance(Account oldAccount, long newBalance) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 newBalance,
@@ -265,6 +294,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewFungibleTokenAllowances(
             Account oldAccount, SortedMap<FcTokenAllowanceId, Long> newTokensMap) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -294,6 +324,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewCryptoAllowances(
             Account oldAccount, SortedMap<EntityNum, Long> newCryptoMap) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -323,6 +354,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewApproveForAllNfts(
             Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -346,6 +378,10 @@ public class Account extends HederaEvmAccount {
 
     public int getAlreadyUsedAutomaticAssociations() {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+    }
+
+    public Long getEntityId() {
+        return entityId;
     }
 
     public Id getId() {
@@ -410,6 +446,10 @@ public class Account extends HederaEvmAccount {
 
     public int getNumPositiveBalances() {
         return numPositiveBalances;
+    }
+
+    public long getEthereumNonce() {
+        return ethereumNonce;
     }
 
     public Account setNumPositiveBalances(int newNumPositiveBalances) {
