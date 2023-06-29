@@ -54,6 +54,11 @@ public class JEd25519Key extends JKey {
     }
 
     @Override
+    public boolean hasEd25519Key() {
+        return true;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;

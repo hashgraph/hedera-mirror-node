@@ -38,7 +38,6 @@ import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
@@ -70,9 +69,6 @@ class AutoCreationLogicTest {
     @Mock
     private EntityAddressSequencer ids;
 
-    @Mock
-    private MirrorEntityAccess mirrorEntityAccess;
-
     private MirrorEvmContractAliases aliasManager;
 
     @Mock
@@ -85,7 +81,7 @@ class AutoCreationLogicTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        aliasManager = new MirrorEvmContractAliases(mirrorEntityAccess);
+        aliasManager = new MirrorEvmContractAliases(store);
         List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         store = new StoreImpl(accessors);
