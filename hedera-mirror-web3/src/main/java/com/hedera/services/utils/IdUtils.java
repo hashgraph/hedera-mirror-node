@@ -22,6 +22,8 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenID;
+
 import java.util.stream.Stream;
 
 public class IdUtils {
@@ -58,6 +60,15 @@ public class IdUtils {
                 .build();
     }
 
+    public static TokenID asToken(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return TokenID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setTokenNum(nativeParts[2])
+                .build();
+    }
+
     static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
@@ -66,4 +77,5 @@ public class IdUtils {
     public static AccountID asAccountWithAlias(String alias) {
         return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
     }
+
 }

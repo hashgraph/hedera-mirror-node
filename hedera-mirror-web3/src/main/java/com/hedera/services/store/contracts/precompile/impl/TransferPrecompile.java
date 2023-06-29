@@ -306,7 +306,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
         final boolean customFees = impliedTransfers != null && impliedTransfers.hasAssessedCustomFees();
