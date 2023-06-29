@@ -117,7 +117,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return Bytes32.fromHexString(network.getHederaChainId().chainId);
+        return network.getChainId();
     }
 
     @Override
@@ -138,23 +138,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(unhex("00"), HederaChainId.MAINNET),
-        TESTNET(unhex("01"), HederaChainId.TESTNET),
-        PREVIEWNET(unhex("02"), HederaChainId.PREVIEWNET),
-        OTHER(unhex("03"), HederaChainId.OTHER);
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127")),
+        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128")),
+        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129")),
+        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"));
 
         private final byte[] ledgerId;
-        private final HederaChainId hederaChainId;
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum HederaChainId {
-        MAINNET("0x0127"),
-        TESTNET("0x0128"),
-        PREVIEWNET("0x0129"),
-        OTHER("0x12A");
-
-        private final String chainId;
+        private final Bytes32 chainId;
     }
 }
