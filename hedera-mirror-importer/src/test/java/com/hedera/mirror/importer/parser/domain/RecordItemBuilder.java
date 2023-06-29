@@ -956,12 +956,15 @@ public class RecordItemBuilder {
         private final AccountID payerAccountId;
         private final RecordItem.RecordItemBuilder recordItemBuilder;
 
+        private boolean trackEntityTransaction;
+
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
             this.recordItemBuilder = RecordItem.builder().hapiVersion(RecordFile.HAPI_VERSION_NOT_SET);
             this.sidecarRecords = new ArrayList<>();
             this.signatureMap = defaultSignatureMap();
             this.type = type;
+            this.trackEntityTransaction = true;
             this.transactionBody = transactionBody;
             this.transactionBodyWrapper = defaultTransactionBody();
             this.transactionRecord = defaultTransactionRecord();
@@ -986,7 +989,7 @@ public class RecordItemBuilder {
                     .collect(Collectors.toList());
 
             return recordItemBuilder
-                    .trackEntityTransaction(true)
+                    .trackEntityTransaction(trackEntityTransaction)
                     .transactionRecordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
@@ -1020,6 +1023,11 @@ public class RecordItemBuilder {
 
         public Builder<T> signatureMap(Consumer<SignatureMap.Builder> consumer) {
             consumer.accept(signatureMap);
+            return this;
+        }
+
+        public Builder<T> trackEntityTransaction(boolean trackEntityTransaction) {
+            this.trackEntityTransaction = trackEntityTransaction;
             return this;
         }
 

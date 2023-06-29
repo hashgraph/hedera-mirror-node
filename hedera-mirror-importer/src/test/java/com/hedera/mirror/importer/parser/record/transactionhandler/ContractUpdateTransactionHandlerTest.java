@@ -123,6 +123,39 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
     }
 
+    @Test
+    void updateTransactionSuccessfulWhenTrackEntityTransactionDisabled() {
+        // given
+        var recordItem =
+                recordItemBuilder.contractUpdate().trackEntityTransaction(false).build();
+        var contractId =
+                EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        var aliasAccount =
+                recordItem.getTransactionBody().getContractUpdateInstance().getAutoRenewAccountId();
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(10L, Entity::getAutoRenewAccountId)
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
+    }
+
     @ParameterizedTest
     @ValueSource(longs = {0, 100})
     void updateTransactionStakedAccountId(long accountNum) {

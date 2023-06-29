@@ -145,28 +145,29 @@ class RecordItemTest {
     @Test
     void testAddEntityTransactionFor() {
         // given, when
-        var state = setupEntityTransactionTest(true, Collections.emptySet());
+        var spec = setupEntityTransactionTest(true, Collections.emptySet());
 
         // then
-        assertThat(state.actual).containsExactlyEntriesOf(state.expected);
+        assertThat(spec.actual).containsExactlyEntriesOf(spec.expected);
     }
 
     @Test
     void testAddEntityTransactionForWhenDisabled() {
         // given, when
-        var state = setupEntityTransactionTest(false, Collections.emptySet());
+        var spec = setupEntityTransactionTest(false, Collections.emptySet());
 
         // then
-        assertThat(state.actual).isEmpty();
+        assertThat(spec.actual).isEmpty();
     }
 
     @Test
     void testAddEntityTransactionForWithExclusion() {
         // given, when
-        var state = setupEntityTransactionTest(true, Set.of(EntityId.of(3, EntityType.ACCOUNT)));
+        var spec = setupEntityTransactionTest(true, Set.of(EntityId.of(3, EntityType.ACCOUNT)));
+        spec.expected.remove(3L);
 
         // then
-        assertThat(state.actual).containsExactlyEntriesOf(state.expected);
+        assertThat(spec.actual).containsExactlyEntriesOf(spec.expected);
     }
 
     @Test
@@ -569,7 +570,7 @@ class RecordItemTest {
         assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
 
-    private EntityTransactionTestState setupEntityTransactionTest(
+    private EntityTransactionTestSpec setupEntityTransactionTest(
             boolean trackEntityTransaction, Set<EntityId> excluded) {
         var random = new SecureRandom();
         long id = random.nextLong(2000) + 2000L;
@@ -629,9 +630,9 @@ class RecordItemTest {
         recordItem.addEntityTransactionFor(schedule);
         excluded.forEach(recordItem::addEntityTransactionFor);
 
-        return new EntityTransactionTestState(recordItem.getEntityTransactions(), expected);
+        return new EntityTransactionTestSpec(recordItem.getEntityTransactions(), expected);
     }
 
-    private record EntityTransactionTestState(
+    private record EntityTransactionTestSpec(
             Map<Long, EntityTransaction> actual, Map<Long, EntityTransaction> expected) {}
 }

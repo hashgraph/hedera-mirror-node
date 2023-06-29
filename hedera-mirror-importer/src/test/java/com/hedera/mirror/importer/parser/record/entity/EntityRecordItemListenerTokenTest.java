@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,12 +28,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import com.google.common.collect.Streams;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -80,10 +83,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -2352,6 +2357,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // token transfer
+        var expectedEntityTransactions =
+                Streams.stream(entityTransactionRepository.findAll()).collect(Collectors.toList());
         var transaction = tokenTransferTransaction();
         var transferList = TokenTransferList.newBuilder()
                 .setToken(TOKEN_ID)
@@ -2367,7 +2374,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build())
                 .build();
         long transferTimestamp = 40L;
-        insertAndParseTransaction(
+        var recordItem = insertAndParseTransaction(
                 transferTimestamp, transaction, builder -> builder.addTokenTransferLists(transferList));
 
         // then
@@ -2403,6 +2410,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), ContractLog::getTopic1)
                 .returns(Bytes.ofUnsignedLong(RECEIVER.getAccountNum()).toArray(), ContractLog::getTopic2)
                 .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), ContractLog::getTopic3);
+
+        var entityIds = Lists.newArrayList(
+                EntityId.of(recordItem.getTransactionBody().getNodeAccountID()),
+                recordItem.getPayerAccountId(),
+                EntityId.of(PAYER),
+                EntityId.of(RECEIVER),
+                EntityId.of(TOKEN_ID));
+        expectedEntityTransactions.addAll(toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values());
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @ParameterizedTest
@@ -2963,6 +2982,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         String symbol2 = "MIRROR";
         createTokenEntity(tokenId2, FUNGIBLE_COMMON, symbol2, 10L, false, false, false);
 
+        var existingEntityTransactions = Streams.stream(entityTransactionRepository.findAll())
+                .collect(Collectors.toMap(EntityTransaction::getId, Function.identity()));
+
         AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
 
         // token transfer
@@ -3017,7 +3039,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // when
         AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
-        insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
+        var recordItem = insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
             builder.addAllTokenTransferLists(transferLists).addAllAssessedCustomFees(protoAssessedCustomFees);
             if (hasAutoTokenAssociations) {
                 builder.addAutomaticTokenAssociations(autoTokenAssociation);
@@ -3041,6 +3063,31 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         if (isPrecompile) {
             assertContractResult(TRANSFER_TIMESTAMP, contractFunctionResultAtomic.get());
         }
+
+        var entityIds = Lists.newArrayList(
+                recordItem.getPayerAccountId(),
+                EntityId.of(recordItem.getTransactionBody().getNodeAccountID()),
+                EntityId.of(accountId),
+                EntityId.of(PAYER),
+                EntityId.of(TOKEN_ID),
+                EntityId.of(tokenId2));
+        assessedCustomFees.forEach(assessedCustomFee -> {
+            entityIds.add(assessedCustomFee.getId().getCollectorAccountId());
+            entityIds.add(assessedCustomFee.getTokenId());
+            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
+        });
+        if (isPrecompile) {
+            entityIds.add(EntityId.of(CONTRACT_ID));
+            entityIds.add(EntityId.of(CREATED_CONTRACT_ID));
+        }
+        var expectedEntityTransactions = new HashMap<>(existingEntityTransactions);
+        toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values()
+                .forEach(e -> expectedEntityTransactions.put(e.getId(), e));
+
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions.values());
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
@@ -3064,14 +3111,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
     }
 
-    private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
-        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
+    private RecordItem insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
+        return insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
     }
 
-    private void insertAndParseTransaction(
+    private RecordItem insertAndParseTransaction(
             long consensusTimestamp, Transaction transaction, Consumer<TransactionRecord.Builder> customBuilder) {
-        parseRecordItemAndCommit(getRecordItem(consensusTimestamp, transaction, customBuilder));
+        var recordItem = getRecordItem(consensusTimestamp, transaction, customBuilder);
+        parseRecordItemAndCommit(recordItem);
         assertTransactionInRepository(ResponseCodeEnum.SUCCESS, consensusTimestamp, null);
+        return recordItem;
     }
 
     private com.hedera.mirror.common.domain.token.NftTransfer domainNftTransfer(
