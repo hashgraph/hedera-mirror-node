@@ -57,6 +57,8 @@ public interface Store {
      * */
     void updateToken(Token fungibleToken);
 
+    void updateUniqueToken(UniqueToken uniqueToken);
+
     boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey);
 
     /**

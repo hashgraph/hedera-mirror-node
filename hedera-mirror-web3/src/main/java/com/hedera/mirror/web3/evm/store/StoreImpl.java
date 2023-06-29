@@ -118,6 +118,12 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public void updateUniqueToken(final UniqueToken uniqueToken) {
+        final var tokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
+        tokenAccessor.set(uniqueToken.getNftId(), uniqueToken);
+    }
+
+    @Override
     public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
         return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
                         .getAccount()

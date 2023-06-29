@@ -251,6 +251,93 @@ public class Account extends HederaEvmAccount {
                 oldAccount.ethereumNonce);
     }
 
+    /**
+     *
+     * Creates new instance of {@link Account} with updated token allowances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newTokensMap
+     * @return the new instance of {@link Account} with updated {@link #fungibleTokenAllowances} property
+     */
+    private Account createNewAccountWithNewFungibleTokenAllowances(
+            Account oldAccount, SortedMap<FcTokenAllowanceId, Long> newTokensMap) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                newTokensMap,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
+    /**
+     *
+     * Creates new instance of {@link Account} with updated crypto allowances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newCryptoMap
+     * @return the new instance of {@link Account} with updated {@link #cryptoAllowances} property
+     */
+    private Account createNewAccountWithNewCryptoAllowances(
+            Account oldAccount, SortedMap<EntityNum, Long> newCryptoMap) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                newCryptoMap,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
+    /**
+     *
+     * Creates new instance of {@link Account} with updated approval for all nfts in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newApproveForAllNfts
+     * @return the new instance of {@link Account} with updated {@link #approveForAllNfts} property
+     */
+    private Account createNewAccountWithNewApproveForAllNfts(
+            Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
+        return new Account(
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                newApproveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -341,6 +428,18 @@ public class Account extends HederaEvmAccount {
 
     public Account setBalance(long balance) {
         return createNewAccountWithNewBalance(this, balance);
+    }
+
+    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> tokensMap) {
+        return createNewAccountWithNewFungibleTokenAllowances(this, tokensMap);
+    }
+
+    public Account setCryptoAllowances(SortedMap<EntityNum, Long> cryptoMap) {
+        return createNewAccountWithNewCryptoAllowances(this, cryptoMap);
+    }
+
+    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
+        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
     }
 
     @Override
