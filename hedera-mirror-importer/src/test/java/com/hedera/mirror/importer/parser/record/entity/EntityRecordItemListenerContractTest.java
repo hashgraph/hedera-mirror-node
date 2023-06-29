@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,7 @@ import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -72,12 +74,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.assertj.core.api.ObjectAssert;
@@ -111,7 +115,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     @ParameterizedTest
-    @CsvSource({"true,true", "false, false"})
+    @CsvSource({"true, true", "false, false"})
     void contractCreate(boolean bytecodeSourceFileId, boolean hasAutoRenewAccount) {
         var recordItem = recordItemBuilder
                 .contractCreate()
@@ -124,12 +128,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     }
                     b.clearAutoRenewAccountId()
                             .setDeclineReward(true)
-                            .setStakedAccountId(
-                                    AccountID.newBuilder().setAccountNum(1L).build());
+                            .setStakedAccountId(AccountID.newBuilder()
+                                    .setAccountNum(domainBuilder.id())
+                                    .build());
                 })
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -142,6 +148,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
                 () -> assertContractStateChanges(recordItem));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
@@ -237,6 +245,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_23_0))
                 .sidecarRecords(s -> s.remove(0))
                 .build();
+        var expectedEntityTransactions = Stream.concat(
+                        getExpectedEntityTransactions(parentRecordItem).stream(),
+                        getExpectedEntityTransactions(childRecordItem).stream())
+                .toList();
 
         // when
         parseRecordItemsAndCommit(List.of(parentRecordItem, childRecordItem));
@@ -256,17 +268,21 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
                 () -> assertContractStateChanges(childRecordItem));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
     void contractCreateFailedWithResult() {
-        RecordItem recordItem = recordItemBuilder
+        var recordItem = recordItemBuilder
                 .contractCreate()
                 .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .sidecarRecords(List::clear)
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -276,6 +292,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertFailedContractCreate(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
@@ -302,9 +320,16 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractCreateDoNotPersist() {
         entityProperties.getPersist().setContracts(false);
 
-        RecordItem recordItem = recordItemBuilder.contractCreate().build();
+        var recordItem = recordItemBuilder.contractCreate().build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
+        var entityIds = List.of(
+                // still have contract id since it's the transaction's main entity
+                EntityId.of(record.getReceipt().getContractID()),
+                EntityId.of(transactionBody.getNodeAccountID()),
+                recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(
+                recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion());
 
         parseRecordItemAndCommit(recordItem);
 
@@ -316,6 +341,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFalse(
                         getContractResult(record.getConsensusTimestamp()).isPresent()));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions.values());
     }
 
     @ParameterizedTest
@@ -693,6 +720,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var transactionBody = recordItem.getTransactionBody();
         var record = recordItem.getTransactionRecord();
         var contractCallTransactionBody = transactionBody.getContractCall();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -706,6 +734,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractStateChanges(recordItem),
                 () -> assertContractAction(recordItem),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @SuppressWarnings("deprecation")
@@ -1423,6 +1453,56 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     private Optional<ContractResult> getContractResult(Timestamp consensusTimestamp) {
         return contractResultRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp));
+    }
+
+    @SuppressWarnings("deprecation")
+    private Collection<EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+        var record = recordItem.getTransactionRecord();
+        boolean isContractCreate = recordItem.getTransactionBody().hasContractCreateInstance();
+
+        var entityIds = recordItem.getTransactionRecord().getTransferList().getAccountAmountsList().stream()
+                .map(aa -> EntityId.of(aa.getAccountID()))
+                .collect(Collectors.toList());
+
+        recordItem.getSidecarRecords().forEach(sidecar -> {
+            sidecar.getActions().getContractActionsList().forEach(action -> {
+                entityIds.add(EntityId.of(action.getCallingAccount()));
+                entityIds.add(EntityId.of(action.getCallingContract()));
+                entityIds.add(EntityId.of(action.getRecipientAccount()));
+                entityIds.add(EntityId.of(action.getRecipientContract()));
+            });
+            entityIds.add(EntityId.of(sidecar.getBytecode().getContractId()));
+            sidecar.getStateChanges()
+                    .getContractStateChangesList()
+                    .forEach(stateChange -> entityIds.add(EntityId.of(stateChange.getContractId())));
+        });
+
+        var contractResult = isContractCreate ? record.getContractCreateResult() : record.getContractCallResult();
+        entityIds.add(EntityId.of(contractResult.getContractID()));
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_23_0)) {
+            contractResult.getCreatedContractIDsList().forEach(id -> entityIds.add(EntityId.of(id)));
+        }
+        contractResult.getLogInfoList().forEach(contractLog -> entityIds.add(EntityId.of(contractLog.getContractID())));
+        entityIds.add(EntityId.of(contractResult.getSenderId()));
+
+        entityIds.add(EntityId.of(recordItem.getTransactionBody().getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+
+        if (isContractCreate) {
+            var body = recordItem.getTransactionBody().getContractCreateInstance();
+            entityIds.add(EntityId.of(record.getReceipt().getContractID()));
+
+            if (recordItem.isSuccessful()) {
+                entityIds.add(EntityId.of(body.getAutoRenewAccountId()));
+                entityIds.add(EntityId.of(body.getFileID()));
+                entityIds.add(EntityId.of(body.getProxyAccountID()));
+                entityIds.add(EntityId.of(body.getStakedAccountId()));
+            }
+        }
+
+        return toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values();
     }
 
     @SuppressWarnings("deprecation")

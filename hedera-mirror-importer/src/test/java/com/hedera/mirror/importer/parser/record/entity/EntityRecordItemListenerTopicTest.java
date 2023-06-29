@@ -16,11 +16,12 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
@@ -50,6 +51,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,11 +84,23 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
-
-        parseRecordItemAndCommit(RecordItem.builder()
+        var recordItem = RecordItem.builder()
                 .transactionRecord(transactionRecord)
                 .transaction(transaction)
-                .build());
+                .build();
+        // topic id should be filtered
+        var entityIds = transactionRecord.getTransferList().getAccountAmountsList().stream()
+                .map(aa -> EntityId.of(aa.getAccountID()))
+                .collect(Collectors.toList());
+        entityIds.add(EntityId.of(
+                recordItem.getTransactionBody().getConsensusCreateTopic().getAutoRenewAccount()));
+        entityIds.add(EntityId.of(recordItem.getTransactionBody().getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values();
+
+        parseRecordItemAndCommit(recordItem);
 
         var entity = getTopicEntity(topicId);
 
@@ -99,6 +113,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         expectedEntity.setTimestampLower(consensusTimestamp);
 
         assertThat(entity).isEqualTo(expectedEntity);
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test

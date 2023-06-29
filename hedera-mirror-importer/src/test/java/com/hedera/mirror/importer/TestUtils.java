@@ -55,11 +55,13 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.springframework.jdbc.core.DataClassRowMapper;
@@ -218,8 +220,14 @@ public class TestUtils {
     }
 
     public static Map<Long, EntityTransaction> toEntityTransactions(RecordItem recordItem, EntityId... entityIds) {
-        return Stream.of(entityIds)
+        return toEntityTransactions(recordItem, List.of(entityIds), Collections.emptySet());
+    }
+
+    public static Map<Long, EntityTransaction> toEntityTransactions(
+            RecordItem recordItem, List<EntityId> entityIds, Set<EntityId> excluded) {
+        return entityIds.stream()
                 .filter(negate(EntityId::isEmpty))
+                .filter(negate(excluded::contains))
                 .map(id -> toEntityTransaction(id, recordItem))
                 .collect(Collectors.toMap(EntityTransaction::getEntityId, Function.identity(), (a, b) -> a));
     }
