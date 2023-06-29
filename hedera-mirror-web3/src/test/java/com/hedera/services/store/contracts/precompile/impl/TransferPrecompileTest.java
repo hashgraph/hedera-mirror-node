@@ -216,7 +216,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         transferPrecompile.body(input, a -> a, null);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -235,7 +236,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         transferPrecompile.body(input, a -> a, null);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -255,7 +257,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         transferPrecompile.body(input, a -> a, null);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -274,7 +277,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         transferPrecompile.body(input, a -> a, null);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -292,7 +296,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         transferPrecompile.body(input, a -> a, null);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars
