@@ -36,7 +36,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
-import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
@@ -99,7 +99,7 @@ class TransferLogicTest {
     };
 
     @Mock
-    EntityIdSource ids;
+    EntityAddressSequencer ids;
 
     HederaTokenStore hederaTokenStore;
     AutoCreationLogic autoCreationLogic;

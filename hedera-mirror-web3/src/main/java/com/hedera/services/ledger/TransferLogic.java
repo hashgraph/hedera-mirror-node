@@ -25,8 +25,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
@@ -58,7 +58,8 @@ public class TransferLogic {
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
-    public void doZeroSum(final List<BalanceChange> changes, Store store, EntityIdSource ids, Address topLevelPayer) {
+    public void doZeroSum(
+            final List<BalanceChange> changes, Store store, EntityAddressSequencer ids, Address topLevelPayer) {
         var validity = OK;
         var autoCreationFee = 0L;
         var updatedPayerBalance = Long.MIN_VALUE;

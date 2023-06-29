@@ -43,10 +43,6 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
                 .build();
     }
 
-    public static NftId withDefaultShardRealm(final long num, final long serialNo) {
-        return new NftId(0, 0, num, serialNo);
-    }
-
     @Override
     public int compareTo(final @NonNull NftId that) {
         return NATURAL_ORDER.compare(this, that);
