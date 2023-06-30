@@ -57,6 +57,8 @@ public class EntityProperties {
 
         private boolean syntheticContractLogs = true;
 
+        private boolean syntheticContractResults = true;
+
         private boolean systemFiles = true;
 
         private boolean tokens = true;

@@ -16,6 +16,7 @@
 
 package com.hedera.services.jproto;
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.ArrayList;
@@ -92,15 +93,42 @@ public abstract class JKey {
             throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
-        List<JKey> jKeys = jkey.getKeyList().getKeysList();
-        List<Key> tkeys = new ArrayList<>();
-        for (JKey aKey : jKeys) {
-            Key res = convertJKey(aKey, depth + 1);
-            tkeys.add(res);
+        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
+            return convertJKeyBasic(jkey);
+        } else {
+            List<JKey> jKeys = jkey.getKeyList().getKeysList();
+            List<Key> tkeys = new ArrayList<>();
+            for (JKey aKey : jKeys) {
+                Key res = convertJKey(aKey, depth + 1);
+                tkeys.add(res);
+            }
+            KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
+            Key result = Key.newBuilder().setKeyList(keys).build();
+            return (result);
         }
-        KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
-        Key result = Key.newBuilder().setKeyList(keys).build();
-        return (result);
+    }
+    /**
+     * Converts a basic JKey to proto Key.
+     *
+     * @param jkey JKey object to be converted
+     * @return the converted proto Key instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    static Key convertJKeyBasic(JKey jkey) throws DecoderException {
+        Key rv;
+        if (jkey.hasEd25519Key()) {
+            rv = Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(jkey.getEd25519()))
+                    .build();
+        } else if (jkey.hasECDSAsecp256k1Key()) {
+            rv = Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key()))
+                    .build();
+        } else {
+            throw new DecoderException("Key type not implemented: key=" + jkey);
+        }
+
+        return rv;
     }
 
     /**
@@ -125,6 +153,16 @@ public abstract class JKey {
         return rv;
     }
 
+    public byte[] primitiveKeyIfPresent() {
+        if (hasEd25519Key()) {
+            return getEd25519();
+        } else if (hasECDSAsecp256k1Key()) {
+            return getECDSASecp256k1Key();
+        } else {
+            return MISSING_ECDSA_SECP256K1_KEY;
+        }
+    }
+
     public abstract boolean isEmpty();
 
     /**
@@ -134,15 +172,31 @@ public abstract class JKey {
      */
     public abstract boolean isValid();
 
-    public byte[] getECDSASecp256k1Key() {
-        return MISSING_ECDSA_SECP256K1_KEY;
+    public boolean hasEd25519Key() {
+        return false;
+    }
+
+    public boolean hasECDSAsecp256k1Key() {
+        return false;
+    }
+
+    public boolean hasKeyList() {
+        return false;
+    }
+
+    public boolean hasThresholdKey() {
+        return false;
+    }
+
+    public JKeyList getKeyList() {
+        return null;
     }
 
     public byte[] getEd25519() {
         return MISSING_ED25519_KEY;
     }
 
-    public JKeyList getKeyList() {
-        return null;
+    public byte[] getECDSASecp256k1Key() {
+        return MISSING_ECDSA_SECP256K1_KEY;
     }
 }

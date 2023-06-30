@@ -47,6 +47,8 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
+import com.hedera.mirror.importer.parser.contractresult.TransferContractResult;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
@@ -83,6 +85,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final SyntheticContractLogService syntheticContractLogService;
+    private final SyntheticContractResultService syntheticContractResultService;
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
@@ -463,9 +466,22 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
 
-        for (var tokenTransferList : recordItem.getTransactionRecord().getTokenTransferListsList()) {
+        List<TokenTransferList> tokenTransferListsList =
+                recordItem.getTransactionRecord().getTokenTransferListsList();
+        for (int i = 0; i < tokenTransferListsList.size(); i++) {
+            TokenTransferList tokenTransferList = tokenTransferListsList.get(i);
+
             insertFungibleTokenTransfers(recordItem, tokenTransferList);
             insertNonFungibleTokenTransfers(recordItem, transaction, tokenTransferList);
+
+            if (i == 0) {
+                var tokenId = tokenTransferList.getToken();
+                var entityTokenId = EntityId.of(tokenId);
+                var payerAccountId = recordItem.getPayerAccountId();
+
+                syntheticContractResultService.create(
+                        new TransferContractResult(recordItem, entityTokenId, payerAccountId));
+            }
         }
     }
 

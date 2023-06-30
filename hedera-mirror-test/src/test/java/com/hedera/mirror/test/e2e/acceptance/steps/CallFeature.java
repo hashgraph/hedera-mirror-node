@@ -45,7 +45,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -145,7 +144,7 @@ public class CallFeature extends AbstractFeature {
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
-    @Before
+    @Given("I successfully create a new fungible token")
     public void createNewFungibleToken() {
         createNewToken(
                 fungibleTokenName,
@@ -156,7 +155,7 @@ public class CallFeature extends AbstractFeature {
                 Collections.emptyList());
     }
 
-    @Before
+    @Given("I successfully create a new non-fungible token")
     public void createNewNonFungibleToken() {
         createNewToken(
                 nonFungibleTokenName,
