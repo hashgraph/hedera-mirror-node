@@ -3,7 +3,8 @@
   "setup": {
     "accounts": [
       {
-        "num": 4
+        "num": 4,
+        "public_key": "6ceecd8bb224da4914d53f292e5624f6f4cf8c134c920e1cac8d06f879df5819"
       },
       {
         "num": 5
@@ -139,26 +140,46 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens/0.20.1/balances?timestamp=1566560004.000000000",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "1566560003.000000000",
-    "balances": [
-      {
-        "account": "0.0.6",
-        "balance": 6
-      },
-      {
-        "account": "0.0.5",
-        "balance": 5
-      },
-      {
-        "account": "0.0.4",
-        "balance": 4
+  "tests": [
+    {
+      "url": "/api/v1/tokens/0.20.1/balances?timestamp=1566560004.000000000",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1566560003.000000000",
+        "balances": [
+          {
+            "account": "0.0.6",
+            "balance": 6
+          },
+          {
+            "account": "0.0.5",
+            "balance": 5
+          },
+          {
+            "account": "0.0.4",
+            "balance": 4
+          }
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "url": "/api/v1/tokens/0.20.1/balances?timestamp=1566560004.000000000&account.publickey=6ceecd8bb224da4914d53f292e5624f6f4cf8c134c920e1cac8d06f879df5819",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1566560003.000000000",
+        "balances": [
+          {
+            "account": "0.0.4",
+            "balance": 4
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }

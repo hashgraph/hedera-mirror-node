@@ -32,43 +32,36 @@
         "type": "FUNGIBLE_COMMON"
       }
     ],
-    "balances": [
+    "tokenaccounts": [
       {
-        "timestamp": 2345,
-        "id": 7,
-        "balance": 70,
-        "tokens": [
-          {
-            "token_num": 2007,
-            "balance": 700
-          },
-          {
-            "token_realm": 20,
-            "token_num": 8,
-            "balance": 777
-          }
-        ]
+        "token_id": "0.0.2007",
+        "account_id": "0.0.7",
+        "balance": 700
       },
       {
-        "timestamp": 2345,
-        "id": 8,
-        "balance": 80,
-        "tokens": [
-          {
-            "token_num": 2007,
-            "balance": 1000
-          },
-          {
-            "token_realm": 20,
-            "token_num": 8,
-            "balance": 500
-          }
-        ]
+        "token_id": "0.20.8",
+        "account_id": "0.0.7",
+        "balance": 777
       },
       {
-        "timestamp": 2345,
-        "id": 9,
-        "balance": 90
+        "token_id": "0.0.2007",
+        "account_id": "0.0.8",
+        "balance": 1000
+      },
+      {
+        "token_id": "0.20.8",
+        "account_id": "0.0.8",
+        "balance": 500
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 5432
+      },
+      {
+        "consensus_start": 50,
+        "consensus_end": 100
       }
     ],
     "transactions": [],
@@ -81,7 +74,7 @@
   ],
   "responseStatus": 200,
   "responseJson": {
-    "timestamp": "0.000002345",
+    "timestamp": "0.000005432",
     "balances": [
       {
         "account": "0.0.8",

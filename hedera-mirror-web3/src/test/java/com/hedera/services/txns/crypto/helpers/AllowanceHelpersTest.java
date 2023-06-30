@@ -17,16 +17,13 @@
 package com.hedera.services.txns.crypto.helpers;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
-import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asModelId;
-import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.BoolValue;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -35,8 +32,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,27 +50,6 @@ class AllowanceHelpersTest {
     final Id tokenId = asModelId("0.0.125");
     final long serial1 = 1L;
     final long serial2 = 2L;
-
-    @Test
-    void aggregatedListCorrectly() {
-        List<NftAllowance> list = new ArrayList<>();
-        final var Nftid = NftAllowance.newBuilder()
-                .setSpender(asAccount("0.0.1000"))
-                .addAllSerialNumbers(List.of(1L, 10L))
-                .setTokenId(asToken("0.0.10001"))
-                .setOwner(asAccount("0.0.5000"))
-                .setApprovedForAll(BoolValue.of(false))
-                .build();
-        final var Nftid2 = NftAllowance.newBuilder()
-                .setSpender(asAccount("0.0.1000"))
-                .addAllSerialNumbers(List.of(1L, 100L))
-                .setTokenId(asToken("0.0.10001"))
-                .setOwner(asAccount("0.0.5000"))
-                .setApprovedForAll(BoolValue.of(false))
-                .build();
-        list.add(Nftid);
-        list.add(Nftid2);
-    }
 
     @Test
     void failsToUpdateSpenderIfWrongOwner() {

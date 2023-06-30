@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.IdUtils.asContract;
 
@@ -43,21 +44,23 @@ import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class DecodingFacade {
-    private static final int WORD_LENGTH = 32;
-    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
-    private static final int ADDRESS_BYTES_LENGTH = 20;
-
     public static final List<NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
     public static final List<FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
-
-    /* --- Token Create Structs --- */
-    private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
-    public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
+    public static final String HEDERA_TOKEN_STRUCT =
+            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_V2 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String HEDERA_TOKEN_STRUCT_V3 =
+            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    private static final int WORD_LENGTH = 32;
+    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
+    private static final int ADDRESS_BYTES_LENGTH = 20;
+    /* --- Token Create Structs --- */
+    private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
+    public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
             + TOKEN_KEY_DECODER
             + ARRAY_BRACKETS
