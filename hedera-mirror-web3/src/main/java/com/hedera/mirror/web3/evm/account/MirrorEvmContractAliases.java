@@ -16,13 +16,10 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
@@ -44,7 +41,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> pendingAliases = new HashMap<>();
     final Set<Address> pendingRemovals = new HashSet<>();
 
-    private final MirrorEntityAccess mirrorEntityAccess;
+    private final Store store;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
@@ -91,15 +88,17 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Address resolveFromEntityAccess(Address addressOrAlias) {
-        final var entity = mirrorEntityAccess
-                .findEntity(addressOrAlias)
-                .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
-
-        if (entity.getType() != EntityType.TOKEN && entity.getType() != EntityType.CONTRACT) {
-            throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
+        final Address resolvedAddress;
+        final var token = store.getToken(addressOrAlias, OnMissing.DONT_THROW);
+        // if token is missing - check for account
+        if (token.isEmptyToken()) {
+            // if token and account are missing - throw
+            final var account = store.getAccount(addressOrAlias, OnMissing.THROW);
+            resolvedAddress = account.getAccountAddress();
+        } else {
+            // if token is present - get id
+            resolvedAddress = token.getId().asEvmAddress();
         }
-
-        final var resolvedAddress = Address.wrap(Bytes.wrap(toEvmAddress(entity.toEntityId())));
         link(addressOrAlias, resolvedAddress);
 
         return resolvedAddress;

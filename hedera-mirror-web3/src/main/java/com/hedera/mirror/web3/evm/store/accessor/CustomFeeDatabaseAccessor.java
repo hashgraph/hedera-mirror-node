@@ -33,14 +33,14 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<CustomFee>> {
+public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<CustomFee>> {
     private final CustomFeeRepository customFeeRepository;
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Long tokenId) {
-        final var customFeesList = customFeeRepository.findByTokenId(tokenId).stream()
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId) {
+        final var customFeesList = customFeeRepository.findByTokenId((Long) tokenId).stream()
                 .filter(customFee -> customFee.getCollectorAccountId() != null)
                 .map(this::mapCustomFee)
                 .toList();

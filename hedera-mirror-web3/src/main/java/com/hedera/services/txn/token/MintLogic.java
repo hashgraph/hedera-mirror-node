@@ -57,7 +57,7 @@ public class MintLogic {
         this.validator = validator;
     }
 
-    public void mint(
+    public TokenModificationResult mint(
             final Id targetId,
             final long amount,
             final List<ByteString> metaDataList,
@@ -83,6 +83,8 @@ public class MintLogic {
         store.updateToken(tokenModificationResult.token());
         store.updateTokenRelationship(tokenModificationResult.tokenRelationship());
         store.updateAccount(tokenModificationResult.token().getTreasury());
+
+        return tokenModificationResult;
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {

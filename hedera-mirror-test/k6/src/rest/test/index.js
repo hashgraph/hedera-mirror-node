@@ -59,6 +59,7 @@ import * as tokens from './tokens.js';
 import * as tokensFungibleCommon from './tokensFungibleCommon.js';
 import * as tokensId from './tokensId.js';
 import * as tokensIdBalances from './tokensIdBalances.js';
+import * as tokensIdBalancesTimestamp from './tokensIdBalancesTimestamp.js';
 import * as tokensNfts from './tokensNfts.js';
 import * as tokensNftsSerial from './tokensNftsSerial.js';
 import * as tokensNftsSerialTransactions from './tokensNftsSerialTransactions.js';
@@ -118,6 +119,7 @@ const tests = {
   tokensFungibleCommon,
   tokensId,
   tokensIdBalances,
+  tokensIdBalancesTimestamp,
   tokensNfts,
   tokensNftsSerial,
   tokensNftsSerialTransactions,

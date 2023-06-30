@@ -192,6 +192,7 @@ class HederaEvmWorldStateTest {
         final var actualSubject = subject.updater();
 
         final var accountModel = new com.hedera.services.store.models.Account(
+                0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
                 123L,

@@ -177,8 +177,8 @@ class MirrorHTSPrecompiledContractTest {
 
     @Test
     void prepareComputationForUnsupportedPrecompileThrowsException() {
-        // mint signature
-        final var functionHash = Bytes.fromHexString("0x278e0b88");
+        // updateTokenKeys signature
+        final var functionHash = Bytes.fromHexString("0x6fc3cbaf");
 
         given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
         given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);

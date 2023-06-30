@@ -32,7 +32,6 @@ import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenAccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
@@ -148,13 +147,11 @@ class StoreImplTest {
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
                 tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
-        final var tokenAccountDatabaseAccessor = new TokenAccountDatabaseAccessor(tokenAccountRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
-                uniqueTokenDatabaseAccessor,
-                tokenAccountDatabaseAccessor);
+                uniqueTokenDatabaseAccessor);
         subject = new StoreImpl(accessors);
     }
 

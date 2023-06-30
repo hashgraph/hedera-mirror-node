@@ -25,16 +25,18 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied model from hedera-services.
- * <p>
+ *
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
- * <p>
+ *
  * Differences from the original:
- * 1. Added address field for convenience
- * 2. Added factory method that returns empty instance
+ *  1. Added address field for convenience
+ *  2. Added factory method that returns empty instance
+ *  3. Added equals() and hashCode()
+ *  4. Added isEmptyUniqueToken()
  */
 public class UniqueToken {
     private final Id tokenId;
@@ -70,6 +72,10 @@ public class UniqueToken {
                 newOwner,
                 oldUniqueToken.spender,
                 oldUniqueToken.metadata);
+    }
+
+    public boolean isEmptyUniqueToken() {
+        return this.equals(getEmptyUniqueToken());
     }
 
     public NftId getNftId() {
@@ -109,6 +115,18 @@ public class UniqueToken {
     }
 
     @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("tokenID", tokenId)
+                .add("serialNum", serialNumber)
+                .add("metadata", metadata)
+                .add("creationTime", creationTime)
+                .add("owner", owner)
+                .add("spender", spender)
+                .toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -132,17 +150,5 @@ public class UniqueToken {
         int result = Objects.hash(tokenId, address, serialNumber, creationTime, owner, spender, nftId);
         result = 31 * result + Arrays.hashCode(metadata);
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("tokenID", tokenId)
-                .add("serialNum", serialNumber)
-                .add("metadata", metadata)
-                .add("creationTime", creationTime)
-                .add("owner", owner)
-                .add("spender", spender)
-                .toString();
     }
 }

@@ -16,11 +16,17 @@
 
 package com.hedera.services.txn.token;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -72,7 +78,7 @@ class DissociateLogicTest {
     @BeforeEach
     public void beforeEach() {
         when(accountId.asEvmAddress()).thenReturn(accountAddress);
-        account = new Account(accountId, 0L);
+        account = new Account(0L, accountId, 0L);
         tokenRelationship = new TokenRelationship(token, account);
         dissociateLogic = new DissociateLogic();
         spyAccount = spy(account);
@@ -123,7 +129,7 @@ class DissociateLogicTest {
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
 
         verify(spyAccount).setNumAssociations(anyInt());
-        var expectedAccount = new Account(accountId, 0L);
+        var expectedAccount = new Account(0L, accountId, 0L);
         expectedAccount = expectedAccount.setNumAssociations(2);
         verify(store).updateAccount(expectedAccount);
     }
@@ -182,21 +188,21 @@ class DissociateLogicTest {
         setupToken();
         setupTokenRelationship();
         setupAccount();
-        final var treasury = new Account(treasuryId, 15L);
+        final var treasury = new Account(0L, treasuryId, 15L);
         final var spiedTreasury = spy(treasury);
         when(token.getTreasury()).thenReturn(spiedTreasury);
         when(token.isDeleted()).thenReturn(false);
 
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
         verify(spiedTreasury).setBalance(18L);
-        var updatedTreasury = new Account(treasuryId, 18L);
+        var updatedTreasury = new Account(0L, treasuryId, 18L);
         verify(store).updateAccount(updatedTreasury);
     }
 
     @Test
     void verifyDecrementedAutoAssociations() {
         var newAccount =
-                new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false);
+                new Account(0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
@@ -214,7 +220,7 @@ class DissociateLogicTest {
     @Test
     void verifyUpdagtedNumPositiveBalance() {
         var newAccount =
-                new Account(accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false);
+                new Account(0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =

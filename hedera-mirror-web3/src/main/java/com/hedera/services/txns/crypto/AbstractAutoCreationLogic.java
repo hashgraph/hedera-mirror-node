@@ -105,6 +105,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var newId = ids.getNewAccountId();
         final var account = new Account(
+                0L,
                 Id.fromGrpcAccount(newId),
                 0L,
                 0L,

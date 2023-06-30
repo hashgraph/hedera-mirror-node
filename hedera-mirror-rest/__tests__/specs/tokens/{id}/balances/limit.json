@@ -40,103 +40,66 @@
         "type": "FUNGIBLE_COMMON"
       }
     ],
-    "balances": [
+    "tokenaccounts": [
       {
-        "timestamp": 2345,
-        "id": 17,
-        "balance": 700,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 300
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 301
-          }
-        ]
-      },
-      {
-        "timestamp": 2345,
-        "id": 18,
-        "balance": 200,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 299
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 299
-          }
-        ]
-      },
-      {
-        "timestamp": 2345,
-        "id": 19,
-        "balance": 900,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 301
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 401
-          }
-        ]
-      },
-      {
-        "timestamp": 2345,
-        "id": 20,
-        "balance": 450,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 302
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 402
-          }
-        ]
-      },
-      {
-        "timestamp": 2345,
-        "id": 21,
+        "token_id": "0.20.1",
+        "account_id": "0.0.17",
         "balance": 300
       },
       {
-        "timestamp": 2345,
-        "id": 22,
-        "balance": 150,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 350
-          }
-        ]
+        "token_id": "0.20.2",
+        "account_id": "0.0.17",
+        "balance": 301
       },
       {
-        "timestamp": 2345,
-        "id": 23,
-        "balance": 100,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 450
-          }
-        ]
+        "token_id": "0.20.1",
+        "account_id": "0.0.18",
+        "balance": 299
+      },
+      {
+        "token_id": "0.20.2",
+        "account_id": "0.0.18",
+        "balance": 299
+      },
+      {
+        "token_id": "0.20.1",
+        "account_id": "0.0.19",
+        "balance": 301
+      },
+      {
+        "token_id": "0.20.2",
+        "account_id": "0.0.19",
+        "balance": 401
+      },
+      {
+        "token_id": "0.20.1",
+        "account_id": "0.0.20",
+        "balance": 302
+      },
+      {
+        "token_id": "0.20.2",
+        "account_id": "0.0.20",
+        "balance": 402
+      },
+      {
+        "token_id": "0.20.1",
+        "account_id": "0.0.22",
+        "balance": 350
+      },
+      {
+        "token_id": "0.20.1",
+        "account_id": "0.0.23",
+        "balance": 450
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 5432
+      },
+      {
+        "consensus_start": 50,
+        "consensus_end": 100
       }
     ],
     "transactions": [],
@@ -147,7 +110,7 @@
       "url": "/api/v1/tokens/0.20.1/balances?account.balance=gte:300&limit=2&order=asc",
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "0.000002345",
+        "timestamp": "0.000005432",
         "balances": [
           {
             "account": "0.0.17",
@@ -167,7 +130,7 @@
       "url": "/api/v1/tokens/0.20.1/balances?account.balance=gte:300&limit=5&order=asc",
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "0.000002345",
+        "timestamp": "0.000005432",
         "balances": [
           {
             "account": "0.0.17",
