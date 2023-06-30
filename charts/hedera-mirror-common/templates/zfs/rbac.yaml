@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: common
+  name: label-reader
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["pods", "nodes"]
+    verbs: ["get", "watch", "list"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: label-reader
+  namespace: common
+subjects:
+  #TODO parameterize
+  - kind: ServiceAccount
+    name: default
+    namespace: common
+roleRef:
+  kind: ClusterRole
+  name: label-reader
+  apiGroup: rbac.authorization.k8s.io

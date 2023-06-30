@@ -16,6 +16,7 @@ spec:
         name: node-initializer
         app: zfs-init
     spec:
+      serviceAccount: {{ .Values.zfs.init.serviceAccount.name }}
       containers:
         - image: "gcr.io/google-containers/pause:2.0"
           name: pause

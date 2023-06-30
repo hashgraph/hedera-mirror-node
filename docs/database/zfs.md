@@ -188,7 +188,8 @@ available in the zpool again
     5. perform the import `sudo zpool import <poolname> -f`
     6. rename the imported pool to match the name of the one previously
        destroyed `sudo zfs rename <poolName>/<pvcId> to <poolName>/<idShownInStep2>`
-10. Ready to deploy all charts
+10. Note that the data is now being served from the disk attached in step 9.1
+11. Ready to deploy all charts
 
 ## Used dependencies
 
