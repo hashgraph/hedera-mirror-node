@@ -57,11 +57,7 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,8 +69,10 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +98,11 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
 
     private Transaction transaction;
+
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setTrackNonce(true);
+    }
 
     @Test
     void processContractCall() {
@@ -167,18 +170,25 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
+    @SuppressWarnings("deprecation")
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void processContractNonce(boolean isTrackNonce) {
+    @CsvSource({"true,2", "false,1"})
+    void processContractNonce(boolean isTrackNonce, long isNonce) {
         entityProperties.getPersist().setTrackNonce(isTrackNonce);
         // given
-        var entity = domainBuilder.entity().persist();
-
+        var entity = domainBuilder.entity().customize(c -> c.type(CONTRACT)).persist();
         domainBuilder.contract().customize(c -> c.id(entity.getId())).persist();
-
+        var contractId = ContractID.newBuilder().setContractNum(entity.getId()).build();
         RecordItem recordItem = recordItemBuilder
-                .contractCall(
-                        ContractID.newBuilder().setContractNum(entity.getId()).build())
+                .contractCall(contractId)
+                .record(r -> r.clearContractCallResult()
+                        .setContractCallResult(recordItemBuilder
+                                .contractFunctionResult(contractId)
+                                .clearCreatedContractIDs()
+                                .clearContractNonces()
+                                .addContractNonces(ContractNonceInfo.newBuilder()
+                                        .setContractId(contractId)
+                                        .setNonce(2L))))
                 .build();
 
         process(recordItem);
@@ -193,7 +203,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .hasSize(1)
                 .first()
                 .returns(entity.getId(), Entity::getId)
-                .returns(1L, Entity::getEthereumNonce);
+                .returns(isNonce, Entity::getEthereumNonce);
     }
 
     @Test

@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,6 +57,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Mock(strictness = LENIENT)
     protected EthereumTransactionParser ethereumTransactionParser;
+
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setTrackNonce(true);
+    }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -243,11 +249,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
-        var senderId = functionResult.getSenderId().getAccountNum();
-        verify(entityListener)
-                .onEntity(argThat(
-                        e -> e.getId() == senderId && e.getTimestampRange() == null && e.getEthereumNonce() == null));
+        verify(entityListener, never()).onEntity(any());
     }
 
     @Test
