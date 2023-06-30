@@ -57,18 +57,18 @@ public interface Store {
      * */
     void updateToken(Token fungibleToken);
 
-    void updateUniqueToken(UniqueToken updatedUniqueToken);
+    void updateUniqueToken(UniqueToken uniqueToken);
 
     boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey);
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.
-     */
+     * */
     void commit();
 
     /**
      * Adding a safe layer on top of the in-memory state to write to, while still using the database as a backup.
-     */
+     * */
     void wrap();
 
     enum OnMissing {
