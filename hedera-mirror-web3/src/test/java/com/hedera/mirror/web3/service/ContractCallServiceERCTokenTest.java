@@ -21,10 +21,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,7 +34,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     void ercReadOnlyPrecompileOperationsTest(ErcContractReadOnlyFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
@@ -49,7 +46,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     void ercModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -59,7 +57,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @Test
     void metadataOf() {
         final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ERC_ABI_PATH, NFT_ADDRESS, 1L);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
     }
@@ -68,39 +66,11 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
-        final var serviceParameters = serviceParametersForEthCall(functionHash);
+        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(Bytes.EMPTY.toHexString());
-    }
-
-    private CallServiceParameters serviceParametersForEthCall(final Bytes callData) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(0L)
-                .receiver(ERC_CONTRACT_ADDRESS)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(true)
-                .callType(ETH_CALL)
-                .build();
-    }
-
-    private CallServiceParameters serviceParametersForEthEstimateGas(final Bytes callData) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(0L)
-                .receiver(ERC_CONTRACT_ADDRESS)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .callType(ETH_ESTIMATE_GAS)
-                .build();
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Precompile not supported for non-static frames");
     }
 
     @RequiredArgsConstructor
