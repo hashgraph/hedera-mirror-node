@@ -121,7 +121,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         // then
         assertEntity(accountId, recordItem.getConsensusTimestamp())
-                .returns(false, Entity::isDeclineReward)
+                .returns(false, Entity::getDeclineReward)
                 .returns(stakedAccountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
@@ -142,7 +142,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         // then
         assertEntity(accountId, recordItem.getConsensusTimestamp())
-                .returns(true, Entity::isDeclineReward)
+                .returns(true, Entity::getDeclineReward)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);

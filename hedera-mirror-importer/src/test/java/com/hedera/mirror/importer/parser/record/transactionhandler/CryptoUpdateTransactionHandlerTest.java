@@ -64,7 +64,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .transactionBody(body -> body.clear().setDeclineReward(BoolValue.of(declineReward)))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(declineReward, Entity::isDeclineReward)
+                .returns(declineReward, Entity::getDeclineReward)
                 .returns(null, Entity::getStakedAccountId)
                 .returns(null, Entity::getStakedNodeId)
                 .returns(
@@ -82,7 +82,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .transactionBody(body -> body.clear().setStakedAccountId(accountId))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(null, Entity::isDeclineReward)
+                .returns(null, Entity::getDeclineReward)
                 .returns(accountNum, Entity::getStakedAccountId)
                 .returns(-1L, Entity::getStakedNodeId)
                 .returns(
@@ -99,7 +99,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(0L, Entity::getStakedAccountId)
-                .returns(true, Entity::isDeclineReward)
+                .returns(true, Entity::getDeclineReward)
                 .returns(
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
     }

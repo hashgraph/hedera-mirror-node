@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.converter;
+package com.hedera.mirror.grpc.converter;
 
 import jakarta.inject.Named;
 import java.time.Instant;

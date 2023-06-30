@@ -191,7 +191,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
     }
 
     private DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> fromEntity(Entity entity) {
-        return domainBuilder.entityStake().customize(es -> es.declineRewardStart(entity.isDeclineReward())
+        return domainBuilder.entityStake().customize(es -> es.declineRewardStart(entity.getDeclineReward())
                 .id(entity.getId())
                 .stakedNodeIdStart(entity.getStakedNodeId()));
     }

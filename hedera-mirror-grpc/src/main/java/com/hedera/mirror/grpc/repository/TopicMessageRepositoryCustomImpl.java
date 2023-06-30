@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.grpc.repository;
 
-import com.hedera.mirror.common.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;

@@ -19,8 +19,9 @@ package com.hedera.mirror.grpc.retriever;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.annotation.Resource;
 import java.time.Duration;
@@ -213,7 +214,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void startTimeEquals(boolean throttle) {
         Instant now = Instant.now();
-        domainBuilder.topicMessage(t -> t.consensusTimestamp(now)).block();
+        domainBuilder.topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now))).block();
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
@@ -229,7 +230,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void startTimeAfter(boolean throttle) {
         Instant now = Instant.now();
-        domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))).block();
+        domainBuilder.topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now) - 1L))
+                .block();
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
@@ -243,9 +245,9 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void topicId(boolean throttle) {
-        domainBuilder.topicMessage(t -> t.topicId(0)).block();
-        domainBuilder.topicMessage(t -> t.topicId(1)).block();
-        domainBuilder.topicMessage(t -> t.topicId(2)).block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(0L, EntityType.TOPIC))).block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC))).block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC))).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)

@@ -18,7 +18,10 @@ package com.hedera.mirror.grpc.domain;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -92,7 +95,7 @@ public class DomainBuilder {
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
 
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
-                .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
+                .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plus(sequenceNumber, ChronoUnit.NANOS)))
                 .initialTransactionId(TransactionID.newBuilder()
                         .setAccountID(AccountID.newBuilder().setAccountNum(10).build())
                         .setTransactionValidStart(Timestamp.newBuilder()
@@ -103,10 +106,10 @@ public class DomainBuilder {
                         .build()
                         .toByteArray())
                 .message(new byte[] {0, 1, 2})
-                .payerAccountId(10L)
+                .payerAccountId(EntityId.of(10L, EntityType.ACCOUNT))
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
-                .topicId(100)
+                .topicId(EntityId.of(100L, EntityType.TOPIC))
                 .runningHashVersion(2);
 
         customizer.accept(builder);
@@ -117,7 +120,7 @@ public class DomainBuilder {
     public Flux<TopicMessage> topicMessages(long count, Instant startTime) {
         List<Publisher<TopicMessage>> publishers = new ArrayList<>();
         for (int i = 0; i < count; ++i) {
-            Instant consensusTimestamp = startTime.plusNanos(i);
+            long consensusTimestamp = InstantToLongConverter.INSTANCE.convert(startTime.plusNanos(i));
             publishers.add(topicMessage(t -> t.consensusTimestamp(consensusTimestamp)));
         }
         return Flux.concat(publishers);

@@ -400,7 +400,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // Create a non-history entity update when there's no such entity in state
             var entity = Entity.builder()
                     .id(stakingRewardTransfer.getAccountId())
-                    .memo("")
                     .stakePeriodStart(stakePeriodStart)
                     .build();
             onEntity(entity);
@@ -640,7 +639,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         dest.addBalance(src.getBalance());
-        dest.setDeclineReward(src.isDeclineReward());
+
+        if (dest.getDeclineReward() == null) {
+            dest.setDeclineReward(src.getDeclineReward());
+        }
 
         if (dest.getDeleted() == null) {
             dest.setDeleted(src.getDeleted());

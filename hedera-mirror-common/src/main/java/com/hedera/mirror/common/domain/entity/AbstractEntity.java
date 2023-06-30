@@ -35,7 +35,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
-import org.jetbrains.annotations.NotNull;
 
 @Data
 @MappedSuperclass
@@ -68,7 +67,7 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long createdTimestamp;
 
-    private boolean declineReward;
+    private Boolean declineReward;
 
     private Boolean deleted;
 
@@ -88,7 +87,6 @@ public abstract class AbstractEntity implements History {
 
     private Integer maxAutomaticTokenAssociations;
 
-    @NotNull
     private String memo;
 
     @Column(updatable = false)

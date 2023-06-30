@@ -18,8 +18,8 @@ package com.hedera.mirror.grpc.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.DbProperties;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import io.micrometer.observation.ObservationRegistry;
 import io.vertx.core.Vertx;

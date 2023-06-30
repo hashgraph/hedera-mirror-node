@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.grpc.domain;
 
-import com.hedera.mirror.common.converter.InstantToLongConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.validation.EndTime;
 import com.hedera.mirror.grpc.validation.StartTime;
 import jakarta.validation.constraints.Min;

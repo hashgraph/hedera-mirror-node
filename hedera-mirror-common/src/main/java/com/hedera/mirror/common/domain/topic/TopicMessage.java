@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import java.util.Comparator;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,7 +38,9 @@ import org.springframework.data.domain.Persistable;
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor
-public class TopicMessage implements Persistable<Long>, StreamMessage {
+public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>, StreamMessage {
+     private static final Comparator<TopicMessage> COMPARATOR =
+             Comparator.nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber));
 
     private Integer chunkNum;
 
@@ -76,4 +79,10 @@ public class TopicMessage implements Persistable<Long>, StreamMessage {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
+
+    @Override
+    public int compareTo(TopicMessage other) {
+        return COMPARATOR.compare(this, other);
+    }
+
 }

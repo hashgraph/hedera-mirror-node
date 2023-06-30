@@ -237,7 +237,7 @@ class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
         assertEntityStakes().containsExactly(entityStake);
         var expectedEntityHistory = Entity.builder()
                 .id(entity.getId())
-                .declineReward(entity.isDeclineReward())
+                .declineReward(entity.getDeclineReward())
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .build();

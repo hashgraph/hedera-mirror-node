@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.grpc.listener;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.listener.ListenerProperties.ListenerType;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -81,13 +81,12 @@ public class CompositeTopicListener implements TopicListener {
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
-        return message.getTopicId() == filter.getTopicId().getId()
+        return message.getTopicId().getId() == filter.getTopicId().getId()
                 && message.getConsensusTimestamp() >= filter.getStartTimeLong();
     }
 
     private void recordMetric(TopicMessage topicMessage) {
-        long latency = System.currentTimeMillis()
-                - topicMessage.getConsensusTimestampInstant().toEpochMilli();
+        long latency = System.currentTimeMillis() - (topicMessage.getConsensusTimestamp() / 1000000);
         consensusLatencyTimer.record(latency, TimeUnit.MILLISECONDS);
     }
 }

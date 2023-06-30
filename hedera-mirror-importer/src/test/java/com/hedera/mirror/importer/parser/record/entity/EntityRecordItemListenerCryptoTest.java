@@ -426,7 +426,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                         dbAccountEntity.getTimestampLower()),
                 () -> assertFalse(dbAccountEntity.getReceiverSigRequired()),
-                () -> assertFalse(dbAccountEntity.isDeclineReward()),
+                () -> assertFalse(dbAccountEntity.getDeclineReward()),
                 () -> assertEquals(cryptoUpdateTransactionBody.getStakedNodeId(), dbAccountEntity.getStakedNodeId()),
                 () -> assertEquals(AbstractEntity.ACCOUNT_ID_CLEARED, dbAccountEntity.getStakedAccountId()),
                 () -> assertEquals(
@@ -651,7 +651,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp()),
-                () -> assertTrue(dbAccountEntity.isDeclineReward()),
+                () -> assertTrue(dbAccountEntity.getDeclineReward()),
                 () -> assertEquals(stakedAccountId, dbAccountEntity.getStakedAccountId()),
                 () -> assertEquals(-1L, dbAccountEntity.getStakedNodeId()));
     }

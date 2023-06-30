@@ -20,8 +20,9 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.GrpcProperties;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
@@ -76,7 +77,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .filter(t -> t.compareTo(topicContext.getLast()) > 0); // Ignore duplicates
 
         if (filter.getEndTime() != null) {
-            flux = flux.takeWhile(t -> t.getConsensusTimestampInstant().isBefore(filter.getEndTime()));
+            flux = flux.takeWhile(t ->
+                    LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp()).isBefore(filter.getEndTime()));
         }
 
         if (filter.hasLimit()) {
@@ -111,8 +113,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessage last = topicContext.getLast();
         long limit =
                 filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
-        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
-
+        Instant startTime = last != null
+                ? LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1)
+                : filter.getStartTime();
         TopicMessageFilter newFilter =
                 filter.toBuilder().limit(limit).startTime(startTime).build();
 
@@ -158,9 +161,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         TopicMessageFilter newFilter = topicContext.getFilter().toBuilder()
-                .endTime(current.getConsensusTimestampInstant())
+                .endTime(LongToInstantConverter.INSTANCE.convert(current.getConsensusTimestamp()))
                 .limit(numMissingMessages)
-                .startTime(last.getConsensusTimestampInstant().plusNanos(1))
+                .startTime(LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1))
                 .build();
 
         log.info(

@@ -328,7 +328,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     private EntityStake fromEntity(Entity entity, long endStakePeriod, long stakedToMe, long stakeTotalStart) {
         return EntityStake.builder()
-                .declineRewardStart(entity.isDeclineReward())
+                .declineRewardStart(entity.getDeclineReward())
                 .endStakePeriod(endStakePeriod)
                 .id(entity.getId())
                 .stakedNodeIdStart(Optional.ofNullable(entity.getStakedNodeId()).orElse(-1L))

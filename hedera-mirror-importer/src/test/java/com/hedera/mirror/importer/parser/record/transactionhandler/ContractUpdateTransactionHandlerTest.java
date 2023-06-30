@@ -123,7 +123,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(accountNum, Entity::getStakedAccountId)
-                .returns(null, Entity::isDeclineReward)
+                .returns(null, Entity::getDeclineReward)
                 .returns(-1L, Entity::getStakedNodeId)
                 .returns(
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
@@ -131,7 +131,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void updateTransactionDeclineReward(boolean declineReward) {
+    void updateTransactionDeclineReward(Boolean declineReward) {
         RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
         RecordItem withDeclineValueSet = recordItemBuilder
                 .contractUpdate()
@@ -140,7 +140,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .clearStakedNodeId())
                 .build();
         setupForContractUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
-                .returns(declineReward, Entity::isDeclineReward)
+                .returns(declineReward, Entity::getDeclineReward)
                 // since the contract is not being saved in the database,
                 // it does not have the default values of -1 for the staking fields.
                 .returns(null, Entity::getStakedNodeId)
@@ -159,7 +159,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(0L, Entity::getStakedAccountId)
-                .returns(true, Entity::isDeclineReward)
+                .returns(true, Entity::getDeclineReward)
                 .returns(
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
     }

@@ -36,7 +36,6 @@ dependencies {
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
     api("org.springframework.boot:spring-boot-starter-log4j2")
-    implementation("jakarta.inject:jakarta.inject-api")
     testImplementation("org.hyperledger.besu:evm")
     testClasses(sourceSets["test"].output)
 }

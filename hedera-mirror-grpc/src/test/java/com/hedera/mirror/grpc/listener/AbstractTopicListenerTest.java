@@ -19,9 +19,10 @@ package com.hedera.mirror.grpc.listener;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.annotation.Resource;
 import java.time.Duration;
@@ -178,7 +179,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeEquals() {
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future));
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t ->
+                t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future)));
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(future).topicId(topicId).build();
 
@@ -195,7 +197,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeAfter() {
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future.minusNanos(1)));
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t ->
+                t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.minusNanos(1))));
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(future).topicId(topicId).build();
 
@@ -212,9 +215,12 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Test
     void topicId() {
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicId(0).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder.topicMessage(t -> t.topicId(1).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(t -> t.topicId(2).consensusTimestamp(future.plusNanos(3L))));
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(0L, EntityType.TOPIC))
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(1L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC))
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(2L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC))
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(3L)))));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -236,16 +242,16 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void multipleSubscribers() {
         // @formatter:off
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(
-                        t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder.topicMessage(
-                        t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(
-                        t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
-                domainBuilder.topicMessage(
-                        t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
-                domainBuilder.topicMessage(
-                        t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L))));
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)).sequenceNumber(1)
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(1L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)).sequenceNumber(2)
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(2L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)).sequenceNumber(7)
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(3L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)).sequenceNumber(8)
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(4L)))),
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)).sequenceNumber(3)
+                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(future.plusNanos(5L)))));
         // @formatter:on
 
         TopicMessageFilter filter1 = TopicMessageFilter.builder()

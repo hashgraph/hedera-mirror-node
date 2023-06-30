@@ -16,14 +16,12 @@
 
 package com.hedera.mirror.common.domain.entity;
 
-import jakarta.inject.Named;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @jakarta.persistence.Entity
-@Named
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
 public class Entity extends AbstractEntity {
