@@ -76,7 +76,7 @@ public class AcceptanceTestProperties {
 
     @Max(50_000_000_000L * 100_000_000L)
     @Min(100_000_000L)
-    private long operatorBalance = Hbar.from(300).toTinybars();
+    private long operatorBalance = Hbar.from(400).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";
