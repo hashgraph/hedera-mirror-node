@@ -42,6 +42,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -91,6 +92,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final ContractStateRepository contractStateRepository;
     private final EntityRepository entityRepository;
+
+    private final EntityProperties entityProperties;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -164,9 +167,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
-    @Test
-    void processContractNonce() {
-
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void processContractNonce(boolean isTrackNonce) {
+        entityProperties.getPersist().setTrackNonce(isTrackNonce);
         // given
         var entity = domainBuilder.entity().persist();
 

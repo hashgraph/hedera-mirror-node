@@ -229,6 +229,28 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
+    void updateTransactionEntityNonceNotUpdated() {
+        boolean create = true;
+        entityProperties.getPersist().setTrackNonce(false);
+        var fileId = EntityId.of(999L, EntityType.FILE);
+
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
+                .record(x -> x.setEthereumHash(ETHEREUM_HASH))
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
+                .build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
+        var senderId = functionResult.getSenderId().getAccountNum();
+        verify(entityListener)
+                .onEntity(argThat(
+                        e -> e.getId() == senderId && e.getTimestampRange() == null && e.getEthereumNonce() == null));
+    }
+
+    @Test
     void updateTransactionInvalid() {
         var recordItem = recordItemBuilder.ethereumTransaction(true).build();
         var transaction = new Transaction();

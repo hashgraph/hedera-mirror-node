@@ -140,7 +140,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertContractEntity(recordItem),
-                () -> assertThat(entityRepository.findById(entityId.getEntityNum()))
+                () -> assertThat(entityRepository.findById(entityId.getId()))
                         .get()
                         .returns(1L, Entity::getEthereumNonce),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),

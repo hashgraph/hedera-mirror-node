@@ -111,7 +111,9 @@ class EthereumTransactionHandler implements TransactionHandler {
 
         if (!EntityId.isEmpty(senderId)) {
             Entity entity = senderId.toEntity();
-            entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+            if (entityProperties.getPersist().isTrackNonce()) {
+                entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+            }
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
         }

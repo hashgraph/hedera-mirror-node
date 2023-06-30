@@ -255,9 +255,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         if (entityProperties.getPersist().isTrackNonce()) {
             functionResult.getContractNoncesList().forEach(nonceInfo -> {
                 var contractId = EntityId.of(nonceInfo.getContractId());
-                Entity entity = contractId.toEntity();
+                var entity = contractId.toEntity();
                 entity.setEthereumNonce(nonceInfo.getNonce());
-                entity.setTimestampRange(null);
+                entity.setTimestampRange(null); // Don't trigger a history row
                 entityListener.onEntity(entity);
             });
         }
