@@ -36,6 +36,8 @@ import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractlog.ApproveForAllAllowanceContractLog;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractresult.ApproveAllowanceContractResult;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hederahashgraph.api.proto.java.AccountID;
 import jakarta.inject.Named;
@@ -54,6 +56,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private final EntityListener entityListener;
 
     private final SyntheticContractLogService syntheticContractLogService;
+
+    private final SyntheticContractResultService syntheticContractResultService;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -75,6 +79,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         parseCryptoAllowances(transactionBody.getCryptoAllowancesList(), recordItem);
         parseNftAllowances(transactionBody.getNftAllowancesList(), recordItem);
         parseTokenAllowances(transactionBody.getTokenAllowancesList(), recordItem);
+
+        if (transactionBody.getTokenAllowancesCount() > 0 || transactionBody.getNftAllowancesCount() > 0) {
+            syntheticContractResultService.create(
+                    new ApproveAllowanceContractResult(recordItem, EntityId.EMPTY, recordItem.getPayerAccountId()));
+        }
     }
 
     private void parseCryptoAllowances(

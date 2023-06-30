@@ -158,6 +158,7 @@ public class RecordItem implements StreamItem {
         if (EntityId.isEmpty(entityId)
                 || entityId.getType() == EntityType.TOPIC
                 || entityTransactionExclusion.contains(entityId)) {
+            // Skip topics due to the amount of the data and the information already in topic_message table
             return;
         }
 
