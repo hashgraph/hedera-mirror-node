@@ -33,6 +33,12 @@ import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove AccountStore and TypedTokenStore
+ *  3. Using exception from {@link com.hedera.mirror.web3.evm.store.StoreImpl} when entity is missing from the state
+ */
 public class DeleteAllowanceLogic {
     private final Store store;
     private final List<UniqueToken> nftsTouched;
