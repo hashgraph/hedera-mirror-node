@@ -69,11 +69,6 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(grpc.getTokenNum());
     }
 
-    public static EntityNum fromEvmAddress(final Address address) {
-        final var bytes = address.toArrayUnsafe();
-        return fromLong(numFromEvmAddress(bytes));
-    }
-
     static boolean areValidNums(final long shard, final long realm) {
         return shard == 0 && realm == 0;
     }

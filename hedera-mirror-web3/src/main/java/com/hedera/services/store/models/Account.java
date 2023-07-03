@@ -339,6 +339,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewCryptoAllowances(
             Account oldAccount, SortedMap<EntityNum, Long> cryptoAllowances) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,
@@ -368,6 +369,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewFungibleTokenAllowances(
             Account oldAccount, SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         return new Account(
+                oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
                 oldAccount.balance,

@@ -146,7 +146,7 @@ class TransferLogicTest {
 
     @Test
     void autoCreatesWithNftTransferToAlias() {
-        var account = new Account(Id.fromGrpcAccount(owner), 200L);
+        var account = new Account(0L, Id.fromGrpcAccount(owner), 200L);
         final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
         final var transfer = NftTransfer.newBuilder()
                 .setSenderAccountID(payer)
@@ -173,7 +173,7 @@ class TransferLogicTest {
 
     @Test
     void autoCreatesWithFungibleTokenTransferToAlias() {
-        var account = new Account(Id.fromGrpcAccount(owner), 200L);
+        var account = new Account(0L, Id.fromGrpcAccount(owner), 200L);
         final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
         final var fungibleTransfer = BalanceChange.changingFtUnits(
                 Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, aliasedAa(firstAlias, 10L), payer);
@@ -233,7 +233,7 @@ class TransferLogicTest {
     @Test
     void happyPathHbarAllowance() {
         final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
-        var account = new Account(Id.fromGrpcAccount(owner), 0L).setCryptoAllowance(cryptoAllowances);
+        var account = new Account(0L, Id.fromGrpcAccount(owner), 0L).setCryptoAllowance(cryptoAllowances);
         var spyAccount = spy(account);
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
                 .willReturn(spyAccount);
@@ -248,7 +248,7 @@ class TransferLogicTest {
         final var change = BalanceChange.changingFtUnits(
                 Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -50L), payer);
         given(hederaTokenStore.tryTokenChange(change)).willReturn(OK);
-        var account = new Account(Id.fromGrpcAccount(owner), 0L).setFungibleTokenAllowances(fungibleAllowances);
+        var account = new Account(0L, Id.fromGrpcAccount(owner), 0L).setFungibleTokenAllowances(fungibleAllowances);
         var spyAccount = spy(account);
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
                 .willReturn(spyAccount);
