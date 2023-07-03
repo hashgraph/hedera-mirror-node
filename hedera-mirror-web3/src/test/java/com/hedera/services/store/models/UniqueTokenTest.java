@@ -24,12 +24,13 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class UniqueTokenTest {
+    private final Id id = new Id(1, 2, 3);
+    private final byte[] metadata = new byte[] {111, 23, 85};
+    private final Id tokenId = Id.DEFAULT;
+    private final UniqueToken subj = new UniqueToken(tokenId, 1, RichInstant.MISSING_INSTANT, id, null, metadata);
+
     @Test
     void objectContractWorks() {
-        final var id = new Id(1, 2, 3);
-        final var metadata = new byte[] {111, 23, 85};
-        final var tokenId = Id.DEFAULT;
-        final var subj = new UniqueToken(tokenId, 1, RichInstant.MISSING_INSTANT, id, null, metadata);
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
         assertEquals(id, subj.getOwner());
         assertEquals(1, subj.getSerialNumber());
@@ -53,5 +54,19 @@ class UniqueTokenTest {
                 + " spender=0.0.12347}";
 
         assertEquals(expected, subject.toString());
+    }
+
+    @Test
+    void testHashCode() {
+        var rel = new UniqueToken(tokenId, 1, RichInstant.MISSING_INSTANT, id, null, metadata);
+        assertEquals(rel.hashCode(), subj.hashCode());
+    }
+
+    @Test
+    void testEquals() {
+        var rel = new UniqueToken(tokenId, 1, RichInstant.MISSING_INSTANT, id, null, metadata);
+        assertEquals(rel, subj);
+        rel = new UniqueToken(tokenId, 2, RichInstant.MISSING_INSTANT, id, null, metadata);
+        assertNotEquals(rel, subj);
     }
 }
