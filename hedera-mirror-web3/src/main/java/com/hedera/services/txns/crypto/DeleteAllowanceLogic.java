@@ -53,7 +53,7 @@ public class DeleteAllowanceLogic {
 
         // --- Persist the owner accounts and nfts ---
         for (final var nft : nftsTouched) {
-            // store.(nft);
+            store.updateUniqueToken(nft);
         }
     }
 
@@ -78,7 +78,7 @@ public class DeleteAllowanceLogic {
                 final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serial);
                 final var nft = store.getUniqueToken(nftId, OnMissing.THROW);
                 validateTrue(validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                // nfts.add(nft.clearSpender());
+                nfts.add(nft.setSpender(Id.DEFAULT));
             }
             nftsTouched.addAll(nfts);
             nfts.clear();
