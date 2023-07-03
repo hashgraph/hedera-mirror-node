@@ -52,7 +52,7 @@ class BurnLogicTest {
     private final Id id = new Id(1, 2, 3);
     private final TokenID grpcId = id.asGrpcToken();
     private final Id treasuryId = new Id(2, 4, 6);
-    private final Account treasury = new Account(treasuryId, 0);
+    private final Account treasury = new Account(0L, treasuryId, 0);
     private TokenRelationship treasuryRel;
 
     @Mock

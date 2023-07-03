@@ -50,6 +50,7 @@ import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.MainnetEVMs;
@@ -134,7 +135,9 @@ class MirrorEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         String EVM_VERSION_0_30 = "v0.30";
+        Bytes32 chainId = Bytes32.fromHexString("0x0128");
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
+        when(evmProperties.chainIdBytes32()).thenReturn(chainId);
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessor(
                 worldState,

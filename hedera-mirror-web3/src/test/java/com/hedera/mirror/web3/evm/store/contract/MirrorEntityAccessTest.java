@@ -21,22 +21,24 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Token;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,25 +56,32 @@ class MirrorEntityAccessTest {
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
 
     @Mock
-    private EntityRepository entityRepository;
-
-    @Mock
     private ContractRepository contractRepository;
 
     @Mock
     private ContractStateRepository contractStateRepository;
 
     @Mock
-    Entity entity;
+    private Account account;
 
-    @InjectMocks
+    @Mock
+    private Token token;
+
+    @Mock
+    private Store store;
+
     private MirrorEntityAccess mirrorEntityAccess;
+
+    @BeforeEach
+    void setUp() {
+        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+    }
 
     @Test
     void isUsableWithPositiveBalance() {
         final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
@@ -80,8 +89,8 @@ class MirrorEntityAccessTest {
     @Test
     void isNotUsableWithNegativeBalance() {
         final long balance = -1L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
@@ -89,6 +98,8 @@ class MirrorEntityAccessTest {
     @Test
     void isNotUsableWithWrongAlias() {
         final var address = Address.fromHexString("0x3232134567785444e");
+        when(store.getAccount(address, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(address, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var result = mirrorEntityAccess.isUsable(address);
         assertThat(result).isFalse();
     }
@@ -96,8 +107,9 @@ class MirrorEntityAccessTest {
     @Test
     void isNotUsableWithExpiredTimestamp() {
         final long expiredTimestamp = Instant.MIN.getEpochSecond();
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getExpiry()).thenReturn(expiredTimestamp);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
@@ -105,9 +117,10 @@ class MirrorEntityAccessTest {
     @Test
     void isNotUsableWithExpiredTimestampAndNullBalance() {
         final long expiredTimestamp = Instant.MIN.getEpochSecond();
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
-        when(entity.getBalance()).thenReturn(null);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getExpiry()).thenReturn(expiredTimestamp);
+        when(token.getExpiry()).thenReturn(1L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
@@ -115,10 +128,11 @@ class MirrorEntityAccessTest {
     @Test
     void isUsableWithNotExpiredTimestamp() {
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
-        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(entity.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getExpiry()).thenReturn(expiredTimestamp);
+        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(token.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
@@ -126,40 +140,45 @@ class MirrorEntityAccessTest {
     @Test
     void isNotUsableWithExpiredAutoRenewTimestamp() {
         final long autoRenewPeriod = Instant.MAX.getEpochSecond();
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond() - 1000L);
-        when(entity.getAutoRenewPeriod()).thenReturn(autoRenewPeriod);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond() - 1000L);
+        when(token.getAutoRenewPeriod()).thenReturn(autoRenewPeriod);
+        when(token.getExpiry()).thenReturn(1L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
 
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(entity.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
-        when(entity.getExpirationTimestamp()).thenReturn(Instant.MAX.getEpochSecond());
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(token.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
+        when(token.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
     void isUsableWithEmptyExpiryAndAutoRenewPeriod() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(entity.getAutoRenewPeriod()).thenReturn(null);
-        when(entity.getExpirationTimestamp()).thenReturn(null);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(token.getAutoRenewPeriod()).thenReturn(0L);
+        when(token.getExpiry()).thenReturn(0L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
     void isUsableWithEmptyExpiryAndAutoRenewAndCreatedTimestampPeriod() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(entity.getAutoRenewPeriod()).thenReturn(null);
-        when(entity.getExpirationTimestamp()).thenReturn(null);
-        when(entity.getCreatedTimestamp()).thenReturn(null);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(token.getAutoRenewPeriod()).thenReturn(0L);
+        when(token.getExpiry()).thenReturn(0L);
+        when(token.getCreatedTimestamp()).thenReturn(0L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
@@ -167,75 +186,58 @@ class MirrorEntityAccessTest {
     @Test
     void getBalance() {
         final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isEqualTo(balance);
     }
 
     @Test
     void getBalanceForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isZero();
     }
 
     @Test
     void isExtant() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = mirrorEntityAccess.isExtant(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isExtantForNonMirrorAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe()))
-                .thenReturn(Optional.of(entity));
-        final var result = mirrorEntityAccess.isExtant(NON_MIRROR_ADDRESS);
-        assertThat(result).isTrue();
-    }
-
-    @Test
     void isExtantForZeroAddress() {
+        when(store.getAccount(ZERO, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.isExtant(ZERO);
         assertThat(result).isFalse();
     }
 
     @Test
     void isTokenAccount() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOKEN);
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isNotATokenAccount() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.ACCOUNT);
+    void isATokenAccountForMissingEntity() {
+        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isFalse();
     }
 
     @Test
-    void isATokenAccountForMissingEntity() {
-        final var address = Address.fromHexString("0x3232134567785444e");
-        final var result = mirrorEntityAccess.isTokenAccount(address);
-        assertThat(result).isFalse();
-    }
-
-    @Test
     void getAlias() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getAlias()).thenReturn(DATA);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getAlias()).thenReturn(ByteString.copyFrom(DATA));
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isNotEqualTo(EMPTY);
     }
 
     @Test
     void getAliasForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getAlias()).thenReturn(new byte[] {});
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isEqualTo(EMPTY);
     }
@@ -250,8 +252,10 @@ class MirrorEntityAccessTest {
 
     @Test
     void getStorageFailsForNonMirrorAddress() {
+        when(store.getAccount(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        when(store.getToken(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var key = Bytes.fromHexString(NON_MIRROR_ADDRESS.toHexString());
-        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ZERO, key));
+        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(NON_MIRROR_ADDRESS, key));
         assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
     }
 
@@ -270,15 +274,15 @@ class MirrorEntityAccessTest {
 
     @Test
     void fetchCodeIfPresentForNonMirrorEvm() {
-        when(mirrorEntityAccess.findEntity(NON_MIRROR_ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getId()).thenReturn(ENTITY_ID);
+        when(store.getAccount(NON_MIRROR_ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getEntityId()).thenReturn(ENTITY_ID);
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
         final var result = mirrorEntityAccess.fetchCodeIfPresent(NON_MIRROR_ADDRESS);
         assertThat(result).isEqualTo(BYTES);
     }
 
     @Test
-    void fetchCodeIfPresentReturnsEmpy() {
+    void fetchCodeIfPresentReturnsEmpty() {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
         assertThat(result).isEqualTo(Bytes.EMPTY);
