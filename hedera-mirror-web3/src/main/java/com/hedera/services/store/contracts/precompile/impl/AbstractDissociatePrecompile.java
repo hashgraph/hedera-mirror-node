@@ -44,7 +44,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
         return pricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
     }
 
