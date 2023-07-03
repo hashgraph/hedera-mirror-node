@@ -32,8 +32,6 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,15 +41,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 
-@Singleton
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
-
-    @Inject
-    public EncodingFacade() {
-        /* For Dagger2 */
-    }
 
     public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
