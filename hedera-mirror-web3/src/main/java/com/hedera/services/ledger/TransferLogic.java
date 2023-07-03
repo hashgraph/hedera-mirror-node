@@ -16,10 +16,8 @@
 
 package com.hedera.services.ledger;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityNum.fromEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -58,11 +56,8 @@ public class TransferLogic {
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
-    public void doZeroSum(
-            final List<BalanceChange> changes, Store store, EntityAddressSequencer ids, Address topLevelPayer) {
+    public void doZeroSum(final List<BalanceChange> changes, Store store, EntityAddressSequencer ids) {
         var validity = OK;
-        var autoCreationFee = 0L;
-        var updatedPayerBalance = Long.MIN_VALUE;
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -83,30 +78,14 @@ public class TransferLogic {
                         ids,
                         mirrorEvmContractAliases);
                 validity = result.getKey();
-                autoCreationFee += result.getValue();
                 if (validity == OK && (change.isForToken())) {
                     validity = hederaTokenStore.tryTokenChange(change);
                 }
-            } else if (change.isForHbar()) {
-                if (change.affectsAccount(accountIdFromEvmAddress(topLevelPayer))) {
-                    updatedPayerBalance = change.getNewBalance();
-                }
-            } else {
-                if (validity == OK) {
-                    validity = hederaTokenStore.tryTokenChange(change);
-                }
+            } else if (change.isForToken()) {
+                validity = hederaTokenStore.tryTokenChange(change);
             }
             if (validity != OK) {
                 break;
-            }
-        }
-
-        if (validity == OK && autoCreationFee > 0) {
-            updatedPayerBalance = (updatedPayerBalance == Long.MIN_VALUE)
-                    ? (long) store.getAccount(topLevelPayer, OnMissing.THROW).getBalance()
-                    : updatedPayerBalance;
-            if (autoCreationFee > updatedPayerBalance) {
-                validity = INSUFFICIENT_PAYER_BALANCE;
             }
         }
 
