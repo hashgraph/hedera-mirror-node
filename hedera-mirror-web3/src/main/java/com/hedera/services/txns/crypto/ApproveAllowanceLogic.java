@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
@@ -42,27 +41,14 @@ import java.util.TreeMap;
  *  2. Remove AccountStore, TypedTokenStore and GlobalDynamicProperties
  *  3. Remove validateAllowanceLimitsOn since mirror-node properties do not have allowance limit
  *  4. Using exception from {@link com.hedera.mirror.web3.evm.store.StoreImpl} when entity is missing from the state
+ *  5. accountsChanged and nftsTouched are passed as method parameters
  */
 public class ApproveAllowanceLogic {
-    private final Store store;
-    private final Map<Long, Account> accountsChanged;
-    private final Map<NftId, UniqueToken> nftsTouched;
-
-    public Map<Long, Account> getAccountsChanged() {
-        return accountsChanged;
-    }
-
-    public Map<NftId, UniqueToken> getNftsTouched() {
-        return nftsTouched;
-    }
-
-    public ApproveAllowanceLogic(final Store store) {
-        this.store = store;
-        this.accountsChanged = new TreeMap<>();
-        this.nftsTouched = new TreeMap<>();
-    }
 
     public void approveAllowance(
+            final Store store,
+            final Map<Long, Account> accountsChanged,
+            final Map<NftId, UniqueToken> nftsTouched,
             final List<CryptoAllowance> cryptoAllowances,
             final List<TokenAllowance> tokenAllowances,
             final List<NftAllowance> nftAllowances,
@@ -75,9 +61,9 @@ public class ApproveAllowanceLogic {
         final var payerAccount = store.getAccount(payerId.asEvmAddress(), OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        applyCryptoAllowances(cryptoAllowances, payerAccount);
-        applyFungibleTokenAllowances(tokenAllowances, payerAccount);
-        applyNftAllowances(nftAllowances, payerAccount);
+        applyCryptoAllowances(store, accountsChanged, cryptoAllowances, payerAccount);
+        applyFungibleTokenAllowances(store, accountsChanged, tokenAllowances, payerAccount);
+        applyNftAllowances(store, accountsChanged, nftsTouched, nftAllowances, payerAccount);
 
         /* --- Persist the entities --- */
         for (final var nft : nftsTouched.values()) {
@@ -95,7 +81,11 @@ public class ApproveAllowanceLogic {
      * @param cryptoAllowances
      * @param payerAccount
      */
-    private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, Account payerAccount) {
+    private void applyCryptoAllowances(
+            final Store store,
+            final Map<Long, Account> accountsChanged,
+            final List<CryptoAllowance> cryptoAllowances,
+            Account payerAccount) {
         if (cryptoAllowances.isEmpty()) {
             return;
         }
@@ -109,7 +99,7 @@ public class ApproveAllowanceLogic {
             if (cryptoMap.containsKey(spender.asEntityNum()) && amount == 0) {
                 // spender need not be validated as being a valid account when removing allowances,
                 // since it might be deleted and allowance is being removed by owner if it exists in map.
-                removeEntity(cryptoMap, spender, accountToApprove);
+                removeEntity(accountsChanged, cryptoMap, spender, accountToApprove);
             }
             if (amount > 0) {
                 // To add allowances spender should be validated as being a valid account
@@ -122,7 +112,11 @@ public class ApproveAllowanceLogic {
         }
     }
 
-    private void removeEntity(final SortedMap<EntityNum, Long> cryptoMap, final Id spender, Account accountToApprove) {
+    private void removeEntity(
+            final Map<Long, Account> accountsChanged,
+            final SortedMap<EntityNum, Long> cryptoMap,
+            final Id spender,
+            Account accountToApprove) {
         cryptoMap.remove(spender.asEntityNum());
         accountToApprove = accountToApprove.setCryptoAllowances(cryptoMap);
         accountsChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -136,7 +130,11 @@ public class ApproveAllowanceLogic {
      * @param tokenAllowances
      * @param payerAccount
      */
-    private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, Account payerAccount) {
+    private void applyFungibleTokenAllowances(
+            final Store store,
+            final Map<Long, Account> accountsChanged,
+            final List<TokenAllowance> tokenAllowances,
+            Account payerAccount) {
         if (tokenAllowances.isEmpty()) {
             return;
         }
@@ -153,7 +151,7 @@ public class ApproveAllowanceLogic {
             if (tokensMap.containsKey(key) && amount == 0) {
                 // spender need not be validated as being a valid account when removing allowances,
                 // since it might be deleted and allowance is being removed by owner if it exists in map.
-                removeTokenEntity(key, tokensMap, accountToApprove);
+                removeTokenEntity(accountsChanged, key, tokensMap, accountToApprove);
             }
             if (amount > 0) {
                 // To add allowances spender should be validated as being a valid account
@@ -174,7 +172,12 @@ public class ApproveAllowanceLogic {
      * @param nftAllowances
      * @param payerAccount
      */
-    protected void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
+    protected void applyNftAllowances(
+            final Store store,
+            final Map<Long, Account> accountsChanged,
+            final Map<NftId, UniqueToken> nftsTouched,
+            final List<NftAllowance> nftAllowances,
+            final Account payerAccount) {
         if (nftAllowances.isEmpty()) {
             return;
         }
@@ -213,6 +216,7 @@ public class ApproveAllowanceLogic {
     }
 
     private void removeTokenEntity(
+            final Map<Long, Account> accountsChanged,
             final FcTokenAllowanceId key,
             final SortedMap<FcTokenAllowanceId, Long> tokensMap,
             Account accountToApprove) {

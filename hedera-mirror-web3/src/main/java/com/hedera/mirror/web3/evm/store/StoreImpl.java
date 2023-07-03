@@ -118,9 +118,9 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void updateUniqueToken(final UniqueToken uniqueToken) {
+    public void updateUniqueToken(final UniqueToken updatedUniqueToken) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
-        tokenAccessor.set(uniqueToken.getNftId(), uniqueToken);
+        tokenAccessor.set(updatedUniqueToken.getNftId(), updatedUniqueToken);
     }
 
     @Override
