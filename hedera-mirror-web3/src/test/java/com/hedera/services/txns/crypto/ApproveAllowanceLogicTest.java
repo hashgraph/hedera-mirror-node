@@ -53,7 +53,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -67,7 +66,7 @@ class ApproveAllowanceLogicTest {
     private TransactionBody cryptoApproveAllowanceTxn;
     private CryptoApproveAllowanceTransactionBody op;
 
-    ApproveAllowanceLogic subject;
+    ApproveAllowanceLogic subject = new ApproveAllowanceLogic();
 
     private static final long serial1 = 1L;
     private static final long serial2 = 10L;
@@ -108,11 +107,6 @@ class ApproveAllowanceLogicTest {
     private UniqueToken nft1 = new UniqueToken(tokenId1, serial1, null, fromGrpcAccount(ownerId), null, null);
     private UniqueToken nft2 = new UniqueToken(tokenId2, serial2, null, fromGrpcAccount(ownerId), null, null);
 
-    @BeforeEach
-    void setup() {
-        subject = new ApproveAllowanceLogic(store);
-    }
-
     @Test
     void happyPathAddsAllowances() {
         givenValidTxnCtx();
@@ -129,6 +123,9 @@ class ApproveAllowanceLogicTest {
                 .willReturn(nft2);
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -161,6 +158,9 @@ class ApproveAllowanceLogicTest {
         assertEquals(0, payerAccount.getApproveForAllNfts().size());
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -169,10 +169,6 @@ class ApproveAllowanceLogicTest {
         assertEquals(1, payerAccount.getCryptoAllowances().size());
         assertEquals(1, payerAccount.getFungibleTokenAllowances().size());
         assertEquals(1, payerAccount.getApproveForAllNfts().size());
-        assertEquals(spenderId1, subject.getNftsTouched().get(nft1.getNftId()).getSpender());
-        assertEquals(spenderId1, subject.getNftsTouched().get(nft2.getNftId()).getSpender());
-
-        // verify(store).commitAccount(payerAccount);
     }
 
     @Test
@@ -191,6 +187,9 @@ class ApproveAllowanceLogicTest {
                 .willReturn(nft2);
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -213,6 +212,9 @@ class ApproveAllowanceLogicTest {
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -240,6 +242,9 @@ class ApproveAllowanceLogicTest {
                 .willReturn(nft2);
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -273,6 +278,9 @@ class ApproveAllowanceLogicTest {
                 .willReturn(nft2);
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
@@ -316,7 +324,7 @@ class ApproveAllowanceLogicTest {
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
 
-        subject.applyNftAllowances(nftAllowances, ownerAcccount);
+        subject.applyNftAllowances(store, new TreeMap<>(), new TreeMap<>(), nftAllowances, ownerAcccount);
 
         assertEquals(1, ownerAcccount.getApproveForAllNfts().size());
     }
@@ -357,6 +365,9 @@ class ApproveAllowanceLogicTest {
                 .willReturn(nft2);
 
         subject.approveAllowance(
+                store,
+                new TreeMap<>(),
+                new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
