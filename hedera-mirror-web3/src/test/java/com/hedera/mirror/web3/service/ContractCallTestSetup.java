@@ -103,6 +103,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
+    protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
 
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
@@ -228,12 +229,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var tokenEntityId =
                 fungibleTokenPersist(senderEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
         final var notFrozenFungibleTokenEntityId =
-                fungibleTokenPersist(treasuryEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
+                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
+        final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
         final var ethAccount = ethAccountPersist();
         tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         exchangeRatesPersist();

@@ -327,10 +327,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         ASSOCIATE_TOKENS(
                 "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
         MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS}),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
         DISSOCIATE_TOKENS(
-                "dissociateTokensExternal",
-                new Object[] {SPENDER_ADDRESS, new Address[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS}});
+                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}});
 
         private final String name;
         private final Object[] functionParameters;
