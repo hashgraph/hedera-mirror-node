@@ -42,6 +42,7 @@ class AccountTest {
     @BeforeEach
     void setUp() {
         subject = new Account(
+                0L,
                 subjectId,
                 defaultLongValue,
                 defaultLongValue,
@@ -56,7 +57,8 @@ class AccountTest {
                 numAssociations,
                 numPositiveBalances,
                 numTreasuryTitles,
-                0L);
+                0L,
+                false);
     }
 
     @Test

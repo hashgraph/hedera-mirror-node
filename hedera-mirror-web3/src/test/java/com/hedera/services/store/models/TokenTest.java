@@ -54,6 +54,7 @@ class TokenTest {
     private final long defaultLongValue = 0;
     private final int defaultIntValue = 0;
     private Account treasuryAccount = new Account(
+            0L,
             treasuryId,
             defaultLongValue,
             defaultLongValue,
@@ -68,8 +69,10 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
     private Account nonTreasuryAccount = new Account(
+            0L,
             nonTreasuryId,
             defaultLongValue,
             defaultLongValue,
@@ -84,7 +87,8 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -93,6 +97,7 @@ class TokenTest {
     @BeforeEach
     void setUp() {
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -116,6 +121,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0l,
                 false,
                 "the mother",
                 "bitcoin",
@@ -214,6 +220,7 @@ class TokenTest {
         // given:
 
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -237,6 +244,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0l,
                 true,
                 "the mother",
                 "bitcoin",
@@ -403,6 +411,7 @@ class TokenTest {
 
         // negative total supply
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -426,6 +435,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0l,
                 true,
                 "the mother",
                 "bitcoin",
@@ -545,6 +555,7 @@ class TokenTest {
     @SuppressWarnings("java:S5778")
     void uniqueMintFailsAsExpected() {
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -568,6 +579,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0l,
                 true,
                 "the mother",
                 "bitcoin",
@@ -592,6 +604,7 @@ class TokenTest {
     @Test
     void reflectionObjectHelpersWork() {
         final var otherToken = new Token(
+                0L,
                 new Id(1, 2, 3),
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -615,6 +628,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0l,
                 true,
                 "the mother",
                 "bitcoin",
