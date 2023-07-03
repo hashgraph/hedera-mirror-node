@@ -76,5 +76,4 @@ public class IdUtils {
     public static AccountID asAccountWithAlias(String alias) {
         return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
     }
-
 }
