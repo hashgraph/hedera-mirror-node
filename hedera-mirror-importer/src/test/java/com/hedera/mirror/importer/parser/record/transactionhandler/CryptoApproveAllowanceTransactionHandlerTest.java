@@ -32,6 +32,7 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -55,6 +57,9 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     private TokenAllowance expectedTokenAllowance;
 
     private EntityId payerAccountId;
+
+    @Mock
+    protected SyntheticContractResultService syntheticContractResultService;
 
     @BeforeEach
     void beforeEach() {
@@ -103,7 +108,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new CryptoApproveAllowanceTransactionHandler(
-                entityIdService, entityListener, syntheticContractLogService);
+                entityIdService, entityListener, syntheticContractLogService, syntheticContractResultService);
     }
 
     @Override

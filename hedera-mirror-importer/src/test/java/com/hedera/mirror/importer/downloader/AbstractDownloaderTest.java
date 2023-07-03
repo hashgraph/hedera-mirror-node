@@ -638,7 +638,8 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         final long totalNodes = 60L;
         final int expectedNodes = 29;
         // restore default download ratio: 1/3 + 15%, which == 29/60
-        BigDecimal defaultDownloadRatio = commonDownloaderProperties.getConsensusRatio().add(new BigDecimal("0.15"));
+        BigDecimal defaultDownloadRatio =
+                commonDownloaderProperties.getConsensusRatio().add(new BigDecimal("0.15"));
         commonDownloaderProperties.setDownloadRatio(defaultDownloadRatio);
         commonDownloaderProperties.init();
 
@@ -651,8 +652,8 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     .build());
         }
         // use ReflectionTestUtils to invoke the private Downloader::partialCollection() method
-        Collection<ConsensusNode> partial = ReflectionTestUtils.invokeMethod(downloader, Downloader.class,
-                "partialCollection", allNodes);
+        Collection<ConsensusNode> partial =
+                ReflectionTestUtils.invokeMethod(downloader, Downloader.class, "partialCollection", allNodes);
         assertThat(partial).hasSize(expectedNodes);
     }
 
