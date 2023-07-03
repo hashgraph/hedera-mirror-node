@@ -73,11 +73,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int maxBatchSizeMint = 10;
 
+    private int maxCustomFeesAllowed = 10;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
-
-    private int maxCustomFeesAllowed = 10;
 
     // used by eth_estimateGas only
     @Min(1)
