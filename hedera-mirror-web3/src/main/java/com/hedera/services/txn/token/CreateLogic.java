@@ -44,6 +44,15 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface.
+ *  2. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
+ *  those are {@link Account}, {@link Token}, {@link TokenRelationship}, {@link CustomFee}.
+ *  3. Moved methods from com.hedera.app.service.mono.txns.token.process.Creation to {@link CreateLogic}.
+ *  4. Provided {@link com.hedera.services.utils.CustomFeeUtils} for easier work with fees.
+ *  5. Adapted validation methods with the logic in {@link CustomFee}.
+ * */
 public class CreateLogic {
 
     private final MirrorNodeEvmProperties dynamicProperties;
