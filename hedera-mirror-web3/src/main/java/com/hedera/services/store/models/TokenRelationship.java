@@ -47,6 +47,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *
  * Differences from the original:
  *  1. Added factory method that returns empty instance
+ *  2. Added isEmptyTokenRelationship() method
  */
 public class TokenRelationship {
     private final Token token;
@@ -96,7 +97,11 @@ public class TokenRelationship {
     }
 
     public static TokenRelationship getEmptyTokenRelationship() {
-        return new TokenRelationship(new Token(Id.DEFAULT), new Account(Id.DEFAULT, 0L));
+        return new TokenRelationship(new Token(Id.DEFAULT), new Account(0L, Id.DEFAULT, 0L));
+    }
+
+    public boolean isEmptyTokenRelationship() {
+        return this.equals(getEmptyTokenRelationship());
     }
 
     /**
@@ -108,7 +113,7 @@ public class TokenRelationship {
      * @param balance
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewTokenRelationshipWithNewBalance(
+    private TokenRelationship createNewTokenRelationshipWithNewBalance(
             TokenRelationship oldTokenRel, long balanceChange, long balance) {
         return new TokenRelationship(
                 oldTokenRel.token,
@@ -129,7 +134,7 @@ public class TokenRelationship {
      * @param oldTokenRel
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewDestroyedTokenRelationship(TokenRelationship oldTokenRel) {
+    private TokenRelationship createNewDestroyedTokenRelationship(TokenRelationship oldTokenRel) {
         return new TokenRelationship(
                 oldTokenRel.token,
                 oldTokenRel.account,
@@ -150,7 +155,7 @@ public class TokenRelationship {
      * @param newAccount
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewTokenRelationshipWithNewTreasuryAccount(
+    private TokenRelationship createNewTokenRelationshipWithNewTreasuryAccount(
             TokenRelationship oldTokenRel, Account newAccount) {
         return new TokenRelationship(
                 oldTokenRel.token,
@@ -172,7 +177,7 @@ public class TokenRelationship {
      * @param notYetPersisted
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewPersistedTokenRelationship(
+    private TokenRelationship createNewPersistedTokenRelationship(
             TokenRelationship oldTokenRel, boolean notYetPersisted) {
         return new TokenRelationship(
                 oldTokenRel.token,
@@ -194,7 +199,7 @@ public class TokenRelationship {
      * @param newToken
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewTokenRelationshipWithToken(TokenRelationship oldTokenRel, Token newToken) {
+    private TokenRelationship createNewTokenRelationshipWithToken(TokenRelationship oldTokenRel, Token newToken) {
         return new TokenRelationship(
                 newToken,
                 oldTokenRel.account,
@@ -214,8 +219,7 @@ public class TokenRelationship {
      * @param frozen
      * @return new instance of {@link TokenRelationship}
      */
-    private TokenRelationship createCreateNewTokenRelationshipWithFrozenFlag(
-            TokenRelationship oldTokenRel, boolean frozen) {
+    private TokenRelationship createNewTokenRelationshipWithFrozenFlag(TokenRelationship oldTokenRel, boolean frozen) {
         return new TokenRelationship(
                 oldTokenRel.token,
                 oldTokenRel.account,
@@ -225,6 +229,50 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
+    }
+
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated kycGranted field in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param kycGranted
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createNewTokenRelationshipWithNewKycGranted(
+            TokenRelationship oldTokenRel, boolean kycGranted) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                oldTokenRel.automaticAssociation,
+                oldTokenRel.balanceChange);
+    }
+
+    /**
+     * Creates new instance of {@link TokenRelationship} with updated automaticAssociation field in order to keep the
+     * object's immutability and avoid entry points for changing the state.
+     *
+     * @param oldTokenRel
+     * @param automaticAssociation
+     * @return new instance of {@link TokenRelationship}
+     */
+    private TokenRelationship createNewTokenRelationshipWithNewAutomaticAssociation(
+            TokenRelationship oldTokenRel, boolean automaticAssociation) {
+        return new TokenRelationship(
+                oldTokenRel.token,
+                oldTokenRel.account,
+                oldTokenRel.balance,
+                oldTokenRel.frozen,
+                oldTokenRel.kycGranted,
+                oldTokenRel.destroyed,
+                oldTokenRel.notYetPersisted,
+                automaticAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -246,7 +294,7 @@ public class TokenRelationship {
         }
 
         long newBalanceChange = (balance - this.balance) + balanceChange;
-        return createCreateNewTokenRelationshipWithNewBalance(this, newBalanceChange, balance);
+        return createNewTokenRelationshipWithNewBalance(this, newBalanceChange, balance);
     }
 
     public boolean isFrozen() {
@@ -254,11 +302,15 @@ public class TokenRelationship {
     }
 
     public TokenRelationship setFrozen(boolean frozen) {
-        return createCreateNewTokenRelationshipWithFrozenFlag(this, frozen);
+        return createNewTokenRelationshipWithFrozenFlag(this, frozen);
     }
 
     public boolean isKycGranted() {
         return kycGranted;
+    }
+
+    public TokenRelationship setKycGranted(boolean kycGranted) {
+        return createNewTokenRelationshipWithNewKycGranted(this, kycGranted);
     }
 
     public long getBalanceChange() {
@@ -270,7 +322,7 @@ public class TokenRelationship {
     }
 
     public TokenRelationship setToken(Token newToken) {
-        return createCreateNewTokenRelationshipWithToken(this, newToken);
+        return createNewTokenRelationshipWithToken(this, newToken);
     }
 
     public Account getAccount() {
@@ -278,7 +330,7 @@ public class TokenRelationship {
     }
 
     public TokenRelationship setAccount(Account newAccount) {
-        return createCreateNewTokenRelationshipWithNewTreasuryAccount(this, newAccount);
+        return createNewTokenRelationshipWithNewTreasuryAccount(this, newAccount);
     }
 
     boolean hasInvolvedIds(Id tokenId, Id accountId) {
@@ -290,7 +342,7 @@ public class TokenRelationship {
     }
 
     public TokenRelationship setNotYetPersisted(boolean notYetPersisted) {
-        return createCreateNewPersistedTokenRelationship(this, notYetPersisted);
+        return createNewPersistedTokenRelationship(this, notYetPersisted);
     }
 
     public boolean isDestroyed() {
@@ -299,7 +351,7 @@ public class TokenRelationship {
 
     public TokenRelationship markAsDestroyed() {
         validateFalse(notYetPersisted, FAIL_INVALID);
-        return createCreateNewDestroyedTokenRelationship(this);
+        return createNewDestroyedTokenRelationship(this);
     }
 
     public boolean hasChangesForRecord() {
@@ -316,6 +368,10 @@ public class TokenRelationship {
 
     public boolean isAutomaticAssociation() {
         return automaticAssociation;
+    }
+
+    public TokenRelationship setAutomaticAssociation(boolean automaticAssociation) {
+        return createNewTokenRelationshipWithNewAutomaticAssociation(this, automaticAssociation);
     }
 
     private boolean isTokenFrozenFor() {

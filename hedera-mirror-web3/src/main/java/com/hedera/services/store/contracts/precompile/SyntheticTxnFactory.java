@@ -16,13 +16,28 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+
 public class SyntheticTxnFactory {
+
+    public TransactionBody.Builder createMint(final MintWrapper mintWrapper) {
+        final var builder = TokenMintTransactionBody.newBuilder();
+
+        builder.setToken(mintWrapper.tokenType());
+        if (mintWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllMetadata(mintWrapper.metadata());
+        } else {
+            builder.setAmount(mintWrapper.amount());
+        }
+
+        return TransactionBody.newBuilder().setTokenMint(builder);
+    }
 
     public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
         final var builder = TokenBurnTransactionBody.newBuilder();
@@ -36,5 +51,4 @@ public class SyntheticTxnFactory {
 
         return TransactionBody.newBuilder().setTokenBurn(builder);
     }
-
 }

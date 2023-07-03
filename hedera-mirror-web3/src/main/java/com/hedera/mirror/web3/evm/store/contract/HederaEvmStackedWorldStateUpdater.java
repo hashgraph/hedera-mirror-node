@@ -105,6 +105,7 @@ public class HederaEvmStackedWorldStateUpdater
 
     private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
+                0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
                 balance.toLong(),
@@ -119,7 +120,8 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 0,
                 0,
-                nonce);
+                nonce,
+                false);
         store.updateAccount(accountModel);
     }
 

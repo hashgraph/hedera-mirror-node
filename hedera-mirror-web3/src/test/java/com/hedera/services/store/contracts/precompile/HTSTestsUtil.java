@@ -31,6 +31,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfA
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
@@ -120,6 +121,7 @@ public class HTSTestsUtil {
 
     public static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
+    public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
 
     public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
@@ -130,6 +132,7 @@ public class HTSTestsUtil {
     public static final Address senderAddr = Address.ALTBN128_PAIRING;
     public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
+    public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);

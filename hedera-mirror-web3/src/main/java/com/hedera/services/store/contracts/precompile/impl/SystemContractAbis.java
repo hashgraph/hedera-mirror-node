@@ -16,15 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
-
-import java.math.BigInteger;
-
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.EXPIRY_V1;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.EXPIRY_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.FIXED_FEE_V1;
@@ -32,13 +24,20 @@ import static com.hedera.services.store.contracts.precompile.impl.SystemContract
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.FRACTIONAL_FEE_V1;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.FRACTIONAL_FEE_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.HEDERA_TOKEN_STRUCT_V1;
-import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.HEDERA_TOKEN_STRUCT_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.HEDERA_TOKEN_STRUCT_V3;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.ROYALTY_FEE_V1;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.ROYALTY_FEE_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.TOKEN_TRANSFER_LIST_V1;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.TOKEN_TRANSFER_LIST_V2;
 import static com.hedera.services.store.contracts.precompile.impl.SystemContractTypes.TRANSFER_LIST_V1;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Ground truth for everything related to system contract ABIs: their names, signatures, argument
@@ -107,6 +106,15 @@ public enum SystemContractAbis {
     WIPE_TOKEN_ACCOUNT_V1(1, "wipeTokenAccount(address,address,uint32)"),
     WIPE_TOKEN_ACCOUNT_V2(2, "wipeTokenAccount(address,address,int64)");
 
+    private static final BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
+    private static final BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
+    public final int version;
+    public final String signature;
+    public final String decoderSignature;
+    public final ABIType<Tuple> decoder;
+    public final Bytes selector;
+    public final String methodName;
+
     SystemContractAbis(int version, @NonNull final String signature) {
         this.version = version;
         this.signature = stripBlanks(signature);
@@ -120,12 +128,22 @@ public enum SystemContractAbis {
         this(1, signature);
     }
 
-    public final int version;
-    public final String signature;
-    public final String decoderSignature;
-    public final ABIType<Tuple> decoder;
-    public final Bytes selector;
-    public final String methodName;
+    /** Safely convert from either a BigInteger or a Long to a Long.
+     * <p>
+     * The method parameter decoder returns Objects. In the case of a Solidity `uint64` it will
+     * be a `BigInteger`, for a `int64` it will be a `Long`.  Safely convert to a `long` (the given
+     * `BigInteger.longValue` does a narrowing primitive conversion (which simply truncates to the
+     * low 64 bits)).
+     */
+    public static long toLongSafely(@NonNull final Object bigNumeric) {
+        if (bigNumeric instanceof BigInteger big) {
+            if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0)
+                throw new IllegalArgumentException("uint64 out of range for Java.long");
+            return big.longValue();
+        } else if (bigNumeric instanceof Long big) {
+            return big;
+        } else return (long) bigNumeric;
+    }
 
     @NonNull
     public String selectorAsHex() {
@@ -167,24 +185,4 @@ public enum SystemContractAbis {
         final var shortHex = "00000000" + bytes.toUnprefixedHexString();
         return "0x" + shortHex.substring(shortHex.length() - 8);
     }
-
-    /** Safely convert from either a BigInteger or a Long to a Long.
-     * <p>
-     * The method parameter decoder returns Objects. In the case of a Solidity `uint64` it will
-     * be a `BigInteger`, for a `int64` it will be a `Long`.  Safely convert to a `long` (the given
-     * `BigInteger.longValue` does a narrowing primitive conversion (which simply truncates to the
-     * low 64 bits)).
-     */
-    public static long toLongSafely(@NonNull final Object bigNumeric) {
-        if (bigNumeric instanceof BigInteger big) {
-            if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0)
-                throw new IllegalArgumentException("uint64 out of range for Java.long");
-            return big.longValue();
-        } else if (bigNumeric instanceof Long big) {
-            return big;
-        } else return (long) bigNumeric;
-    }
-
-    private static final BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
-    private static final BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
 }

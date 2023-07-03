@@ -59,6 +59,8 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_ARRAY_OF_ADDRESSES = "(address,address[])";
     private static final String ADDRESS_INT_INTS = "(address,int64,int64[])";
 
+    private static final String ADDRESS_INT_BYTES = "(address,int64,bytes[])";
+
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -149,6 +151,7 @@ public class FunctionEncodeDecoder {
                             .map(FunctionEncodeDecoder::convertAddress)
                             .toList()
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]));
+            case ADDRESS_INT_BYTES -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
             case ADDRESS_INT_INTS -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
             default -> Tuple.EMPTY;
         };

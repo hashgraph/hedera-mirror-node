@@ -49,6 +49,11 @@ public class EncodingFacade {
         return UInt256.valueOf(status.getNumber());
     }
 
+    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
+    }
+
     public Bytes encodeGetApproved(final int status, final Address approved) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_APPROVED)
@@ -250,13 +255,48 @@ public class EncodingFacade {
     }
 
     public static class LogBuilder {
-        private Address logger;
+        final StringBuilder tupleTypes = new StringBuilder("(");
         private final List<Object> data = new ArrayList<>();
         private final List<LogTopic> topics = new ArrayList<>();
-        final StringBuilder tupleTypes = new StringBuilder("(");
+        private Address logger;
 
         public static LogBuilder logBuilder() {
             return new LogBuilder();
+        }
+
+        private static LogTopic generateLogTopic(final Object param) {
+            byte[] array = new byte[] {};
+            if (param instanceof Address address) {
+                array = address.toArray();
+            } else if (param instanceof BigInteger numeric) {
+                array = numeric.toByteArray();
+            } else if (param instanceof Long numeric) {
+                array = BigInteger.valueOf(numeric).toByteArray();
+            } else if (param instanceof Boolean bool) {
+                array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
+            } else if (param instanceof Bytes bytes) {
+                array = bytes.toArray();
+            }
+
+            return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));
+        }
+
+        private static void addTupleType(final Object param, final StringBuilder stringBuilder) {
+            if (param instanceof Address) {
+                stringBuilder.append("address,");
+            } else if (param instanceof BigInteger || param instanceof Long) {
+                stringBuilder.append("uint256,");
+            } else if (param instanceof Boolean) {
+                stringBuilder.append("bool,");
+            }
+        }
+
+        private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+            final byte[] expandedArray = new byte[32];
+
+            System.arraycopy(
+                    bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
+            return expandedArray;
         }
 
         public LogBuilder forLogger(final Address logger) {
@@ -301,45 +341,5 @@ public class EncodingFacade {
                 return param;
             }
         }
-
-        private static LogTopic generateLogTopic(final Object param) {
-            byte[] array = new byte[] {};
-            if (param instanceof Address address) {
-                array = address.toArray();
-            } else if (param instanceof BigInteger numeric) {
-                array = numeric.toByteArray();
-            } else if (param instanceof Long numeric) {
-                array = BigInteger.valueOf(numeric).toByteArray();
-            } else if (param instanceof Boolean bool) {
-                array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
-            } else if (param instanceof Bytes bytes) {
-                array = bytes.toArray();
-            }
-
-            return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));
-        }
-
-        private static void addTupleType(final Object param, final StringBuilder stringBuilder) {
-            if (param instanceof Address) {
-                stringBuilder.append("address,");
-            } else if (param instanceof BigInteger || param instanceof Long) {
-                stringBuilder.append("uint256,");
-            } else if (param instanceof Boolean) {
-                stringBuilder.append("bool,");
-            }
-        }
-
-        private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
-            final byte[] expandedArray = new byte[32];
-
-            System.arraycopy(
-                    bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
-            return expandedArray;
-        }
-    }
-
-    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
-        return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

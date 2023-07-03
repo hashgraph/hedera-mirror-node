@@ -19,7 +19,11 @@ package com.hedera.services.store.models;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -52,6 +56,7 @@ class TokenRelationshipTest {
     @BeforeEach
     void setUp() {
         token = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -75,6 +80,7 @@ class TokenRelationshipTest {
                 false,
                 false,
                 defaultIntValue,
+                defaultIntValue,
                 true,
                 "the mother",
                 "bitcoin",
@@ -85,6 +91,7 @@ class TokenRelationshipTest {
                 Collections.emptyList());
 
         account = new Account(
+                0L,
                 accountId,
                 defaultLongValue,
                 defaultLongValue,
@@ -99,7 +106,8 @@ class TokenRelationshipTest {
                 3,
                 defaultIntValue,
                 defaultIntValue,
-                0L);
+                0L,
+                false);
 
         subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
     }

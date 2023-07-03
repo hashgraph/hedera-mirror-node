@@ -16,32 +16,27 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import jakarta.inject.Named;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
-    private final MirrorEntityAccess mirrorEntityAccess;
-    private final EntityRepository entityRepository;
+
+    private final HederaEvmEntityAccess mirrorEntityAccess;
+    private final Store store;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var addressBytes = addressOrAlias.toArrayUnsafe();
-        if (!isMirror(addressBytes)) {
-            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-            if (entityFoundByAlias.isPresent()) {
-                return addressOrAlias;
-            }
+        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
+        if (!account.isEmptyAccount()) {
+            return addressOrAlias;
         }
 
         return getAddressOrAlias(addressOrAlias);

@@ -16,86 +16,89 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
-    private final EntityRepository entityRepository;
-    private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
+    private final ContractRepository contractRepository;
+    private final Store store;
 
     @Override
     public boolean isUsable(final Address address) {
-        final var optionalEntity = findEntity(address);
+        final var account = store.getAccount(address, OnMissing.DONT_THROW);
+        final var balance = account.getBalance();
 
-        if (optionalEntity.isEmpty()) {
-            return false;
+        if (!account.isEmptyAccount()) {
+            return balance >= 0L;
+        } else {
+            final var token = store.getToken(address, OnMissing.DONT_THROW);
+            if (token.isEmptyToken()) {
+                return false;
+            }
+
+            final var expirationTimestamp = token.getExpiry();
+            final var createdTimestamp = token.getCreatedTimestamp();
+            final var autoRenewPeriod = token.getAutoRenewPeriod();
+
+            final var currentTime = Instant.now().getEpochSecond();
+
+            if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
+                return false;
+            }
+
+            return createdTimestamp == 0L
+                    || autoRenewPeriod == 0L
+                    || (createdTimestamp + autoRenewPeriod) > currentTime;
         }
-
-        final var entity = optionalEntity.get();
-        final var balance = entity.getBalance();
-        if (balance != null && balance > 0) {
-            return true;
-        }
-
-        final var expirationTimestamp = entity.getExpirationTimestamp();
-        final var createdTimestamp = entity.getCreatedTimestamp();
-        final var autoRenewPeriod = entity.getAutoRenewPeriod();
-        final var currentTime = Instant.now().getEpochSecond();
-
-        if (expirationTimestamp != null && expirationTimestamp <= currentTime) {
-            return false;
-        }
-
-        return createdTimestamp == null
-                || autoRenewPeriod == null
-                || (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override
     public long getBalance(final Address address) {
-        final var entity = findEntity(address);
-        return entity.map(Entity::getBalance).orElse(0L);
+        var account = store.getAccount(address, OnMissing.DONT_THROW);
+        if (account.isEmptyAccount()) {
+            return 0L;
+        }
+        return account.getBalance();
     }
 
     @Override
     public boolean isExtant(final Address address) {
-        return findEntity(address).isPresent();
+        var account = store.getAccount(address, OnMissing.DONT_THROW);
+        return !account.isEmptyAccount();
     }
 
     @Override
     public boolean isTokenAccount(final Address address) {
-        return findEntity(address).filter(e -> e.getType() == TOKEN).isPresent();
+        return !store.getToken(address, OnMissing.DONT_THROW).isEmptyToken();
     }
 
     @Override
     public ByteString alias(final Address address) {
-        final var entity = findEntity(address);
-        return entity.map(value -> fromBytes(value.getAlias())).orElse(ByteString.EMPTY);
+        var account = store.getAccount(address, OnMissing.DONT_THROW);
+        if (!account.isEmptyAccount()) {
+            return account.getAlias();
+        }
+        return ByteString.EMPTY;
     }
 
     @Override
     public Bytes getStorage(final Address address, final Bytes key) {
         final var entityId = fetchEntityId(address);
-        if (entityId == 0) {
+
+        if (entityId == 0L) {
             return Bytes.EMPTY;
         }
         final var storage = contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
@@ -106,6 +109,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
         final var entityId = fetchEntityId(address);
+
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -114,25 +118,14 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
-    public Optional<Entity> findEntity(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress(address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
-        } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-        }
-    }
-
     private Long fetchEntityId(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
+        if (isMirror(address.toArrayUnsafe())) {
             return entityIdNumFromEvmAddress(address);
         }
-
-        return entityRepository
-                .findByEvmAddressAndDeletedIsFalse(addressBytes)
-                .map(AbstractEntity::getId)
-                .orElse(0L);
+        var entityId = store.getAccount(address, OnMissing.DONT_THROW).getEntityId();
+        if (entityId == 0L) {
+            entityId = store.getToken(address, OnMissing.DONT_THROW).getEntityId();
+        }
+        return entityId;
     }
 }

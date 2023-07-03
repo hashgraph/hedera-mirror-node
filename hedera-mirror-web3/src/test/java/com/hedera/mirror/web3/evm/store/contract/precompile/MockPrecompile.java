@@ -44,7 +44,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         return 0;
     }
 

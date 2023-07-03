@@ -42,6 +42,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
@@ -231,8 +232,18 @@ public class EvmConfiguration {
     }
 
     @Bean
-    OptionValidator optionValidator(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        return new ContextOptionValidator(mirrorNodeEvmProperties);
+    OptionValidator optionValidator(final MirrorNodeEvmProperties properties) {
+        return new ContextOptionValidator(properties);
+    }
+
+    @Bean
+    EncodingFacade encodingFacade() {
+        return new EncodingFacade();
+    }
+
+    @Bean
+    SyntheticTxnFactory syntheticTxnFactory() {
+        return new SyntheticTxnFactory();
     }
 
     @Bean
@@ -253,6 +264,15 @@ public class EvmConfiguration {
     @Bean
     AutoCreationLogic autocreationLogic(final FeeCalculator feeCalculator, final EvmProperties evmProperties) {
         return new AutoCreationLogic(feeCalculator, evmProperties);
+    }
+
+    @Bean
+    MintPrecompile mintPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            OptionValidator optionValidator) {
+        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, optionValidator);
     }
 
     @Bean

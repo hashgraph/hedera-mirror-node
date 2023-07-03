@@ -205,4 +205,5 @@ public class PrecompilePricingUtils {
             super("Canonical prices for precompiles are not available", e);
         }
     }
+
 }
