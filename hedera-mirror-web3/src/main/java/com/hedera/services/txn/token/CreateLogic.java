@@ -159,21 +159,22 @@ public class CreateLogic {
         }
     }
 
-    public void validateAndFinalizeFixedFeeWith(
+    private void validateAndFinalizeFixedFeeWith(
             final Token provisionalToken, final Account feeCollector, final Store store, final CustomFee customFee) {
 
         var denominatingTokenId = feeType.equals(FeeType.FIXED_FEE)
                 ? customFee.getFixedFee().getDenominatingTokenId()
                 : customFee.getRoyaltyFee().getDenominatingTokenId();
-        if (denominatingTokenId != null) {
-            if (denominatingTokenId.isZero()) {
-                validateTrue(provisionalToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-                denominatingTokenId = provisionalToken.getId().asEvmAddress();
-                final var newFixedFee = setNewDenominationTokenId(customFee.getFixedFee(), denominatingTokenId);
-                customFee.setFixedFee(newFixedFee);
-            } else {
-                validateExplicitlyDenominatedWith(feeCollector, store, denominatingTokenId);
-            }
+        var useHbarForPayment = feeType.equals(FeeType.FIXED_FEE)
+                ? customFee.getFixedFee().isUseHbarsForPayment()
+                : customFee.getRoyaltyFee().isUseHbarsForPayment();
+        if (denominatingTokenId.isZero() && !useHbarForPayment) {
+            validateTrue(provisionalToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+            denominatingTokenId = provisionalToken.getId().asEvmAddress();
+            final var newFixedFee = setNewDenominationTokenId(customFee.getFixedFee(), denominatingTokenId);
+            customFee.setFixedFee(newFixedFee);
+        } else {
+            validateExplicitlyDenominatedWith(feeCollector, store, denominatingTokenId);
         }
     }
 
@@ -185,8 +186,7 @@ public class CreateLogic {
             final boolean beingCreated) {
         validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royalty = customFee.getRoyaltyFee();
-        if (((royalty.getDenominatingTokenId() != null && royalty.getDenominatingTokenId() != Address.ZERO)
-                        || royalty.isUseHbarsForPayment())
+        if ((!royalty.getDenominatingTokenId().isZero() || royalty.isUseHbarsForPayment())
                 && royalty.getAmount() > 0L) {
             if (beingCreated) {
                 validateAndFinalizeFixedFeeWith(token, collector, store, customFee);
