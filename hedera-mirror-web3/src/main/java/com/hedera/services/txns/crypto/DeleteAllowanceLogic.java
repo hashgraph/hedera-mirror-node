@@ -40,22 +40,19 @@ import java.util.List;
  *  3. Using exception from {@link com.hedera.mirror.web3.evm.store.StoreImpl} when entity is missing from the state
  */
 public class DeleteAllowanceLogic {
-    private final Store store;
-    private final List<UniqueToken> nftsTouched;
 
-    public DeleteAllowanceLogic(final Store store) {
-        this.store = store;
-        this.nftsTouched = new ArrayList<>();
-    }
-
-    public void deleteAllowance(final List<NftRemoveAllowance> nftAllowancesList, final AccountID payer) {
+    public void deleteAllowance(
+            final Store store,
+            final List<UniqueToken> nftsTouched,
+            List<NftRemoveAllowance> nftAllowancesList,
+            final AccountID payer) {
         nftsTouched.clear();
 
         // --- Load models ---
         final Id payerId = fromGrpcAccount(payer);
         final var payerAccount = store.getAccount(payerId.asEvmAddress(), OnMissing.THROW);
         // --- Do the business logic ---
-        deleteNftSerials(nftAllowancesList, payerAccount);
+        deleteNftSerials(store, nftsTouched, nftAllowancesList, payerAccount);
 
         // --- Persist the owner accounts and nfts ---
         for (final var nft : nftsTouched) {
@@ -70,7 +67,11 @@ public class DeleteAllowanceLogic {
      * @param nftAllowances given nftAllowances
      * @param payerAccount payer for the transaction
      */
-    private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
+    private void deleteNftSerials(
+            final Store store,
+            final List<UniqueToken> nftsTouched,
+            final List<NftRemoveAllowance> nftAllowances,
+            final Account payerAccount) {
         if (nftAllowances.isEmpty()) {
             return;
         }

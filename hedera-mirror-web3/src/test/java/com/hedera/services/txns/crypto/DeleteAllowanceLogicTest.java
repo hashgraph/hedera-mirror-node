@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -67,7 +66,7 @@ class DeleteAllowanceLogicTest {
     private TransactionBody cryptoDeleteAllowanceTxn;
     private CryptoDeleteAllowanceTransactionBody op;
 
-    DeleteAllowanceLogic subject;
+    DeleteAllowanceLogic subject = new DeleteAllowanceLogic();
 
     private static final TokenID token1 = asToken("0.0.100");
     private static final TokenID token2 = asToken("0.0.200");
@@ -94,11 +93,6 @@ class DeleteAllowanceLogicTest {
     private static UniqueToken uniqueToken1 = new UniqueToken(fromGrpcToken(token2), 12L, null, null, null, null);
     private static UniqueToken uniqueToken2 = new UniqueToken(fromGrpcToken(token2), 10L, null, null, null, null);
 
-    @BeforeEach
-    void setup() {
-        subject = new DeleteAllowanceLogic(store);
-    }
-
     @Test
     void happyPathDeletesAllowances() {
         uniqueToken1 = uniqueToken1.setOwner(Id.DEFAULT);
@@ -115,7 +109,7 @@ class DeleteAllowanceLogicTest {
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
 
-        subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
         verify(store, times(2)).updateUniqueToken(any());
@@ -136,7 +130,7 @@ class DeleteAllowanceLogicTest {
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
 
-        subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
         verify(store, times(2)).updateUniqueToken(any());
@@ -154,7 +148,8 @@ class DeleteAllowanceLogicTest {
         given(store.getToken(asTypedEvmAddress(token2), OnMissing.THROW)).willReturn(token2Model);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
-        Executable deleteAllowance = () -> subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        Executable deleteAllowance =
+                () -> subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         assertThrows(InvalidTransactionException.class, deleteAllowance);
     }
@@ -175,7 +170,7 @@ class DeleteAllowanceLogicTest {
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
         given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
 
-        subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         verify(store, never()).updateUniqueToken(any());
     }
@@ -194,7 +189,7 @@ class DeleteAllowanceLogicTest {
 
         assertEquals(1, payerAccount.getApproveForAllNfts().size());
 
-        subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         assertEquals(1, payerAccount.getApproveForAllNfts().size());
         verify(store, times(2)).updateUniqueToken(any());
@@ -211,7 +206,7 @@ class DeleteAllowanceLogicTest {
 
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
 
-        subject.deleteAllowance(op.getNftAllowancesList(), payerId);
+        subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
         assertEquals(0, ownerAccount.getCryptoAllowances().size());
         assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());

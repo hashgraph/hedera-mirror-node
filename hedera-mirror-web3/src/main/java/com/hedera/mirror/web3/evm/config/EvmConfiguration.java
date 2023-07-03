@@ -50,6 +50,7 @@ import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -244,6 +245,11 @@ public class EvmConfiguration {
     @Bean
     SyntheticTxnFactory syntheticTxnFactory() {
         return new SyntheticTxnFactory();
+    }
+
+    @Bean
+    DeleteAllowanceLogic deleteAllowanceLogic() {
+        return new DeleteAllowanceLogic();
     }
 
     @Bean
