@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -167,6 +168,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
         final var account = subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW);
@@ -220,6 +222,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
         final var tokenRelationship = subject.getTokenRelationship(

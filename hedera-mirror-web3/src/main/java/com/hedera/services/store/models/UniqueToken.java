@@ -63,6 +63,16 @@ public class UniqueToken {
         return new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]);
     }
 
+    private UniqueToken createNewUniqueTokenWithNewOwner(UniqueToken oldUniqueToken, Id newOwner) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                newOwner,
+                oldUniqueToken.spender,
+                oldUniqueToken.metadata);
+    }
+
     public boolean isEmptyUniqueToken() {
         return this.equals(getEmptyUniqueToken());
     }
@@ -89,6 +99,10 @@ public class UniqueToken {
 
     public Id getOwner() {
         return owner;
+    }
+
+    public UniqueToken setOwner(Id newOwner) {
+        return createNewUniqueTokenWithNewOwner(this, newOwner);
     }
 
     public Id getSpender() {
