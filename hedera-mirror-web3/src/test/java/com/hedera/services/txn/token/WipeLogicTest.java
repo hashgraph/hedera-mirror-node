@@ -116,10 +116,9 @@ class WipeLogicTest {
         TokenRelationship accRel = mock(TokenRelationship.class);
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
                 .willReturn(accRel);
-        given(token.getId()).willReturn(idOfToken);
-        given(token.setLoadedUniqueTokens(any())).willReturn(updatedToken);
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
                 .willReturn(treasuryRel);
+        given(store.loadUniqueTokens(token, serials)).willReturn(updatedToken);
         given(updatedToken.wipe(treasuryRel, serials)).willReturn(tokenModificationResult);
         given(tokenModificationResult.token()).willReturn(updatedToken);
         given(tokenModificationResult.tokenRelationship()).willReturn(modifiedTreasuryRel);
