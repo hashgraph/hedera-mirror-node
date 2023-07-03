@@ -150,7 +150,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return encoder.encodeBurnFailure(status);
     }
 
-    // TODO: private?
     public static BurnWrapper getBurnWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
         final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
