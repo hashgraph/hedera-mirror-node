@@ -48,6 +48,11 @@ public class JECDSASecp256k1Key extends JKey {
     }
 
     @Override
+    public boolean hasECDSAsecp256k1Key() {
+        return true;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (o == this) {
             return true;

@@ -38,6 +38,11 @@ public class EntityNum implements Comparable<EntityNum> {
         this.value = value;
     }
 
+    public static EntityNum fromEvmAddress(final Address address) {
+        final var bytes = address.toArrayUnsafe();
+        return fromLong(numFromEvmAddress(bytes));
+    }
+
     public static EntityNum fromInt(final int i) {
         return new EntityNum(i);
     }

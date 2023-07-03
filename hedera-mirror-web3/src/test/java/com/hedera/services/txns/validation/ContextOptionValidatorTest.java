@@ -17,7 +17,11 @@
 package com.hedera.services.txns.validation;
 
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -70,7 +74,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void shortCircuitsLedgerExpiryCheckIfNoExpiryEnabled() {
-        account = new Account(id, 0);
+        account = new Account(0L, id, 0);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
         given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(false);
 
@@ -79,7 +83,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void shortCircuitsLedgerExpiryCheckIfBalanceIsNonZero() {
-        account = new Account(id, 1);
+        account = new Account(0L, id, 1);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
         given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 
@@ -88,7 +92,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void shortCircuitsIfBalanceIsZeroButNotDetached() {
-        account = new Account(id, 0).setExpiry(System.currentTimeMillis() / 1000 + 1000);
+        account = new Account(0L, id, 0).setExpiry(System.currentTimeMillis() / 1000 + 1000);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
         given(mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 
@@ -97,7 +101,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void shortCircuitsIfContractExpiryNotEnabled() {
-        account = new Account(id, 0)
+        account = new Account(0L, id, 0)
                 .setExpiry(System.currentTimeMillis() / 1000 - 1000)
                 .setIsSmartContract(true);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);
@@ -107,7 +111,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void usesPreciseExpiryCheckIfBalanceIsZero() {
-        account = new Account(id, 0)
+        account = new Account(0L, id, 0)
                 .setExpiry(System.currentTimeMillis() / 1000 - 1000)
                 .setIsSmartContract(true);
         given(store.getAccount(address, OnMissing.THROW)).willReturn(account);

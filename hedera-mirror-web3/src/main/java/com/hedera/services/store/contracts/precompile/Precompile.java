@@ -49,7 +49,7 @@ public interface Precompile {
     TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
-    long getMinimumFeeInTinybars(Timestamp consensusTime);
+    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
 
     // Change the world state through the given frame
     RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);

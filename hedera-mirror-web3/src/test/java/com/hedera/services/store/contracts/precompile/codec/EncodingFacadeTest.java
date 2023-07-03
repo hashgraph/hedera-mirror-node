@@ -36,8 +36,14 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.Test;
 
 class EncodingFacadeTest {
-    private final EncodingFacade subject = new EncodingFacade();
-
+    public static final Bytes RETURN_NON_FUNGIBLE_MINT_FOR_3_TOKENS =
+            Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016"
+                    + "00000000000000000000000000000000000000000000000000000000000000000"
+                    + "00000000000000000000000000000000000000000000000000000000000006"
+                    + "00000000000000000000000000000000000000000000000000000000000000003"
+                    + "0000000000000000000000000000000000000000000000000000000000000001"
+                    + "0000000000000000000000000000000000000000000000000000000000000002"
+                    + "0000000000000000000000000000000000000000000000000000000000000003");
     private static final Address senderAddress = Address.ALTBN128_PAIRING;
     private static final Address recipientAddress = Address.ALTBN128_ADD;
     private static final Bytes RETURN_FUNGIBLE_MINT_FOR_10_TOKENS =
@@ -63,40 +69,33 @@ class EncodingFacadeTest {
     private static final Bytes BURN_FAILURE_FROM_TREASURY_NOT_OWNER =
             Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000000fc"
                     + "0000000000000000000000000000000000000000000000000000000000000000");
-
     private static final Bytes RETURN_SUCCESS_3 =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016"
                     + "0000000000000000000000000000000000000000000000000000000000000003");
-
     private static final Bytes RETURN_TRUE =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
-
     private static final Bytes RETURN_SUCCESS =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016");
-
     private static final Bytes RETURN_SUCCESS_TRUE =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016"
                     + "0000000000000000000000000000000000000000000000000000000000000001");
-
     private static final Bytes TRANSFER_EVENT =
             Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
-
     private static final Bytes RETURN_CREATE_SUCCESS =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016"
                     + "0000000000000000000000000000000000000000000000000000000000000008");
-
     private static final Bytes CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME =
             Bytes.fromHexString("0x000000000000000000000000000000000000000000000000000000000000002d"
                     + "0000000000000000000000000000000000000000000000000000000000000000");
-
     final Address logger = Address.fromHexString("0x167");
+    private final EncodingFacade subject = new EncodingFacade();
 
     @Test
     void canEncodeEip1014Address() {
         final var literalEip1014 = "0x8ff8eb31713b9ff374d893d21f3b9eb732a307a5";
         final var besuAddress = Address.fromHexString(literalEip1014);
         final var headlongAddress = convertBesuAddressToHeadlongAddress(besuAddress);
-        assertEquals(literalEip1014, ("" + headlongAddress).toLowerCase());
+        assertEquals(literalEip1014, (String.valueOf(headlongAddress)).toLowerCase());
     }
 
     @Test
@@ -109,6 +108,12 @@ class EncodingFacadeTest {
     void decodeReturnResultForNonFungibleMint() {
         final var decodedResult = subject.encodeMintSuccess(2, new long[] {1, 2});
         assertEquals(RETURN_NON_FUNGIBLE_MINT_FOR_2_TOKENS, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForNonFungibleMint3() {
+        final var decodedResult = subject.encodeMintSuccess(0, new long[] {1, 2, 3});
+        assertEquals(RETURN_NON_FUNGIBLE_MINT_FOR_3_TOKENS, decodedResult);
     }
 
     @Test

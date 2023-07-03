@@ -56,6 +56,7 @@ class TokenRelationshipTest {
     @BeforeEach
     void setUp() {
         token = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -79,6 +80,7 @@ class TokenRelationshipTest {
                 false,
                 false,
                 defaultIntValue,
+                defaultIntValue,
                 true,
                 "the mother",
                 "bitcoin",
@@ -89,6 +91,7 @@ class TokenRelationshipTest {
                 Collections.emptyList());
 
         account = new Account(
+                0L,
                 accountId,
                 defaultLongValue,
                 defaultLongValue,
