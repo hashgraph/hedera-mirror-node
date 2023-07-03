@@ -45,21 +45,20 @@ import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Copied Logic type from hedera-services. Differences with the original:
- *  1. Use abstraction for the state by introducing {@link Store} interface.
- *  2. Use copied models from hedera-services which are enhanced with additional constructors and/or lombok generated builder for easier setup,
- *  those are {@link Account}, {@link Token}, {@link TokenRelationship}, {@link CustomFee}.
- *  3. Moved methods from com.hedera.app.service.mono.txns.token.process.Creation to {@link CreateLogic}.
- *  4. Provided {@link com.hedera.services.utils.CustomFeeUtils} for easier work with fees.
- *  5. Adapted validation methods with the logic in {@link CustomFee}.
- * */
+ * Copied Logic type from hedera-services. Differences with the original: 1. Use abstraction for the state by
+ * introducing {@link Store} interface. 2. Use copied models from hedera-services which are enhanced with additional
+ * constructors and/or lombok generated builder for easier setup, those are {@link Account}, {@link Token},
+ * {@link TokenRelationship}, {@link CustomFee}. 3. Moved methods from
+ * com.hedera.app.service.mono.txns.token.process.Creation to {@link CreateLogic}. 4. Provided
+ * {@link com.hedera.services.utils.CustomFeeUtils} for easier work with fees. 5. Adapted validation methods with the
+ * logic in {@link CustomFee}.
+ */
 public class CreateLogic {
 
     private final MirrorNodeEvmProperties dynamicProperties;
 
     private Account treasury;
     private Account autoRenew;
-    private Account collector;
     private Id provisionalId;
     private Token provisionalToken;
     private FeeType feeType;
@@ -127,12 +126,10 @@ public class CreateLogic {
             // Treasury relationship is always first
             provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
         }
-        //        provisionalToken.getCustomFees()
-        //                .forEach(CustomFeeUtils::nullCustomFeeCollectors);
     }
 
     private void validateAndFinalizeWith(final Token provisionalToken, final CustomFee customFee, final Store store) {
-        validate(provisionalToken, true, customFee, store);
+        validate(provisionalToken, customFee, store);
     }
 
     private void updateRelationshipAndAccount(final TokenRelationship relationship, final Store store) {
@@ -140,31 +137,18 @@ public class CreateLogic {
         store.updateAccount(relationship.getAccount());
     }
 
-    private void validate(final Token token, final boolean beingCreated, final CustomFee customFee, final Store store) {
+    private void validate(final Token token, final CustomFee customFee, final Store store) {
         feeType = getFeeType(customFee);
-        collector = store.getAccount(getFeeCollector(customFee), OnMissing.THROW);
+        final var collector = store.getAccount(getFeeCollector(customFee), OnMissing.THROW);
 
         switch (feeType) {
-            case FIXED_FEE -> {
-                if (beingCreated) {
-                    validateAndFinalizeFixedFeeWith(token, collector, store, customFee);
-                } else {
-                    validateWith(collector, store, customFee);
-                }
-            }
+            case FIXED_FEE -> validateAndFinalizeFixedFeeWith(token, collector, store, customFee);
             case ROYALTY_FEE -> {
                 validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-                validateAndFinalizeRoyaltyFeeWith(token, collector, store, customFee, beingCreated);
+                validateAndFinalizeRoyaltyFeeWith(token, collector, store, customFee);
             }
-            case FRACTIONAL_FEE -> {
-                validateTrue(token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                if (!beingCreated) {
-                    validateTrue(
-                            store.hasAssociation(new TokenRelationshipKey(
-                                    token.getId().asEvmAddress(), collector.getAccountAddress())),
-                            TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
-                }
-            }
+            case FRACTIONAL_FEE -> validateTrue(
+                    token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
         }
     }
 
@@ -188,20 +172,12 @@ public class CreateLogic {
     }
 
     private void validateAndFinalizeRoyaltyFeeWith(
-            final Token token,
-            final Account collector,
-            final Store store,
-            final CustomFee customFee,
-            final boolean beingCreated) {
+            final Token token, final Account collector, final Store store, final CustomFee customFee) {
         validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royalty = customFee.getRoyaltyFee();
         if ((!royalty.getDenominatingTokenId().isZero() || royalty.isUseHbarsForPayment())
                 && royalty.getAmount() > 0L) {
-            if (beingCreated) {
-                validateAndFinalizeFixedFeeWith(token, collector, store, customFee);
-            } else {
-                validateWith(collector, store, customFee);
-            }
+            validateAndFinalizeFixedFeeWith(token, collector, store, customFee);
         }
     }
 
@@ -212,15 +188,6 @@ public class CreateLogic {
                 fixedFee.isUseHbarsForPayment(),
                 fixedFee.isUseCurrentTokenForPayment(),
                 fixedFee.getFeeCollector());
-    }
-
-    private void validateWith(final Account collector, final Store store, final CustomFee customFee) {
-        final var denominatingTokenId = feeType.equals(FeeType.FIXED_FEE)
-                ? customFee.getFixedFee().getDenominatingTokenId()
-                : customFee.getRoyaltyFee().getDenominatingTokenId();
-        if (denominatingTokenId != null) {
-            validateExplicitlyDenominatedWith(collector, store, denominatingTokenId);
-        }
     }
 
     private void validateExplicitlyDenominatedWith(

@@ -69,25 +69,4 @@ class CustomFeeUtilsTest {
         feeType = CustomFeeUtils.getFeeType(customFee);
         assertEquals(FeeType.FRACTIONAL_FEE, feeType);
     }
-
-    @Test
-    void nullCustomFeeCollectors() {
-        var customFee = new CustomFee();
-        var fixedFee = new FixedFee(0, null, true, true, feeAddress);
-        customFee.setFixedFee(fixedFee);
-        CustomFeeUtils.nullCustomFeeCollectors(customFee);
-        assertEquals(Address.ZERO, customFee.getFixedFee().getFeeCollector());
-
-        customFee = new CustomFee();
-        var royaltyFee = new RoyaltyFee(1, 1, 0, null, true, feeAddress);
-        customFee.setRoyaltyFee(royaltyFee);
-        CustomFeeUtils.nullCustomFeeCollectors(customFee);
-        assertEquals(Address.ZERO, customFee.getRoyaltyFee().getFeeCollector());
-
-        customFee = new CustomFee();
-        var fractureFee = new FractionalFee(1, 1, 1, 2, true, feeAddress);
-        customFee.setFractionalFee(fractureFee);
-        CustomFeeUtils.nullCustomFeeCollectors(customFee);
-        assertEquals(Address.ZERO, customFee.getFractionalFee().getFeeCollector());
-    }
 }

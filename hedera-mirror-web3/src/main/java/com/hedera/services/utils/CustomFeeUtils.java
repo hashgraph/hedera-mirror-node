@@ -17,9 +17,6 @@
 package com.hedera.services.utils;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
 import com.hedera.services.txn.token.CreateLogic.FeeType;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -43,44 +40,6 @@ public class CustomFeeUtils {
             return FeeType.FRACTIONAL_FEE;
         } else {
             return FeeType.ROYALTY_FEE;
-        }
-    }
-
-    public static void nullCustomFeeCollectors(CustomFee customFee) {
-        final var feeType = getFeeType(customFee);
-        switch (feeType) {
-            case FIXED_FEE -> {
-                final var oldFixedFee = customFee.getFixedFee();
-                final var newFixedFee = new FixedFee(
-                        oldFixedFee.getAmount(),
-                        oldFixedFee.getDenominatingTokenId(),
-                        oldFixedFee.isUseHbarsForPayment(),
-                        oldFixedFee.isUseHbarsForPayment(),
-                        null);
-                customFee.setFixedFee(newFixedFee);
-            }
-            case FRACTIONAL_FEE -> {
-                final var oldFractionalFee = customFee.getFractionalFee();
-                final var newFractionalFee = new FractionalFee(
-                        oldFractionalFee.getNumerator(),
-                        oldFractionalFee.getDenominator(),
-                        oldFractionalFee.getMinimumAmount(),
-                        oldFractionalFee.getMaximumAmount(),
-                        oldFractionalFee.getNetOfTransfers(),
-                        null);
-                customFee.setFractionalFee(newFractionalFee);
-            }
-            case ROYALTY_FEE -> {
-                final var oldRoyaltyFee = customFee.getRoyaltyFee();
-                final var newRoyaltyFee = new RoyaltyFee(
-                        oldRoyaltyFee.getNumerator(),
-                        oldRoyaltyFee.getDenominator(),
-                        oldRoyaltyFee.getAmount(),
-                        oldRoyaltyFee.getDenominatingTokenId(),
-                        oldRoyaltyFee.isUseHbarsForPayment(),
-                        null);
-                customFee.setRoyaltyFee(newRoyaltyFee);
-            }
         }
     }
 }
