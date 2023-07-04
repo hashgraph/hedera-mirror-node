@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Copied Logic type from hedera-services.
@@ -45,12 +43,11 @@ import javax.inject.Singleton;
  * 1. Use abstraction for the state by introducing {@link Store} interface
  * 2. validateSyntax method uses default value of true for areNftsEnabled property
  * 3. validateSyntax executes the logic directly instead of calling TokenWipeAccessor.validateSyntax
+ * 4. Replaced GlobalDynamicProperties with MirrorNodeEvmProperties
  */
-@Singleton
 public class WipeLogic {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    @Inject
     public WipeLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }

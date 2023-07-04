@@ -141,10 +141,9 @@ public class StoreImpl implements Store {
     }
 
     /**
-     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can
-     * be used to implement business logic in a transaction.
+     * Returns a {@link Token} model with loaded unique tokens
      *
-     * @param token         the token model, on which to load the of the unique token
+     * @param token         the token model, on which to load the unique tokens
      * @param serialNumbers the serial numbers to load
      * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is missing, deleted, or
      *                                                                                expired and pending removal
@@ -167,7 +166,7 @@ public class StoreImpl implements Store {
      * @param serialNum Serial number of the NFT
      * @return The {@link UniqueToken} model of the requested unique token
      */
-    public UniqueToken loadUniqueToken(final Id tokenId, final Long serialNum) {
+    private UniqueToken loadUniqueToken(final Id tokenId, final Long serialNum) {
         final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNum);
         return getUniqueToken(nftId, OnMissing.THROW);
     }

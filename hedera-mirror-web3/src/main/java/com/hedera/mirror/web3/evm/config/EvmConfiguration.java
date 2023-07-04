@@ -48,6 +48,7 @@ import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -277,5 +278,10 @@ public class EvmConfiguration {
     @Bean
     DissociateLogic dissociateLogic() {
         return new DissociateLogic();
+    }
+
+    @Bean
+    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new WipeLogic(mirrorNodeEvmProperties);
     }
 }
