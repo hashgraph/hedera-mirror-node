@@ -251,8 +251,11 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
-        return new AutoCreationLogic(feeCalculator, evmProperties);
+    AutoCreationLogic autocreationLogic(
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            final SyntheticTxnFactory syntheticTxnFactory) {
+        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
     @Bean

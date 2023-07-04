@@ -42,11 +42,14 @@ import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
@@ -59,7 +62,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
-    private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
@@ -75,6 +77,9 @@ class AutoCreationLogicTest {
     private FeeCalculator feeCalculator;
 
     @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
     private EvmProperties evmProperties;
 
     private AutoCreationLogic subject;
@@ -86,11 +91,13 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         store = new StoreImpl(accessors);
         store.wrap();
-        subject = new AutoCreationLogic(feeCalculator, evmProperties);
+        subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
 
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         aPrimitiveKey = key;
         edKeyAlias = aPrimitiveKey.toByteString();
+        syntheticEDAliasCreation = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
     }
 
     @Test
@@ -122,6 +129,8 @@ class AutoCreationLogicTest {
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
+                .willReturn(syntheticEDAliasCreation);
 
         // when
         final var input1 = wellKnownTokenChange(edKeyAlias);
@@ -152,6 +161,8 @@ class AutoCreationLogicTest {
 
     private static ByteString edKeyAlias;
 
+    private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+    private TransactionBody.Builder syntheticEDAliasCreation;
     private static final AccountID created = asAccount("0.0.1234");
     public static final AccountID payer = asAccount("0.0.12345");
     private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
