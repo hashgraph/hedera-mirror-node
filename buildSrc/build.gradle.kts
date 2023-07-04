@@ -47,7 +47,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.1")
 
     // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
-    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.15")
+    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.16")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {
