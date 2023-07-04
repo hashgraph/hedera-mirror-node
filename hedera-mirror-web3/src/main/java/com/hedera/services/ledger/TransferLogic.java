@@ -41,6 +41,12 @@ import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Removed topLevelPayer related logic
+ *  3. Removed SideEffectsTracker, RecordsHistorian, TransactionContext, FeeDistribution
+ * */
 public class TransferLogic {
     private final AutoCreationLogic autoCreationLogic;
 
