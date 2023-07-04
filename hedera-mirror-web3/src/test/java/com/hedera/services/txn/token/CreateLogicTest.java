@@ -115,9 +115,11 @@ class CreateLogicTest {
     void throwExceptionIfTokenIsExpired() {
         given(op.hasExpiry()).willReturn(true);
         given(op.getExpiry()).willReturn(Timestamp.getDefaultInstance());
-        assertThatThrownBy(
-                        () -> createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op))
-                .isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(this::runCreateLogic).isInstanceOf(InvalidTransactionException.class);
+    }
+
+    private void runCreateLogic() {
+        createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op);
     }
 
     @Test
@@ -128,9 +130,7 @@ class CreateLogicTest {
         staticMock.when(() -> Id.fromGrpcAccount(treasury)).thenReturn(accountId);
         given(op.hasAutoRenewAccount()).willReturn(false);
         given(op.getCustomFeesCount()).willReturn(11);
-        assertThatThrownBy(
-                        () -> createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op))
-                .isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(this::runCreateLogic).isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test
@@ -159,7 +159,7 @@ class CreateLogicTest {
         given(store.getTokenRelationship(any(), any())).willReturn(TokenRelationship.getEmptyTokenRelationship());
         given(op.getInitialSupply()).willReturn(10L);
 
-        createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op);
+        runCreateLogic();
         verify(store, atLeast(2)).updateAccount(any());
         verify(store).updateToken(any());
         verify(store, atLeast(2)).updateTokenRelationship(any());
@@ -193,7 +193,7 @@ class CreateLogicTest {
         given(op.getInitialSupply()).willReturn(10L);
         given(store.hasAssociation(any())).willReturn(true).willReturn(true).willReturn(false);
         prepareDenomToken();
-        createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op);
+        runCreateLogic();
         verify(store, atLeast(2)).updateAccount(any());
         verify(store).updateToken(any());
         verify(store, atLeast(2)).updateTokenRelationship(any());
@@ -227,7 +227,7 @@ class CreateLogicTest {
         given(evmProperties.getMaxTokensPerAccount()).willReturn(1000);
         given(store.getTokenRelationship(any(), any())).willReturn(TokenRelationship.getEmptyTokenRelationship());
         given(op.getInitialSupply()).willReturn(10L);
-        createLogic.create(Instant.now().getEpochSecond(), address, optionValidator, store, op);
+        runCreateLogic();
         verify(feeSpy).setFixedFee(any());
     }
 

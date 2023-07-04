@@ -22,6 +22,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class CustomFeeUtils {
 
+    private CustomFeeUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static Address getFeeCollector(CustomFee customFee) {
         final var type = getFeeType(customFee);
         if (type.equals(FeeType.FIXED_FEE)) {
