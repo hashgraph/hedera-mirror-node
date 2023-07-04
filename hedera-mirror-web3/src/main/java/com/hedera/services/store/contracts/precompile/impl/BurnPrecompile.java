@@ -32,7 +32,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.BurnLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;

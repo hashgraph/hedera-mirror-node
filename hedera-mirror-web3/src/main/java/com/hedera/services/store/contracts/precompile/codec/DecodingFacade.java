@@ -65,6 +65,10 @@ public class DecodingFacade {
             + EXPIRY_DECODER
             + ")";
 
+    private DecodingFacade() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static List<TokenKeyWrapper> decodeTokenKeys(
             @NonNull final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
