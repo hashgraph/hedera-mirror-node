@@ -25,13 +25,13 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied model from hedera-services.
- *
+ * <p>
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
- *
+ * <p>
  * Differences from the original:
  *  1. Added address field for convenience
  *  2. Added factory method that returns empty instance
@@ -74,6 +74,16 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                oldUniqueToken.owner,
+                newSpender,
+                oldUniqueToken.metadata);
+    }
+
     public boolean isEmptyUniqueToken() {
         return this.equals(getEmptyUniqueToken());
     }
@@ -104,6 +114,10 @@ public class UniqueToken {
 
     public UniqueToken setOwner(Id newOwner) {
         return createNewUniqueTokenWithNewOwner(this, newOwner);
+    }
+
+    public UniqueToken setSpender(Id newSpender) {
+        return createNewUniqueTokenWithNewSpender(this, newSpender);
     }
 
     public Id getSpender() {

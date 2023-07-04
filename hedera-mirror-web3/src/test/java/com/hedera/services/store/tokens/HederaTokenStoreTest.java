@@ -16,29 +16,6 @@
 
 package com.hedera.services.store.tokens;
 
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
-import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.exceptions.MissingEntityException;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
@@ -68,6 +45,29 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.exceptions.MissingEntityException;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class HederaTokenStoreTest {
     private static final int associatedTokensCount = 2;
