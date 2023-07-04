@@ -27,6 +27,7 @@ import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -50,9 +51,14 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     protected void trackAlias(
             final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases) {
         if (isAliasSizeGreaterThanEvmAddress(alias)) {
+            // if the alias is not derived from ECDSA public key
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
             mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, address);
+
+        } else {
+            // if the alias is derived from ECDSA public key
+            mirrorEvmContractAliases.link(Address.wrap(Bytes.wrap(alias.toByteArray())), address);
         }
     }
 }
