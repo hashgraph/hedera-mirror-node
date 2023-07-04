@@ -118,7 +118,7 @@ class EncodingFacadeTest {
 
     @Test
     void decodeReturnResultForBurn() {
-        final var decodedResult = subject.encodeBurnSuccess(49);
+        final var decodedResult = subject.encodeBurnSuccess(49, new long[] {1});
         assertEquals(RETURN_BURN_FOR_49_TOKENS, decodedResult);
     }
 

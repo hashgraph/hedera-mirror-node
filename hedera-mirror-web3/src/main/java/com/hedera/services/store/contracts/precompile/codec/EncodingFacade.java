@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_BURN;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.hapiAllowanceOfType;
@@ -43,7 +44,7 @@ import org.hyperledger.besu.evm.log.LogTopic;
 
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
-    private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
+    private static final long[] NO_SERIAL_NUMBERS = new long[0];
 
     public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
@@ -93,36 +94,36 @@ public class EncodingFacade {
     }
 
     public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
+        return encodeSuccess(HAPI_MINT, totalSupply, serialNumbers);
+    }
+
+    public Bytes encodeBurnSuccess(final long totalSupply, final long[] serialNumbers) {
+        return encodeSuccess(HAPI_BURN, totalSupply, serialNumbers);
+    }
+
+    private Bytes encodeSuccess(final FunctionType functionType, long totalSupply, long[] serialNumbers) {
         return functionResultBuilder()
-                .forFunction(HAPI_MINT)
+                .forFunction(functionType)
                 .withStatus(SUCCESS.getNumber())
                 .withTotalSupply(totalSupply)
-                .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
+                .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_SERIAL_NUMBERS)
                 .build();
     }
 
     public Bytes encodeMintFailure(@NonNull final ResponseCodeEnum status) {
-        return functionResultBuilder()
-                .forFunction(HAPI_MINT)
-                .withStatus(status.getNumber())
-                .withTotalSupply(0L)
-                .withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
-                .build();
-    }
-
-    public Bytes encodeBurnSuccess(final long totalSupply) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
-                .withStatus(SUCCESS.getNumber())
-                .withTotalSupply(totalSupply)
-                .build();
+        return encodeFailure(HAPI_MINT, status);
     }
 
     public Bytes encodeBurnFailure(@NonNull final ResponseCodeEnum status) {
+        return encodeFailure(HAPI_BURN, status);
+    }
+
+    private Bytes encodeFailure(final FunctionType functionType, final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
+                .forFunction(functionType)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
+                .withSerialNumbers(NO_SERIAL_NUMBERS)
                 .build();
     }
 

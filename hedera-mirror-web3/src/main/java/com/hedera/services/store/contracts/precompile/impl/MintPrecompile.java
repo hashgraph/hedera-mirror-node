@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hedera.services.utils.MiscUtils.convertArrayToLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -172,11 +173,4 @@ public class MintPrecompile extends AbstractWritePrecompile {
         return encoder.encodeMintFailure(status);
     }
 
-    private long[] convertArrayToLong(final List<Long> list) {
-        final var result = new long[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            result[i] = list.get(i);
-        }
-        return result;
-    }
 }
