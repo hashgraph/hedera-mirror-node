@@ -26,11 +26,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.AssociateLogic;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -42,9 +42,8 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR = Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
-    public MultiAssociatePrecompile(
-            final PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        super(pricingUtils, mirrorNodeEvmProperties);
+    public MultiAssociatePrecompile(final PrecompilePricingUtils pricingUtils, final AssociateLogic associateLogic) {
+        super(pricingUtils, associateLogic);
     }
 
     @Override

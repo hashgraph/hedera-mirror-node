@@ -215,14 +215,14 @@ public class EvmConfiguration {
 
     @Bean
     AssociatePrecompile associatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new AssociatePrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils, final AssociateLogic associateLogic) {
+        return new AssociatePrecompile(precompilePricingUtils, associateLogic);
     }
 
     @Bean
     MultiAssociatePrecompile multiAssociatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new MultiAssociatePrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils, final AssociateLogic associateLogic) {
+        return new MultiAssociatePrecompile(precompilePricingUtils, associateLogic);
     }
 
     @Bean
@@ -260,8 +260,8 @@ public class EvmConfiguration {
             PrecompilePricingUtils precompilePricingUtils,
             EncodingFacade encodingFacade,
             SyntheticTxnFactory syntheticTxnFactory,
-            OptionValidator optionValidator) {
-        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, optionValidator);
+            MintLogic mintLogic) {
+        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, mintLogic);
     }
 
     @Bean

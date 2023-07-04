@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.Association;
@@ -49,12 +48,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public abstract class AbstractAssociatePrecompile implements Precompile {
 
     protected final PrecompilePricingUtils pricingUtils;
-    protected final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    protected final AssociateLogic associateLogic;
 
     protected AbstractAssociatePrecompile(
-            final PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final PrecompilePricingUtils pricingUtils, final AssociateLogic associateLogic) {
         this.pricingUtils = pricingUtils;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.associateLogic = associateLogic;
     }
 
     @Override
@@ -68,7 +67,6 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
 
         // --- Execute the transaction and capture its results ---
-        final var associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
 
         final var validity = associateLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
