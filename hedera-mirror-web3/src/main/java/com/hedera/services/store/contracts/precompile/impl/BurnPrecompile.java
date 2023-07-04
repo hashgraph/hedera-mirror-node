@@ -139,7 +139,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getSuccessResultFor(final RunResult runResult) {
         final var burnResult = (BurnResult) runResult;
-        //dummy change
         return encoder.encodeBurnSuccess(burnResult.totalSupply(), convertArrayToLong(burnResult.serialNumbers()));
     }
 
