@@ -36,6 +36,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -277,5 +278,10 @@ public class EvmConfiguration {
     @Bean
     DissociateLogic dissociateLogic() {
         return new DissociateLogic();
+    }
+
+    @Bean
+    TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
+        return new TransferLogic(autoCreationLogic);
     }
 }

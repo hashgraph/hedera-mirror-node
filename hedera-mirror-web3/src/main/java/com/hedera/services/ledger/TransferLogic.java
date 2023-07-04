@@ -34,7 +34,6 @@ import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -43,25 +42,23 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class TransferLogic {
-    private final HederaTokenStore hederaTokenStore;
     private final AutoCreationLogic autoCreationLogic;
-    private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
-    public TransferLogic(
-            final HederaTokenStore hederaTokenStore,
-            final @Nullable AutoCreationLogic autoCreationLogic,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        this.hederaTokenStore = hederaTokenStore;
+    public TransferLogic(final AutoCreationLogic autoCreationLogic) {
         this.autoCreationLogic = autoCreationLogic;
-        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
-    public void doZeroSum(final List<BalanceChange> changes, Store store, EntityAddressSequencer ids) {
+    public void doZeroSum(
+            final List<BalanceChange> changes,
+            Store store,
+            EntityAddressSequencer ids,
+            MirrorEvmContractAliases mirrorEvmContractAliases,
+            HederaTokenStore hederaTokenStore) {
         var validity = OK;
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
-            replaceAliasWithIdIfExisting(change);
+            replaceAliasWithIdIfExisting(change, mirrorEvmContractAliases);
 
             // create a new account for alias when the no account is already created using the alias
             if (change.hasAlias()) {
@@ -154,12 +151,14 @@ public class TransferLogic {
     }
 
     /**
-     * Checks if the alias is a known alias i.e, if the alias is already used in any cryptoTransfer
-     * transaction that has led to account creation
+     * Checks if the alias is a known alias i.e, if the alias is already used in any cryptoTransfer transaction that has
+     * led to account creation
      *
-     * @param change change that contains alias
+     * @param change                   change that contains alias
+     * @param mirrorEvmContractAliases resolve aliases
      */
-    private void replaceAliasWithIdIfExisting(final BalanceChange change) {
+    private void replaceAliasWithIdIfExisting(
+            final BalanceChange change, MirrorEvmContractAliases mirrorEvmContractAliases) {
         final var alias = change.getNonEmptyAliasIfPresent();
 
         if (alias != null) {
