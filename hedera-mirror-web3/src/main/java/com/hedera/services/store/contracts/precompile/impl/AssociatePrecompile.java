@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -57,8 +58,11 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    public AssociatePrecompile(final PrecompilePricingUtils pricingUtils, final AssociateLogic associateLogic) {
-        super(pricingUtils, associateLogic);
+    public AssociatePrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        super(pricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     public static Association decodeAssociation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -88,7 +92,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
                 ? decodeAssociation(input, aliasResolver)
                 : Association.singleAssociation(Objects.requireNonNull(callerAccountID), tokenId);
 
-        return createAssociate(associateOp);
+        return syntheticTxnFactory.createAssociate(associateOp);
     }
 
     @Override

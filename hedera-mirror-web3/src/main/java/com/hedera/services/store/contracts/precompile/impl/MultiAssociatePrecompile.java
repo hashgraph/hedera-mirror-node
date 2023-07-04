@@ -27,6 +27,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -42,8 +43,20 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR = Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
-    public MultiAssociatePrecompile(final PrecompilePricingUtils pricingUtils, final AssociateLogic associateLogic) {
-        super(pricingUtils, associateLogic);
+    public MultiAssociatePrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        super(pricingUtils, syntheticTxnFactory, associateLogic);
+    }
+
+    public static Association decodeMultipleAssociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
+
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
+
+        return Association.multiAssociation(accountID, tokenIDs);
     }
 
     @Override
@@ -56,7 +69,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 
         final var associateOp = Association.multiAssociation(accountID, tokenIDs);
 
-        return createAssociate(associateOp);
+        return syntheticTxnFactory.createAssociate(associateOp);
     }
 
     @Override

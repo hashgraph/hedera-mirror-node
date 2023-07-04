@@ -215,14 +215,18 @@ public class EvmConfiguration {
 
     @Bean
     AssociatePrecompile associatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final AssociateLogic associateLogic) {
-        return new AssociatePrecompile(precompilePricingUtils, associateLogic);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new AssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean
     MultiAssociatePrecompile multiAssociatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final AssociateLogic associateLogic) {
-        return new MultiAssociatePrecompile(precompilePricingUtils, associateLogic);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new MultiAssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean

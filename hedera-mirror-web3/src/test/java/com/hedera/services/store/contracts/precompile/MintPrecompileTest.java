@@ -192,7 +192,7 @@ class MintPrecompileTest {
     private Store store;
 
     @Mock
-    private OptionValidator contextOptionValidator;
+    private OptionValidator optionValidator;
 
     private MintLogic mintLogic;
     private HTSPrecompiledContract subject;
@@ -209,8 +209,8 @@ class MintPrecompileTest {
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
-        contextOptionValidator = new ContextOptionValidator(evmProperties);
-        mintLogic = new MintLogic(contextOptionValidator);
+        optionValidator = new ContextOptionValidator(evmProperties);
+        mintLogic = new MintLogic(optionValidator);
         encoder = new EncodingFacade();
         mintPrecompile = new MintPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, mintLogic);
         precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));

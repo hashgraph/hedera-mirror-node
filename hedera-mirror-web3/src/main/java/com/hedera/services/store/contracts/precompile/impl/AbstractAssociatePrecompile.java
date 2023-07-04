@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -30,7 +30,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,11 +47,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public abstract class AbstractAssociatePrecompile implements Precompile {
 
     protected final PrecompilePricingUtils pricingUtils;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final AssociateLogic associateLogic;
 
     protected AbstractAssociatePrecompile(
-            final PrecompilePricingUtils pricingUtils, final AssociateLogic associateLogic) {
+            final PrecompilePricingUtils pricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
         this.pricingUtils = pricingUtils;
+        this.syntheticTxnFactory = syntheticTxnFactory;
         this.associateLogic = associateLogic;
     }
 
@@ -79,14 +82,5 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
                 store);
 
         return new EmptyRunResult();
-    }
-
-    protected TransactionBody.Builder createAssociate(final Association association) {
-        final var builder = TokenAssociateTransactionBody.newBuilder();
-
-        builder.setAccount(association.accountId());
-        builder.addAllTokens(association.tokenIds());
-
-        return TransactionBody.newBuilder().setTokenAssociate(builder);
     }
 }
