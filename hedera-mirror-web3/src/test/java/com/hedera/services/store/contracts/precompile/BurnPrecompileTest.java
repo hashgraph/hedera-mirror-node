@@ -52,6 +52,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -213,6 +214,7 @@ class BurnPrecompileTest {
     private HTSPrecompiledContract subject;
     private BurnPrecompile burnPrecompile;
     private PrecompileMapper precompileMapper;
+    private BurnLogic burnLogic;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -225,9 +227,10 @@ class BurnPrecompileTest {
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         contextOptionValidator = new ContextOptionValidator(evmProperties);
+        burnLogic = new BurnLogic(contextOptionValidator);
         encoder = new EncodingFacade();
         burnPrecompile =
-                new BurnPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, contextOptionValidator);
+                new BurnPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, burnLogic);
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(

@@ -69,7 +69,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     private final EncodingFacade encoder;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private final OptionValidator optionValidator;
+    private final BurnLogic burnLogic;
 
     private BurnWrapper burnOp;
 
@@ -77,11 +77,11 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final OptionValidator optionValidator) {
+            BurnLogic burnLogic) {
         super(pricingUtils);
         this.encoder = encoder;
         this.syntheticTxnFactory = syntheticTxnFactory;
-        this.optionValidator = optionValidator;
+        this.burnLogic = burnLogic;
     }
 
     @Override
@@ -112,9 +112,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
         final var burnBody = transactionBody.getTokenBurn();
         final var tokenId = burnBody.getToken();
-
-        /* --- Build the necessary infrastructure to execute the transaction --- */
-        final var burnLogic = new BurnLogic(optionValidator);
 
         final var validity = burnLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);

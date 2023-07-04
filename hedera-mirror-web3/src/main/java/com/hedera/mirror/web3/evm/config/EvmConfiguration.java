@@ -275,8 +275,8 @@ public class EvmConfiguration {
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final OptionValidator optionValidator) {
-        return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, optionValidator);
+            final BurnLogic burnLogic) {
+        return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
     }
 
     @Bean
