@@ -352,6 +352,9 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
       break;
+    case constants.filterKeys.TRANSACTIONS:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
