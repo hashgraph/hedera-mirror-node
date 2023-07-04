@@ -42,7 +42,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.MintLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -73,17 +72,17 @@ public class MintPrecompile extends AbstractWritePrecompile {
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private final EncodingFacade encoder;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    private final OptionValidator optionValidator;
+    private final MintLogic mintLogic;
 
     public MintPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final OptionValidator optionValidator) {
+            final MintLogic mintLogic) {
         super(pricingUtils);
         this.encoder = encoder;
         this.syntheticTxnFactory = syntheticTxnFactory;
-        this.optionValidator = optionValidator;
+        this.mintLogic = mintLogic;
     }
 
     public static MintWrapper getMintWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
@@ -129,9 +128,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
         final var mintBody = transactionBody.getTokenMint();
         final var tokenId = mintBody.getToken();
-
-        /* --- Build the necessary infrastructure to execute the transaction --- */
-        final var mintLogic = new MintLogic(optionValidator);
 
         final var validity = mintLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
