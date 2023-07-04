@@ -37,6 +37,7 @@ paths:
         - $ref: "#/components/parameters/orderQueryParamDesc"
         - $ref: "#/components/parameters/timestampQueryParam"
         - $ref: "#/components/parameters/transactionTypeQueryParam"
+        - $ref: "#/components/parameters/transactionsQueryParam"
       responses:
         200:
           description: OK
@@ -4348,6 +4349,14 @@ components:
           value: lte:0.0.200
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
+    transactionsQueryParam:
+      name: transactions
+      description: If provided and set to false transactions will not be included in the response
+      in: query
+      example: true
+      schema:
+        type: boolean
+        default: true
     transactionTypeQueryParam:
       name: transactiontype
       in: query
