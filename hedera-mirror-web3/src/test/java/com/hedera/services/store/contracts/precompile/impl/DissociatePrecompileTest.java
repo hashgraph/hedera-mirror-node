@@ -22,9 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
@@ -49,11 +51,17 @@ class DissociatePrecompileTest {
     @Mock
     private PrecompilePricingUtils pricingUtils;
 
+    @Mock
+    private DissociateLogic dissociateLogic;
+
+    private SyntheticTxnFactory syntheticTxnFactory;
+
     private final Address callerAccountAddress = Address.fromHexString("0x000000000000000000000000000000000000077e");
 
     @BeforeEach
     void setup() {
-        dissociatePrecompile = new DissociatePrecompile(pricingUtils);
+        syntheticTxnFactory = new SyntheticTxnFactory();
+        dissociatePrecompile = new DissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
     }
 
     @Test
@@ -64,7 +72,7 @@ class DissociatePrecompileTest {
 
         final var accountID =
                 EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccountAddress.toArray()));
-        final var expected = dissociatePrecompile.createDissociate(Dissociation.singleDissociation(accountID, tokenID));
+        final var expected = syntheticTxnFactory.createDissociate(Dissociation.singleDissociation(accountID, tokenID));
         final var result = dissociatePrecompile.body(dissociateToken, a -> a, hrcParams);
 
         assertEquals(expected.getTokenDissociate(), result.getTokenDissociate());

@@ -27,9 +27,11 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -41,8 +43,14 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     private static final Bytes DISSOCIATE_TOKENS_SELECTOR = Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
-    public MultiDissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
-        super(precompilePricingUtils);
+    private final SyntheticTxnFactory syntheticTxnFactory;
+
+    public MultiDissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        super(dissociateLogic, precompilePricingUtils);
+        this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
     @Override
@@ -54,7 +62,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
 
         final var dissociateOp = Dissociation.multiDissociation(accountID, tokenIDs);
 
-        return createDissociate(dissociateOp);
+        return syntheticTxnFactory.createDissociate(dissociateOp);
     }
 
     @Override

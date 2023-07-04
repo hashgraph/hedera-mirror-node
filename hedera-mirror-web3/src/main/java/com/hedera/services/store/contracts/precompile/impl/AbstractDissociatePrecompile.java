@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -30,16 +29,19 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractDissociatePrecompile implements Precompile {
 
+    private final DissociateLogic dissociateLogic;
+
     protected final PrecompilePricingUtils pricingUtils;
 
-    protected AbstractDissociatePrecompile(final PrecompilePricingUtils pricingUtils) {
+    protected AbstractDissociatePrecompile(
+            final DissociateLogic dissociateLogic, final PrecompilePricingUtils pricingUtils) {
+        this.dissociateLogic = dissociateLogic;
         this.pricingUtils = pricingUtils;
     }
 
@@ -53,8 +55,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenDissociate().getAccount());
 
-        final var dissociateLogic = new DissociateLogic();
-
         final var validity = dissociateLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
 
@@ -66,15 +66,5 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
                 store);
 
         return new EmptyRunResult();
-    }
-
-    // TODO: Move to SyntheticTxnFactory
-    protected TransactionBody.Builder createDissociate(final Dissociation dissociation) {
-        final var builder = TokenDissociateTransactionBody.newBuilder();
-
-        builder.setAccount(dissociation.accountId());
-        builder.addAllTokens(dissociation.tokenIds());
-
-        return TransactionBody.newBuilder().setTokenDissociate(builder);
     }
 }

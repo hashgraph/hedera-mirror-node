@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.E
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_HRC_DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
@@ -28,10 +29,12 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -48,8 +51,14 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    public DissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
-        super(precompilePricingUtils);
+    private final SyntheticTxnFactory syntheticTxnFactory;
+
+    public DissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        super(dissociateLogic, precompilePricingUtils);
+        this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
     @Override
@@ -69,7 +78,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
                 ? decodeDissociate(input, aliasResolver)
                 : Dissociation.singleDissociation(Objects.requireNonNull(callerAccountID), tokenId);
 
-        return createDissociate(dissociateOp);
+        return syntheticTxnFactory.createDissociate(dissociateOp);
     }
 
     @Override
@@ -79,7 +88,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_DISSOCIATE_TOKEN);
+        return Set.of(ABI_ID_DISSOCIATE_TOKEN, ABI_ID_HRC_DISSOCIATE);
     }
 
     public static Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {

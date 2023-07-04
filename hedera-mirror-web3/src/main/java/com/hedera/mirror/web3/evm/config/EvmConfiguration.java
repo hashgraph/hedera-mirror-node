@@ -291,12 +291,18 @@ public class EvmConfiguration {
     }
 
     @Bean
-    DissociatePrecompile dissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
-        return new DissociatePrecompile(precompilePricingUtils);
+    DissociatePrecompile dissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        return new DissociatePrecompile(precompilePricingUtils, syntheticTxnFactory, dissociateLogic);
     }
 
     @Bean
-    MultiDissociatePrecompile multiDissociatePrecompile(final PrecompilePricingUtils precompilePricingUtils) {
-        return new MultiDissociatePrecompile(precompilePricingUtils);
+    MultiDissociatePrecompile multiDissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        return new MultiDissociatePrecompile(precompilePricingUtils, syntheticTxnFactory, dissociateLogic);
     }
 }
