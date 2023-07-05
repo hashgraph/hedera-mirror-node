@@ -20,7 +20,6 @@ import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
