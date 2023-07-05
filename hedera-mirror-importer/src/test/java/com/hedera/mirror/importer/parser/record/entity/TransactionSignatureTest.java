@@ -38,6 +38,7 @@ import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -101,6 +102,9 @@ class TransactionSignatureTest {
     @Mock
     private SyntheticContractLogService syntheticContractLogService;
 
+    @Mock
+    private SyntheticContractResultService syntheticContractResultService;
+
     private SignatureMap.Builder defaultSignatureMap;
 
     private List<TransactionSignature> defaultTransactionSignatures;
@@ -126,7 +130,8 @@ class TransactionSignatureTest {
                 entityProperties,
                 nonFeeTransferExtractionStrategy,
                 transactionHandlerFactory,
-                syntheticContractLogService);
+                syntheticContractLogService,
+                syntheticContractResultService);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList().stream()
                 .map(pair -> {

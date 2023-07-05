@@ -59,6 +59,7 @@ const contractSelectFields = [
   Entity.KEY,
   Entity.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Entity.MEMO,
+  Entity.ETHEREUM_NONCE,
   Entity.OBTAINER_ID,
   Entity.PERMANENT_REMOVAL,
   Entity.PROXY_ACCOUNT_ID,
@@ -734,7 +735,6 @@ class ContractController extends BaseController {
       contracts: rows.map((row) => formatContractRow(row, ContractViewModel)),
       links: {},
     };
-
     const lastRow = _.last(response.contracts);
     const lastContractId = lastRow !== undefined ? lastRow.contract_id : null;
     response.links.next = utils.getPaginationLink(

@@ -19,10 +19,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -36,28 +33,21 @@ import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- *  Copied Logic type from hedera-services. Differences with the original:
- *  1. Use abstraction for the state by introducing {@link Store} interface
- *  2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
- *     thus removing the List<BalanceChange> changes argument from create
- *  3. Remove SyntheticTxnFactory
- *  4. Remove UsageLimits and GlobalDynamicProperties
- *  5. trackAliases consumes 2 Addresses
- *  6. The class is stateless and the arguments are passed into the functions
- *  7. Use {@link EntityAddressSequencer} in place of EntityIdSource
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
+ * thus removing the List<BalanceChange> changes argument from create
+ * 3. Remove SyntheticTxnFactory
+ * 4. Remove UsageLimits and GlobalDynamicProperties
+ * 5. trackAliases consumes 2 Addresses
+ * 6. The class is stateless and the arguments are passed into the functions
+ * 7. Use {@link EntityAddressSequencer} in place of EntityIdSource
  */
 public abstract class AbstractAutoCreationLogic {
 
@@ -115,6 +105,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var newId = ids.getNewAccountId();
         final var account = new Account(
+                0L,
                 Id.fromGrpcAccount(newId),
                 0L,
                 0L,
@@ -129,7 +120,8 @@ public abstract class AbstractAutoCreationLogic {
                 0,
                 0,
                 0,
-                0L);
+                0L,
+                false);
         store.updateAccount(account);
         replaceAliasAndSetBalanceOnChange(change, newId);
         trackAlias(jKey, account.getAccountAddress(), mirrorEvmContractAliases);
@@ -165,6 +157,7 @@ public abstract class AbstractAutoCreationLogic {
     /**
      * This logic is copied from hedera-services.
      * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
      * @param alias
      * @param balance
      * @return
@@ -178,6 +171,7 @@ public abstract class AbstractAutoCreationLogic {
     /**
      * This logic is copied from hedera-services.
      * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
      * @param alias
      * @param key
      * @param balance
@@ -198,6 +192,7 @@ public abstract class AbstractAutoCreationLogic {
     /**
      * This logic is copied from hedera-services.
      * Once SyntheticTxnFactory is introduced, move this class to it.
+     *
      * @param balance
      * @return
      */

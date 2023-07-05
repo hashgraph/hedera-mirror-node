@@ -42,6 +42,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -56,11 +57,7 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -72,8 +69,10 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,12 +90,19 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final ContractStateRepository contractStateRepository;
     private final EntityRepository entityRepository;
+
+    private final EntityProperties entityProperties;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final SecureRandom secureRandom = new SecureRandom();
     private final TransactionTemplate transactionTemplate;
 
     private Transaction transaction;
+
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setTrackNonce(true);
+    }
 
     @Test
     void processContractCall() {
@@ -162,6 +168,42 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractStateChanges(recordItem);
         assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
+    }
+
+    @SuppressWarnings("deprecation")
+    @ParameterizedTest
+    @CsvSource({"true,2", "false,1"})
+    void processContractNonce(boolean isTrackNonce, long isNonce) {
+        entityProperties.getPersist().setTrackNonce(isTrackNonce);
+        // given
+        var entity = domainBuilder.entity().customize(c -> c.type(CONTRACT)).persist();
+        domainBuilder.contract().customize(c -> c.id(entity.getId())).persist();
+        var contractId = ContractID.newBuilder().setContractNum(entity.getId()).build();
+        RecordItem recordItem = recordItemBuilder
+                .contractCall(contractId)
+                .record(r -> r.clearContractCallResult()
+                        .setContractCallResult(recordItemBuilder
+                                .contractFunctionResult(contractId)
+                                .clearCreatedContractIDs()
+                                .clearContractNonces()
+                                .addContractNonces(ContractNonceInfo.newBuilder()
+                                        .setContractId(contractId)
+                                        .setNonce(2L))))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+
+        assertThat(contractRepository.count()).isEqualTo(1);
+        assertThat(entityRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entity.getId(), Entity::getId)
+                .returns(isNonce, Entity::getEthereumNonce);
     }
 
     @Test

@@ -14,6 +14,7 @@
       {
         "created_timestamp": "987654000123456",
         "evm_address": "62cf9068fed962cf9aaabbb962cf9068fed9dddd",
+        "ethereum_nonce": 1,
         "file_id": "5001",
         "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "key": [1, 1, 1],
@@ -56,6 +57,7 @@
     "file_id": "0.0.5001",
     "max_automatic_token_associations": 0,
     "memo": "contract memo",
+    "nonce": 1,
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,
