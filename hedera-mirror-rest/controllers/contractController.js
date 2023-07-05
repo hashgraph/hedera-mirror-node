@@ -404,7 +404,6 @@ class ContractController extends BaseController {
 
     let internal = false;
 
-    const contractResultPayerFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
     const contractResultSenderFullName = ContractResult.getFullName(ContractResult.SENDER_ID);
     const contractResultFromInValues = [];
 
@@ -438,12 +437,11 @@ class ContractController extends BaseController {
             // utils.buildAndValidateFilters returns null for evm addresses
             filter.value = await EntityService.getEncodedId(fromEntity);
           }
-          this.updateFromCondition(
+          this.updateConditionsAndParamsWithInValues(
             filter,
             contractResultFromInValues,
             params,
             conditions,
-            contractResultPayerFullName,
             contractResultSenderFullName,
             conditions.length + 1
           );
@@ -526,13 +524,7 @@ class ContractController extends BaseController {
     }
 
     // update query with repeated values
-    this.updateQueryFromWithInValues(
-      params,
-      conditions,
-      contractResultFromInValues,
-      contractResultPayerFullName,
-      contractResultSenderFullName
-    );
+    this.updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultSenderFullName);
     this.updateQueryFiltersWithInValues(
       params,
       conditions,
@@ -1214,42 +1206,6 @@ class ContractController extends BaseController {
         next: nextLink,
       },
     };
-  };
-
-  updateFromCondition = (
-    filter,
-    invalues,
-    existingParams,
-    existingConditions,
-    payer,
-    sender,
-    position = existingParams.length
-  ) => {
-    if (filter.operator === utils.opsMap.eq) {
-      // aggregate '=' conditions and use the sql 'in' operator
-      invalues.push(filter.value);
-    } else {
-      existingParams.push(filter.value);
-      existingConditions.push(`(${payer}${filter.operator}$${position} or ${sender}${filter.operator}$${position})`);
-    }
-  };
-
-  updateQueryFromWithInValues = (
-    existingParams,
-    existingConditions,
-    invalues,
-    payer,
-    sender,
-    start = existingParams.length + 1
-  ) => {
-    if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
-      // add the condition 'c.id in ()'
-      existingParams.push(...invalues);
-      const positions = _.range(invalues.length)
-        .map((position) => position + start)
-        .map((position) => `$${position}`);
-      existingConditions.push(`(${payer} in (${positions}) or ${sender} in (${positions}))`);
-    }
   };
 
   setContractResultsResponse = (

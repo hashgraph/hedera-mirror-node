@@ -123,6 +123,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionParameters = ethereumTransaction.getCallData() != null
                 ? ethereumTransaction.getCallData()
                 : DomainUtils.EMPTY_BYTE_ARRAY;
+        var payerAccountId = transaction.getPayerAccountId();
         var contractResult = ContractResult.builder()
                 .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .consensusTimestamp(transaction.getConsensusTimestamp())
@@ -130,7 +131,8 @@ public class ContractResultServiceImpl implements ContractResultService {
                 .functionParameters(functionParameters)
                 .gasLimit(ethereumTransaction.getGasLimit())
                 .gasUsed(0L)
-                .payerAccountId(transaction.getPayerAccountId())
+                .payerAccountId(payerAccountId)
+                .senderId(payerAccountId)
                 .transactionHash(ethereumTransaction.getHash())
                 .transactionIndex(transaction.getIndex())
                 .transactionNonce(transaction.getNonce())
@@ -209,11 +211,13 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // Normalize the two distinct hashes into one 32 byte hash
         var transactionHash = recordItem.getTransactionHash();
+        var payerAccountId = recordItem.getPayerAccountId();
 
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId.getId());
-        contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        contractResult.setPayerAccountId(payerAccountId);
+        contractResult.setSenderId(payerAccountId);
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
         contractResult.setTransactionNonce(transaction.getNonce());

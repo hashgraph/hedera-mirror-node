@@ -50,14 +50,11 @@ alter table if exists contract_result
 create index if not exists contract_result__hash
     on contract_result using hash (transaction_hash);
 
-create index if not exists contract_result__id_payer_timestamp
-    on contract_result (contract_id, payer_account_id, consensus_timestamp);
+create index if not exists contract_result__id_sender_timestamp
+    on contract_result (contract_id, sender_id, consensus_timestamp);
 
 create index if not exists contract_result__id_timestamp
     on contract_result (contract_id, consensus_timestamp);
-
-create index if not exists contract_result__payer_timestamp
-    on contract_result (payer_account_id, consensus_timestamp);
 
 create index if not exists contract_result__sender_timestamp
     on contract_result (sender_id, consensus_timestamp);
