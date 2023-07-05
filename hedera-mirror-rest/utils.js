@@ -269,6 +269,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable words: credit or debit
       ret = isValidValueIgnoreCase(val, Object.values(constants.cryptoTransferType));
       break;
+    case constants.filterKeys.DETAILED:
+      ret = val;
+      break;
     case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
       ret = isValidEncoding(val.toLowerCase());

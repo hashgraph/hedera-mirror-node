@@ -431,6 +431,7 @@ describe('extractContractResultsByIdQuery', () => {
   const defaultExpected = {
     conditions: [primaryContractFilter, 'cr.transaction_nonce = $2'],
     params: [defaultContractId, 0],
+    detailed: false,
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };

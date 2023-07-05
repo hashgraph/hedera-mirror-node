@@ -228,6 +228,39 @@ class ContractService extends BaseService {
     return [query, params];
   }
 
+  getDetailedContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
+    const params = whereParams;
+    const query = [
+      `with ${ContractService.entityCTE}`,
+      ` select
+          ${contractResultsFields},
+          coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS},
+          et.access_list as access_list,
+          et.chain_id as chain_id,
+          et.gas_price as gas_price,
+          et.max_fee_per_gas as max_fee_per_gas,
+          et.max_priority_fee_per_gas as max_priority_fee_per_gas,
+          et.type as transaction_type,
+          et.signature_r as r,
+          et.recovery_id as v,
+          et.signature_s as s,
+          et.nonce as et_nonce,
+          rf.hash as block_hash,
+          rf.index as block_number,
+          rf.gas_used as block_gas_used
+      from ${ContractResult.tableName} ${ContractResult.tableAlias}`,
+      ContractService.joinContractResultWithEvmAddress,
+      'left join ethereum_transaction et on et.hash = cr.transaction_hash',
+      'left join record_file rf on rf.consensus_end = (select consensus_end from record_file where consensus_end >= et.consensus_timestamp order by consensus_end asc limit 1)',
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
+      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
+    ].join('\n');
+    params.push(limit);
+
+    return [query, params];
+  }
+
   async getContractResultsByIdAndFilters(
     whereConditions = [],
     whereParams = [],
@@ -240,6 +273,34 @@ class ContractService extends BaseService {
       return {
         ...new ContractResult(cr),
         hash: cr.hash,
+      };
+    });
+  }
+
+  async getDetailedContractResultsByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    order = orderFilterValues.DESC,
+    limit = defaultLimit
+  ) {
+    const [query, params] = this.getDetailedContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
+    const rows = await super.getRows(query, params, 'getDetailedContractResultsByIdAndFilters');
+    return rows.map((cr) => {
+      return {
+        ...new ContractResult(cr),
+        hash: cr.hash,
+        accessList: cr.access_list,
+        blockGasUsed: cr.block_gas_used,
+        blockHash: cr.block_hash,
+        blockNumber: cr.block_number,
+        chainId: cr.chain_id,
+        gasPrice: cr.gas_price,
+        maxFeePerGas: cr.max_fee_per_gas,
+        maxPriorityFeePerGas: cr.max_priority_fee_per_gas,
+        nonce: cr.et_nonce,
+        r: cr.r,
+        v: cr.v,
+        s: cr.s,
       };
     });
   }
