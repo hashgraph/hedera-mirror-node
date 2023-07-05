@@ -104,6 +104,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             }
 
             var cryptoAllowance = new CryptoAllowance();
+            cryptoAllowance.setCreatedTimestamp(consensusTimestamp);
+            cryptoAllowance.setAmountGranted(cryptoApproval.getAmount());
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
             cryptoAllowance.setOwner(ownerAccountId.getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
@@ -212,6 +214,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             var tokenId = EntityId.of(tokenApproval.getTokenId());
 
             var tokenAllowance = new TokenAllowance();
+            tokenAllowance.setCreatedTimestamp(consensusTimestamp);
+            tokenAllowance.setAmountGranted(tokenApproval.getAmount());
             tokenAllowance.setAmount(tokenApproval.getAmount());
             tokenAllowance.setOwner(ownerAccountId.getId());
             tokenAllowance.setPayerAccountId(payerAccountId);

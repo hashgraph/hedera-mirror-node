@@ -103,51 +103,51 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final BatchPersister tokenDissociateTransferBatchPersister;
 
     // lists of insert only domains
-    private final Collection<AssessedCustomFee> assessedCustomFees;
-    private final Collection<Contract> contracts;
-    private final Collection<ContractAction> contractActions;
-    private final Collection<ContractLog> contractLogs;
-    private final Collection<ContractResult> contractResults;
-    private final Collection<ContractStateChange> contractStateChanges;
-    private final Collection<CryptoAllowance> cryptoAllowances;
-    private final Collection<CryptoTransfer> cryptoTransfers;
-    private final Collection<CustomFee> customFees;
-    private final Collection<TokenTransfer> deletedTokenDissociateTransfers;
-    private final Collection<Entity> entities;
-    private final Collection<EthereumTransaction> ethereumTransactions;
-    private final Collection<FileData> fileData;
-    private final Collection<LiveHash> liveHashes;
-    private final Collection<NetworkStake> networkStakes;
-    private final Collection<NftAllowance> nftAllowances;
-    private final Collection<Nft> nfts;
-    private final Collection<NodeStake> nodeStakes;
-    private final Collection<NonFeeTransfer> nonFeeTransfers;
-    private final Collection<Prng> prngs;
-    private final Collection<StakingRewardTransfer> stakingRewardTransfers;
-    private final Collection<TokenAccount> tokenAccounts;
-    private final Collection<TokenAllowance> tokenAllowances;
-    private final Collection<Token> tokens;
-    private final Collection<TokenTransfer> tokenTransfers;
-    private final Collection<TopicMessage> topicMessages;
-    private final Collection<Transaction> transactions;
-    private final Collection<TransactionHash> transactionHashes;
-    private final Collection<TransactionSignature> transactionSignatures;
+    private final Collection<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private final Collection<Contract> contracts = new ArrayList<>();
+    private final Collection<ContractAction> contractActions = new ArrayList<>();
+    private final Collection<ContractLog> contractLogs = new ArrayList<>();
+    private final Collection<ContractResult> contractResults = new ArrayList<>();
+    private final Collection<ContractStateChange> contractStateChanges = new ArrayList<>();
+    private final Collection<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+    private final Collection<CryptoTransfer> cryptoTransfers = new ArrayList<>();
+    private final Collection<CustomFee> customFees = new ArrayList<>();
+    private final Collection<TokenTransfer> deletedTokenDissociateTransfers = new ArrayList<>();
+    private final Collection<Entity> entities = new ArrayList<>();
+    private final Collection<EthereumTransaction> ethereumTransactions = new ArrayList<>();
+    private final Collection<FileData> fileData = new ArrayList<>();
+    private final Collection<LiveHash> liveHashes = new ArrayList<>();
+    private final Collection<NetworkStake> networkStakes = new ArrayList<>();
+    private final Collection<NftAllowance> nftAllowances = new ArrayList<>();
+    private final Collection<Nft> nfts = new ArrayList<>();
+    private final Collection<NodeStake> nodeStakes = new ArrayList<>();
+    private final Collection<NonFeeTransfer> nonFeeTransfers = new ArrayList<>();
+    private final Collection<Prng> prngs = new ArrayList<>();
+    private final Collection<StakingRewardTransfer> stakingRewardTransfers = new ArrayList<>();
+    private final Collection<TokenAccount> tokenAccounts = new ArrayList<>();
+    private final Collection<TokenAllowance> tokenAllowances = new ArrayList<>();
+    private final Collection<Token> tokens = new ArrayList<>();
+    private final Collection<TokenTransfer> tokenTransfers = new ArrayList<>();
+    private final Collection<TopicMessage> topicMessages = new ArrayList<>();
+    private final Collection<Transaction> transactions = new ArrayList<>();
+    private final Collection<TransactionHash> transactionHashes = new ArrayList<>();
+    private final Collection<TransactionSignature> transactionSignatures = new ArrayList<>();
 
     // maps of upgradable domains
-    private final Map<ContractState.Id, ContractState> contractStates;
-    private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
-    private final Map<Long, Entity> entityState;
-    private final Map<AbstractNft.Id, Nft> nftState;
-    private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
-    private final Map<Long, Schedule> schedules;
-    private final Map<Long, Token> tokenState;
-    private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
+    private final Map<ContractState.Id, ContractState> contractStates = new HashMap<>();
+    private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState = new HashMap<>();
+    private final Map<Long, Entity> entityState = new HashMap<>();
+    private final Map<AbstractNft.Id, Nft> nftState = new HashMap<>();
+    private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState = new HashMap<>();
+    private final Map<Long, Schedule> schedules = new HashMap<>();
+    private final Map<Long, Token> tokenState = new HashMap<>();
+    private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState = new HashMap<>();
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
     // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
-    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
+    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState = new HashMap<>();
 
     @SuppressWarnings("java:S107")
     public SqlEntityListener(
@@ -169,46 +169,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
         this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
-
-        assessedCustomFees = new ArrayList<>();
-        contracts = new ArrayList<>();
-        contractActions = new ArrayList<>();
-        contractLogs = new ArrayList<>();
-        contractResults = new ArrayList<>();
-        contractStateChanges = new ArrayList<>();
-        cryptoAllowances = new ArrayList<>();
-        cryptoTransfers = new ArrayList<>();
-        customFees = new ArrayList<>();
-        deletedTokenDissociateTransfers = new ArrayList<>();
-        entities = new ArrayList<>();
-        ethereumTransactions = new ArrayList<>();
-        fileData = new ArrayList<>();
-        liveHashes = new ArrayList<>();
-        nftAllowances = new ArrayList<>();
-        nfts = new ArrayList<>();
-        networkStakes = new ArrayList<>();
-        nodeStakes = new ArrayList<>();
-        nonFeeTransfers = new ArrayList<>();
-        prngs = new ArrayList<>();
-        stakingRewardTransfers = new ArrayList<>();
-        tokenAccounts = new ArrayList<>();
-        tokenAllowances = new ArrayList<>();
-        tokens = new ArrayList<>();
-        tokenTransfers = new ArrayList<>();
-        topicMessages = new ArrayList<>();
-        transactions = new ArrayList<>();
-        transactionHashes = new ArrayList<>();
-        transactionSignatures = new ArrayList<>();
-
-        contractStates = new HashMap<>();
-        cryptoAllowanceState = new HashMap<>();
-        entityState = new HashMap<>();
-        nftState = new HashMap<>();
-        nftAllowanceState = new HashMap<>();
-        schedules = new HashMap<>();
-        tokenState = new HashMap<>();
-        tokenAccountState = new HashMap<>();
-        tokenAllowanceState = new HashMap<>();
     }
 
     @Override

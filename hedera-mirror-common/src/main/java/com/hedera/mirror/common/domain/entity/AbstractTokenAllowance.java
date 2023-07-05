@@ -21,6 +21,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
+import jakarta.persistence.Column;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
 import java.io.Serializable;
@@ -35,6 +36,11 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Upsertable(history = true)
 public abstract class AbstractTokenAllowance implements History {
+
+    @Column(updatable = false)
+    private Long createdTimestamp;
+
+    private long amountGranted;
 
     @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else coalesce(e_{0}, 0) + coalesce({0}, 0) end")
     private long amount;
