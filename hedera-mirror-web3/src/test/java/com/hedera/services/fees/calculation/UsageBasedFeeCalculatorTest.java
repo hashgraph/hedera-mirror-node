@@ -19,8 +19,8 @@ package com.hedera.services.fees.calculation;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -174,7 +174,6 @@ class UsageBasedFeeCalculatorTest {
         signedTxn = signableTxn(0).build();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
-        //       given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
         incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
         correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
@@ -194,7 +193,6 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void estimatesFutureGasPriceInTinybars() {
         given(exchange.rate(at)).willReturn(currentRate);
-        // given(usagePrices.pricesGiven(ContractCreate, at, feeSchedules)).willReturn(currentPrices);
         given(usagePrices.defaultPricesGiven(CryptoCreate, at)).willReturn(defaultCurrentPrices);
         // and:
         final long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
