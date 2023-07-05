@@ -16,6 +16,15 @@
 
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -28,15 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ContextOptionValidatorTest {
@@ -69,7 +69,7 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsInvalidMetadata() {
         given(mirrorNodeEvmProperties.getMaxNftMetadataBytes()).willReturn(2);
-        assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+        assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[] {1, 2, 3, 4}));
     }
 
     @Test

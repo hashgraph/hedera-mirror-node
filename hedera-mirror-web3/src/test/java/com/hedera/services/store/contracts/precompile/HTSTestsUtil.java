@@ -31,6 +31,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfA
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
@@ -71,6 +72,7 @@ public class HTSTestsUtil {
     public static final ContractID precompiledContract = asContract(asAccount("0.0.359"));
     public static final TokenID nonFungible = asToken("0.0.777");
     public static final TokenID tokenMerkleId = asToken("0.0.777");
+    public static final Association multiAssociateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddr = Address.ALTBN128_ADD;
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
@@ -93,6 +95,7 @@ public class HTSTestsUtil {
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Long serialNumber = 1L;
+    public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);

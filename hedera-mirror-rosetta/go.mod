@@ -25,10 +25,11 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/thanhpk/randstr v1.0.6
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
+	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.1
+	gorm.io/gorm v1.25.2
 )
 
 require (
@@ -109,7 +110,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.10.0 // indirect
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
