@@ -106,7 +106,7 @@ public class ApproveAllowanceLogic {
                 store.getAccount(spender.asEvmAddress(), OnMissing.THROW);
 
                 cryptoMap.put(spender.asEntityNum(), amount);
-                accountToApprove = accountToApprove.setCryptoAllowances(cryptoMap);
+                accountToApprove = accountToApprove.setCryptoAllowance(cryptoMap);
                 accountsChanged.put(accountToApprove.getId().num(), accountToApprove);
             }
         }
@@ -118,7 +118,7 @@ public class ApproveAllowanceLogic {
             final Id spender,
             Account accountToApprove) {
         cryptoMap.remove(spender.asEntityNum());
-        accountToApprove = accountToApprove.setCryptoAllowances(cryptoMap);
+        accountToApprove = accountToApprove.setCryptoAllowance(cryptoMap);
         accountsChanged.put(accountToApprove.getId().num(), accountToApprove);
     }
 

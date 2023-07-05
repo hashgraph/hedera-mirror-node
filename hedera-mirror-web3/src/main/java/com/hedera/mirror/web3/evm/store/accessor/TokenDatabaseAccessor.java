@@ -92,7 +92,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
                 entity.getEffectiveExpiration(),
-                entity.getCreatedTimestamp(),
+                entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
@@ -113,7 +113,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private Account getAutoRenewAccount(Entity entity) {
         return new Account(
-                entity.getId(), new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance());
+                entity.getId(),
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                entity.getBalance() != null ? entity.getBalance() : 0L);
     }
 
     private Account getTreasury(EntityId treasuryId) {
@@ -125,7 +127,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                        entity.getBalance()))
+                        entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 

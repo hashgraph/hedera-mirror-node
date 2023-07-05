@@ -90,7 +90,13 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     @Override
     public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
         try {
-            final var at = accessor.getTxnId().getTransactionValidStart();
+            final var transactionValidStart = accessor.getTxnId().getTransactionValidStart();
+            final var at = transactionValidStart.getSeconds() > 0
+                    ? transactionValidStart
+                    : Timestamp.newBuilder()
+                            .setSeconds(Instant.now().getEpochSecond())
+                            .setNanos(Instant.now().getNano())
+                            .build();
             return pricesGiven(
                     accessor.getFunction(),
                     at,

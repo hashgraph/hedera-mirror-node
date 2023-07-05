@@ -566,7 +566,7 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewFungibleTokenAllowances(this, tokensMap);
     }
 
-    public Account setCryptoAllowances(SortedMap<EntityNum, Long> cryptoMap) {
+    public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoMap) {
         return createNewAccountWithNewCryptoAllowances(this, cryptoMap);
     }
 

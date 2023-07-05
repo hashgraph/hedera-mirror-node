@@ -58,9 +58,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * immutability is required for this model in order to be used seamlessly in the state.
  *
  * Differences from the original:
- *     1. Added factory method that returns empty instance
- *     2. Added mapToDomain method from TokenTypesManager
- *     3. Removed OwnershipTracker
+ * 1. Added factory method that returns empty instance
+ * 2. Added mapToDomain method from TokenTypesManager
+ * 3. Removed OwnershipTracker
  */
 public class Token {
     private final Long entityId;
@@ -938,9 +938,9 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param treasuryRel      - the relationship between the treasury account and the token
-     * @param metadata         - a list of user-defined metadata, related to the nft instances.
-     * @param creationTime     - the consensus time of the token mint transaction
+     * @param treasuryRel  - the relationship between the treasury account and the token
+     * @param metadata     - a list of user-defined metadata, related to the nft instances.
+     * @param creationTime - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
@@ -985,9 +985,9 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param treasuryRel-     the relationship between the treasury account and the token
-     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
-     *                         destroyed.
+     * @param treasuryRel-  the relationship between the treasury account and the token
+     * @param serialNumbers - the serial numbers, representing the unique tokens which will be
+     *                      destroyed.
      */
     public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -1041,9 +1041,9 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param accountRel       - the relationship between the account, which owns the tokens, and the
-     *                         token
-     * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     * @param accountRel    - the relationship between the account, which owns the tokens, and the
+     *                      token
+     * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
      */
     public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
