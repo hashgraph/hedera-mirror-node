@@ -25,6 +25,7 @@ import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -111,6 +112,14 @@ class BurnPrecompileTest {
                     convertToPaddedHex(SERIAL_NUMBERS_DATA) +
                     convertToPaddedHex(EMPTY_ARGUMENT));
 
+    private static final int ZERO_NUMBERS_OF_TOKENS_TO_BURN = 0;
+    private static final Bytes ZERO_FUNGIBLE_BURN = Bytes.fromHexString(
+            ABI_ID_BURN_TOKEN +
+                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
+                    convertToPaddedHex(ZERO_NUMBERS_OF_TOKENS_TO_BURN) +
+                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
+                    convertToPaddedHex(EMPTY_ARGUMENT));
+
     private static final String ABI_ID_BURN_TOKEN_V2 = "0x" + Integer.toHexString(AbiConstants.ABI_ID_BURN_TOKEN_V2);
     private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
                     ABI_ID_BURN_TOKEN_V2 +
@@ -136,6 +145,13 @@ class BurnPrecompileTest {
                     convertToPaddedHex(SERIAL_NUMBERS_DATA) +
                     convertToPaddedHex(TOKEN_ID_1_TO_BURN) +
                     convertToPaddedHex(TOKEN_ID_2_TO_BURN));
+
+
+    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE =
+            Bytes.fromHexString(
+                    "0x" +
+                    convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) +
+                    convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final String SUCCESS_RESPONSE_CODE = convertToPaddedHex(ResponseCodeEnum.SUCCESS.getNumber());
     private static final String PARAM_WITH_VALUE_67 = convertToPaddedHex(67);
@@ -338,6 +354,19 @@ class BurnPrecompileTest {
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(List.of(2L), decodedInput.serialNos());
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void failResponse() {
+        final var decodedInput = burnPrecompile.getFailureResultFor(ResponseCodeEnum.ACCOUNT_DELETED);
+        assertEquals(ACCOUNT_DELETED_FAIL_RESPONSE, decodedInput);
+    }
+
+    @Test
+    void burnZeroTokens() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> getBurnWrapper(ZERO_FUNGIBLE_BURN, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals(BurnPrecompile.ILLEGAL_AMOUNT_TO_BURN, exception.getMessage());
     }
 
     private Bytes givenNonFungibleFrameContext() {

@@ -65,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
  */
 public class BurnPrecompile extends AbstractWritePrecompile {
 
+    public static final String ILLEGAL_AMOUNT_TO_BURN = "Illegal amount of tokens to burn";
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 
     private final EncodingFacade encoder;
@@ -154,7 +155,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         final var serialNumbers = (long[]) decodedArguments.get(2);
 
         if (fungibleAmount < 0 || (fungibleAmount == 0 && serialNumbers.length == 0)) {
-            throw new IllegalArgumentException("Illegal amount of tokens to burn");
+            throw new IllegalArgumentException(ILLEGAL_AMOUNT_TO_BURN);
         }
 
         if (fungibleAmount > 0) {
