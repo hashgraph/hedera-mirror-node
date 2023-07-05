@@ -47,6 +47,16 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
         super(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
+    /**
+     * Differences with the original:
+     * Due to using {@link Address} in place of {@link ByteString} for the alias map key
+     * we do additional check if the derived alias is more than 20 bytes and call
+     * maybeLinkEvmAddress instead of link.
+     *
+     * @param alias
+     * @param address
+     * @param mirrorEvmContractAliases
+     */
     @Override
     protected void trackAlias(
             final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases) {
