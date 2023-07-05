@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.E
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_HRC_DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
@@ -88,7 +87,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_DISSOCIATE_TOKEN, ABI_ID_HRC_DISSOCIATE);
+        return Set.of(ABI_ID_DISSOCIATE_TOKEN);
     }
 
     public static Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
