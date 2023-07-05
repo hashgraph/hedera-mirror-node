@@ -182,7 +182,6 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     *
      * Creates new instance of {@link Account} with updated numPositiveBalances in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
@@ -301,7 +300,6 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     *
      * Creates new instance of {@link Account} with updated balance in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
@@ -322,6 +320,66 @@ public class Account extends HederaEvmAccount {
                 oldAccount.autoAssociationMetadata,
                 oldAccount.cryptoAllowances,
                 oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated cryptoAllowances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param cryptoAllowances
+     * @return the new instance of {@link Account} with updated {@link #cryptoAllowances} property
+     */
+    private Account createNewAccountWithNewCryptoAllowances(
+            Account oldAccount, SortedMap<EntityNum, Long> cryptoAllowances) {
+        return new Account(
+                oldAccount.entityId,
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated fungibleTokenAllowances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param fungibleTokenAllowances
+     * @return the new instance of {@link Account} with updated {@link #fungibleTokenAllowances} property
+     */
+    private Account createNewAccountWithNewFungibleTokenAllowances(
+            Account oldAccount, SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return new Account(
+                oldAccount.entityId,
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
@@ -376,6 +434,14 @@ public class Account extends HederaEvmAccount {
 
     public Account setIsSmartContract(boolean isSmartContract) {
         return createNewAccountWithNewIsSmartContract(this, isSmartContract);
+    }
+
+    public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoAllowances) {
+        return createNewAccountWithNewCryptoAllowances(this, cryptoAllowances);
+    }
+
+    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
     }
 
     public long getOwnedNfts() {

@@ -54,7 +54,9 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -190,8 +192,9 @@ class MintPrecompileTest {
     private Store store;
 
     @Mock
-    private ContextOptionValidator contextOptionValidator;
+    private OptionValidator optionValidator;
 
+    private MintLogic mintLogic;
     private HTSPrecompiledContract subject;
     private MintPrecompile mintPrecompile;
     private PrecompileMapper precompileMapper;
@@ -206,10 +209,10 @@ class MintPrecompileTest {
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
-        contextOptionValidator = new ContextOptionValidator(evmProperties);
+        optionValidator = new ContextOptionValidator(evmProperties);
+        mintLogic = new MintLogic(optionValidator);
         encoder = new EncodingFacade();
-        mintPrecompile =
-                new MintPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, contextOptionValidator);
+        mintPrecompile = new MintPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, mintLogic);
         precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));
 
         subject = new HTSPrecompiledContract(

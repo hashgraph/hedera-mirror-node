@@ -1,6 +1,6 @@
 @contractbase @fullsuite @estimate @web3
 Feature: EstimateGas Contract Base Coverage Feature
-  
+
   Scenario Outline: Validate EstimateGas
     Given I successfully create contract from contract bytes with 10000000 balance
     And lower deviation is 5% and upper deviation is 20%
@@ -16,7 +16,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that makes a static call to a method from a different contract
     Then I call estimateGas with function that makes a delegate call to a method from a different contract
     Then I call estimateGas with function that makes a call code to a method from a different contract
-#    Then I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations - TODO: Fix failing test
+    Then I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations
     Then I call estimateGas with function that performs self destruct
     Then I call estimateGas with request body that contains wrong method signature
     Then I call estimateGas with wrong encoded parameter
@@ -31,7 +31,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that makes a state update to a contract
     Then I call estimateGas with function that makes a state update to a contract several times and estimateGas is higher
     Then I call estimateGas with function that executes gasLeft
-    # Then I call estimateGas with function that executes reentrancy attack with transfer - TODO: Waiting HIP-584 implementation
+    Then I call estimateGas with function that executes reentrancy attack with transfer
     Then I call estimateGas with function that executes reentrancy attack with call
     Then I call estimateGas with function that executes positive nested calls
     Then I call estimateGas with function that executes limited nested calls
