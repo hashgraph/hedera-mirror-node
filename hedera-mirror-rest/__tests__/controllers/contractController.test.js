@@ -413,9 +413,9 @@ describe('extractContractResultsByIdQuery', () => {
         ...defaultExpected,
         conditions: [
           primaryContractFilter,
-          '(cr.payer_account_id > $2 or cr.sender_id > $2)',
+          'cr.sender_id > $2',
           'cr.transaction_nonce = $3',
-          '(cr.payer_account_id in ($4,$5) or cr.sender_id in ($4,$5))',
+          'cr.sender_id in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],
       },

@@ -390,6 +390,7 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
+   * @param {string} fromEntity used to lookup the from entity id for evm addresses
    * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
    */
   extractContractResultsByIdQuery = async (filters, contractId, fromEntity) => {
