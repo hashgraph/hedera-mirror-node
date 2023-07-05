@@ -73,6 +73,14 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    /**
+     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldUniqueToken
+     * @param newSpender
+     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
+     */
     private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
         return new UniqueToken(
                 oldUniqueToken.tokenId,
@@ -120,25 +128,7 @@ public class UniqueToken {
     }
 
     public UniqueToken setSpender(Id spender) {
-        return createNewUniqeTokenWtihNewSpender(this, spender);
-    }
-
-    /**
-     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
-     * avoid entry points for changing the state.
-     *
-     * @param oldUniqeToken
-     * @param newSpender
-     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
-     */
-    private UniqueToken createNewUniqeTokenWtihNewSpender(UniqueToken oldUniqeToken, Id newSpender) {
-        return new UniqueToken(
-                oldUniqeToken.tokenId,
-                oldUniqeToken.serialNumber,
-                oldUniqeToken.creationTime,
-                oldUniqeToken.owner,
-                newSpender,
-                oldUniqeToken.metadata);
+        return createNewUniqueTokenWithNewSpender(this, spender);
     }
 
     public byte[] getMetadata() {

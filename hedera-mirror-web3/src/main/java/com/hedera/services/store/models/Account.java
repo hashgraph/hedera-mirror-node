@@ -201,7 +201,6 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     *
      * Creates new instance of {@link Account} with updated numPositiveBalances in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
@@ -320,7 +319,6 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     *
      * Creates new instance of {@link Account} with updated balance in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
@@ -350,16 +348,45 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     *
-     * Creates new instance of {@link Account} with updated token allowances in order to keep the object's immutability and
+     * Creates new instance of {@link Account} with updated cryptoAllowances in order to keep the object's immutability and
      * avoid entry points for changing the state.
      *
      * @param oldAccount
-     * @param newTokensMap
+     * @param cryptoAllowances
+     * @return the new instance of {@link Account} with updated {@link #cryptoAllowances} property
+     */
+    private Account createNewAccountWithNewCryptoAllowances(
+            Account oldAccount, SortedMap<EntityNum, Long> cryptoAllowances) {
+        return new Account(
+                oldAccount.entityId,
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                oldAccount.approveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
+    /**
+     * Creates new instance of {@link Account} with updated fungibleTokenAllowances in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param fungibleTokenAllowances
      * @return the new instance of {@link Account} with updated {@link #fungibleTokenAllowances} property
      */
     private Account createNewAccountWithNewFungibleTokenAllowances(
-            Account oldAccount, SortedMap<FcTokenAllowanceId, Long> newTokensMap) {
+            Account oldAccount, SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         return new Account(
                 oldAccount.entityId,
                 oldAccount.id,
@@ -371,38 +398,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.proxy,
                 oldAccount.autoAssociationMetadata,
                 oldAccount.cryptoAllowances,
-                newTokensMap,
-                oldAccount.approveForAllNfts,
-                oldAccount.numAssociations,
-                oldAccount.numPositiveBalances,
-                oldAccount.numTreasuryTitles,
-                oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
-    }
-
-    /**
-     *
-     * Creates new instance of {@link Account} with updated crypto allowances in order to keep the object's immutability and
-     * avoid entry points for changing the state.
-     *
-     * @param oldAccount
-     * @param newCryptoMap
-     * @return the new instance of {@link Account} with updated {@link #cryptoAllowances} property
-     */
-    private Account createNewAccountWithNewCryptoAllowances(
-            Account oldAccount, SortedMap<EntityNum, Long> newCryptoMap) {
-        return new Account(
-                oldAccount.entityId,
-                oldAccount.id,
-                oldAccount.expiry,
-                oldAccount.balance,
-                oldAccount.deleted,
-                oldAccount.ownedNfts,
-                oldAccount.autoRenewSecs,
-                oldAccount.proxy,
-                oldAccount.autoAssociationMetadata,
-                newCryptoMap,
-                oldAccount.fungibleTokenAllowances,
+                fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
@@ -422,6 +418,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewApproveForAllNfts(
             Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
+
         return new Account(
                 oldAccount.entityId,
                 oldAccount.id,
@@ -488,6 +485,18 @@ public class Account extends HederaEvmAccount {
 
     public Account setIsSmartContract(boolean isSmartContract) {
         return createNewAccountWithNewIsSmartContract(this, isSmartContract);
+    }
+
+    public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoAllowances) {
+        return createNewAccountWithNewCryptoAllowances(this, cryptoAllowances);
+    }
+
+    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
+    }
+
+    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
+        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
     }
 
     public long getOwnedNfts() {
@@ -562,18 +571,6 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewBalance(this, balance);
     }
 
-    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> tokensMap) {
-        return createNewAccountWithNewFungibleTokenAllowances(this, tokensMap);
-    }
-
-    public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoMap) {
-        return createNewAccountWithNewCryptoAllowances(this, cryptoMap);
-    }
-
-    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
-        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
-    }
-
     @Override
     public boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
@@ -605,9 +602,5 @@ public class Account extends HederaEvmAccount {
 
     private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
         return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
-    }
-
-    public int getTotalAllowances() {
-        return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
     }
 }
