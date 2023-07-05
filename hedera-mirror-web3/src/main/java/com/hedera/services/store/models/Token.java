@@ -58,9 +58,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * immutability is required for this model in order to be used seamlessly in the state.
  *
  * Differences from the original:
- *     1. Added factory method that returns empty instance
- *     2. Added mapToDomain method from TokenTypesManager
- *     3. Removed OwnershipTracker
+ * 1. Added factory method that returns empty instance
+ * 2. Added mapToDomain method from TokenTypesManager
+ * 3. Removed OwnershipTracker
  */
 public class Token {
     private final Long entityId;
@@ -736,6 +736,141 @@ public class Token {
     }
 
     /**
+     * Creates new instance of {@link Token} with updated treasury in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param treasury
+     * @return new instance of {@link Token} with updated {@link #treasury} property
+     */
+    private Token createNewTokenWithTreasury(Token oldToken, Account treasury) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated paused in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param paused
+     * @return new instance of {@link Token} with updated {@link #paused} property
+     */
+    private Token createNewTokenWithPaused(Token oldToken, boolean paused) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param decimals
+     * @return new instance of {@link Token} with updated {@link #decimals} property
+     */
+    private Token createNewTokenWithDecimals(Token oldToken, int decimals) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
      * @param treasuryRel
@@ -758,9 +893,9 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param treasuryRel      - the relationship between the treasury account and the token
-     * @param metadata         - a list of user-defined metadata, related to the nft instances.
-     * @param creationTime     - the consensus time of the token mint transaction
+     * @param treasuryRel  - the relationship between the treasury account and the token
+     * @param metadata     - a list of user-defined metadata, related to the nft instances.
+     * @param creationTime - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
@@ -805,9 +940,9 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param treasuryRel-     the relationship between the treasury account and the token
-     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
-     *                         destroyed.
+     * @param treasuryRel-  the relationship between the treasury account and the token
+     * @param serialNumbers - the serial numbers, representing the unique tokens which will be
+     *                      destroyed.
      */
     public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -861,9 +996,9 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param accountRel       - the relationship between the account, which owns the tokens, and the
-     *                         token
-     * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     * @param accountRel    - the relationship between the account, which owns the tokens, and the
+     *                      token
+     * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
      */
     public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
@@ -993,6 +1128,10 @@ public class Token {
         return treasury;
     }
 
+    public Token setTreasury(Account treasury) {
+        return createNewTokenWithTreasury(this, treasury);
+    }
+
     public Account getAutoRenewAccount() {
         return autoRenewAccount;
     }
@@ -1068,6 +1207,10 @@ public class Token {
 
     public boolean isPaused() {
         return paused;
+    }
+
+    public Token setPaused(boolean paused) {
+        return createNewTokenWithPaused(this, paused);
     }
 
     public Long getEntityId() {
@@ -1168,6 +1311,10 @@ public class Token {
 
     public int getDecimals() {
         return decimals;
+    }
+
+    public Token setDecimals(int decimals) {
+        return createNewTokenWithDecimals(this, decimals);
     }
 
     public long getAutoRenewPeriod() {

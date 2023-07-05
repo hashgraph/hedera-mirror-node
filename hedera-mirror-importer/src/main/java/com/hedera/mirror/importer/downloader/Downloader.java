@@ -54,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -557,7 +556,9 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         long totalStake = nodes.get(0).getTotalStake();
         // only keep "just enough" nodes to reach/exceed downloadRatio
-        long neededStake = BigDecimal.valueOf(totalStake).multiply(downloadRatio).setScale(0, RoundingMode.CEILING)
+        long neededStake = BigDecimal.valueOf(totalStake)
+                .multiply(downloadRatio)
+                .setScale(0, RoundingMode.CEILING)
                 .longValue();
         long aggregateStake = 0; // sum of the stake of all nodes evaluated so far
         int lastEntry = 0;
@@ -565,8 +566,12 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             aggregateStake += nodes.get(lastEntry++).getStake();
         }
 
-        log.debug("partialCollection: Kept {} of {} nodes, for stake of {} / {}", lastEntry, allNodes.size(),
-                aggregateStake, totalStake);
+        log.debug(
+                "partialCollection: Kept {} of {} nodes, for stake of {} / {}",
+                lastEntry,
+                allNodes.size(),
+                aggregateStake,
+                totalStake);
         return nodes.subList(0, lastEntry);
     }
 }

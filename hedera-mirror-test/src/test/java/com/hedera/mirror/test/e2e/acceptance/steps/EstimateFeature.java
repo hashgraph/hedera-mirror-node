@@ -142,6 +142,7 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.MESSAGE_SIGNER.getSelector(), ContractMethods.MESSAGE_SIGNER.getActualGas());
     }
 
+    @RetryAsserts
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
         validateGasEstimation(
@@ -362,13 +363,10 @@ public class EstimateFeature extends AbstractFeature {
         assertTrue(estimatedGasOfTenStateUpdates > estimatedGasOfFiveStateUpdates);
     }
 
-    // TODO: Waiting HIP-584 implementation
     @Then("I call estimateGas with function that executes reentrancy attack with transfer")
     public void reentrancyTransferAttackFunction() {
         validateGasEstimation(
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector()
-                        + RANDOM_ADDRESS
-                        + to32BytesString("10000000000"),
+                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10"),
                 ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas());
     }
 

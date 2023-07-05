@@ -18,7 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -35,5 +37,14 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenMint(builder);
+    }
+
+    public TransactionBody.Builder createAssociate(final Association association) {
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+
+        builder.setAccount(association.accountId());
+        builder.addAllTokens(association.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenAssociate(builder);
     }
 }
