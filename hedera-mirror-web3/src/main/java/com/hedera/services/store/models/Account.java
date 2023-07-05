@@ -418,7 +418,6 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewApproveForAllNfts(
             Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
-
         return new Account(
                 oldAccount.entityId,
                 oldAccount.id,
