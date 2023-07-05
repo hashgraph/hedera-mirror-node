@@ -52,7 +52,7 @@ public class WipeLogic {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
-    public void wipe(
+    public TokenModificationResult wipe(
             final Id targetTokenId,
             final Id targetAccountId,
             final long amount,
@@ -75,10 +75,13 @@ public class WipeLogic {
             final var tokenWithLoadedUniqueTokens = store.loadUniqueTokens(token, serialNumbersList);
             tokenModificationResult = tokenWithLoadedUniqueTokens.wipe(accountRel, serialNumbersList);
         }
+
         /* --- Persist the updated models --- */
         store.updateToken(tokenModificationResult.token());
         store.updateTokenRelationship(tokenModificationResult.tokenRelationship());
         store.updateAccount(tokenModificationResult.tokenRelationship().getAccount());
+
+        return tokenModificationResult;
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
