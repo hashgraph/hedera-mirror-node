@@ -37,6 +37,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -226,14 +227,18 @@ public class EvmConfiguration {
 
     @Bean
     AssociatePrecompile associatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new AssociatePrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new AssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean
     MultiAssociatePrecompile multiAssociatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new MultiAssociatePrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new MultiAssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean
@@ -271,8 +276,8 @@ public class EvmConfiguration {
             PrecompilePricingUtils precompilePricingUtils,
             EncodingFacade encodingFacade,
             SyntheticTxnFactory syntheticTxnFactory,
-            OptionValidator optionValidator) {
-        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, optionValidator);
+            MintLogic mintLogic) {
+        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, mintLogic);
     }
 
     @Bean
@@ -288,6 +293,11 @@ public class EvmConfiguration {
     @Bean
     DissociateLogic dissociateLogic() {
         return new DissociateLogic();
+    }
+
+    @Bean
+    TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
+        return new TransferLogic(autoCreationLogic);
     }
 
     @Bean
