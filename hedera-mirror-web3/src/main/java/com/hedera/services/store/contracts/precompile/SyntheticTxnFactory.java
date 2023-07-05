@@ -61,6 +61,5 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenBurn(builder);
-        //
     }
 }
