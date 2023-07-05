@@ -70,7 +70,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -105,53 +104,44 @@ class BurnPrecompileTest {
     private static final int NUMBERS_OF_TOKENS_TO_BURN = 33;
     private static final int SERIAL_NUMBERS_DATA = 96;
     private static final int EMPTY_ARGUMENT = 0;
-    private static final Bytes FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(
-                    ABI_ID_BURN_TOKEN +
-                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
-                    convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN) +
-                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
-                    convertToPaddedHex(EMPTY_ARGUMENT));
+    private static final Bytes FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(ABI_ID_BURN_TOKEN
+            + convertToPaddedHex(TOKEN_ID_TO_BURN)
+            + convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN)
+            + convertToPaddedHex(SERIAL_NUMBERS_DATA)
+            + convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final int ZERO_NUMBERS_OF_TOKENS_TO_BURN = 0;
-    private static final Bytes ZERO_FUNGIBLE_BURN = Bytes.fromHexString(
-            ABI_ID_BURN_TOKEN +
-                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
-                    convertToPaddedHex(ZERO_NUMBERS_OF_TOKENS_TO_BURN) +
-                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
-                    convertToPaddedHex(EMPTY_ARGUMENT));
+    private static final Bytes ZERO_FUNGIBLE_BURN = Bytes.fromHexString(ABI_ID_BURN_TOKEN
+            + convertToPaddedHex(TOKEN_ID_TO_BURN)
+            + convertToPaddedHex(ZERO_NUMBERS_OF_TOKENS_TO_BURN)
+            + convertToPaddedHex(SERIAL_NUMBERS_DATA)
+            + convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final String ABI_ID_BURN_TOKEN_V2 = "0x" + Integer.toHexString(AbiConstants.ABI_ID_BURN_TOKEN_V2);
-    private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
-                    ABI_ID_BURN_TOKEN_V2 +
-                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
-                    convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN) +
-                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
-                    convertToPaddedHex(EMPTY_ARGUMENT));
+    private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(ABI_ID_BURN_TOKEN_V2
+            + convertToPaddedHex(TOKEN_ID_TO_BURN)
+            + convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN)
+            + convertToPaddedHex(SERIAL_NUMBERS_DATA)
+            + convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final int TOKEN_ID_1_TO_BURN = 1;
     private static final int TOKEN_ID_2_TO_BURN = 2;
-    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(
-                    ABI_ID_BURN_TOKEN +
-                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
-                    convertToPaddedHex(EMPTY_ARGUMENT) +
-                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
-                    convertToPaddedHex(TOKEN_ID_1_TO_BURN) +
-                    convertToPaddedHex(TOKEN_ID_2_TO_BURN));
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(ABI_ID_BURN_TOKEN
+            + convertToPaddedHex(TOKEN_ID_TO_BURN)
+            + convertToPaddedHex(EMPTY_ARGUMENT)
+            + convertToPaddedHex(SERIAL_NUMBERS_DATA)
+            + convertToPaddedHex(TOKEN_ID_1_TO_BURN)
+            + convertToPaddedHex(TOKEN_ID_2_TO_BURN));
 
-    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
-                    ABI_ID_BURN_TOKEN_V2 +
-                    convertToPaddedHex(TOKEN_ID_TO_BURN) +
-                    convertToPaddedHex(EMPTY_ARGUMENT) +
-                    convertToPaddedHex(SERIAL_NUMBERS_DATA) +
-                    convertToPaddedHex(TOKEN_ID_1_TO_BURN) +
-                    convertToPaddedHex(TOKEN_ID_2_TO_BURN));
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(ABI_ID_BURN_TOKEN_V2
+            + convertToPaddedHex(TOKEN_ID_TO_BURN)
+            + convertToPaddedHex(EMPTY_ARGUMENT)
+            + convertToPaddedHex(SERIAL_NUMBERS_DATA)
+            + convertToPaddedHex(TOKEN_ID_1_TO_BURN)
+            + convertToPaddedHex(TOKEN_ID_2_TO_BURN));
 
-
-    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE =
-            Bytes.fromHexString(
-                    "0x" +
-                    convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) +
-                    convertToPaddedHex(EMPTY_ARGUMENT));
+    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE = Bytes.fromHexString("0x"
+            + convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) + convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final String SUCCESS_RESPONSE_CODE = convertToPaddedHex(ResponseCodeEnum.SUCCESS.getNumber());
     private static final String PARAM_WITH_VALUE_67 = convertToPaddedHex(67);
@@ -245,8 +235,7 @@ class BurnPrecompileTest {
         contextOptionValidator = new ContextOptionValidator(evmProperties);
         burnLogic = new BurnLogic(contextOptionValidator);
         encoder = new EncodingFacade();
-        burnPrecompile =
-                new BurnPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, burnLogic);
+        burnPrecompile = new BurnPrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, burnLogic);
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(
@@ -260,8 +249,10 @@ class BurnPrecompileTest {
         prepareStoreForNftBurn();
         givenPricingUtilsContext();
 
-        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
@@ -282,8 +273,10 @@ class BurnPrecompileTest {
         prepareStoreForFungibleBurn(67);
         givenPricingUtilsContext();
 
-        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
@@ -364,7 +357,8 @@ class BurnPrecompileTest {
 
     @Test
     void burnZeroTokens() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
                 () -> getBurnWrapper(ZERO_FUNGIBLE_BURN, SystemContractAbis.BURN_TOKEN_V1));
         assertEquals(BurnPrecompile.ILLEGAL_AMOUNT_TO_BURN, exception.getMessage());
     }
@@ -391,12 +385,16 @@ class BurnPrecompileTest {
         final var uniqueTokens = new ArrayList<UniqueToken>();
         final var uniqueToken1 = Mockito.mock(UniqueToken.class);
         final var uniqueToken2 = Mockito.mock(UniqueToken.class);
-        when(uniqueToken1.getSerialNumber()).thenReturn((long)TOKEN_ID_1_TO_BURN);
-        when(uniqueToken2.getSerialNumber()).thenReturn((long)TOKEN_ID_2_TO_BURN);
+        when(uniqueToken1.getSerialNumber()).thenReturn((long) TOKEN_ID_1_TO_BURN);
+        when(uniqueToken2.getSerialNumber()).thenReturn((long) TOKEN_ID_2_TO_BURN);
         uniqueTokens.add(uniqueToken1);
         uniqueTokens.add(uniqueToken2);
 
-        final var tokenID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(TOKEN_ID_TO_BURN).build();
+        final var tokenID = TokenID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setTokenNum(TOKEN_ID_TO_BURN)
+                .build();
         final var tokenAddress = Id.fromGrpcToken(tokenID).asEvmAddress();
         final var treasuryAddress = senderAddress;
         when(token.getTreasury()).thenReturn(account);
@@ -412,7 +410,11 @@ class BurnPrecompileTest {
     }
 
     private void prepareStoreForFungibleBurn(final long newTotalSupply) {
-        final var tokenID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(TOKEN_ID_TO_BURN).build();
+        final var tokenID = TokenID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setTokenNum(TOKEN_ID_TO_BURN)
+                .build();
         final var tokenAddress = Id.fromGrpcToken(tokenID).asEvmAddress();
         final var treasuryAddress = senderAddress;
         when(token.getTreasury()).thenReturn(account);

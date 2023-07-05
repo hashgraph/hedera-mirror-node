@@ -168,5 +168,4 @@ public class MintPrecompile extends AbstractWritePrecompile {
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         return encoder.encodeMintFailure(status);
     }
-
 }

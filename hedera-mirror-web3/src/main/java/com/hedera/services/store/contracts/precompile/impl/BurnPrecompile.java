@@ -16,6 +16,14 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
+import static com.hedera.services.utils.MiscUtils.convertArrayToLong;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -36,24 +44,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hedera.services.utils.MiscUtils.convertArrayToLong;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * This class is a modified copy of BurnPrecompile from hedera-services repo.
@@ -85,9 +83,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(
-            final Bytes input,
-            final UnaryOperator<byte[]> aliasResolver,
-            final BodyParams bodyParams) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         final var functionId = ((FunctionParam) bodyParams).functionId();
         final var burnAbi =
                 switch (functionId) {
@@ -128,7 +124,9 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         final var modifiedToken = tokenModificationResult.token();
         return new BurnResult(
                 modifiedToken.getTotalSupply(),
-                modifiedToken.removedUniqueTokens().stream().map(UniqueToken::getSerialNumber).toList());
+                modifiedToken.removedUniqueTokens().stream()
+                        .map(UniqueToken::getSerialNumber)
+                        .toList());
     }
 
     @Override

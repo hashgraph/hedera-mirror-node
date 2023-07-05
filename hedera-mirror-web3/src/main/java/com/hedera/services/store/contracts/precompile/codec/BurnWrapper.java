@@ -16,15 +16,14 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collections;
 import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) {
     private static final long NONFUNGIBLE_BURN_AMOUNT = -1;

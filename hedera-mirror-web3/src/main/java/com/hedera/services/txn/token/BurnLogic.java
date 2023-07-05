@@ -60,7 +60,8 @@ public class BurnLogic {
         this.validator = validator;
     }
 
-    public TokenModificationResult burn(final Id targetId, final long amount, List<Long> serialNumbersList, final Store store) {
+    public TokenModificationResult burn(
+            final Id targetId, final long amount, List<Long> serialNumbersList, final Store store) {
         // De-duplicate serial numbers
         serialNumbersList = new ArrayList<>(new LinkedHashSet<>(serialNumbersList));
 
