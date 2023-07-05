@@ -21,10 +21,12 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -68,5 +70,14 @@ public class SyntheticTxnFactory {
         return CryptoCreateTransactionBody.newBuilder()
                 .setInitialBalance(balance)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
+    }
+
+    public TransactionBody.Builder createAssociate(final Association association) {
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+
+        builder.setAccount(association.accountId());
+        builder.addAllTokens(association.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenAssociate(builder);
     }
 }

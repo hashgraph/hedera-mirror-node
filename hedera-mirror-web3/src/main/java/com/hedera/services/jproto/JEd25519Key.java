@@ -24,10 +24,14 @@ import java.util.Arrays;
 public class JEd25519Key extends JKey {
     public static final int ED25519_BYTE_LENGTH = 32;
 
-    private byte[] ed25519;
+    private final byte[] ed25519;
 
     public JEd25519Key(byte[] ed25519) {
         this.ed25519 = ed25519;
+    }
+
+    public static boolean isValidProto(final Key ed25519Key) {
+        return ed25519Key.getEd25519().size() == ED25519_BYTE_LENGTH;
     }
 
     @Override
@@ -49,8 +53,9 @@ public class JEd25519Key extends JKey {
         }
     }
 
-    public static boolean isValidProto(final Key ed25519Key) {
-        return ed25519Key.getEd25519().size() == ED25519_BYTE_LENGTH;
+    @Override
+    public byte[] getEd25519() {
+        return ed25519;
     }
 
     @Override
