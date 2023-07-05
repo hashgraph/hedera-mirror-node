@@ -24,11 +24,12 @@ import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
+import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.Status;
@@ -58,6 +59,9 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @Autowired
     private DomainBuilder domainBuilder;
+
+    @Autowired
+    private TopicMessageService topicMessageService;
 
     @Resource
     private ListenerProperties listenerProperties;
@@ -125,10 +129,9 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
-                // ContractController::toResponse isn't (yet) visible via grpcService.
-                // .expectNext(grpcService.toResponse(topicMessage1))
-                // .expectNext(grpcService.toResponse(topicMessage2))
-                // .expectNext(grpcService.toResponse(topicMessage3))
+                .expectNext(topicMessageService.getResponse(topicMessage1))
+                .expectNext(topicMessageService.getResponse(topicMessage2))
+                .expectNext(topicMessageService.getResponse(topicMessage3))
                 .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
@@ -148,10 +151,11 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
-                .hasSize(3);
-                // ContractController::toResponse isn't (yet) visible via grpcService.
-                // .containsSequence(
-                //         topicMessage1.getResponse(), topicMessage2.getResponse(), topicMessage3.getResponse());
+                .hasSize(3)
+                .containsSequence(
+                        topicMessageService.getResponse(topicMessage1),
+                        topicMessageService.getResponse(topicMessage2),
+                        topicMessageService.getResponse(topicMessage3));
     }
 
     @Test
@@ -172,10 +176,9 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
-                // ContractController::toResponse isn't (yet) visible via grpcService.
-                // .expectNext(topicMessage1.getResponse())
-                // .expectNext(topicMessage2.getResponse())
-                // .expectNext(topicMessage3.getResponse())
+                .expectNext(topicMessageService.getResponse(topicMessage1))
+                .expectNext(topicMessageService.getResponse(topicMessage2))
+                .expectNext(topicMessageService.getResponse(topicMessage3))
                 .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
@@ -204,10 +207,9 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
-                // ContractController::toResponse isn't (yet) visible via grpcService.
-                // .expectNext(topicMessage1.getResponse())
-                // .expectNext(topicMessage2.getResponse())
-                // .expectNext(topicMessage3.getResponse())
+                .expectNext(topicMessageService.getResponse(topicMessage1))
+                .expectNext(topicMessageService.getResponse(topicMessage2))
+                .expectNext(topicMessageService.getResponse(topicMessage3))
                 .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
