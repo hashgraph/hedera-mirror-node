@@ -30,13 +30,11 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.BiFunction;
-import javax.inject.Inject;
 
 public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDissociateUsage> factory =
             TokenDissociateUsage::newEstimate;
 
-    @Inject
     public TokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
         super(estimatorFactory);
     }
