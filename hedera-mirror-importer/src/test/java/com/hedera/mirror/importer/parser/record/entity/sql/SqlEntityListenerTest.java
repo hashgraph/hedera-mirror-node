@@ -559,11 +559,47 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(sidecarFileRepository.count()).isZero();
     }
 
-    @Test
-    void onEntity() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onEntityWhenTypeIsAccount(boolean hasNonce) {
         // given
-        Entity entity1 = domainBuilder.entity().get();
-        Entity entity2 = domainBuilder.entity().get();
+        Entity entity1 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 1L : null))
+                .get();
+        Entity entity2 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 2L : null))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entity1);
+        sqlEntityListener.onEntity(entity2);
+        completeFileAndCommit();
+
+        // then
+        if (!hasNonce) {
+            // the default nonce is 0 for ACCOUNT
+            entity1.setEthereumNonce(0L);
+            entity2.setEthereumNonce(0L);
+        }
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
+        assertThat(findHistory(Entity.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onEntityTypeIsContract(boolean hasNonce) {
+        // given
+        Entity entity1 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 1L : null).type(CONTRACT))
+                .get();
+        Entity entity2 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 2L : null).type(CONTRACT))
+                .get();
 
         // when
         sqlEntityListener.onEntity(entity1);
@@ -572,6 +608,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractRepository.count()).isZero();
+        // for contract, there shouldn't be a default nonce value
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
@@ -766,7 +803,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         var expectedEntity = TestUtils.clone(historyUpdate);
         expectedEntity.setBalance(0L);
         expectedEntity.setDeclineReward(false);
-        expectedEntity.setEthereumNonce(0L);
         expectedEntity.setStakedNodeId(-1L);
         expectedEntity.setStakePeriodStart(120L);
 
