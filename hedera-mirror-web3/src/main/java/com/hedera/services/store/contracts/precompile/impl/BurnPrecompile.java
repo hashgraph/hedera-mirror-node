@@ -71,8 +71,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final BurnLogic burnLogic;
 
-    private BurnWrapper burnOp;
-
     public BurnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
@@ -96,7 +94,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
                     case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_V2;
                     default -> throw new IllegalArgumentException("invalid selector to burn precompile");
                 };
-        burnOp = getBurnWrapper(input, burnAbi);
+        final var burnOp = getBurnWrapper(input, burnAbi);
         return syntheticTxnFactory.createBurn(burnOp);
     }
 
@@ -108,7 +106,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
-        Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
+        Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
         final var burnBody = transactionBody.getTokenBurn();
         final var tokenId = burnBody.getToken();
@@ -118,11 +116,12 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
         /* --- Execute the transaction and capture its results --- */
         final TokenModificationResult tokenModificationResult;
-        if (burnOp.type() == NON_FUNGIBLE_UNIQUE) {
-            final var targetSerialNos = burnOp.serialNos();
+        if (burnBody.getSerialNumbersCount() > 0) {
+            final var targetSerialNos = burnBody.getSerialNumbersList();
             tokenModificationResult = burnLogic.burn(Id.fromGrpcToken(tokenId), 0, targetSerialNos, store);
         } else {
-            tokenModificationResult = burnLogic.burn(Id.fromGrpcToken(tokenId), burnOp.amount(), NO_SERIAL_NOS, store);
+            tokenModificationResult =
+                    burnLogic.burn(Id.fromGrpcToken(tokenId), burnBody.getAmount(), NO_SERIAL_NOS, store);
         }
 
         final var modifiedToken = tokenModificationResult.token();
