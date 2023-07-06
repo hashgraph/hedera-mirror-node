@@ -27,6 +27,8 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityNum;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -112,7 +114,24 @@ public class Account extends HederaEvmAccount {
      * Used for treasury accounts as those are the only fields we need.
      */
     public Account(Long entityId, Id id, long balance) {
-        this(entityId, id, 0L, balance, false, 0L, 0L, null, 0, null, null, null, 0, 0, 0, 0L, false);
+        this(
+                entityId,
+                id,
+                0L,
+                balance,
+                false,
+                0L,
+                0L,
+                null,
+                0,
+                new TreeMap<>(),
+                new TreeMap<>(),
+                new TreeSet<>(),
+                0,
+                0,
+                0,
+                0L,
+                false);
     }
 
     public static Account getEmptyAccount() {
@@ -388,6 +407,37 @@ public class Account extends HederaEvmAccount {
                 oldAccount.isSmartContract);
     }
 
+    /**
+     *
+     * Creates new instance of {@link Account} with updated approval for all nfts in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldAccount
+     * @param newApproveForAllNfts
+     * @return the new instance of {@link Account} with updated {@link #approveForAllNfts} property
+     */
+    private Account createNewAccountWithNewApproveForAllNfts(
+            Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
+        return new Account(
+                oldAccount.entityId,
+                oldAccount.id,
+                oldAccount.expiry,
+                oldAccount.balance,
+                oldAccount.deleted,
+                oldAccount.ownedNfts,
+                oldAccount.autoRenewSecs,
+                oldAccount.proxy,
+                oldAccount.autoAssociationMetadata,
+                oldAccount.cryptoAllowances,
+                oldAccount.fungibleTokenAllowances,
+                newApproveForAllNfts,
+                oldAccount.numAssociations,
+                oldAccount.numPositiveBalances,
+                oldAccount.numTreasuryTitles,
+                oldAccount.ethereumNonce,
+                oldAccount.isSmartContract);
+    }
+
     public int getMaxAutomaticAssociations() {
         return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
@@ -442,6 +492,10 @@ public class Account extends HederaEvmAccount {
 
     public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
+    }
+
+    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
+        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
     }
 
     public long getOwnedNfts() {
