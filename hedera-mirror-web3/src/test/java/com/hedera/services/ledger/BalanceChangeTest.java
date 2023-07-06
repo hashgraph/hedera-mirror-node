@@ -18,7 +18,7 @@ package com.hedera.services.ledger;
 
 import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.services.utils.IdUtils.nftXfer;
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,7 +118,7 @@ class BalanceChangeTest {
 
     @Test
     void canReplaceAlias() {
-        final var created = IdUtils.asAccount("0.0.1234");
+        final var created = asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
         final var subject = BalanceChange.changingHbar(
                 AccountAmount.newBuilder()
@@ -135,7 +135,7 @@ class BalanceChangeTest {
 
     @Test
     void canReplaceCounterpartyAlias() {
-        final var created = IdUtils.asAccount("0.0.1234");
+        final var created = asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
         final var xfer = NftTransfer.newBuilder()
                 .setSenderAccountID(asAccount("0.0.2000"))
@@ -156,7 +156,7 @@ class BalanceChangeTest {
 
     @Test
     void replacedAlias() {
-        final var created = IdUtils.asAccount("0.0.1234");
+        final var created = asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
         final var subject = BalanceChange.changingHbar(
                 AccountAmount.newBuilder()

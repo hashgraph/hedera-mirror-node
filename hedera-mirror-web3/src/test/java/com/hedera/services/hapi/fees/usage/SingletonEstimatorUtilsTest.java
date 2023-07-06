@@ -20,7 +20,7 @@ import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMA
 import static com.hedera.services.hapi.fees.usage.TxnUtils.withAdjustments;
 import static com.hedera.services.hapi.fees.usage.UsageUtils.*;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.*;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.hapi.utils.fees.FeeBuilder;

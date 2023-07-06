@@ -16,6 +16,7 @@
         "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "key": [1, 1, 1],
         "num": "8001",
+        "ethereum_nonce": 1,
         "timestamp_range": "[997654000123457,)"
       }
     ]
@@ -45,6 +46,7 @@
     "file_id": null,
     "max_automatic_token_associations": 0,
     "memo": "contract memo",
+    "nonce": 1,
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,

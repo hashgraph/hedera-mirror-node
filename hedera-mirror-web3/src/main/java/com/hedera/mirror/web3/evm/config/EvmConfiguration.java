@@ -49,6 +49,7 @@ import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -256,11 +257,13 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(
-            final FeeCalculator feeCalculator,
-            final EvmProperties evmProperties,
-            final SyntheticTxnFactory syntheticTxnFactory) {
-        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
+    ApproveAllowanceLogic approveAllowanceLogic() {
+        return new ApproveAllowanceLogic();
+    }
+
+    @Bean
+    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+        return new AutoCreationLogic(feeCalculator, evmProperties);
     }
 
     @Bean

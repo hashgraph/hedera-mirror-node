@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -309,7 +310,11 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
-                .setSenderId(accountId());
+                .setSenderId(accountId())
+                .addContractNonces(ContractNonceInfo.newBuilder()
+                        .setContractId(contractId)
+                        .setNonce(1)
+                        .build());
     }
 
     @SuppressWarnings("deprecation")
