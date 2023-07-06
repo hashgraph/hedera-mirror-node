@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,8 +128,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
                 TokenType.FUNGIBLE_COMMON == modifiedToken.getType() ? modifiedToken.getTotalSupply() : 0L,
                 TokenType.NON_FUNGIBLE_UNIQUE == modifiedToken.getType()
                         ? modifiedToken.removedUniqueTokens().stream()
-                        .map(UniqueToken::getSerialNumber)
-                        .toList()
+                                .map(UniqueToken::getSerialNumber)
+                                .toList()
                         : new ArrayList<>());
     }
 
