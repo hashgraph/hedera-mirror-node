@@ -57,13 +57,6 @@ public class CreateLogic {
 
     private final MirrorNodeEvmProperties dynamicProperties;
 
-    private Account treasury;
-    private Account autoRenew;
-    private Id provisionalId;
-    private Token provisionalToken;
-    private FeeType feeType;
-    private List<TokenRelationship> newRels;
-
     public CreateLogic(final MirrorNodeEvmProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
     }
@@ -75,14 +68,24 @@ public class CreateLogic {
             Store store,
             final TokenCreateTransactionBody op) {
 
+        final var treasuryId = Id.fromGrpcAccount(op.getTreasury()).asEvmAddress();
+        final var treasury = store.getAccount(treasuryId, OnMissing.THROW);
+        Account autoRenew = null;
+        Id provisionalId = Id.fromGrpcToken(EntityIdUtils.tokenIdFromEvmAddress(activePayer));
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount()).asEvmAddress();
+            autoRenew = store.getAccount(autoRenewId, OnMissing.THROW);
+        }
         // --- Create the model objects ---
-        loadModelsWith(activePayer, validator, store, op);
+        validateExpiration(validator, op);
 
         // --- Do the business logic ---
-        doProvisionallyWith(now, store, op);
+        final var token = doProvisionallyWith(now, store, op, treasury, autoRenew, provisionalId);
+        var newRels = getNewRelationships(token, store, op);
 
         // --- Persist the created model ---
-        persist(store);
+        persist(store, token, newRels);
     }
 
     public enum FeeType {
@@ -91,41 +94,41 @@ public class CreateLogic {
         ROYALTY_FEE
     }
 
-    private void loadModelsWith(
-            final Address sponsor,
-            final OptionValidator validator,
-            final Store store,
-            final TokenCreateTransactionBody op) {
+    private void validateExpiration(final OptionValidator validator, final TokenCreateTransactionBody op) {
         final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
         validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
-
-        final var treasuryId = Id.fromGrpcAccount(op.getTreasury()).asEvmAddress();
-        treasury = store.getAccount(treasuryId, OnMissing.THROW);
-        autoRenew = null;
-        if (op.hasAutoRenewAccount()) {
-            final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount()).asEvmAddress();
-            autoRenew = store.getAccount(autoRenewId, OnMissing.THROW);
-        }
-        provisionalId = Id.fromGrpcToken(EntityIdUtils.tokenIdFromEvmAddress(sponsor));
     }
 
-    private void persist(final Store store) {
+    private void persist(final Store store, final Token provisionalToken, final List<TokenRelationship> newRels) {
         store.updateToken(provisionalToken);
         newRels.forEach(rel -> updateRelationshipAndAccount(rel, store));
     }
 
-    private void doProvisionallyWith(final long now, final Store store, final TokenCreateTransactionBody op) {
+    private Token doProvisionallyWith(
+            final long now,
+            final Store store,
+            final TokenCreateTransactionBody op,
+            final Account treasury,
+            final Account autoRenew,
+            final Id provisionalId) {
         final var maxCustomFees = dynamicProperties.maxCustomFeesAllowed();
         validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
-        provisionalToken = fromGrpcOpAndMeta(provisionalId, op, treasury, autoRenew, now);
+        final var provisionalToken = fromGrpcOpAndMeta(provisionalId, op, treasury, autoRenew, now);
         provisionalToken.getCustomFees().forEach(fee -> validateAndFinalizeWith(provisionalToken, fee, store));
+
+        return provisionalToken;
+    }
+
+    private List<TokenRelationship> getNewRelationships(
+            final Token provisionalToken, final Store store, final TokenCreateTransactionBody op) {
         final var associateLogic = new AssociateLogic(dynamicProperties);
-        newRels = listFrom(provisionalToken, store, associateLogic);
+        final var newRels = listFrom(provisionalToken, store, associateLogic);
         if (op.getInitialSupply() > 0) {
             // Treasury relationship is always first
             provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
         }
+        return newRels;
     }
 
     private void validateAndFinalizeWith(final Token provisionalToken, final CustomFee customFee, final Store store) {
@@ -138,7 +141,7 @@ public class CreateLogic {
     }
 
     private void validate(final Token token, final CustomFee customFee, final Store store) {
-        feeType = getFeeType(customFee);
+        final var feeType = getFeeType(customFee);
         final var collector = store.getAccount(getFeeCollector(customFee), OnMissing.THROW);
 
         switch (feeType) {
@@ -154,7 +157,7 @@ public class CreateLogic {
 
     private void validateAndFinalizeFixedFeeWith(
             final Token provisionalToken, final Account feeCollector, final Store store, final CustomFee customFee) {
-
+        final var feeType = getFeeType(customFee);
         var denominatingTokenId = feeType.equals(FeeType.FIXED_FEE)
                 ? customFee.getFixedFee().getDenominatingTokenId()
                 : customFee.getRoyaltyFee().getDenominatingTokenId();

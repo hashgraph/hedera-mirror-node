@@ -115,6 +115,9 @@ class CreateLogicTest {
     void throwExceptionIfTokenIsExpired() {
         given(op.hasExpiry()).willReturn(true);
         given(op.getExpiry()).willReturn(Timestamp.getDefaultInstance());
+        final var treasury = AccountID.getDefaultInstance();
+        given(op.getTreasury()).willReturn(treasury);
+        staticMock.when(() -> Id.fromGrpcAccount(treasury)).thenReturn(accountId);
         assertThatThrownBy(this::runCreateLogic).isInstanceOf(InvalidTransactionException.class);
     }
 
