@@ -20,6 +20,7 @@ import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAsso
 import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -61,7 +62,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -73,8 +73,8 @@ class HederaTokenStoreTest {
     private static final int associatedTokensCount = 2;
     private static final int numPositiveBalances = 1;
     private static final long treasuryBalance = 50_000L;
-    private static final TokenID misc = EntityIdUtils.asToken("0.0.1");
-    private static final TokenID nonfungible = EntityIdUtils.asToken("0.0.2");
+    private static final TokenID misc = asToken("0.0.1");
+    private static final TokenID nonfungible = asToken("0.0.2");
     private static final int maxAutoAssociations = 1234;
     private static final AccountID payer = IdUtils.asAccount("0.0.12345");
     private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.9898");
