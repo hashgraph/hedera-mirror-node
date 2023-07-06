@@ -203,6 +203,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
+        processContractNonce(functionResult);
+
         if (!entityProperties.getPersist().isContractResults()) {
             return;
         }
@@ -247,6 +249,18 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         entityListener.onContractResult(contractResult);
+    }
+
+    private void processContractNonce(ContractFunctionResult functionResult) {
+        if (entityProperties.getPersist().isTrackNonce()) {
+            functionResult.getContractNoncesList().forEach(nonceInfo -> {
+                var contractId = EntityId.of(nonceInfo.getContractId());
+                var entity = contractId.toEntity();
+                entity.setEthereumNonce(nonceInfo.getNonce());
+                entity.setTimestampRange(null); // Don't trigger a history row
+                entityListener.onEntity(entity);
+            });
+        }
     }
 
     private void processContractLogs(

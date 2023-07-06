@@ -427,7 +427,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeclineReward(false);
         entity.setDeleted(deleted);
-        entity.setEthereumNonce(0L);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
         entity.setTimestampLower(modifiedTimestamp);
@@ -435,6 +434,11 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setSubmitKey(submitKeyBytes);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
+
+        if (entity.getType() == EntityType.ACCOUNT) {
+            entity.setEthereumNonce(0L);
+        }
+
         return entity;
     }
 
