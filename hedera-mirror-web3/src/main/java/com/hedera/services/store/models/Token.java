@@ -171,9 +171,12 @@ public class Token {
             List<CustomFee> customFees) {
         this.entityId = entityId;
         this.id = id;
-        this.mintedUniqueTokens = mintedUniqueTokens;
-        this.removedUniqueTokens = removedUniqueTokens;
-        this.loadedUniqueTokens = loadedUniqueTokens;
+        this.mintedUniqueTokens =
+                Collections.emptyList().equals(mintedUniqueTokens) ? new ArrayList<>() : mintedUniqueTokens;
+        this.removedUniqueTokens =
+                Collections.emptyList().equals(removedUniqueTokens) ? new ArrayList<>() : removedUniqueTokens;
+        this.loadedUniqueTokens =
+                Collections.emptyMap().equals(loadedUniqueTokens) ? new HashMap<>() : loadedUniqueTokens;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
         this.supplyType = supplyType;
@@ -206,10 +209,6 @@ public class Token {
 
     public static Token getEmptyToken() {
         return new Token(Id.DEFAULT);
-    }
-
-    public boolean isEmptyToken() {
-        return this.equals(getEmptyToken());
     }
 
     /**
@@ -282,6 +281,10 @@ public class Token {
         } else {
             return TokenType.FUNGIBLE_COMMON;
         }
+    }
+
+    public boolean isEmptyToken() {
+        return this.equals(getEmptyToken());
     }
 
     /**
