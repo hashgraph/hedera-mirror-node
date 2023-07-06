@@ -19,6 +19,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.models.Id.fromGrpcAccount;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.loadPossiblyPausedToken;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validOwner;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
@@ -38,6 +39,7 @@ import java.util.List;
  *  1. Use abstraction for the state by introducing {@link Store} interface
  *  2. Remove AccountStore and TypedTokenStore
  *  3. Using exception from {@link com.hedera.mirror.web3.evm.store.StoreImpl} when entity is missing from the state
+ *  4. We pass some of the fields as function parameters in order to keep the class stateless
  */
 public class DeleteAllowanceLogic {
 
@@ -61,11 +63,15 @@ public class DeleteAllowanceLogic {
     }
 
     /**
+     *
      * Clear spender on the provided nft serials. If the owner is not provided in any allowance,
      * considers payer of the transaction as owner while checking if nft is owned by owner.
+     * This version of the method is using {@link Store} for the transaction state
      *
-     * @param nftAllowances given nftAllowances
-     * @param payerAccount payer for the transaction
+     * @param store
+     * @param nftsTouched
+     * @param nftAllowances
+     * @param payerAccount
      */
     private void deleteNftSerials(
             final Store store,
@@ -80,7 +86,7 @@ public class DeleteAllowanceLogic {
             final var serialNums = allowance.getSerialNumbersList();
             final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
             final var owner = fetchOwnerAccount(allowance.getOwner(), payerAccount, store);
-            final var token = store.getToken(tokenId.asEvmAddress(), OnMissing.THROW);
+            final var token = loadPossiblyPausedToken(tokenId.asEvmAddress(), store);
             for (final var serial : serialNums) {
                 final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serial);
                 final var nft = store.getUniqueToken(nftId, OnMissing.THROW);

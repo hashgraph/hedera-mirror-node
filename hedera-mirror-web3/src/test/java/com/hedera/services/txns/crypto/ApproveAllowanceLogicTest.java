@@ -24,7 +24,9 @@ import static com.hedera.services.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -121,6 +123,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.approveAllowance(
                 store,
@@ -135,7 +138,7 @@ class ApproveAllowanceLogicTest {
         assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
 
-        // verify(accountStore).commitAccount(ownerAccount);
+        verify(store).updateAccount(ownerAccount);
     }
 
     @Test
@@ -152,6 +155,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         assertEquals(0, payerAccount.getCryptoAllowances().size());
         assertEquals(0, payerAccount.getFungibleTokenAllowances().size());
@@ -185,6 +189,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.approveAllowance(
                 store,
@@ -198,6 +203,8 @@ class ApproveAllowanceLogicTest {
         assertEquals(1, ownerAccount.getCryptoAllowances().size());
         assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
+
+        verify(store).updateAccount(ownerAccount);
     }
 
     @Test
@@ -240,6 +247,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.approveAllowance(
                 store,
@@ -276,6 +284,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.approveAllowance(
                 store,
@@ -323,6 +332,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.applyNftAllowances(store, new TreeMap<>(), new TreeMap<>(), nftAllowances, ownerAcccount);
 
@@ -363,6 +373,7 @@ class ApproveAllowanceLogicTest {
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
+        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.approveAllowance(
                 store,
