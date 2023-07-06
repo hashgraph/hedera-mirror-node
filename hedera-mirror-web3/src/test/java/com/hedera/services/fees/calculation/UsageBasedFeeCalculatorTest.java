@@ -34,7 +34,9 @@ import static org.mockito.BDDMockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -256,6 +258,21 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
         assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+    }
+
+    @Test
+    void defaultFeeIfAccountMissing() throws Exception {
+        // setup:
+        correctOpEstimator = new TokenDissociateResourceUsage(mock(EstimatorFactory.class));
+        final FeeData expectedFeeData = FeeData.getDefaultInstance();
+        given(store.getAccount(any(), any())).willReturn(null);
+
+        // when:
+        final var feeData =
+                correctOpEstimator.usageGiven(accessor.getTxn(), subject.getSigUsage(accessor, payerKey), store);
+
+        // then:
+        assertEquals(expectedFeeData, feeData);
     }
 
     @SuppressWarnings("deprecation")

@@ -100,8 +100,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
+    protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
+    protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
 
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
@@ -223,14 +225,18 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
-        final var tokenEntityId = fungibleTokenPersist(senderEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS);
+        final var treasuryEntityId = treasureEntityPersist();
+        final var tokenEntityId =
+                fungibleTokenPersist(senderEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
         final var notFrozenFungibleTokenEntityId =
-                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS);
+                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
+        final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
         final var ethAccount = ethAccountPersist();
         tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         exchangeRatesPersist();
@@ -271,7 +277,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId fungibleTokenPersist(final EntityId senderEntityId, final byte[] key, final Address tokenAddress) {
+    private EntityId fungibleTokenPersist(
+            final EntityId senderEntityId, final byte[] key, final Address tokenAddress, final long tokenExpiration) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
@@ -284,6 +291,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .type(TOKEN)
                         .balance(1500L)
                         .key(key)
+                        .expirationTimestamp(tokenExpiration)
                         .memo("TestMemo"))
                 .persist();
 
@@ -322,6 +330,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .accountId(senderEntityId.getId())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true)
                         .balance(12L))
                 .persist();
 
@@ -373,6 +382,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .balance(20000L))
                 .persist();
         return senderEntityId;
+    }
+
+    @Nullable
+    private EntityId treasureEntityPersist() {
+        final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(treasuryEntityId.getId())
+                        .num(treasuryEntityId.getEntityNum())
+                        .evmAddress(null)
+                        .alias(toEvmAddress(treasuryEntityId)))
+                .persist();
+        return treasuryEntityId;
     }
 
     @Nullable
