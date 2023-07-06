@@ -19,7 +19,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static java.util.function.UnaryOperator.identity;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
