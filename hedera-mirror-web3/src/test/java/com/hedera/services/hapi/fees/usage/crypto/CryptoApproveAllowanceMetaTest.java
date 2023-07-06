@@ -18,8 +18,8 @@ package com.hedera.services.hapi.fees.usage.crypto;
 
 import static com.hedera.services.hapi.fees.usage.crypto.CryptoContextUtils.*;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.*;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hederahashgraph.api.proto.java.*;

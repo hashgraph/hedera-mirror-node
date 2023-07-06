@@ -16,9 +16,8 @@
 
 package com.hedera.services.store.models;
 
-import static com.hedera.services.utils.EntityIdUtils.asModelId;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static com.hedera.services.utils.IdUtils.asModelId;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.state.submerkle.RichInstant;
 import java.nio.charset.StandardCharsets;

@@ -19,8 +19,8 @@ package com.hedera.services.hapi.fees.usage.crypto;
 import static com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta.countNftDeleteSerials;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hederahashgraph.api.proto.java.AccountID;

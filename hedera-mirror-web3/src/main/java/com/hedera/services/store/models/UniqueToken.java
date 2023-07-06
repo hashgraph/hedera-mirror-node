@@ -40,7 +40,6 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class UniqueToken {
     private final Id tokenId;
-
     private final Address address;
     private final long serialNumber;
     private final RichInstant creationTime;
@@ -74,6 +73,14 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    /**
+     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldUniqueToken
+     * @param newSpender
+     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
+     */
     private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
         return new UniqueToken(
                 oldUniqueToken.tokenId,
@@ -116,12 +123,12 @@ public class UniqueToken {
         return createNewUniqueTokenWithNewOwner(this, newOwner);
     }
 
-    public UniqueToken setSpender(Id newSpender) {
-        return createNewUniqueTokenWithNewSpender(this, newSpender);
-    }
-
     public Id getSpender() {
         return spender;
+    }
+
+    public UniqueToken setSpender(Id spender) {
+        return createNewUniqueTokenWithNewSpender(this, spender);
     }
 
     public byte[] getMetadata() {
