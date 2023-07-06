@@ -100,10 +100,12 @@ class BurnPrecompileTest {
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
     private static final String ABI_ID_BURN_TOKEN = "0x" + Integer.toHexString(AbiConstants.ABI_ID_BURN_TOKEN);
+    private static final String ABI_ID_BURN_TOKEN_V2 = "0x" + Integer.toHexString(AbiConstants.ABI_ID_BURN_TOKEN_V2);
     private static final int TOKEN_ID_TO_BURN = 1176;
     private static final int NUMBERS_OF_TOKENS_TO_BURN = 33;
     private static final int SERIAL_NUMBERS_DATA = 96;
     private static final int EMPTY_ARGUMENT = 0;
+
     private static final Bytes FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(ABI_ID_BURN_TOKEN
             + convertToPaddedHex(TOKEN_ID_TO_BURN)
             + convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN)
@@ -117,7 +119,6 @@ class BurnPrecompileTest {
             + convertToPaddedHex(SERIAL_NUMBERS_DATA)
             + convertToPaddedHex(EMPTY_ARGUMENT));
 
-    private static final String ABI_ID_BURN_TOKEN_V2 = "0x" + Integer.toHexString(AbiConstants.ABI_ID_BURN_TOKEN_V2);
     private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(ABI_ID_BURN_TOKEN_V2
             + convertToPaddedHex(TOKEN_ID_TO_BURN)
             + convertToPaddedHex(NUMBERS_OF_TOKENS_TO_BURN)
@@ -140,23 +141,32 @@ class BurnPrecompileTest {
             + convertToPaddedHex(TOKEN_ID_1_TO_BURN)
             + convertToPaddedHex(TOKEN_ID_2_TO_BURN));
 
-
     private static final String SUCCESS_RESPONSE_CODE = convertToPaddedHex(ResponseCodeEnum.SUCCESS.getNumber());
     private static final String BURN_BYTES_LOCATIONS_TO_THE_ARRAY = convertToPaddedHex(96);
 
-    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE = Bytes.fromHexString("0x"
-            + convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) + convertToPaddedHex(EMPTY_ARGUMENT) + BURN_BYTES_LOCATIONS_TO_THE_ARRAY + convertToPaddedHex(EMPTY_ARGUMENT));
+    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE = Bytes.fromHexString("0x" +
+            convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) +
+            convertToPaddedHex(EMPTY_ARGUMENT) +
+            BURN_BYTES_LOCATIONS_TO_THE_ARRAY +
+            convertToPaddedHex(EMPTY_ARGUMENT));
 
-    private static final String PARAM_WITH_VALUE_0 = convertToPaddedHex(0);
     private static final Bytes RETURN_FUNGIBLE_BURN =
-            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + convertToPaddedHex(EMPTY_ARGUMENT) + BURN_BYTES_LOCATIONS_TO_THE_ARRAY + convertToPaddedHex(EMPTY_ARGUMENT));
+            Bytes.fromHexString("0x" +
+                    SUCCESS_RESPONSE_CODE +
+                    convertToPaddedHex(EMPTY_ARGUMENT) +
+                    BURN_BYTES_LOCATIONS_TO_THE_ARRAY +
+                    convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final String BURN_ARRAY_SIZE = convertToPaddedHex(2);
     private static final String BURN_ARRAY_FIRST_ELEMENT = convertToPaddedHex(1);
     private static final String BURN_ARRAY_SECOND_ELEMENT = convertToPaddedHex(2);
     private static final Bytes RETURN_NON_FUNGIBLE_BURN =
-            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + convertToPaddedHex(EMPTY_ARGUMENT) +
-                    BURN_BYTES_LOCATIONS_TO_THE_ARRAY + BURN_ARRAY_SIZE + BURN_ARRAY_FIRST_ELEMENT +
+            Bytes.fromHexString("0x" +
+                    SUCCESS_RESPONSE_CODE +
+                    convertToPaddedHex(EMPTY_ARGUMENT) +
+                    BURN_BYTES_LOCATIONS_TO_THE_ARRAY +
+                    BURN_ARRAY_SIZE +
+                    BURN_ARRAY_FIRST_ELEMENT +
                     BURN_ARRAY_SECOND_ELEMENT);
 
     private final TransactionBody.Builder transactionBody =
