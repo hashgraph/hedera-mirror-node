@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
@@ -869,7 +869,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
 
         topic.setDeclineReward(false);
-        topic.setEthereumNonce(0L);
         topic.setMemo(memo);
         topic.setType(EntityType.TOPIC);
         topic.setStakedNodeId(-1L);

@@ -101,8 +101,8 @@ public class Token {
         this(
                 0L,
                 id,
-                Collections.emptyList(),
-                Collections.emptyList(),
+                new ArrayList<>(),
+                new ArrayList<>(),
                 new HashMap<>(),
                 false,
                 null,
@@ -131,7 +131,7 @@ public class Token {
                 0,
                 0,
                 0,
-                Collections.emptyList());
+                new ArrayList<>());
     }
 
     @SuppressWarnings("java:S107")
@@ -302,11 +302,56 @@ public class Token {
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
                 loadedUniqueTokens,
-                true,
+                oldToken.supplyHasChanged,
                 oldToken.type,
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated maxSupply in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param maxSupply
+     * @return the new instance of {@link Token} with updated {@link #maxSupply} property
+     */
+    private Token createNewTokenWithNewMaxSupply(Token oldToken, long maxSupply) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                maxSupply,
                 oldToken.kycKey,
                 oldToken.freezeKey,
                 oldToken.supplyKey,
@@ -623,7 +668,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 freezeKey,
                 oldToken.supplyKey,
                 oldToken.wipeKey,
@@ -668,7 +713,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 supplyKey,
                 oldToken.wipeKey,
@@ -713,7 +758,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 oldToken.supplyKey,
                 wipeKey,
@@ -1145,6 +1190,10 @@ public class Token {
 
     public long getMaxSupply() {
         return maxSupply;
+    }
+
+    public Token setMaxSupply(long maxSupply) {
+        return createNewTokenWithNewMaxSupply(this, maxSupply);
     }
 
     public JKey getSupplyKey() {
