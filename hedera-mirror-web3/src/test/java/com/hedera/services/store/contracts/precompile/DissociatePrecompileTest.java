@@ -301,9 +301,7 @@ class DissociatePrecompileTest {
 
     @Test
     void decodeMultipleDissociateToken() {
-        final var decodedInput = multiDissociatePrecompile.body(
-                MULTIPLE_DISSOCIATE_INPUT, identity(), new FunctionParam(ABI_ID_DISSOCIATE_TOKENS));
-
+        final var decodedInput = multiDissociatePrecompileDecode(identity(), MULTIPLE_DISSOCIATE_INPUT);
         assertTrue(decodedInput.getTokenDissociate().getAccount().getAccountNum() > 0);
         assertEquals(2, decodedInput.getTokenDissociate().getTokensList().size());
         assertTrue(decodedInput.getTokenDissociate().getTokens(0).getTokenNum() > 0);
@@ -313,9 +311,12 @@ class DissociatePrecompileTest {
     @Test
     void decodeMultipleDissociateTokenInvalidInput() {
         final UnaryOperator<byte[]> identity = identity();
-        assertThatThrownBy(() -> multiDissociatePrecompile.body(
-                        INVALID_INPUT, identity, new FunctionParam(ABI_ID_DISSOCIATE_TOKENS)))
+        assertThatThrownBy(() -> multiDissociatePrecompileDecode(identity, INVALID_INPUT))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private TransactionBody.Builder multiDissociatePrecompileDecode(UnaryOperator<byte[]> identity, Bytes input) {
+        return multiDissociatePrecompile.body(input, identity, new FunctionParam(ABI_ID_DISSOCIATE_TOKENS));
     }
 
     private void givenMinFrameContext() {
