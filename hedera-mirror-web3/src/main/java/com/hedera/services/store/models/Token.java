@@ -171,9 +171,12 @@ public class Token {
             List<CustomFee> customFees) {
         this.entityId = entityId;
         this.id = id;
-        this.mintedUniqueTokens = mintedUniqueTokens;
-        this.removedUniqueTokens = removedUniqueTokens;
-        this.loadedUniqueTokens = loadedUniqueTokens;
+        this.mintedUniqueTokens =
+                Collections.emptyList().equals(mintedUniqueTokens) ? new ArrayList<>() : mintedUniqueTokens;
+        this.removedUniqueTokens =
+                Collections.emptyList().equals(removedUniqueTokens) ? new ArrayList<>() : removedUniqueTokens;
+        this.loadedUniqueTokens =
+                Collections.emptyMap().equals(loadedUniqueTokens) ? new HashMap<>() : loadedUniqueTokens;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
         this.supplyType = supplyType;
@@ -206,10 +209,6 @@ public class Token {
 
     public static Token getEmptyToken() {
         return new Token(Id.DEFAULT);
-    }
-
-    public boolean isEmptyToken() {
-        return this.equals(getEmptyToken());
     }
 
     /**
@@ -282,6 +281,10 @@ public class Token {
         } else {
             return TokenType.FUNGIBLE_COMMON;
         }
+    }
+
+    public boolean isEmptyToken() {
+        return this.equals(getEmptyToken());
     }
 
     /**
@@ -916,6 +919,51 @@ public class Token {
     }
 
     /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param mintedUniqueTokens
+     * @return new instance of {@link Token} with updated {@link #mintedUniqueTokens} property
+     */
+    private Token createNewTokenWithMintedUniqueTokens(Token oldToken, List<UniqueToken> mintedUniqueTokens) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
      * Minting fungible tokens increases the supply and sets new balance to the treasuryRel
      *
      * @param treasuryRel
@@ -955,6 +1003,7 @@ public class Token {
         var tokenMod = changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
         long newLastUsedSerialNumber = this.lastUsedSerialNumber;
 
+        Token tokenWithMintedUniqueTokens = null;
         for (final ByteString m : metadata) {
             newLastUsedSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
@@ -962,9 +1011,11 @@ public class Token {
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
+            tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(mintedUniqueTokens);
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        var newToken = createNewTokenWithNewTreasury(
+                tokenWithMintedUniqueTokens != null ? tokenWithMintedUniqueTokens : tokenMod.token(), newTreasury);
         return new TokenModificationResult(
                 createNewTokenWithNewLastUsedSerialNumber(newToken, newLastUsedSerialNumber),
                 tokenMod.tokenRelationship());
@@ -1199,6 +1250,10 @@ public class Token {
 
     public Token setSupplyKey(JKey supplyKey) {
         return createNewTokenWithSupplyKey(this, supplyKey);
+    }
+
+    public Token setMintedUniqueTokens(final List<UniqueToken> mintedUniqueTokens) {
+        return createNewTokenWithMintedUniqueTokens(this, mintedUniqueTokens);
     }
 
     public boolean hasFreezeKey() {
