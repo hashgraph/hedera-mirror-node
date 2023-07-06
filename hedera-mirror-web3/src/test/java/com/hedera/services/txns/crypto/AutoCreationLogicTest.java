@@ -120,7 +120,8 @@ class AutoCreationLogicTest {
     void createsAsExpected() {
         // given
         given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
+        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at), eq(aliasManager)))
+                .willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
 
         // when

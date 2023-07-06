@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.services.hapi.fees.usage.crypto.AllowanceId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -29,9 +30,11 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
@@ -118,5 +121,44 @@ public class AllowanceHelpers {
         return Id.DEFAULT.equals(listedOwner)
                 ? ownerId.equals(token.getTreasury().getId())
                 : listedOwner.equals(ownerId);
+    }
+
+    public static Set<AllowanceId> getNftApprovedForAll(final Account account) {
+        if (!account.getApproveForAllNfts().isEmpty()) {
+            Set<AllowanceId> nftAllowances = new HashSet<>();
+            for (var a : account.getApproveForAllNfts()) {
+                nftAllowances.add(new AllowanceId(
+                        a.getTokenNum().longValue(), a.getSpenderNum().longValue()));
+            }
+            return nftAllowances;
+        }
+        return Collections.emptySet();
+    }
+
+    public static Map<AllowanceId, Long> getFungibleTokenAllowancesList(final Account account) {
+        if (!account.getFungibleTokenAllowances().isEmpty()) {
+            Map<AllowanceId, Long> tokenAllowances = new HashMap<>();
+            for (var a : account.getFungibleTokenAllowances().entrySet()) {
+                tokenAllowances.put(
+                        new AllowanceId(
+                                a.getKey().getTokenNum().longValue(),
+                                a.getKey().getSpenderNum().longValue()),
+                        a.getValue());
+            }
+            return tokenAllowances;
+        }
+        return Collections.emptyMap();
+    }
+
+    public static Map<Long, Long> getCryptoAllowancesList(final Account account) {
+        if (!account.getCryptoAllowances().isEmpty()) {
+            Map<Long, Long> cryptoAllowances = new HashMap<>();
+
+            for (var a : account.getCryptoAllowances().entrySet()) {
+                cryptoAllowances.put(a.getKey().longValue(), a.getValue());
+            }
+            return cryptoAllowances;
+        }
+        return Collections.emptyMap();
     }
 }

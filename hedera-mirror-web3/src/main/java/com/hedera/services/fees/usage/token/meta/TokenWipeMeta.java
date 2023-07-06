@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.fees.calculation.utils;
+package com.hedera.services.fees.usage.token.meta;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import com.hederahashgraph.api.proto.java.SubType;
 
-@ExtendWith(MockitoExtension.class)
-class AccessorBasedUsagesTest {}
+public class TokenWipeMeta extends TokenBurnWipeMeta {
+
+    public TokenWipeMeta(final int bpt, final SubType subType, final long transferRecordRb, final int serialNumsCount) {
+        super(bpt, subType, transferRecordRb, serialNumsCount);
+    }
+}

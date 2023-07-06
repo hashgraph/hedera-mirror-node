@@ -32,10 +32,13 @@ import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -142,8 +145,27 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AccessorBasedUsages accessorBasedUsages() {
-        return new AccessorBasedUsages();
+    TokenOpsUsage tokenOpsUsage() {
+        return new TokenOpsUsage();
+    }
+
+    @Bean
+    CryptoOpsUsage cryptoOpsUsage() {
+        return new CryptoOpsUsage();
+    }
+
+    @Bean
+    OpUsageCtxHelper opUsageCtxHelper() {
+        return new OpUsageCtxHelper();
+    }
+
+    @Bean
+    AccessorBasedUsages accessorBasedUsages(
+            final TokenOpsUsage tokenOpsUsage,
+            final CryptoOpsUsage cryptoOpsUsage,
+            final OpUsageCtxHelper opUsageCtxHelper,
+            final EvmProperties evmProperties) {
+        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, evmProperties);
     }
 
     @Bean

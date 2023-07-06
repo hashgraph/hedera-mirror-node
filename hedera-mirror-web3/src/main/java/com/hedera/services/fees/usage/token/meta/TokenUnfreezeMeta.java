@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.fees.calculation.utils;
+package com.hedera.services.fees.usage.token.meta;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-@ExtendWith(MockitoExtension.class)
-class AccessorBasedUsagesTest {}
+/** This is simply to get rid of code duplication with {@link TokenFreezeMeta} class. */
+public class TokenUnfreezeMeta extends TokenFreezeMeta {
+    public TokenUnfreezeMeta(final int bpt) {
+        super(bpt);
+    }
+}
