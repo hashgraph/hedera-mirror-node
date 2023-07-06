@@ -31,7 +31,7 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  Transaction,
+  EthereumTransaction
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -235,23 +235,30 @@ class ContractService extends BaseService {
       ` select
           ${contractResultsFields},
           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS},
-          et.access_list as access_list,
-          et.chain_id as chain_id,
-          et.gas_price as gas_price,
-          et.max_fee_per_gas as max_fee_per_gas,
-          et.max_priority_fee_per_gas as max_priority_fee_per_gas,
-          et.type as transaction_type,
-          et.signature_r as r,
-          et.recovery_id as v,
-          et.signature_s as s,
-          et.nonce as et_nonce,
-          rf.hash as block_hash,
-          rf.index as block_number,
-          rf.gas_used as block_gas_used
+          ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)} as access_list,
+          ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)} as chain_id,
+          ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)} as gas_price,
+          ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)} as max_fee_per_gas,
+          ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)} as max_priority_fee_per_gas,
+          ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as transaction_type,
+          ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)} as r,
+          ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)} as v,
+          ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)} as s,
+          ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)} as et_nonce,
+          ${RecordFile.getFullName(RecordFile.HASH)} as block_hash,
+          ${RecordFile.getFullName(RecordFile.INDEX)} as block_number,
+          ${RecordFile.getFullName(RecordFile.GAS_USED)} as block_gas_used
       from ${ContractResult.tableName} ${ContractResult.tableAlias}`,
       ContractService.joinContractResultWithEvmAddress,
-      'left join ethereum_transaction et on et.hash = cr.transaction_hash',
-      'left join record_file rf on rf.consensus_end = (select consensus_end from record_file where consensus_end >= et.consensus_timestamp order by consensus_end asc limit 1)',
+      `left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias} 
+        on ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)}`,
+      `left join ${RecordFile.tableName} ${RecordFile.tableAlias}
+        on ${RecordFile.getFullName(RecordFile.CONSENSUS_END)} = (
+          select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} 
+          where ${RecordFile.CONSENSUS_END} >= ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)}
+          order by ${RecordFile.CONSENSUS_END} ${orderFilterValues.ASC} 
+          limit 1
+        )`,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
