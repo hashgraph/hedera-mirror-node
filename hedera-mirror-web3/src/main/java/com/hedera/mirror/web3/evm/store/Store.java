@@ -63,12 +63,12 @@ public interface Store {
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.
-     */
+     * */
     void commit();
 
     /**
      * Adding a safe layer on top of the in-memory state to write to, while still using the database as a backup.
-     */
+     * */
     void wrap();
 
     enum OnMissing {
