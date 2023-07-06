@@ -448,7 +448,7 @@ class ContractController extends BaseController {
   extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
-    let detailed = false;
+    let detailed = true;
     const conditions = [];
     const params = [];
     if (contractId !== '') {
