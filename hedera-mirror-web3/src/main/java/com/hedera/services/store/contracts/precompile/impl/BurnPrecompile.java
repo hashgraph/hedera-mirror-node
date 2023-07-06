@@ -100,8 +100,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
-        final var isNftMint = transactionBody.getTokenMint().getMetadataCount() > 0;
-        return pricingUtils.getMinimumPriceInTinybars(isNftMint ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
+        final var isNftBurn = transactionBody.getTokenBurn().getSerialNumbersCount() > 0;
+        return pricingUtils.getMinimumPriceInTinybars(isNftBurn ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }
 
     @Override

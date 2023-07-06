@@ -240,7 +240,7 @@ public class EncodingFacade {
                     switch (functionType) {
                         case HAPI_CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
                         case HAPI_MINT -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
-                        case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
+                        case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_APPROVE -> Tuple.of(approve);
                         case HAPI_APPROVE -> Tuple.of(status, approve);

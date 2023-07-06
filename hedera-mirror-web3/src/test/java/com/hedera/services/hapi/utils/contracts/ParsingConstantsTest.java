@@ -20,7 +20,7 @@ import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnRetu
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.intAddressTuple;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.mintReturnType;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
@@ -45,7 +45,7 @@ class ParsingConstantsTest {
 
     @Test
     void tupleTypesValidation() {
-        assertEquals(burnReturnType, TupleType.parse("(int32,uint64)"));
+        assertEquals(burnReturnType, TupleType.parse("(int32,uint64,int64[])"));
         assertEquals(intAddressTuple, TupleType.parse("(int32,address)"));
         assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
         assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));

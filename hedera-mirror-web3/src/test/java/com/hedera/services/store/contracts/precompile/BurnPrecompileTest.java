@@ -140,16 +140,24 @@ class BurnPrecompileTest {
             + convertToPaddedHex(TOKEN_ID_1_TO_BURN)
             + convertToPaddedHex(TOKEN_ID_2_TO_BURN));
 
-    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE = Bytes.fromHexString("0x"
-            + convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) + convertToPaddedHex(EMPTY_ARGUMENT));
 
     private static final String SUCCESS_RESPONSE_CODE = convertToPaddedHex(ResponseCodeEnum.SUCCESS.getNumber());
-    private static final String PARAM_WITH_VALUE_67 = convertToPaddedHex(67);
+    private static final String BURN_BYTES_LOCATIONS_TO_THE_ARRAY = convertToPaddedHex(96);
+
+    private static final Bytes ACCOUNT_DELETED_FAIL_RESPONSE = Bytes.fromHexString("0x"
+            + convertToPaddedHex(ResponseCodeEnum.ACCOUNT_DELETED.getNumber()) + convertToPaddedHex(EMPTY_ARGUMENT) + BURN_BYTES_LOCATIONS_TO_THE_ARRAY + convertToPaddedHex(EMPTY_ARGUMENT));
+
     private static final String PARAM_WITH_VALUE_0 = convertToPaddedHex(0);
     private static final Bytes RETURN_FUNGIBLE_BURN =
-            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + PARAM_WITH_VALUE_67);
+            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + convertToPaddedHex(EMPTY_ARGUMENT) + BURN_BYTES_LOCATIONS_TO_THE_ARRAY + convertToPaddedHex(EMPTY_ARGUMENT));
+
+    private static final String BURN_ARRAY_SIZE = convertToPaddedHex(2);
+    private static final String BURN_ARRAY_FIRST_ELEMENT = convertToPaddedHex(1);
+    private static final String BURN_ARRAY_SECOND_ELEMENT = convertToPaddedHex(2);
     private static final Bytes RETURN_NON_FUNGIBLE_BURN =
-            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + PARAM_WITH_VALUE_0);
+            Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + convertToPaddedHex(EMPTY_ARGUMENT) +
+                    BURN_BYTES_LOCATIONS_TO_THE_ARRAY + BURN_ARRAY_SIZE + BURN_ARRAY_FIRST_ELEMENT +
+                    BURN_ARRAY_SECOND_ELEMENT);
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
@@ -401,6 +409,7 @@ class BurnPrecompileTest {
         when(token.getId()).thenReturn(Id.fromGrpcToken(tokenID));
         when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
         when(account.getAccountAddress()).thenReturn(treasuryAddress);
+        when(updatedToken.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         when(tokenModificationResult.token()).thenReturn(updatedToken);
         when(updatedToken.removedUniqueTokens()).thenReturn(uniqueTokens);
         when(store.getToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
@@ -422,7 +431,6 @@ class BurnPrecompileTest {
         when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
         when(account.getAccountAddress()).thenReturn(treasuryAddress);
         when(tokenModificationResult.token()).thenReturn(updatedToken);
-        when(updatedToken.getTotalSupply()).thenReturn(newTotalSupply);
         when(store.getToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
         when(store.getTokenRelationship(new TokenRelationshipKey(tokenAddress, treasuryAddress), OnMissing.THROW))
                 .thenReturn(tokenRelationship);
