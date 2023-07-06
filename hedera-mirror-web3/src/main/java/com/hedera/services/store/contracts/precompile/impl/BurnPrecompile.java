@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -44,6 +45,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -123,10 +126,12 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
         final var modifiedToken = tokenModificationResult.token();
         return new BurnResult(
-                modifiedToken.getTotalSupply(),
-                modifiedToken.removedUniqueTokens().stream()
+                TokenType.FUNGIBLE_COMMON == modifiedToken.getType() ? modifiedToken.getTotalSupply() : 0L,
+                TokenType.NON_FUNGIBLE_UNIQUE == modifiedToken.getType()
+                        ? modifiedToken.removedUniqueTokens().stream()
                         .map(UniqueToken::getSerialNumber)
-                        .toList());
+                        .toList()
+                        : new ArrayList<>());
     }
 
     @Override
