@@ -25,13 +25,13 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied model from hedera-services.
- *
+ * <p>
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
- *
+ * <p>
  * Differences from the original:
  *  1. Added address field for convenience
  *  2. Added factory method that returns empty instance
@@ -73,6 +73,24 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    /**
+     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldUniqueToken
+     * @param newSpender
+     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
+     */
+    private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                oldUniqueToken.owner,
+                newSpender,
+                oldUniqueToken.metadata);
+    }
+
     public boolean isEmptyUniqueToken() {
         return this.equals(getEmptyUniqueToken());
     }
@@ -110,25 +128,7 @@ public class UniqueToken {
     }
 
     public UniqueToken setSpender(Id spender) {
-        return createNewUniqeTokenWtihNewSpender(this, spender);
-    }
-
-    /**
-     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
-     * avoid entry points for changing the state.
-     *
-     * @param oldUniqeToken
-     * @param newSpender
-     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
-     */
-    private UniqueToken createNewUniqeTokenWtihNewSpender(UniqueToken oldUniqeToken, Id newSpender) {
-        return new UniqueToken(
-                oldUniqeToken.tokenId,
-                oldUniqeToken.serialNumber,
-                oldUniqeToken.creationTime,
-                oldUniqeToken.owner,
-                newSpender,
-                oldUniqeToken.metadata);
+        return createNewUniqueTokenWithNewSpender(this, spender);
     }
 
     public byte[] getMetadata() {

@@ -314,7 +314,7 @@ class ApproveAllowanceLogicTest {
         givenValidTxnCtx();
 
         given(store.getAccount(spenderId1.asEvmAddress(), OnMissing.THROW)).willReturn(payerAccount);
-        ownerAcccount.setCryptoAllowances(new TreeMap<>());
+        ownerAcccount.setCryptoAllowance(new TreeMap<>());
         ownerAcccount.setFungibleTokenAllowances(new TreeMap<>());
         ownerAcccount.setApproveForAllNfts(new TreeSet<>());
         given(store.getUniqueToken(
@@ -403,7 +403,7 @@ class ApproveAllowanceLogicTest {
         existingNftAllowances.add(FcTokenAllowanceId.from(fromTokenId(token2), fromAccountId(spender1)));
         existingNftAllowances.add(FcTokenAllowanceId.from(fromTokenId(token1), fromAccountId(spender1)));
         ownerAccount = ownerAccount
-                .setCryptoAllowances(existingCryptoAllowances)
+                .setCryptoAllowance(existingCryptoAllowances)
                 .setFungibleTokenAllowances(existingTokenAllowances)
                 .setApproveForAllNfts(existingNftAllowances);
     }
@@ -436,7 +436,7 @@ class ApproveAllowanceLogicTest {
 
         ownerAccount = ownerAccount
                 .setApproveForAllNfts(new TreeSet<>())
-                .setCryptoAllowances(new TreeMap<>())
+                .setCryptoAllowance(new TreeMap<>())
                 .setFungibleTokenAllowances(new TreeMap<>());
     }
 
@@ -459,7 +459,7 @@ class ApproveAllowanceLogicTest {
 
         ownerAccount = ownerAccount
                 .setApproveForAllNfts(new TreeSet<>())
-                .setCryptoAllowances(new TreeMap<>())
+                .setCryptoAllowance(new TreeMap<>())
                 .setFungibleTokenAllowances(new TreeMap<>());
     }
 
@@ -503,7 +503,7 @@ class ApproveAllowanceLogicTest {
 
         ownerAccount = ownerAccount
                 .setApproveForAllNfts(new TreeSet<>())
-                .setCryptoAllowances(new TreeMap<>())
+                .setCryptoAllowance(new TreeMap<>())
                 .setFungibleTokenAllowances(new TreeMap<>());
     }
 
@@ -540,7 +540,7 @@ class ApproveAllowanceLogicTest {
 
         payerAccount = payerAccount
                 .setApproveForAllNfts(new TreeSet<>())
-                .setCryptoAllowances(new TreeMap<>())
+                .setCryptoAllowance(new TreeMap<>())
                 .setFungibleTokenAllowances(new TreeMap<>());
     }
 
@@ -555,7 +555,7 @@ class ApproveAllowanceLogicTest {
         nftAllowances.add(Nftid);
         return ownerAccount
                 .setApproveForAllNfts(nftAllowances)
-                .setCryptoAllowances(cryptoAllowances)
+                .setCryptoAllowance(cryptoAllowances)
                 .setFungibleTokenAllowances(tokenAllowances);
     }
 
