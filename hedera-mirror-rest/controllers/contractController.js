@@ -448,7 +448,6 @@ class ContractController extends BaseController {
   extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
-    let detailed = true;
     const conditions = [];
     const params = [];
     if (contractId !== '') {
@@ -474,7 +473,6 @@ class ContractController extends BaseController {
       filterKeys.TIMESTAMP,
       filterKeys.BLOCK_NUMBER,
       filterKeys.BLOCK_HASH,
-      filterKeys.DETAILED,
       filterKeys.TRANSACTION_INDEX,
       filterKeys.INTERNAL,
       filterKeys.LIMIT,
@@ -497,9 +495,6 @@ class ContractController extends BaseController {
             contractResultFromFullName,
             conditions.length + 1
           );
-          break;
-        case filterKeys.DETAILED:
-          detailed = (filter?.value === 'true');
           break;
         case filterKeys.LIMIT:
           limit = filter.value;
@@ -592,8 +587,7 @@ class ContractController extends BaseController {
       conditions,
       params,
       order,
-      limit,
-      detailed
+      limit
     };
   };
 
@@ -1057,13 +1051,11 @@ class ContractController extends BaseController {
       acceptedContractResultsParameters,
       contractResultsFilterValidityChecks
     );
-    const {conditions, params, order, limit, detailed} = await this.extractContractResultsByIdQuery(filters, '');
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
-    const rows = detailed
-        ? await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit)
-        : await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+    const rows = await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => detailed ? new DetailedContractResultViewModel(row) : new ContractResultViewModel(row)),
+      results: rows.map((row) => new DetailedContractResultViewModel(row)),
       links: {
         next: null,
       },
@@ -1300,7 +1292,6 @@ const acceptedContractResultsParameters = new Set([
   filterKeys.FROM,
   filterKeys.BLOCK_HASH,
   filterKeys.BLOCK_NUMBER,
-  filterKeys.DETAILED,
   filterKeys.INTERNAL,
   filterKeys.LIMIT,
   filterKeys.ORDER,
