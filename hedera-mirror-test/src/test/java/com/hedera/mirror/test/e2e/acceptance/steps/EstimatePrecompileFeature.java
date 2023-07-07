@@ -171,52 +171,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with associate function for fungible token")
     public void associateFunctionEstimateGas() throws JSONException {
-        var check = admin.getPrivateKey().getPublicKey().toStringRaw();
-//        Function function = new Function(
-//                "associateTokenExternal",
-//                List.of(
-//                        new Address(tokenIds.get(0).toSolidityAddress()),
-//                        new Address(receiverAccount.getAccountId().toSolidityAddress())
-//                ),
-//                Collections.<TypeReference<?>>emptyList()
-//        );
-//        var test1 = FunctionEncoder.encode(function);
-
-//        JSONArray transfersArray = new JSONArray();
-//        JSONObject transfer1 = new JSONObject();
-//        transfer1.put("accountID", asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
-//        transfer1.put("amount", -10);
-//        transfersArray.put(transfer1);
-//
-//        JSONObject transfer2 = new JSONObject();
-//        transfer2.put("accountID", asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()));
-//        transfer2.put("amount", 10);
-//        transfersArray.put(transfer2);
-//
-//        JSONObject cryptoTransfers = new JSONObject();
-//        cryptoTransfers.put("transfers", transfersArray);
-//
-//        String jsonString = cryptoTransfers.toString();
-//
-//        JSONArray tokenTransfersArray = new JSONArray();
-//        String jsonString2 = tokenTransfersArray.toString();
-//
-//        Function f = new Function("associateTokenExternal(address,address)");
-//        Tuple args = Tuple.of(asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()), asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
-//        ByteBuffer one = f.encodeCall(args);
-//        var headLongBody = Strings.encode(one);
-//
-//
-//        var json = getAbiFunctionAsJsonString(compiledSolidityArtifacts, "cryptoTransferExternal");
-//        Function f2 = Function.fromJson(json);
-//        Tuple args2 = Tuple.of(jsonString, jsonString2);
-//        ByteBuffer two = f.encodeCall(args2);
-//        var headLongBody2 = Strings.encode(two);
-
-
-//        var originalBody = ContractMethods.ASSOCIATE_TOKEN.getSelector()
-//                + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-//                + to32BytesString(tokenIds.get(0).toSolidityAddress());
         validateGasEstimation(
                 ContractMethods.ASSOCIATE_TOKEN.getSelector()
                         + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
