@@ -118,10 +118,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private ResponseCodeEnum impliedValidity;
 
     protected final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     public TransferPrecompile(
             PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        super(pricingUtils, mirrorNodeEvmProperties);
+        super(pricingUtils);
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     @Override
