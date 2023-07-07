@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
-import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.DomainBuilderUtils;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.annotation.Resource;
 import java.time.Instant;
@@ -38,7 +38,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     private TopicMessageRepository topicMessageRepository;
 
     @Autowired
-    private DomainBuilder domainBuilder;
+    private DomainBuilderUtils domainBuilderUtils;
 
     @Test
     void findByFilterEmpty() {
@@ -52,9 +52,9 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterNoMatch() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilderUtils.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.now().plusSeconds(10))
@@ -67,11 +67,11 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findByFilterWithTopicId() {
         TopicMessage topicMessage1 =
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1, EntityType.TOPIC))).block();
+                domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(1, EntityType.TOPIC))).block();
         TopicMessage topicMessage2 =
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2, EntityType.TOPIC))).block();
+                domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(2, EntityType.TOPIC))).block();
         TopicMessage topicMessage3 =
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(3, EntityType.TOPIC))).block();
+                domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(3, EntityType.TOPIC))).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicId(EntityId.of(2L, EntityType.TOPIC))
@@ -83,9 +83,9 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithStartTime() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilderUtils.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage2.getConsensusTimestamp()))
@@ -97,9 +97,9 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithEndTime() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilderUtils.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage1.getConsensusTimestamp()))
@@ -112,9 +112,9 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithLimit() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilderUtils.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(1)
@@ -127,10 +127,10 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findLatest() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilderUtils.topicMessage().block();
+        TopicMessage topicMessage4 = domainBuilderUtils.topicMessage().block();
         Pageable pageable = PageRequest.of(0, 2);
 
         assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp(), pageable))

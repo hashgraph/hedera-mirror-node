@@ -17,6 +17,7 @@
 package com.hedera.mirror.grpc.domain;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -48,11 +49,12 @@ import reactor.core.publisher.Mono;
 @Named("grpcDomainBuilder")
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DomainBuilder {
+public class DomainBuilderUtils {
 
     private final Instant now = Instant.now();
     private final EntityRepository entityRepository;
     private final TopicMessageRepository topicMessageRepository;
+    private final DomainBuilder domainBuilder;
     private long sequenceNumber = 0L;
 
     @PostConstruct
@@ -66,18 +68,8 @@ public class DomainBuilder {
     }
 
     public Mono<Entity> entity(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
-        Entity.EntityBuilder<?, ?> builder = Entity.builder()
-                .declineReward(RandomUtils.nextBoolean())
-                .memo(text(16))
-                .num(0L)
-                .realm(0L)
-                .shard(0L)
-                .id(100L)
-                .timestampRange(Range.atLeast(0L))
-                .type(EntityType.TOPIC);
-
-        customizer.accept(builder);
-        Entity entity = builder.build();
+        Entity entity = domainBuilder.entity().customize(e -> e.id(100L).type(EntityType.TOPIC))
+                .customize(customizer).get();
         return insert(entity).thenReturn(entity);
     }
 
@@ -93,27 +85,11 @@ public class DomainBuilder {
      * @return the inserted TopicMessage
      */
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
-
-        TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
-                .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plus(sequenceNumber, ChronoUnit.NANOS)))
-                .initialTransactionId(TransactionID.newBuilder()
-                        .setAccountID(AccountID.newBuilder().setAccountNum(10).build())
-                        .setTransactionValidStart(Timestamp.newBuilder()
-                                .setSeconds(now.getEpochSecond())
-                                .setNanos(now.getNano()))
-                        .setNonce(0)
-                        .setScheduled(false)
-                        .build()
-                        .toByteArray())
-                .message(new byte[] {0, 1, 2})
-                .payerAccountId(EntityId.of(10L, EntityType.ACCOUNT))
-                .runningHash(new byte[] {3, 4, 5})
-                .sequenceNumber(++sequenceNumber)
-                .topicId(EntityId.of(100L, EntityType.TOPIC))
-                .runningHashVersion(2);
-
-        customizer.accept(builder);
-        TopicMessage topicMessage = builder.build();
+        long consensusTimestamp = InstantToLongConverter.INSTANCE.convert(now.plus(sequenceNumber, ChronoUnit.NANOS));
+        TopicMessage topicMessage = domainBuilder.topicMessage()
+                .customize(e -> e.consensusTimestamp(consensusTimestamp).sequenceNumber(++sequenceNumber)
+                        .topicId(EntityId.of(100L, EntityType.TOPIC)))
+                .customize(customizer).get();
         return insert(topicMessage).thenReturn(topicMessage);
     }
 
@@ -133,9 +109,5 @@ public class DomainBuilder {
     private Mono<TopicMessage> insert(TopicMessage topicMessage) {
         return Mono.defer(() -> Mono.just(topicMessageRepository.save(topicMessage)))
                 .doOnNext(t -> log.trace("Inserted: {}", t));
-    }
-
-    public String text(int characters) {
-        return RandomStringUtils.randomAlphanumeric(characters);
     }
 }

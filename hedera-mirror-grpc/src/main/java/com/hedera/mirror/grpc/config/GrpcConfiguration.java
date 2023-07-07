@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EntityScan({"com.hedera.mirror"})
+@EntityScan({"com.hedera.mirror.common.domain"})
 class GrpcConfiguration {
 
     @Bean

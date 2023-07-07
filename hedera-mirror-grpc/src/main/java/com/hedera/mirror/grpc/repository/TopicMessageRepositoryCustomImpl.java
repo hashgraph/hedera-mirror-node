@@ -52,7 +52,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         Root<TopicMessage> root = query.from(TopicMessage.class);
 
         Predicate predicate = cb.and(
-                cb.equal(root.get("topicId"), filter.getTopicId().getId()),
+                cb.equal(root.get("topicId"), filter.getTopicId()),
                 cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), converter.convert(filter.getStartTime())));
 
         if (filter.getEndTime() != null) {
