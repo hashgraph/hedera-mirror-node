@@ -397,7 +397,6 @@ const getOneAccount = async (req, res) => {
     let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
     tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
 
-    console.log('Token balance query: ' + tokenBalanceTsQuery);
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
