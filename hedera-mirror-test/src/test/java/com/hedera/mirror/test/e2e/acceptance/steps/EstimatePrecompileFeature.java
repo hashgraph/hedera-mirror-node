@@ -1,5 +1,7 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.util.Strings;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -24,6 +26,13 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.json.JSONArray;
+import org.json.JSONException;
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Function;
+
+import java.nio.ByteBuffer;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -32,8 +41,10 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +54,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Optional;
+import java.util.LinkedHashMap;
+
+import org.json.JSONObject;
+
+import java.util.Map;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -95,6 +113,11 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         return (estimatedGas >= lowerBound) && (estimatedGas <= upperBound);
     }
 
+    public static Address asHeadlongAddress(final String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
 
     @Given("I create contract with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
@@ -138,9 +161,62 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         upperDeviation = upper;
     }
 
+    public String getAbiFunctionAsJsonString(CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
+        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
+                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
+                .findFirst();
+
+        return (new JSONObject((Map) function.get())).toString();
+    }
+
     @Then("I call estimateGas with associate function for fungible token")
-    public void associateFunctionEstimateGas() {
+    public void associateFunctionEstimateGas() throws JSONException {
         var check = admin.getPrivateKey().getPublicKey().toStringRaw();
+//        Function function = new Function(
+//                "associateTokenExternal",
+//                List.of(
+//                        new Address(tokenIds.get(0).toSolidityAddress()),
+//                        new Address(receiverAccount.getAccountId().toSolidityAddress())
+//                ),
+//                Collections.<TypeReference<?>>emptyList()
+//        );
+//        var test1 = FunctionEncoder.encode(function);
+
+//        JSONArray transfersArray = new JSONArray();
+//        JSONObject transfer1 = new JSONObject();
+//        transfer1.put("accountID", asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
+//        transfer1.put("amount", -10);
+//        transfersArray.put(transfer1);
+//
+//        JSONObject transfer2 = new JSONObject();
+//        transfer2.put("accountID", asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()));
+//        transfer2.put("amount", 10);
+//        transfersArray.put(transfer2);
+//
+//        JSONObject cryptoTransfers = new JSONObject();
+//        cryptoTransfers.put("transfers", transfersArray);
+//
+//        String jsonString = cryptoTransfers.toString();
+//
+//        JSONArray tokenTransfersArray = new JSONArray();
+//        String jsonString2 = tokenTransfersArray.toString();
+//
+//        Function f = new Function("associateTokenExternal(address,address)");
+//        Tuple args = Tuple.of(asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()), asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+//        ByteBuffer one = f.encodeCall(args);
+//        var headLongBody = Strings.encode(one);
+//
+//
+//        var json = getAbiFunctionAsJsonString(compiledSolidityArtifacts, "cryptoTransferExternal");
+//        Function f2 = Function.fromJson(json);
+//        Tuple args2 = Tuple.of(jsonString, jsonString2);
+//        ByteBuffer two = f.encodeCall(args2);
+//        var headLongBody2 = Strings.encode(two);
+
+
+//        var originalBody = ContractMethods.ASSOCIATE_TOKEN.getSelector()
+//                + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
+//                + to32BytesString(tokenIds.get(0).toSolidityAddress());
         validateGasEstimation(
                 ContractMethods.ASSOCIATE_TOKEN.getSelector()
                         + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
@@ -369,6 +445,12 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         NftId id = new NftId(tokenIds.get(1), firstNftSerialNumber);
         //already associated line 242
         //tokenClient.associate(receiverAccount, tokenIds.get(1));
+//        List<Type> random = Arrays.asList(new String(tokenIds.get(1).toSolidityAddress()),
+//                admin.getAccountId().toSolidityAddress(),
+//                receiverAccount.getAccountId().toSolidityAddress(),
+//                Long.toString(firstNftSerialNumber));
+
+
         accountClient.approveNft(id, receiverAccount.getAccountId());
         networkTransactionResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
         validateGasEstimation(
@@ -431,11 +513,11 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isOne();
 
-        NetworkTransactionResponse secondTx = tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
-        assertNotNull(secondTx.getTransactionId());
-        TransactionReceipt secondReceipt = secondTx.getReceipt();
-        assertNotNull(secondReceipt);
-        assertThat(secondReceipt.serials.size()).isOne();
+//        NetworkTransactionResponse secondTx = tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
+//        assertNotNull(secondTx.getTransactionId());
+//        TransactionReceipt secondReceipt = secondTx.getReceipt();
+//        assertNotNull(secondReceipt);
+//        assertThat(secondReceipt.serials.size()).isOne();
     }
 
 
@@ -539,7 +621,7 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with cryptoTransfer function for hbars")
     public void cryptoTransferHbarEstimateGas() {
-        //amount equals to -10
+        //amount equals to -10 (Two's compliment)
         String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6";
 
         StringBuilder requestData = new StringBuilder();
@@ -584,15 +666,15 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with cryptoTransfer function for fungible tokens")
     public void cryptoTransferFungibleEstimateGas() {
-        //amount equals to -5
+        //amount equals to -5 (Two's compliment)
         String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb";
 
         StringBuilder requestData = new StringBuilder();
         requestData.append(ContractMethods.CRYPTO_TRANSFER.getSelector())
                 .append(to32BytesString("40")) // Offset to start of 'cryptoTransfers' struct data
                 .append(to32BytesString("80")) // Offset to start of 'tokenTransferList' array data
-                .append(to32BytesString("20")) // Length of 'cryptoTransfers.transfers' array (empty in this case)
-                .append(to32BytesString("0")) // Length of 'cryptoTransfers.nftTransfers' array (empty in this case)
+                .append(to32BytesString("20")) // Length of 'cryptoTransfers.transfers' array
+                .append(to32BytesString("0")) // Length of 'cryptoTransfers.nftTransfers' array
                 .append(to32BytesString("1")) // Length of 'tokenTransferList' array: 1
                 .append(to32BytesString("20")) // Offset to start of 'tokenTransferList[0]' struct data
                 .append(to32BytesString(tokenIds.get(0).toSolidityAddress())) // 'tokenTransferList[0].token' address value
@@ -601,10 +683,10 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                 .append(to32BytesString("2")) // Length of 'tokenTransferList[0].transfers' array: 2
                 .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[0].accountID' address value
                 .append(to32BytesString("5")) // 'tokenTransferList[0].transfers[0].amount' value
-                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[0].serialNumbers' array (doesn't seem to be present in data)
+                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[0].serialNumbers' array
                 .append(to32BytesString(admin.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[1].accountID' address value
                 .append(spendingValue) // 'tokenTransferList[0].transfers[1].amount' value (-5)
-                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[1].serialNumbers' array (doesn't seem to be present in data)
+                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[1].serialNumbers' array
                 .append(to32BytesString("0")); // Length of 'tokenTransferList[0].nftTransfers' array (empty in this case)
 
         validateGasEstimation(requestData.toString(), ContractMethods.CRYPTO_TRANSFER.getActualGas());
@@ -626,8 +708,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     public void mintNFTEstimateGas() {
         StringBuilder requestData = new StringBuilder();
         requestData.append(ContractMethods.MINT_TOKEN.getSelector())
-                .append(to32BytesString(tokenIds.get(1).toSolidityAddress()))
-                .append(to32BytesString("0")) // The 'amount' parameter: 1
+                .append(to32BytesString(tokenIds.get(5).toSolidityAddress()))
+                .append(to32BytesString("1")) // The 'amount' parameter: 0
                 .append(to32BytesString("60")) // Offset for the start of 'metadata' array data
                 .append(to32BytesString("1")) // Length of 'metadata' array: 1
                 .append(to32BytesString("20")) // Offset for the first element in the 'metadata' array
@@ -789,6 +871,43 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
+    @Then("I call estimateGas with RevokeTokenKYC function twice")
+    public void revokeTokenKYCTwiceEstimateGas() {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.REVOKE_KYC_TWICE.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with GrantKYC function twice")
+    public void grantTokenKYCTwiceEstimateGas() {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.GRANT_KYC_TWICE.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with Grant and Revoke KYC nested function")
+    public void nestedGrantRevokeKYCEstimateGas() {
+        validateGasEstimation(ContractMethods.NESTED_GRANT_REVOKE_KYC.getSelector()
+                + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.NESTED_GRANT_REVOKE_KYC.getActualGas());
+    }
+
     private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
         var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(fileId,
@@ -915,6 +1034,10 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Getter
     @RequiredArgsConstructor
     private enum ContractMethods {
+        /**
+         * 0-expecting a revert
+         * 23422-gas estimation is not calculated
+         */
         APPROVE("ceda64c4", 23422),
         APPROVE_NFT("84d232f5", 23422),
         ASSOCIATE_TOKEN("d91cfc95", 729374),
@@ -928,11 +1051,17 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         DISSOCIATE_AND_ASSOCIATE("f1938266", 23422),
         DISSOCIATE_TOKEN("9c219247", 24030),
         DISSOCIATE_TOKENS("2390c1fa", 23422),
+        FREEZE_TOKEN("9333700b", 23422),
+        FREEZE_TOKEN_TWICE("17f96caa", 23422),
         GRANT_KYC("ec4ca639", 23422),
-        MINT_TOKEN("0c0295d4", 23422),
+        GRANT_KYC_TWICE("15533c95", 0),
+        MINT_TOKEN("0c0295d4", 40700),
         NESTED_ASSOCIATE("437dffd5", 0),
         NESTED_DISSOCIATE("f2d75676", 23422),
+        NESTED_FREEZE_UNFREEZE("901fe3d0", 23422),
+        NESTED_GRANT_REVOKE_KYC("06a1a5d3", 23422),
         REVOKE_KYC("52205b33", 23422),
+        REVOKE_KYC_TWICE("282418a3", 0),
         SET_APPROVAL_FOR_ALL("e31b839c", 23422),
         TRANSFER_FROM("75a85472", 23422),
         TRANSFER_FROM_NFT("9bc4d354", 23422),
@@ -940,6 +1069,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         TRANSFER_NFTS("1ba978fc", 23422),
         TRANSFER_TOKEN("4fd6ce0a", 23422),
         TRANSFER_TOKENS("aa835c63", 23422),
+        UNFREEZE_TOKEN("e95a71e5", 23422),
+        UNFREEZE_TOKEN_TWICE("c9695924", 23422),
         WIPE_TOKEN_ACCOUNT("5ac4fef8", 23422),
         WIPE_NFT_ACCOUNT("4c09c804", 23422);
 

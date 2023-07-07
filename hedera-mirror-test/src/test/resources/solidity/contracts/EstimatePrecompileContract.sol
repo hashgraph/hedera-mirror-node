@@ -368,4 +368,50 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         }
     }
 
+    function freezeTokenExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        responseCode = HederaTokenService.freezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function unfreezeTokenExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function nestedFreezeUnfreezeTokenExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        HederaTokenService.freezeToken(token, account);
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function freezeTokenTwiceExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        responseCode = HederaTokenService.freezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function unfreezeTokenTwiceExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
 }

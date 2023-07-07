@@ -1,7 +1,6 @@
-@contractbase @fullsuite @acceptance
+@contractbase @fullsuite @acceptance  @estimateprecompile @web3
 Feature: EstimateGas Contract Base Coverage Feature
 
-  @estimatepre @web3
   Scenario Outline: Validate EstimateGas with precompile
     Given I create contract with 0 balance
     Given I successfully create and verify a fungible token for estimateGas precompile tests
@@ -41,8 +40,8 @@ Feature: EstimateGas Contract Base Coverage Feature
 #    Then I call estimateGas with cryptoTransfer function for hbars
 #    Then I call estimateGas with cryptoTransfer function for nft
 #    Then I call estimateGas with cryptoTransfer function for fungible tokens
-#    Then I call estimateGas with mintToken function for fungible token
-#    Then I call estimateGas with mintToken function for NFT
+    Then I call estimateGas with mintToken function for fungible token
+    Then I call estimateGas with mintToken function for NFT
 #    Then I call estimateGas with burnToken function for fungible token
 #    Then I call estimateGas with burnToken function for NFT
 #    Then I call estimateGas with CreateFungibleToken function
@@ -58,3 +57,6 @@ Feature: EstimateGas Contract Base Coverage Feature
 #    Then I call estimateGas with RevokeTokenKYC function for fungible token
 #    Then I call estimateGas with RevokeTokenKYC function for NFT
 #    Then I call estimateGas with RevokeTokenKYC function on a token without KYC
+#    Then I call estimateGas with RevokeTokenKYC function twice
+#    Then I call estimateGas with GrantKYC function twice
+#    Then I call estimateGas with Grant and Revoke KYC nested function
