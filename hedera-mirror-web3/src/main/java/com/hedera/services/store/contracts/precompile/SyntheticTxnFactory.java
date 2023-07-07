@@ -16,15 +16,27 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class SyntheticTxnFactory {
+
+    public static final String AUTO_MEMO = "auto-created account";
+    private static final String LAZY_MEMO = "lazy-created account";
+    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public TransactionBody.Builder createMint(final MintWrapper mintWrapper) {
         final var builder = TokenMintTransactionBody.newBuilder();
@@ -39,6 +51,29 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenMint(builder);
     }
 
+    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    public TransactionBody.Builder createAccount(
+            final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
+    }
+
     public TransactionBody.Builder createAssociate(final Association association) {
         final var builder = TokenAssociateTransactionBody.newBuilder();
 
@@ -46,5 +81,14 @@ public class SyntheticTxnFactory {
         builder.addAllTokens(association.tokenIds());
 
         return TransactionBody.newBuilder().setTokenAssociate(builder);
+    }
+
+    public TransactionBody.Builder createDissociate(final Dissociation dissociation) {
+        final var builder = TokenDissociateTransactionBody.newBuilder();
+
+        builder.setAccount(dissociation.accountId());
+        builder.addAllTokens(dissociation.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenDissociate(builder);
     }
 }

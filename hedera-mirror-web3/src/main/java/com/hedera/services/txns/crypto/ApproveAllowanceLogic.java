@@ -42,6 +42,7 @@ import java.util.SortedMap;
  *  3. Remove validateAllowanceLimitsOn since mirror-node properties do not have allowance limit
  *  4. Using exception from {@link com.hedera.mirror.web3.evm.store.StoreImpl} when entity is missing from the state
  *  5. accountsChanged and nftsTouched are passed as method parameters
+ *  6. We pass some of the fields as function parameters in order to keep the class stateless
  */
 public class ApproveAllowanceLogic {
 
