@@ -37,12 +37,21 @@
       {
         "timestamp": "1234567890000000010",
         "id": 8,
-        "balance": 555
+        "balance": 555,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 71
+          },
+          {
+            "token_num": 99999,
+            "balance": 72
+          }
+        ]
       },
-
       {
         "timestamp": "1234567890000000009",
-        "id": 8,
+        "id": 7,
         "balance": 444
       }
     ],
@@ -261,12 +270,7 @@
     "balance": {
       "timestamp": "1234567890.000000007",
       "balance": 30,
-      "tokens": [
-        {
-          "token_id": "0.0.99999",
-          "balance": 88
-        }
-      ]
+      "tokens": []
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",

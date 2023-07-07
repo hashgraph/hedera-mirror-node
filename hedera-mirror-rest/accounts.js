@@ -151,11 +151,20 @@ const getEntityBalanceQuery = (
     entityStakeQuery.params
   );
 
-  const queries = [
-    `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
-                                       from token_account
-                                       where associated is true)`,
-  ];
+  // If timestamp parameter is present then get values from token_balance
+  const queries = [];
+  if (tokenBalanceQuery.params.length === 2) {
+    queries.push(
+      `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
+                                       from token_balance)`
+    );
+  } else {
+    queries.push(
+      `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
+                                     from token_account
+                                     where associated is true)`
+    );
+  }
 
   const selectFields = [
     entityFields,
@@ -385,13 +394,10 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    let tokenBalanceTsQuery = transactionTsQuery
-      .replaceAll('t.consensus_timestamp', 'created_timestamp')
-      .replaceAll('?', (_) => `$${++paramCount}`);
-
+    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
     tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
-    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(transactionTsParams);
 
+    console.log('Token balance query: ' + tokenBalanceTsQuery);
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
@@ -413,6 +419,9 @@ const getOneAccount = async (req, res) => {
       balanceFileTsParams,
       order
     );
+    //Setting the timestamp to be the account balance timestamp
+    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(accountBalanceTs);
+
     //Allow type coercion as the neValues will always be bigint and accountBalanceTs may be a number
     const timestampExcluded = neValues.some((value) => value == accountBalanceTs);
 
