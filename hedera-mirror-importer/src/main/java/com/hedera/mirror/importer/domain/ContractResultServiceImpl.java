@@ -219,6 +219,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId.getId());
         contractResult.setPayerAccountId(payerAccountId);
+        // senderId defaults to payerAccountId
         contractResult.setSenderId(payerAccountId);
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());

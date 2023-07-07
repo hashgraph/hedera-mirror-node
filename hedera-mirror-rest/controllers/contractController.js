@@ -391,10 +391,9 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
-   * @param {string} fromEntity used to lookup the from entity id for evm addresses
    * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
    */
-  extractContractResultsByIdQuery = async (filters, contractId, fromEntity) => {
+  extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
     const conditions = [];
@@ -435,10 +434,6 @@ class ContractController extends BaseController {
 
       switch (filter.key) {
         case filterKeys.FROM:
-          if (_.isNil(filter.value)) {
-            // utils.buildAndValidateFilters returns null for evm addresses
-            filter.value = await EntityService.getEncodedId(fromEntity);
-          }
           this.updateConditionsAndParamsWithInValues(
             filter,
             contractResultFromInValues,
@@ -820,11 +815,8 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(
-      filters,
-      contractId,
-      req.query[filterKeys.FROM]
-    );
+    await getEncodedEvmAddresses(req.query[filterKeys.FROM], filters);
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
@@ -1007,11 +999,8 @@ class ContractController extends BaseController {
       contractResultsFilterValidityChecks
     );
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(
-      filters,
-      '',
-      req.query[filterKeys.FROM]
-    );
+    await getEncodedEvmAddresses(req.query[filterKeys.FROM], filters);
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
@@ -1228,6 +1217,28 @@ class ContractController extends BaseController {
     );
   };
 }
+
+/**
+ * Utils.buildAndValidateFilters returns null for evm addresses.
+ * Update null filter values for the 'from' query parameter with the correct encoded id
+ * @param {} fromQuery
+ * @param {[]} filters
+ */
+const getEncodedEvmAddresses = async (fromQuery, filters) => {
+  if (!_.isNil(fromQuery) && filters.some((item) => item.key === filterKeys.FROM && item.value === null)) {
+    // From addresses can be already encoded or a null value
+    // Remove both to keep the index consistent between the reqQuery and the filters
+    const fromAddresses = _.remove(filters, (item) => item.key === filterKeys.FROM);
+
+    const fromArray = Array.isArray(fromQuery) ? fromQuery : [fromQuery];
+    for (let i = 0; i < fromAddresses.length; i++) {
+      if (_.isNil(fromAddresses[i].value)) {
+        fromAddresses[i].value = await EntityService.getEncodedId(fromArray[i]);
+      }
+      filters.push(fromAddresses[i]);
+    }
+  }
+};
 
 const contractCtrlInstance = new ContractController();
 
