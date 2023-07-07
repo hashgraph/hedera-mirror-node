@@ -16,10 +16,31 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.utils.BitPackUtils.*;
+import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -34,9 +55,13 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.models.*;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,8 +73,8 @@ class HederaTokenStoreTest {
     private static final int associatedTokensCount = 2;
     private static final int numPositiveBalances = 1;
     private static final long treasuryBalance = 50_000L;
-    private static final TokenID misc = EntityIdUtils.asToken("0.0.1");
-    private static final TokenID nonfungible = EntityIdUtils.asToken("0.0.2");
+    private static final TokenID misc = asToken("0.0.1");
+    private static final TokenID nonfungible = asToken("0.0.2");
     private static final int maxAutoAssociations = 1234;
     private static final AccountID payer = IdUtils.asAccount("0.0.12345");
     private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.9898");
@@ -94,7 +119,7 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsDeletedTokens() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
         var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
@@ -111,7 +136,7 @@ class HederaTokenStoreTest {
     void associatingRejectsMissingToken() {
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
-                .willReturn(new Account(Id.fromGrpcAccount(sponsor), 0));
+                .willReturn(new Account(0L, Id.fromGrpcAccount(sponsor), 0));
 
         final var status = subject.autoAssociate(sponsor, misc);
 
@@ -129,7 +154,7 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsAlreadyAssociatedTokens() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
@@ -144,7 +169,7 @@ class HederaTokenStoreTest {
 
     @Test
     void cannotAutoAssociateIfAccountReachedTokenAssociationLimit() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
@@ -162,7 +187,7 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0L).setNumAssociations(associatedTokensCount);
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0).setNumAssociations(associatedTokensCount);
         account = account.setAutoAssociationMetadata(
                 setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations));
         account = account.setAutoAssociationMetadata(
@@ -207,8 +232,8 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsMissingNftInstance() {
-        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var token = new Token(Id.fromGrpcToken(aNft.tokenId()));
 
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
@@ -229,8 +254,8 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsUnassociatedReceiver() {
-        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
 
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
@@ -255,7 +280,7 @@ class HederaTokenStoreTest {
         final long startSponsorANfts = 1;
         final long startCounterpartyANfts = 0;
 
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L)
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances)
                 .setOwnedNfts(startCounterpartyNfts);
@@ -274,7 +299,7 @@ class HederaTokenStoreTest {
                 .setOwnedNfts(updated1CounterpartyAccount.getOwnedNfts() + 1)
                 .setNumPositiveBalances(updated1CounterpartyAccount.getNumPositiveBalances() + 1);
 
-        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L)
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
                 .setOwnedNfts(startSponsorNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
@@ -324,8 +349,8 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsIllegitimateOwner() {
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
-        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
         var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
 
         // Set the owner to `counterparty` instead of `sponsor`
@@ -373,11 +398,11 @@ class HederaTokenStoreTest {
         final long startSponsorANfts = 4;
         final long startCounterpartyANfts = 1;
 
-        var sponsorAccount = new Account(Id.fromGrpcAccount(sponsor), 0L)
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
                 .setOwnedNfts(startSponsorNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L)
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
                 .setOwnedNfts(startCounterpartyNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
@@ -436,11 +461,11 @@ class HederaTokenStoreTest {
         final long startTreasuryTNfts = 4;
         final long startCounterpartyTNfts = 1;
 
-        var treasuryAccount = new Account(Id.fromGrpcAccount(primaryTreasury), 0L)
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0)
                 .setOwnedNfts(startTreasuryNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L)
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
                 .setOwnedNfts(startCounterpartyNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
@@ -502,11 +527,11 @@ class HederaTokenStoreTest {
         final long startTreasuryTNfts = 4;
         final long startCounterpartyTNfts = 1;
 
-        var treasuryAccount = new Account(Id.fromGrpcAccount(primaryTreasury), 0L)
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0)
                 .setOwnedNfts(startTreasuryNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L)
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
                 .setOwnedNfts(startCounterpartyNfts)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
@@ -562,8 +587,8 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsFromFreezeAndKYC() {
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
-        var treasuryAccount = new Account(Id.fromGrpcAccount(primaryTreasury), 0L);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
         var treasuryRel = new TokenRelationship(token, treasuryAccount).setFrozen(true);
@@ -602,8 +627,8 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsToFreezeAndKYC() {
-        var counterpartyAccount = new Account(Id.fromGrpcAccount(counterparty), 0L);
-        var treasuryAccount = new Account(Id.fromGrpcAccount(primaryTreasury), 0L);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setFrozen(true);
         var treasuryRel = new TokenRelationship(token, treasuryAccount);
@@ -642,7 +667,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustingRejectsMissingToken() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
 
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
@@ -654,7 +679,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustingRejectsDeletedToken() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
@@ -667,7 +692,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustingRejectsPausedToken() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc)).setPaused(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
@@ -680,7 +705,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustingRejectsFungibleUniqueToken() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc)).setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
@@ -693,7 +718,7 @@ class HederaTokenStoreTest {
 
     @Test
     void refusesToAdjustFrozenRelationship() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
         var tokenRelationship = new TokenRelationship(token, account).setFrozen(true);
 
@@ -711,7 +736,7 @@ class HederaTokenStoreTest {
 
     @Test
     void refusesToAdjustRevokedKycRelationship() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
         var tokenRelationship = new TokenRelationship(token, account).setKycGranted(false);
 
@@ -729,7 +754,7 @@ class HederaTokenStoreTest {
 
     @Test
     void refusesInvalidAdjustment() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
         var tokenRelationship = new TokenRelationship(token, account);
 
@@ -747,7 +772,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
-        var account = new Account(Id.fromGrpcAccount(anotherFeeCollector), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
                 .setAutoAssociationMetadata(setMaxAutomaticAssociationsTo(0, 0));
         var token = new Token(Id.fromGrpcToken(misc));
 
@@ -763,7 +788,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitReached() {
-        var account = new Account(Id.fromGrpcAccount(anotherFeeCollector), 0).setNumAssociations(1);
+        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0).setNumAssociations(1);
         account = account.setAutoAssociationMetadata(
                 setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
         account = account.setAutoAssociationMetadata(
@@ -791,7 +816,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
-        var account = new Account(Id.fromGrpcAccount(anotherFeeCollector), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
         account = account.setAutoAssociationMetadata(
@@ -828,7 +853,7 @@ class HederaTokenStoreTest {
 
     @Test
     void performsValidAdjustment() {
-        var account = new Account(Id.fromGrpcAccount(treasury), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
         var token = new Token(Id.fromGrpcToken(misc));
@@ -852,7 +877,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adaptsBehaviorToFungibleType() {
-        var account = new Account(Id.fromGrpcAccount(sponsor), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
                 .setNumAssociations(5)
                 .setNumPositiveBalances(2);
         var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);

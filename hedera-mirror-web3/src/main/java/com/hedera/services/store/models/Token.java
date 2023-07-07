@@ -33,13 +33,17 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Copied model from hedera-services.
- * <p>
+ *
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -52,13 +56,14 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
- * <p>
+ *
  * Differences from the original:
  * 1. Added factory method that returns empty instance
  * 2. Added mapToDomain method from TokenTypesManager
  * 3. Removed OwnershipTracker
  */
 public class Token {
+    private final Long entityId;
     private final Id id;
     private final List<UniqueToken> mintedUniqueTokens;
     private final List<UniqueToken> removedUniqueTokens;
@@ -88,14 +93,16 @@ public class Token {
     private final String symbol;
     private final int decimals;
     private final long autoRenewPeriod;
+    private final long createdTimestamp;
     private final long lastUsedSerialNumber;
     private final List<CustomFee> customFees;
 
     public Token(Id id) {
         this(
+                0L,
                 id,
-                Collections.emptyList(),
-                Collections.emptyList(),
+                new ArrayList<>(),
+                new ArrayList<>(),
                 new HashMap<>(),
                 false,
                 null,
@@ -116,18 +123,20 @@ public class Token {
                 false,
                 false,
                 0,
+                0,
                 false,
-                null,
-                null,
-                null,
+                "",
+                "",
+                "",
                 0,
                 0,
                 0,
-                Collections.emptyList());
+                new ArrayList<>());
     }
 
     @SuppressWarnings("java:S107")
     public Token(
+            Long entityId,
             Id id,
             List<UniqueToken> mintedUniqueTokens,
             List<UniqueToken> removedUniqueTokens,
@@ -151,6 +160,7 @@ public class Token {
             boolean paused,
             boolean autoRemoved,
             long expiry,
+            long createdTimestamp,
             boolean isNew,
             String memo,
             String name,
@@ -159,10 +169,14 @@ public class Token {
             long autoRenewPeriod,
             long lastUsedSerialNumber,
             List<CustomFee> customFees) {
+        this.entityId = entityId;
         this.id = id;
-        this.mintedUniqueTokens = mintedUniqueTokens;
-        this.removedUniqueTokens = removedUniqueTokens;
-        this.loadedUniqueTokens = loadedUniqueTokens;
+        this.mintedUniqueTokens =
+                Collections.emptyList().equals(mintedUniqueTokens) ? new ArrayList<>() : mintedUniqueTokens;
+        this.removedUniqueTokens =
+                Collections.emptyList().equals(removedUniqueTokens) ? new ArrayList<>() : removedUniqueTokens;
+        this.loadedUniqueTokens =
+                Collections.emptyMap().equals(loadedUniqueTokens) ? new HashMap<>() : loadedUniqueTokens;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
         this.supplyType = supplyType;
@@ -182,6 +196,7 @@ public class Token {
         this.paused = paused;
         this.autoRemoved = autoRemoved;
         this.expiry = expiry;
+        this.createdTimestamp = createdTimestamp;
         this.isNew = isNew;
         this.memo = memo;
         this.name = name;
@@ -224,6 +239,7 @@ public class Token {
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
         return new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -247,6 +263,7 @@ public class Token {
                 false,
                 false,
                 tokenExpiry,
+                0,
                 true,
                 op.getMemo(),
                 op.getName(),
@@ -266,6 +283,10 @@ public class Token {
         }
     }
 
+    public boolean isEmptyToken() {
+        return this.equals(getEmptyToken());
+    }
+
     /**
      * Creates new instance of {@link Token} with updated loadedUniqueTokens in order to keep the object's immutability and
      * avoid entry points for changing the state.
@@ -276,11 +297,12 @@ public class Token {
      */
     private Token createNewTokenWithLoadedUniqueTokens(Token oldToken, Map<Long, UniqueToken> loadedUniqueTokens) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
                 loadedUniqueTokens,
-                true,
+                oldToken.supplyHasChanged,
                 oldToken.type,
                 oldToken.supplyType,
                 oldToken.totalSupply,
@@ -299,6 +321,52 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated maxSupply in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param maxSupply
+     * @return the new instance of {@link Token} with updated {@link #maxSupply} property
+     */
+    private Token createNewTokenWithNewMaxSupply(Token oldToken, long maxSupply) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -319,6 +387,7 @@ public class Token {
      */
     private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -342,6 +411,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -362,6 +432,7 @@ public class Token {
      */
     private Token createNewTokenWithNewTreasury(Token oldToken, Account treasury) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -385,6 +456,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -405,6 +477,7 @@ public class Token {
      */
     private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -428,6 +501,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -444,10 +518,12 @@ public class Token {
      *
      * @param oldToken
      * @param isDeleted
+     * oldToken.entityId,
      * @return new instance of {@link Token} with {@link #deleted} property
      */
     private Token createNewTokenWithDeletedFlag(Token oldToken, boolean isDeleted) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -471,6 +547,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -491,6 +568,7 @@ public class Token {
      */
     private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -514,6 +592,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -534,6 +613,7 @@ public class Token {
      */
     private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -557,6 +637,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -577,6 +658,7 @@ public class Token {
      */
     private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -586,7 +668,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 freezeKey,
                 oldToken.supplyKey,
                 oldToken.wipeKey,
@@ -600,6 +682,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -620,6 +703,7 @@ public class Token {
      */
     private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -629,7 +713,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 supplyKey,
                 oldToken.wipeKey,
@@ -643,6 +727,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -663,6 +748,7 @@ public class Token {
      */
     private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -672,7 +758,7 @@ public class Token {
                 oldToken.supplyType,
                 oldToken.totalSupply,
                 oldToken.maxSupply,
-                kycKey,
+                oldToken.kycKey,
                 oldToken.freezeKey,
                 oldToken.supplyKey,
                 wipeKey,
@@ -686,6 +772,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -706,6 +793,7 @@ public class Token {
      */
     private Token createNewTokenWithTreasury(Token oldToken, Account treasury) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -729,6 +817,7 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -749,6 +838,7 @@ public class Token {
      */
     private Token createNewTokenWithPaused(Token oldToken, boolean paused) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -772,6 +862,7 @@ public class Token {
                 paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
@@ -792,6 +883,7 @@ public class Token {
      */
     private Token createNewTokenWithDecimals(Token oldToken, int decimals) {
         return new Token(
+                oldToken.entityId,
                 oldToken.id,
                 oldToken.mintedUniqueTokens,
                 oldToken.removedUniqueTokens,
@@ -815,11 +907,57 @@ public class Token {
                 oldToken.paused,
                 oldToken.autoRemoved,
                 oldToken.expiry,
+                oldToken.createdTimestamp,
                 oldToken.isNew,
                 oldToken.memo,
                 oldToken.name,
                 oldToken.symbol,
                 decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param mintedUniqueTokens
+     * @return new instance of {@link Token} with updated {@link #mintedUniqueTokens} property
+     */
+    private Token createNewTokenWithMintedUniqueTokens(Token oldToken, List<UniqueToken> mintedUniqueTokens) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
                 oldToken.autoRenewPeriod,
                 oldToken.lastUsedSerialNumber,
                 oldToken.customFees);
@@ -865,6 +1003,7 @@ public class Token {
         var tokenMod = changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
         long newLastUsedSerialNumber = this.lastUsedSerialNumber;
 
+        Token tokenWithMintedUniqueTokens = null;
         for (final ByteString m : metadata) {
             newLastUsedSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
@@ -872,9 +1011,11 @@ public class Token {
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
+            tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(mintedUniqueTokens);
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        var newToken = createNewTokenWithNewTreasury(
+                tokenWithMintedUniqueTokens != null ? tokenWithMintedUniqueTokens : tokenMod.token(), newTreasury);
         return new TokenModificationResult(
                 createNewTokenWithNewLastUsedSerialNumber(newToken, newLastUsedSerialNumber),
                 tokenMod.tokenRelationship());
@@ -1099,12 +1240,20 @@ public class Token {
         return maxSupply;
     }
 
+    public Token setMaxSupply(long maxSupply) {
+        return createNewTokenWithNewMaxSupply(this, maxSupply);
+    }
+
     public JKey getSupplyKey() {
         return supplyKey;
     }
 
     public Token setSupplyKey(JKey supplyKey) {
         return createNewTokenWithSupplyKey(this, supplyKey);
+    }
+
+    public Token setMintedUniqueTokens(final List<UniqueToken> mintedUniqueTokens) {
+        return createNewTokenWithMintedUniqueTokens(this, mintedUniqueTokens);
     }
 
     public boolean hasFreezeKey() {
@@ -1166,6 +1315,10 @@ public class Token {
 
     public Token setPaused(boolean paused) {
         return createNewTokenWithPaused(this, paused);
+    }
+
+    public Long getEntityId() {
+        return entityId;
     }
 
     public Id getId() {
@@ -1270,6 +1423,10 @@ public class Token {
 
     public long getAutoRenewPeriod() {
         return autoRenewPeriod;
+    }
+
+    public long getCreatedTimestamp() {
+        return this.createdTimestamp;
     }
 
     /* NOTE: The object methods below are only overridden to improve

@@ -31,22 +31,30 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
-import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -164,6 +172,11 @@ public class EvmConfiguration {
     }
 
     @Bean
+    TokenDissociateResourceUsage tokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
+        return new TokenDissociateResourceUsage(estimatorFactory);
+    }
+
+    @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
@@ -175,6 +188,9 @@ public class EvmConfiguration {
         for (final var estimator : txnResourceUsageEstimators) {
             if (estimator.toString().contains("TokenAssociate")) {
                 txnUsageEstimators.put(HederaFunctionality.TokenAssociateToAccount, List.of(estimator));
+            }
+            if (estimator.toString().contains("TokenDissociate")) {
+                txnUsageEstimators.put(HederaFunctionality.TokenDissociateFromAccount, List.of(estimator));
             }
         }
 
@@ -213,20 +229,18 @@ public class EvmConfiguration {
 
     @Bean
     AssociatePrecompile associatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new AssociatePrecompile(precompilePricingUtils, properties);
-    }
-
-    @Bean
-    TransferPrecompile transferPrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new TransferPrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new AssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean
     MultiAssociatePrecompile multiAssociatePrecompile(
-            final PrecompilePricingUtils precompilePricingUtils, final MirrorNodeEvmProperties properties) {
-        return new MultiAssociatePrecompile(precompilePricingUtils, properties);
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        return new MultiAssociatePrecompile(precompilePricingUtils, syntheticTxnFactory, associateLogic);
     }
 
     @Bean
@@ -235,8 +249,23 @@ public class EvmConfiguration {
     }
 
     @Bean
-    OptionValidator optionValidator(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        return new ContextOptionValidator(mirrorNodeEvmProperties);
+    OptionValidator optionValidator(final MirrorNodeEvmProperties properties) {
+        return new ContextOptionValidator(properties);
+    }
+
+    @Bean
+    EncodingFacade encodingFacade() {
+        return new EncodingFacade();
+    }
+
+    @Bean
+    SyntheticTxnFactory syntheticTxnFactory() {
+        return new SyntheticTxnFactory();
+    }
+
+    @Bean
+    DeleteAllowanceLogic deleteAllowanceLogic() {
+        return new DeleteAllowanceLogic();
     }
 
     @Bean
@@ -245,8 +274,23 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AutoCreationLogic autocreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
-        return new AutoCreationLogic(feeCalculator, evmProperties);
+    ApproveAllowanceLogic approveAllowanceLogic() {
+        return new ApproveAllowanceLogic();
+    }
+
+    @Bean
+    AutoCreationLogic autocreationLogic(
+            FeeCalculator feeCalculator, EvmProperties evmProperties, SyntheticTxnFactory syntheticTxnFactory) {
+        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
+    }
+
+    @Bean
+    MintPrecompile mintPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            MintLogic mintLogic) {
+        return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, mintLogic);
     }
 
     @Bean
@@ -262,5 +306,26 @@ public class EvmConfiguration {
     @Bean
     DissociateLogic dissociateLogic() {
         return new DissociateLogic();
+    }
+
+    @Bean
+    TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
+        return new TransferLogic(autoCreationLogic);
+    }
+
+    @Bean
+    DissociatePrecompile dissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        return new DissociatePrecompile(precompilePricingUtils, syntheticTxnFactory, dissociateLogic);
+    }
+
+    @Bean
+    MultiDissociatePrecompile multiDissociatePrecompile(
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DissociateLogic dissociateLogic) {
+        return new MultiDissociatePrecompile(precompilePricingUtils, syntheticTxnFactory, dissociateLogic);
     }
 }

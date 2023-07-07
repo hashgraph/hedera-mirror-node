@@ -62,7 +62,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         if (databaseToken == null) {
             return null;
         }
+
         return new Token(
+                entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -85,11 +87,12 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
                 getTreasury(databaseToken.getTreasuryAccountId()),
-                null,
+                getAutoRenewAccount(entity),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
                 entity.getEffectiveExpiration(),
+                entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
@@ -108,14 +111,23 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
     }
 
+    private Account getAutoRenewAccount(Entity entity) {
+        return new Account(
+                entity.getId(),
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                entity.getBalance() != null ? entity.getBalance() : 0L);
+    }
+
     private Account getTreasury(EntityId treasuryId) {
         if (treasuryId == null) {
             return null;
         }
         return entityRepository
                 .findByIdAndDeletedIsFalse(treasuryId.getId())
-                .map(entity ->
-                        new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
+                .map(entity -> new Account(
+                        entity.getId(),
+                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                        entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 

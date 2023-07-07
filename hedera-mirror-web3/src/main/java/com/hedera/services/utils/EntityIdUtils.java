@@ -22,6 +22,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
@@ -43,52 +44,12 @@ public final class EntityIdUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static ContractID asContract(final AccountID id) {
-        return ContractID.newBuilder()
-                .setRealmNum(id.getRealmNum())
-                .setShardNum(id.getShardNum())
-                .setContractNum(id.getAccountNum())
-                .build();
-    }
-
-    public static AccountID asAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return AccountID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setAccountNum(nativeParts[2])
-                .build();
-    }
-
-    public static ContractID asContract(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return ContractID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setContractNum(nativeParts[2])
-                .build();
-    }
-
-    public static TokenID asToken(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TokenID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTokenNum(nativeParts[2])
-                .build();
-    }
-
     public static byte[] asEvmAddress(final ContractID id) {
         if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
             return id.getEvmAddress().toByteArray();
         } else {
             return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
         }
-    }
-
-    public static Id asModelId(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
     }
 
     public static byte[] asEvmAddress(final AccountID id) {
@@ -269,5 +230,9 @@ public final class EntityIdUtils {
                     id.getSerialNumber());
         }
         return String.valueOf(o);
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
+        return alias.size() > EVM_ADDRESS_SIZE;
     }
 }

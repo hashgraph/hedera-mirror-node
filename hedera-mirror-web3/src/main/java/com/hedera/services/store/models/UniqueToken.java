@@ -19,8 +19,8 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Arrays;
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -33,12 +33,13 @@ import org.hyperledger.besu.datatypes.Address;
  * operations.
  * <p>
  * Differences from the original:
- * 1. Added address field for convenience
- * 2. Added factory method that returns empty instance
+ *  1. Added address field for convenience
+ *  2. Added factory method that returns empty instance
+ *  3. Added equals() and hashCode()
+ *  4. Added isEmptyUniqueToken()
  */
 public class UniqueToken {
     private final Id tokenId;
-
     private final Address address;
     private final long serialNumber;
     private final RichInstant creationTime;
@@ -72,6 +73,14 @@ public class UniqueToken {
                 oldUniqueToken.metadata);
     }
 
+    /**
+     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldUniqueToken
+     * @param newSpender
+     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
+     */
     private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
         return new UniqueToken(
                 oldUniqueToken.tokenId,
@@ -80,6 +89,10 @@ public class UniqueToken {
                 oldUniqueToken.owner,
                 newSpender,
                 oldUniqueToken.metadata);
+    }
+
+    public boolean isEmptyUniqueToken() {
+        return this.equals(getEmptyUniqueToken());
     }
 
     public NftId getNftId() {
@@ -110,26 +123,16 @@ public class UniqueToken {
         return createNewUniqueTokenWithNewOwner(this, newOwner);
     }
 
-    public UniqueToken setSpender(Id newSpender) {
-        return createNewUniqueTokenWithNewSpender(this, newSpender);
-    }
-
     public Id getSpender() {
         return spender;
     }
 
+    public UniqueToken setSpender(Id spender) {
+        return createNewUniqueTokenWithNewSpender(this, spender);
+    }
+
     public byte[] getMetadata() {
         return metadata;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
@@ -142,5 +145,31 @@ public class UniqueToken {
                 .add("owner", owner)
                 .add("spender", spender)
                 .toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        UniqueToken that = (UniqueToken) o;
+        return serialNumber == that.serialNumber
+                && Objects.equals(tokenId, that.tokenId)
+                && Objects.equals(address, that.address)
+                && Objects.equals(creationTime, that.creationTime)
+                && Objects.equals(owner, that.owner)
+                && Objects.equals(spender, that.spender)
+                && Arrays.equals(metadata, that.metadata)
+                && Objects.equals(nftId, that.nftId);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(tokenId, address, serialNumber, creationTime, owner, spender, nftId);
+        result = 31 * result + Arrays.hashCode(metadata);
+        return result;
     }
 }

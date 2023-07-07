@@ -23,8 +23,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -38,9 +38,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
-
-    @NotNull
-    private HederaChainId chainId = HederaChainId.TESTNET;
 
     @Getter
     @Positive
@@ -97,7 +94,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
-    private List<EntityType> autoRenewTargetTypes = new ArrayList<>();
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
 
     @Getter
     private boolean limitTokenAssociations = false;
@@ -136,7 +134,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return Bytes32.fromHexString(chainId.getChainId());
+        return network.getChainId();
     }
 
     @Override
@@ -157,22 +155,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(unhex("00")),
-        TESTNET(unhex("01")),
-        PREVIEWNET(unhex("02")),
-        OTHER(unhex("03"));
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127")),
+        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128")),
+        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129")),
+        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"));
 
         private final byte[] ledgerId;
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum HederaChainId {
-        MAINNET("0x0127"),
-        TESTNET("0x0128"),
-        PREVIEWNET("0x0129"),
-        OTHER("0x12A");
-
-        private final String chainId;
+        private final Bytes32 chainId;
     }
 }

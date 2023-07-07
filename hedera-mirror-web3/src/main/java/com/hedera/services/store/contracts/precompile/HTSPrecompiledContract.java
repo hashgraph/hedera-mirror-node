@@ -24,6 +24,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -36,6 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.utils.EntityIdUtils;
@@ -239,7 +241,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
             } else {
-                this.transactionBody = precompile.body(input, aliasResolver, null);
+                this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
             }
         }
 
@@ -277,5 +279,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
     private long defaultGas() {
         return evmProperties.getHtsDefaultGasCost();
+    }
+
+    @VisibleForTesting
+    Precompile getPrecompile() {
+        return precompile;
     }
 }
