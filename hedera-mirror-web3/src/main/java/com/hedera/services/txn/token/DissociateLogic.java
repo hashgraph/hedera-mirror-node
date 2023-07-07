@@ -19,9 +19,13 @@ package com.hedera.services.txn.token;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
@@ -31,6 +35,9 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
@@ -54,6 +61,17 @@ public class DissociateLogic {
                 .toList();
 
         dissociateUsing(account, tokens, store);
+    }
+
+    public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+        final TokenDissociateTransactionBody op = txn.getTokenDissociate();
+        if (!op.hasAccount()) {
+            return INVALID_ACCOUNT_ID;
+        }
+        if (repeatsItself(op.getTokensList())) {
+            return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+        }
+        return OK;
     }
 
     /**

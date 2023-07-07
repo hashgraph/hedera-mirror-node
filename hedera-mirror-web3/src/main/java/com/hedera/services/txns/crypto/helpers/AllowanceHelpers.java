@@ -16,8 +16,11 @@
 
 package com.hedera.services.txns.crypto.helpers;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -32,11 +35,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
  *  1. Use abstraction for the state by introducing {@link Store} interface
  *  2. Remove unused methods
+ *  3. We pass some of the fields as function parameters in order to keep the class stateless
  */
 public class AllowanceHelpers {
     private AllowanceHelpers() {
@@ -97,7 +102,7 @@ public class AllowanceHelpers {
         for (var serialNum : serialsSet) {
             final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNum);
             final var nft = store.getUniqueToken(nftId, OnMissing.THROW);
-            final var token = store.getToken(tokenId.asEvmAddress(), OnMissing.THROW);
+            final var token = loadPossiblyPausedToken(tokenId.asEvmAddress(), store);
             validateTrue(validOwner(nft, ownerId, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             nfts.add(nft.setSpender(spenderId));
         }
@@ -118,5 +123,23 @@ public class AllowanceHelpers {
         return Id.DEFAULT.equals(listedOwner)
                 ? ownerId.equals(token.getTreasury().getId())
                 : listedOwner.equals(ownerId);
+    }
+
+    /**
+     *
+     * This is only to be used when pausing/unpausing token as this method ignores the pause status
+     * of the token.
+     *
+     * @param tokenAddress
+     * @param store
+     * @return {@link Token} or throw exception
+     */
+    public static Token loadPossiblyPausedToken(final Address tokenAddress, final Store store) {
+        final var token = store.getToken(tokenAddress, OnMissing.DONT_THROW);
+
+        validateTrue(!token.isEmptyToken(), INVALID_TOKEN_ID);
+        validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
+
+        return token;
     }
 }
