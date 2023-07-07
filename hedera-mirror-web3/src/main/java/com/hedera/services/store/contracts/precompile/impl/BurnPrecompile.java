@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hedera.services.utils.MiscUtils.convertArrayToLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -141,7 +140,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getSuccessResultFor(final RunResult runResult) {
         final var burnResult = (BurnResult) runResult;
-        return encoder.encodeBurnSuccess(burnResult.totalSupply(), convertArrayToLong(burnResult.serialNumbers()));
+        return encoder.encodeBurnSuccess(burnResult.totalSupply());
     }
 
     @Override

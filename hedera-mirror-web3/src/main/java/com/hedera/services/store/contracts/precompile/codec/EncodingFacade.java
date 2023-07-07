@@ -44,7 +44,7 @@ import org.hyperledger.besu.evm.log.LogTopic;
 
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
-    private static final long[] NO_SERIAL_NUMBERS = new long[0];
+    private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
     public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
@@ -94,36 +94,36 @@ public class EncodingFacade {
     }
 
     public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
-        return encodeSuccess(HAPI_MINT, totalSupply, serialNumbers);
-    }
-
-    public Bytes encodeBurnSuccess(final long totalSupply, final long[] serialNumbers) {
-        return encodeSuccess(HAPI_BURN, totalSupply, serialNumbers);
-    }
-
-    private Bytes encodeSuccess(final FunctionType functionType, long totalSupply, long[] serialNumbers) {
         return functionResultBuilder()
-                .forFunction(functionType)
+                .forFunction(HAPI_MINT)
                 .withStatus(SUCCESS.getNumber())
                 .withTotalSupply(totalSupply)
-                .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_SERIAL_NUMBERS)
+                .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
+                .build();
+    }
+
+    public Bytes encodeBurnSuccess(final long totalSupply) {
+        return functionResultBuilder()
+                .forFunction(HAPI_BURN)
+                .withStatus(SUCCESS.getNumber())
+                .withTotalSupply(totalSupply)
                 .build();
     }
 
     public Bytes encodeMintFailure(@NonNull final ResponseCodeEnum status) {
-        return encodeFailure(HAPI_MINT, status);
+        return functionResultBuilder()
+                .forFunction(HAPI_MINT)
+                .withStatus(status.getNumber())
+                .withTotalSupply(0L)
+                .withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
+                .build();
     }
 
     public Bytes encodeBurnFailure(@NonNull final ResponseCodeEnum status) {
-        return encodeFailure(HAPI_BURN, status);
-    }
-
-    private Bytes encodeFailure(final FunctionType functionType, final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(functionType)
+                .forFunction(HAPI_BURN)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
-                .withSerialNumbers(NO_SERIAL_NUMBERS)
                 .build();
     }
 
@@ -240,7 +240,7 @@ public class EncodingFacade {
                     switch (functionType) {
                         case HAPI_CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
                         case HAPI_MINT -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
-                        case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
+                        case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_APPROVE -> Tuple.of(approve);
                         case HAPI_APPROVE -> Tuple.of(status, approve);
