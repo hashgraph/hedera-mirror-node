@@ -47,6 +47,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
@@ -333,5 +334,13 @@ public class EvmConfiguration {
     @Bean
     WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    WipeFungiblePrecompile wipeFungiblePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, mirrorNodeEvmProperties);
     }
 }
