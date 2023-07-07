@@ -22,6 +22,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
@@ -229,5 +230,9 @@ public final class EntityIdUtils {
                     id.getSerialNumber());
         }
         return String.valueOf(o);
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
+        return alias.size() > EVM_ADDRESS_SIZE;
     }
 }

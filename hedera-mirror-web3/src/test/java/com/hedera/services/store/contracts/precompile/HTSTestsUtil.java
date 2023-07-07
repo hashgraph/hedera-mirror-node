@@ -33,6 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGet
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
@@ -73,6 +74,8 @@ public class HTSTestsUtil {
     public static final TokenID nonFungible = asToken("0.0.777");
     public static final TokenID tokenMerkleId = asToken("0.0.777");
     public static final Association multiAssociateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation multiDissociateOp =
+            Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddr = Address.ALTBN128_ADD;
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
@@ -96,6 +99,7 @@ public class HTSTestsUtil {
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Long serialNumber = 1L;
     public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation dissociateOp = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);

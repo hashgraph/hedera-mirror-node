@@ -63,7 +63,7 @@ class AllowanceHelpersTest {
         given(store.getUniqueToken(
                         new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
-        given(store.getToken(tokenId.asEvmAddress(), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(tokenId.asEvmAddress(), OnMissing.DONT_THROW)).willReturn(token);
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(ownerId);
 
@@ -84,7 +84,7 @@ class AllowanceHelpersTest {
         given(store.getUniqueToken(
                         new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
-        given(store.getToken(tokenId.asEvmAddress(), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(tokenId.asEvmAddress(), OnMissing.DONT_THROW)).willReturn(token);
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(ownerId);
 
