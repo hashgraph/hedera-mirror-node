@@ -1311,6 +1311,9 @@ const formatComparator = (comparator) => {
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
         break;
+      case constants.filterKeys.TRANSACTIONS:
+        comparator.value = parseBooleanValue(comparator.value);
+        break;
       // case 'type':
       //   // Acceptable words: credit or debit
       //   comparator.value = ;

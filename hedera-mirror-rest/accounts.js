@@ -448,7 +448,9 @@ const getOneAccount = async (req, res) => {
 
   let transactionsPromise;
 
-  if (!transactionsFilter || transactionsFilter.value !== 'false') {
+  // when not specified or set as true
+  const includeTransactions = !transactionsFilter || transactionsFilter.value;
+  if (includeTransactions) {
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
     const innerQuery = transactions.getTransactionsInnerQuery(
