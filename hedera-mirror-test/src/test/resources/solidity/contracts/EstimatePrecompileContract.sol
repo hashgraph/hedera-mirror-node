@@ -256,7 +256,6 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
 
         (int responseCode, address tokenAddress) =
                             HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
-        emit ResponseCode(responseCode);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();
@@ -413,5 +412,4 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             revert();
         }
     }
-
 }
