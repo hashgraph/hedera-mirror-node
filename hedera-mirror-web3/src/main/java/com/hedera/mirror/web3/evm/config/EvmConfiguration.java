@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecom
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
+import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -327,5 +328,10 @@ public class EvmConfiguration {
             final SyntheticTxnFactory syntheticTxnFactory,
             final DissociateLogic dissociateLogic) {
         return new MultiDissociatePrecompile(precompilePricingUtils, syntheticTxnFactory, dissociateLogic);
+    }
+
+    @Bean
+    CreateLogic createLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new CreateLogic(mirrorNodeEvmProperties);
     }
 }

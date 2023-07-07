@@ -17,6 +17,7 @@
 package com.hedera.services.txns.validation;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 
 /**
  * Copied Logic type from hedera-services. Unnecessary methods are deleted.
@@ -28,4 +29,6 @@ public interface OptionValidator {
     ResponseCodeEnum maxBatchSizeMintCheck(int length);
 
     ResponseCodeEnum maxBatchSizeBurnCheck(int length);
+
+    boolean isValidExpiry(final Timestamp expiry);
 }
