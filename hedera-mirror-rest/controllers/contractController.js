@@ -45,8 +45,7 @@ import {
   ContractResultDetailsViewModel,
   ContractResultViewModel,
   ContractStateViewModel,
-  ContractViewModel,
-  DetailedContractResultViewModel
+  ContractViewModel
 } from '../viewmodel';
 
 const contractSelectFields = [
@@ -1055,7 +1054,7 @@ class ContractController extends BaseController {
 
     const rows = await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new DetailedContractResultViewModel(row)),
+      results: rows.map((row) => new ContractResultDetailsViewModel(row, row.recordFile, row.ethereumTransaction)),
       links: {
         next: null,
       },

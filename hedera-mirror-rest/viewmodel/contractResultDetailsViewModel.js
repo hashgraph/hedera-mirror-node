@@ -42,19 +42,20 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {ContractStateChange[]} contractStateChanges
    * @param {FileData} fileData
    */
-  constructor(contractResult, recordFile, ethTransaction, contractLogs, contractStateChanges, fileData) {
+  constructor(contractResult, recordFile, ethTransaction, contractLogs = null, contractStateChanges = null, fileData = null) {
     super(contractResult);
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
     this.hash = utils.toHexStringNonQuantity(contractResult.transactionHash);
-    this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
+    if (!_.isNil(contractLogs)) {
+      this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
+    }
     this.result = TransactionResult.getName(contractResult.transactionResult);
     this.transaction_index = contractResult.transactionIndex;
-
-    this.state_changes = contractStateChanges.map(
-      (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
-    );
+    if (!_.isNil(contractStateChanges)) {
+      this.state_changes = contractStateChanges.map((csc) => new ContractResultStateChangeViewModel(csc));
+    }
     const isTransactionSuccessful =
       contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID;
     this.status = isTransactionSuccessful
@@ -87,7 +88,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (!_.isNil(ethTransaction)) {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
-      this.amount = ethTransaction.value && toBigIntBE(ethTransaction.value);
+      this.amount = typeof ethTransaction.value === 'number' ? ethTransaction.value : toBigIntBE(Buffer.from(ethTransaction.value));
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
 
       if (!isTransactionSuccessful && _.isEmpty(contractResult.errorMessage)) {

@@ -235,19 +235,24 @@ class ContractService extends BaseService {
       ` select
           ${contractResultsFields},
           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS},
-          ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)} as access_list,
-          ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)} as chain_id,
-          ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)} as gas_price,
-          ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)} as max_fee_per_gas,
-          ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)} as max_priority_fee_per_gas,
-          ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as transaction_type,
-          ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)} as r,
-          ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)} as v,
-          ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)} as s,
-          ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)} as et_nonce,
-          ${RecordFile.getFullName(RecordFile.HASH)} as block_hash,
-          ${RecordFile.getFullName(RecordFile.INDEX)} as block_number,
-          ${RecordFile.getFullName(RecordFile.GAS_USED)} as block_gas_used
+          json_build_object(
+            'accessList', encode(${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)}, 'hex'),
+            'chainId', encode(${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)}, 'hex'),
+            'gasPrice', encode(${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)}, 'hex'),
+            'maxFeePerGas', encode(${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)}, 'hex'),
+            'maxPriorityFeePerGas', encode(${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)}, 'hex'),
+            'nonce', ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
+            'signatureR', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)}, 'hex'),
+            'signatureS', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)}, 'hex'),
+            'type', ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
+            'recoveryId', ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
+            'value', ${ContractResult.getFullName(ContractResult.AMOUNT)}
+          ) as ${EthereumTransaction.tableName},
+          json_build_object(
+            'hash', ${RecordFile.getFullName(RecordFile.HASH)},
+            'index', ${RecordFile.getFullName(RecordFile.INDEX)},
+            'gasUsed', ${RecordFile.getFullName(RecordFile.GAS_USED)}
+          ) as ${RecordFile.tableName}
       from ${ContractResult.tableName} ${ContractResult.tableAlias}`,
       ContractService.joinContractResultWithEvmAddress,
       `left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias} 
@@ -295,19 +300,7 @@ class ContractService extends BaseService {
     return rows.map((cr) => {
       return {
         ...new ContractResult(cr),
-        hash: cr.hash,
-        accessList: cr.access_list,
-        blockGasUsed: cr.block_gas_used,
-        blockHash: cr.block_hash,
-        blockNumber: cr.block_number,
-        chainId: cr.chain_id,
-        gasPrice: cr.gas_price,
-        maxFeePerGas: cr.max_fee_per_gas,
-        maxPriorityFeePerGas: cr.max_priority_fee_per_gas,
-        nonce: cr.et_nonce,
-        r: cr.r,
-        v: cr.v,
-        s: cr.s,
+        hash: cr.hash
       };
     });
   }

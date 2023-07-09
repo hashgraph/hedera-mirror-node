@@ -41,7 +41,6 @@ import TransactionIdViewModel from './transactionIdViewModel';
 import BlockViewModel from './blockViewModel';
 import FeeScheduleViewModel from './feeScheduleViewModel';
 import ContractStateViewModel from './contractStateViewModel';
-import DetailedContractResultViewModel from './detailedContractResultViewModel';
 
 export {
   AddressBookServiceEndpointViewModel,
@@ -70,6 +69,5 @@ export {
   TransactionIdViewModel,
   BlockViewModel,
   FeeScheduleViewModel,
-  ContractStateViewModel,
-  DetailedContractResultViewModel
+  ContractStateViewModel
 };
