@@ -919,7 +919,7 @@ const toUint256 = (val) => {
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
   if (typeof byteArray !== 'object') {
-    byteArray = Buffer.from(byteArray?.toString(), 'hex');
+    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
   }
 
   if (_.isEmpty(byteArray)) {
