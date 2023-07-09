@@ -560,8 +560,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
-        previous.setTimestampUpper(current.getTimestampLower());
-        return current;
+        /*
+         * Current allowance without a timestamp indicates it was generated due to an approved crypto transfer.
+         * Adjust the amount of the previous allowance by the amount of the current allowance, which is a
+         * negative value representing the debit of the transfer which now also debits the allowance amount.
+         */
+        if (current.getTimestampRange() == null) {
+            previous.setAmount(previous.getAmount() + current.getAmount());
+        } else if (previous.getTimestampRange() != null) {
+            previous.setTimestampUpper(current.getTimestampLower());
+            return current;
+        }
+        return previous;
     }
 
     @SuppressWarnings("java:S3776")

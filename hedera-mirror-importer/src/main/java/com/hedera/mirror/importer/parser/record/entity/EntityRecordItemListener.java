@@ -22,6 +22,7 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -87,6 +88,21 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
 
+    /*
+     * For an approved transfer, create an offsetting account allowance to decrement from the amount
+     * of the existing crypto allowance already established by the owner and granted to the sender.
+     *
+     *  1. Approval is only indicated on the debit side of the transfer, therefore the amount is already negative.
+     *  2. The transaction payer is the sender, and the account amount account ID is that of the owner.
+     */
+    private static CryptoAllowance createAdjustingAllowanceByAmount(AccountAmount accountAmount, long payerAccountNum) {
+        return CryptoAllowance.builder()
+                .owner(accountAmount.getAccountID().getAccountNum())
+                .spender(payerAccountNum)
+                .amount(accountAmount.getAmount())
+                .build();
+    }
+
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
@@ -125,6 +141,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // Insert transfers even on failure
         insertTransferList(recordItem);
+        updateCryptoAllowanceAmounts(recordItem);
         insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
@@ -245,6 +262,22 @@ public class EntityRecordItemListener implements RecordItemListener {
             stakingRewardTransfer.setPayerAccountId(payerAccountId);
             entityListener.onStakingRewardTransfer(stakingRewardTransfer);
         }
+    }
+
+    private void updateCryptoAllowanceAmounts(RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody();
+        if (!transactionBody.hasCryptoTransfer()) {
+            return;
+        }
+
+        var payerAccountNum = transactionBody.getTransactionID().getAccountID().getAccountNum();
+        var accountAmountsList =
+                transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
+
+        accountAmountsList.stream()
+                .filter(AccountAmount::getIsApproval)
+                .map(accountAmount -> createAdjustingAllowanceByAmount(accountAmount, payerAccountNum))
+                .forEach(entityListener::onCryptoAllowance);
     }
 
     /*
