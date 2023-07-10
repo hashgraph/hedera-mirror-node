@@ -138,7 +138,8 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
         given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
+        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at), eq(aliasManager)))
+                .willReturn(fees);
 
         final var input = wellKnownChange(evmAddressAlias);
 
