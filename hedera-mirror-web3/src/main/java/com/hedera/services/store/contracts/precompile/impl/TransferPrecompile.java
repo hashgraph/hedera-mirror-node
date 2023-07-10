@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
@@ -34,6 +35,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -63,6 +65,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -72,6 +75,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -128,16 +132,19 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
+    private final AutoCreationLogic autoCreationLogic;
 
     public TransferPrecompile(
             PrecompilePricingUtils pricingUtils,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final TransferLogic transferLogic,
-            ContextOptionValidator contextOptionValidator) {
+            ContextOptionValidator contextOptionValidator,
+            AutoCreationLogic autoCreationLogic) {
         super(pricingUtils);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.transferLogic = transferLogic;
         this.contextOptionValidator = contextOptionValidator;
+        this.autoCreationLogic = autoCreationLogic;
     }
 
     @Override
@@ -177,7 +184,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity == null) {
             extrapolateDetailsFromSyntheticTxn();
         }
-        if (impliedValidity != ResponseCodeEnum.OK) {
+        if (impliedValidity != OK) {
             throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
@@ -187,7 +194,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             if (change.hasAlias()) {
-                replaceAliasWithId(change, changes, completedLazyCreates);
+                replaceAliasWithId(
+                        change, completedLazyCreates, store, entityAddressSequencer, mirrorEvmContractAliases);
             }
         }
 
@@ -439,20 +447,23 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     private void replaceAliasWithId(
             final BalanceChange change,
-            final List<BalanceChange> changes,
-            final Map<ByteString, EntityNum> completedLazyCreates) {
+            final Map<ByteString, EntityNum> completedLazyCreates,
+            Store store,
+            EntityAddressSequencer entityAddressSequencer,
+            MirrorEvmContractAliases mirrorEvmContractAliases) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
-        //        validateTrueOrRevert(
-        //                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))),
-        // INVALID_ALIAS_KEY);
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
-            //            if (autoCreationLogic == null) {
-            //                autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
-            //            }
-            //            final var lazyCreateResult = autoCreationLogic.create(change, ledgers.accounts(), changes);
-            //            validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
+            final var lazyCreateResult = autoCreationLogic.create(
+                    change,
+                    Timestamp.newBuilder()
+                            .setSeconds(Instant.now().getEpochSecond())
+                            .build(),
+                    store,
+                    entityAddressSequencer,
+                    mirrorEvmContractAliases);
+            validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
             completedLazyCreates.put(
                     receiverAlias,
                     EntityNum.fromAccountId(
@@ -466,11 +477,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(
                 transferOp, "`body` method should be called before `extrapolateDetailsFromSyntheticTxn`");
 
-        final var op = transactionBody.getCryptoTransfer();
-        //                impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
-        if (impliedValidity != ResponseCodeEnum.OK) {
-            return;
-        }
         final var explicitChanges = constructBalanceChanges();
         if (numLazyCreates > 0 && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
             impliedValidity = NOT_SUPPORTED;

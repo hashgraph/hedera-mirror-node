@@ -62,6 +62,7 @@ import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -155,6 +156,9 @@ class TransferPrecompileTest {
     @Mock
     private Store store;
 
+    @Mock
+    private AutoCreationLogic autoCreationLogic;
+
     @InjectMocks
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
@@ -172,8 +176,8 @@ class TransferPrecompileTest {
 
     @Test
     void gasRequirementReturnsCorrectValueForTransferSingleToken() {
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
@@ -193,8 +197,8 @@ class TransferPrecompileTest {
     @Test
     void testBody() {
         transferParams = new TransferParams(ABI_ID_TRANSFER_TOKENS, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
         final Bytes transferTokensInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         staticTransferPrecompile
                 .when(() -> decodeTransferTokens(eq(transferTokensInput), any()))
@@ -203,8 +207,8 @@ class TransferPrecompileTest {
         assertEquals(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER, transferPrecompile.transferOp);
 
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
         final Bytes cryptoTransferInput = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransfer(eq(cryptoTransferInput), any()))
@@ -213,8 +217,8 @@ class TransferPrecompileTest {
         assertEquals(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER, transferPrecompile.transferOp);
 
         transferParams = new TransferParams(ABI_ID_TRANSFER_NFTS, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
         final Bytes transferNftsInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         staticTransferPrecompile
                 .when(() -> decodeTransferNFTs(eq(transferNftsInput), any()))
@@ -223,8 +227,8 @@ class TransferPrecompileTest {
         assertEquals(CRYPTO_TRANSFER_NFTS_WRAPPER, transferPrecompile.transferOp);
 
         transferParams = new TransferParams(ABI_ID_TRANSFER_NFT, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
         final Bytes transferNftInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         staticTransferPrecompile
                 .when(() -> decodeTransferNFT(eq(transferNftInput), any()))
@@ -236,8 +240,8 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarOnlyCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile
@@ -256,8 +260,8 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -279,8 +283,8 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -302,8 +306,8 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarNftCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -324,8 +328,8 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile =
-                new TransferPrecompile(pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator);
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile
