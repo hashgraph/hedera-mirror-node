@@ -36,6 +36,12 @@ import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove FeeSchedule, UtilPrng, File logic
+ *  3. Use HederaEvmContractAliases
+ */
 public class OpUsageCtxHelper {
 
     public ExtantCryptoContext ctxForCryptoUpdate(
@@ -77,9 +83,14 @@ public class OpUsageCtxHelper {
         return cryptoContext;
     }
 
-    public ExtantCryptoContext ctxForCryptoAllowance(TxnAccessor accessor, final Store store) {
+    public ExtantCryptoContext ctxForCryptoAllowance(
+            TxnAccessor accessor, final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
         final var id = accessor.getPayer();
-        final var account = store.getAccount(Address.wrap(Bytes.wrap(asEvmAddress(id))), OnMissing.DONT_THROW);
+        final var accountOrAlias = id.getAlias().isEmpty()
+                ? Address.wrap(Bytes.wrap(asEvmAddress(id)))
+                : hederaEvmContractAliases.resolveForEvm(
+                        Address.wrap(Bytes.wrap(id.getAlias().toByteArray())));
+        final var account = store.getAccount(accountOrAlias, OnMissing.DONT_THROW);
         ExtantCryptoContext cryptoContext;
         if (!account.isEmptyAccount()) {
             cryptoContext = ExtantCryptoContext.newBuilder()

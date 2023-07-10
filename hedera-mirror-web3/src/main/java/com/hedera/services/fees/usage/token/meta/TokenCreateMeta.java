@@ -21,6 +21,9 @@ import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public class TokenCreateMeta {
     private final int baseSize;
     private final long lifeTime;

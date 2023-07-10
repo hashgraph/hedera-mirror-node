@@ -35,7 +35,10 @@ import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import java.util.List;
 
-// TODO javadoc and move to mirror proeprties
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove FeeSchedule, UtilPrng, File logic
+ */
 public final class TokenOpsUsage {
     /* Sizes of various fee types, _not_ including the collector entity id */
     private static final int FIXED_HBAR_REPR_SIZE = LONG_SIZE;

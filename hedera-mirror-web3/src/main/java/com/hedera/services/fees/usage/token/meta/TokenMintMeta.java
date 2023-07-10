@@ -21,6 +21,9 @@ import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public class TokenMintMeta extends TokenOpMetaBase {
     private final long rbs;
 

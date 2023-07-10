@@ -38,11 +38,14 @@ import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove FeeSchedule, UtilPrng, File logic
+ */
 public class AccessorBasedUsages {
     private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
             CryptoTransfer,
@@ -58,8 +61,6 @@ public class AccessorBasedUsages {
             TokenUnfreezeAccount,
             TokenPause,
             TokenUnpause);
-
-    private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;
@@ -96,7 +97,7 @@ public class AccessorBasedUsages {
         } else if (function == CryptoUpdate) {
             estimateCryptoUpdate(sigUsage, accessor, baseMeta, into, store, hederaEvmContractAliases);
         } else if (function == CryptoApproveAllowance) {
-            estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into, store);
+            estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into, store, hederaEvmContractAliases);
         } else if (function == CryptoDeleteAllowance) {
             estimateCryptoDeleteAllowance(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenCreate) {
@@ -159,9 +160,10 @@ public class AccessorBasedUsages {
             TxnAccessor accessor,
             BaseTransactionMeta baseMeta,
             UsageAccumulator into,
-            final Store store) {
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
         final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
-        final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor, store);
+        final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor, store, hederaEvmContractAliases);
         cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
     }
 

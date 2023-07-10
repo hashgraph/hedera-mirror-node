@@ -138,7 +138,7 @@ class PricedUsageCalculatorTest {
 
         // then:
         verify(accessorBasedUsages)
-                .assess(eq(su), eq(accessor), assessCaptor.capture(), store, hederaEvmContractAliases);
+                .assess(eq(su), eq(accessor), assessCaptor.capture(), eq(store), eq(hederaEvmContractAliases));
         assertEquals(mockFees, actual);
         assertSame(feesCaptor.getValue(), assessCaptor.getValue());
         assertNotSame(inHandleAccum, feesCaptor.getValue());

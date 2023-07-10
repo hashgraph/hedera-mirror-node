@@ -19,6 +19,9 @@ package com.hedera.services.fees.usage.token.meta;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SubType;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public abstract class TokenOpMetaBase {
     private final int bpt;
     private final SubType subType;

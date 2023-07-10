@@ -24,6 +24,8 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -75,11 +77,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
-    protected static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+    protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenMint)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenAssociateToAccount)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
@@ -88,12 +102,25 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             .setNextFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenMint)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenAssociateToAccount)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
                                             .build()))))
             .build();
+
     protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
 
@@ -676,6 +703,25 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void feeSchedulesPersist() {
+        //        for (var function: HederaFunctionality.values()) {
+        //            if(function.name() == "UNKNOWN") continue;
+        //            feeSchedules.getCurrentFeeScheduleOrBuilder().getTransactionFeeScheduleList().add(
+        //                    TransactionFeeSchedule.newBuilder()
+        //                                    .setHederaFunctionality(function)
+        //                                    .addFees(FeeData.newBuilder()
+        //                                            .setServicedata(FeeComponents.newBuilder()
+        //                                                    .setGas(852000)
+        //                                                    .build())
+        //                                            .build()).build());
+        //            feeSchedules.getNextFeeScheduleOrBuilder().getTransactionFeeScheduleList().add(
+        //                    TransactionFeeSchedule.newBuilder()
+        //                            .setHederaFunctionality(function)
+        //                            .addFees(FeeData.newBuilder()
+        //                                    .setServicedata(FeeComponents.newBuilder()
+        //                                            .setGas(852000)
+        //                                            .build())
+        //                                    .build()).build());
+        //        }
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(feeSchedules.toByteArray())
