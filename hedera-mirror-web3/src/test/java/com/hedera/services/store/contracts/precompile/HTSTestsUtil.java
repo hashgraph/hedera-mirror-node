@@ -32,6 +32,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFre
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
@@ -118,6 +119,8 @@ public class HTSTestsUtil {
 
     public static final Address contractAddress = Address.ALTBN128_MUL;
 
+    public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    public static final BurnWrapper nonFungibleBurn = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
     public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
     public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(

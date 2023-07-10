@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -137,12 +138,12 @@ public class EvmConfiguration {
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
-            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
+            final BasicFcfsUsagePrices usagePricesProvider, final BasicHbarCentExchange hbarCentExchange) {
         return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicFcfsUsagePrices basicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicFcfsUsagePrices(ratesAndFeesLoader);
     }
 
@@ -158,7 +159,7 @@ public class EvmConfiguration {
 
     @Bean
     PricedUsageCalculator pricedUsageCalculator(
-            AccessorBasedUsages accessorBasedUsages, OverflowCheckingCalc overflowCheckingCalc) {
+            final AccessorBasedUsages accessorBasedUsages, final OverflowCheckingCalc overflowCheckingCalc) {
         return new PricedUsageCalculator(accessorBasedUsages, overflowCheckingCalc);
     }
 
@@ -179,10 +180,10 @@ public class EvmConfiguration {
 
     @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
-            HbarCentExchange hbarCentExchange,
-            UsagePricesProvider usagePricesProvider,
-            PricedUsageCalculator pricedUsageCalculator,
-            List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
+            final HbarCentExchange hbarCentExchange,
+            final UsagePricesProvider usagePricesProvider,
+            final PricedUsageCalculator pricedUsageCalculator,
+            final List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         // queryUsageEstimators and txnResourceUsegaEstimator will be implemented in separate PR
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators = new HashMap<>();
 
@@ -224,7 +225,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicHbarCentExchange basicHbarCentExchange(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 
@@ -270,7 +271,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    AssociateLogic associateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
 
@@ -281,7 +282,9 @@ public class EvmConfiguration {
 
     @Bean
     AutoCreationLogic autocreationLogic(
-            FeeCalculator feeCalculator, EvmProperties evmProperties, SyntheticTxnFactory syntheticTxnFactory) {
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            SyntheticTxnFactory syntheticTxnFactory) {
         return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
@@ -295,12 +298,21 @@ public class EvmConfiguration {
     }
 
     @Bean
-    MintLogic mintLogic(OptionValidator optionValidator) {
+    MintLogic mintLogic(final OptionValidator optionValidator) {
         return new MintLogic(optionValidator);
     }
 
     @Bean
-    BurnLogic burnLogic(OptionValidator optionValidator) {
+    BurnPrecompile burnPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final BurnLogic burnLogic) {
+        return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
+    }
+
+    @Bean
+    BurnLogic burnLogic(final OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
     }
 
