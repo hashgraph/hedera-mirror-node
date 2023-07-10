@@ -411,7 +411,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
-        final boolean customFees = impliedTransfers != null && impliedTransfers.hasAssessedCustomFees();
+        // TODO: Add AssessedCustomFee logic. For now use pricing for transfer with customFees
+        final boolean customFees = impliedTransfers != null;
         // For fungible there are always at least two operations, so only charge half for each
         // operation
         final long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
@@ -482,10 +483,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             impliedValidity = NOT_SUPPORTED;
             return;
         }
-        final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
-        //        impliedTransfers = impliedTransfersMarshal.assessCustomFeesAndValidate(
-        //                hbarOnly, 0, numLazyCreates, explicitChanges, NO_ALIASES,
-        // impliedTransfersMarshal.currentProps());
+        impliedTransfers = new ImpliedTransfers(explicitChanges);
     }
 
     private List<BalanceChange> constructBalanceChanges() {
