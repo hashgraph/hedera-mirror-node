@@ -95,16 +95,28 @@ public class EvmOperationConstructionUtil {
                         mirrorEvmContractAliases,
                         evm,
                         new PrecompileContractRegistry(),
-                        precompiles(mirrorNodeEvmProperties, precompileMapper)));
+                        precompiles(
+                                mirrorNodeEvmProperties,
+                                precompileMapper,
+                                entityAddressSequencer,
+                                mirrorEvmContractAliases)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties, final PrecompileMapper precompileMapper) {
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
-                evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
+                evmFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                new EvmHTSPrecompiledContract(evmFactory),
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));

@@ -29,8 +29,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -152,6 +154,12 @@ class DissociatePrecompileTest {
     @Mock
     private Account updatedAccount;
 
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private SyntheticTxnFactory syntheticTxnFactory;
     private PrecompileMapper precompileMapper;
     private HTSPrecompiledContract subject;
@@ -172,7 +180,12 @@ class DissociatePrecompileTest {
         multiDissociatePrecompile = new MultiDissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
         precompileMapper = new PrecompileMapper(Set.of(dissociatePrecompile, multiDissociatePrecompile));
         subject = new HTSPrecompiledContract(
-                evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
+                evmInfrastructureFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
     }
 
     @Test

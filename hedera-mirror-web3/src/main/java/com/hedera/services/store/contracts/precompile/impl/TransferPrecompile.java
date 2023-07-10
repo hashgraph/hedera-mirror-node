@@ -40,10 +40,13 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
@@ -59,6 +62,8 @@ import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -119,11 +124,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     protected final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private final TransferLogic transferLogic;
+
+    private HederaTokenStore hederaTokenStore;
+    private final ContextOptionValidator contextOptionValidator;
 
     public TransferPrecompile(
-            PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            ContextOptionValidator contextOptionValidator) {
         super(pricingUtils);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.transferLogic = transferLogic;
+        this.contextOptionValidator = contextOptionValidator;
     }
 
     @Override
@@ -147,15 +161,19 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
 
             extrapolateDetailsFromSyntheticTxn();
-
-            initializeHederaTokenStore();
             return transactionBody;
         }
         return TransactionBody.newBuilder();
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(
+            MessageFrame frame,
+            Store store,
+            TransactionBody transactionBody,
+            EntityAddressSequencer entityAddressSequencer,
+            MirrorEvmContractAliases mirrorEvmContractAliases) {
+        initializeHederaTokenStore(store);
         if (impliedValidity == null) {
             extrapolateDetailsFromSyntheticTxn();
         }
@@ -165,37 +183,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         final var changes = impliedTransfers.getAllBalanceChanges();
 
-        //        final var transferLogic = infrastructureFactory.newTransferLogic(hederaTokenStore);
-
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
-            final var units = change.getAggregatedUnits();
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
-
-            final var isDebit = units < 0;
-            final var isCredit = units > 0;
-
-            if (change.isForNft() || isDebit) {
-                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
-                // fee
-                final var isForNonFallbackRoyaltyFee = change.isForCustomFee() && !change.includesFallbackFee();
-                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
-                    // Signing requirements are skipped for changes to be authorized via an
-                    // allowance
-                    continue;
-                }
-            }
         }
 
-        // track auto-creation child records if needed
-        //        if (autoCreationLogic != null) {
-        //            autoCreationLogic.submitRecords(infrastructureFactory.newRecordSubmissionsScopedTo(updater));
-        //        }
-        //
-        //        transferLogic.doZeroSum(changes);
+        transferLogic.doZeroSum(changes, store, entityAddressSequencer, mirrorEvmContractAliases, hederaTokenStore);
         return new EmptyRunResult();
     }
 
@@ -210,9 +206,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ABI_ID_TRANSFER_NFT);
     }
 
-    private void initializeHederaTokenStore() {
-        //        hederaTokenStore = infrastructureFactory.newHederaTokenStore(
-        //                sideEffects, store);
+    private void initializeHederaTokenStore(Store store) {
+        hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 
     /**

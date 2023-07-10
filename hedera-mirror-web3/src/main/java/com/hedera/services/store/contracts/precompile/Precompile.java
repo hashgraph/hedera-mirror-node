@@ -20,7 +20,9 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -52,7 +54,12 @@ public interface Precompile {
     long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
 
     // Change the world state through the given frame
-    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
+    RunResult run(
+            MessageFrame frame,
+            Store store,
+            TransactionBody transactionBody,
+            EntityAddressSequencer entityAddressSequencer,
+            MirrorEvmContractAliases mirrorEvmContractAliases);
 
     long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
 

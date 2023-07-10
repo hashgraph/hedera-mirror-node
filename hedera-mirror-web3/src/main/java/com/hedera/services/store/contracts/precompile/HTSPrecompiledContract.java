@@ -25,8 +25,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -73,6 +75,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
     private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    private final EntityAddressSequencer entityAddressSequencer;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private Store store;
     private Precompile precompile;
     private long gasRequirement = 0L;
@@ -86,11 +90,15 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
+        this.entityAddressSequencer = entityAddressSequencer;
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
@@ -188,7 +196,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
+            final var precompileResultWrapper = precompile.run(
+                    frame, store, transactionBody.build(), entityAddressSequencer, mirrorEvmContractAliases);
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
         } catch (final InvalidTransactionException e) {

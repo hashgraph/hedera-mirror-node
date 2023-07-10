@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -142,6 +144,12 @@ class AssociatePrecompileTest {
     @Mock
     private Token token;
 
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private HTSPrecompiledContract subject;
     private AssociatePrecompile associatePrecompile;
     private AssociateLogic associateLogic;
@@ -162,7 +170,12 @@ class AssociatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(associatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
     }
 
     @Test
