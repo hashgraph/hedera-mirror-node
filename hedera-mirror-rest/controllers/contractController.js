@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import {Range} from 'pg-range';
 
 import BaseController from './baseController';
 import Bound from './bound';
@@ -31,7 +30,6 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  Transaction,
   TransactionResult,
   TransactionType,
 } from '../model';
@@ -434,6 +432,10 @@ class ContractController extends BaseController {
 
       switch (filter.key) {
         case filterKeys.FROM:
+          // Evm addresses are not parsed by utils.buildAndValidateFilters, so they are converted to encoded ids here.
+          if (EntityId.isValidEvmAddress(filter.value)) {
+            filter.value = await EntityService.getEncodedId(filter.value);
+          }
           this.updateConditionsAndParamsWithInValues(
             filter,
             contractResultFromInValues,
@@ -815,7 +817,6 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    await getEncodedEvmAddresses(req.query[filterKeys.FROM], filters);
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
@@ -999,7 +1000,6 @@ class ContractController extends BaseController {
       contractResultsFilterValidityChecks
     );
 
-    await getEncodedEvmAddresses(req.query[filterKeys.FROM], filters);
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
@@ -1217,28 +1217,6 @@ class ContractController extends BaseController {
     );
   };
 }
-
-/**
- * Utils.buildAndValidateFilters returns null for evm addresses.
- * Update null filter values for the 'from' query parameter with the correct encoded id
- * @param {} fromQuery
- * @param {[]} filters
- */
-const getEncodedEvmAddresses = async (fromQuery, filters) => {
-  if (!_.isNil(fromQuery) && filters.some((item) => item.key === filterKeys.FROM && item.value === null)) {
-    // From addresses can be already encoded or a null value
-    // Remove both to keep the index consistent between the reqQuery and the filters
-    const fromAddresses = _.remove(filters, (item) => item.key === filterKeys.FROM);
-
-    const fromArray = Array.isArray(fromQuery) ? fromQuery : [fromQuery];
-    for (let i = 0; i < fromAddresses.length; i++) {
-      if (_.isNil(fromAddresses[i].value)) {
-        fromAddresses[i].value = await EntityService.getEncodedId(fromArray[i]);
-      }
-      filters.push(fromAddresses[i]);
-    }
-  }
-};
 
 const contractCtrlInstance = new ContractController();
 
