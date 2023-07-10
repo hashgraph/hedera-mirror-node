@@ -18,14 +18,18 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected TransactionBody.Builder transactionBody;
 
-    protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils) {
+    protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory) {
         this.pricingUtils = pricingUtils;
+        this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
     @Override

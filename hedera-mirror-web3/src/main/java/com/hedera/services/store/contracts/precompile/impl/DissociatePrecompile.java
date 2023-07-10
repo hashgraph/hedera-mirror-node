@@ -61,7 +61,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
+    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, final Store store) {
         TokenID tokenId = null;
         Address callerAccountAddress;
         AccountID callerAccountID = null;

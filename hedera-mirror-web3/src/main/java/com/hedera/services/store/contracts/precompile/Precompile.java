@@ -46,7 +46,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public interface Precompile {
 
     // Construct the synthetic transaction
-    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
+    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, Store store);
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);

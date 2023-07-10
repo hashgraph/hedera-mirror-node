@@ -38,6 +38,7 @@ import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -95,8 +96,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private ImpliedTransfers impliedTransfers;
     private int numLazyCreates;
 
-    public TransferPrecompile(PrecompilePricingUtils pricingUtils, int functionId, boolean isLazyCreationEnabled) {
-        super(pricingUtils);
+    public TransferPrecompile(
+            PrecompilePricingUtils pricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            int functionId,
+            boolean isLazyCreationEnabled) {
+        super(pricingUtils, syntheticTxnFactory);
         this.functionId = functionId;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
     }
@@ -291,7 +296,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
+    public TransactionBody.Builder body(
+            Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, Store store) {
         transferOp = switch (functionId) {
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);

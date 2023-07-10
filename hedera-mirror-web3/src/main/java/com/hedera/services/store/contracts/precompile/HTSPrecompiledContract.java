@@ -227,12 +227,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                     || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress), store);
             }
 
         } else {
             this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId), store);
         }
 
         gasRequirement = defaultGas();

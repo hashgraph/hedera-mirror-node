@@ -39,7 +39,10 @@ public class MockPrecompile implements Precompile {
 
     @Override
     public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final BodyParams bodyParams,
+            final Store store) {
         return TransactionBody.newBuilder();
     }
 

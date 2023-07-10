@@ -71,7 +71,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final MintLogic mintLogic;
 
     public MintPrecompile(
@@ -79,9 +78,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final MintLogic mintLogic) {
-        super(pricingUtils);
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.mintLogic = mintLogic;
     }
 
@@ -104,7 +102,11 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
+    public Builder body(
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final BodyParams bodyParams,
+            final Store store) {
         final var functionId = ((FunctionParam) bodyParams).functionId();
         final var mintAbi =
                 switch (functionId) {

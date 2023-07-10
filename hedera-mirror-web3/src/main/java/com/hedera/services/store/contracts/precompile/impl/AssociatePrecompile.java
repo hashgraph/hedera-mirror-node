@@ -76,7 +76,10 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 
     @Override
     public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final BodyParams bodyParams,
+            final Store store) {
         TokenID tokenId = null;
         Address callerAccountAddress;
         AccountID callerAccountID = null;

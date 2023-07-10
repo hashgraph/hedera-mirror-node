@@ -56,6 +56,8 @@ import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -277,6 +279,14 @@ public class EvmConfiguration {
     @Bean
     ApproveAllowanceLogic approveAllowanceLogic() {
         return new ApproveAllowanceLogic();
+    }
+
+    ApproveAllowanceChecks approveAllowanceChecks() {
+        return new ApproveAllowanceChecks();
+    }
+
+    DeleteAllowanceChecks deleteAllowanceChecks() {
+        return new DeleteAllowanceChecks();
     }
 
     @Bean

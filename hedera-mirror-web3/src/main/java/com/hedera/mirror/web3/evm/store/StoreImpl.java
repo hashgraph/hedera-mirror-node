@@ -23,11 +23,15 @@ import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
+import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StoreImpl implements Store {
@@ -130,6 +134,13 @@ public class StoreImpl implements Store {
                         .getId()
                         .num()
                 > 0;
+    }
+
+    @Override
+    public boolean hasApprovedForAll(Address ownerAddress, AccountID operatorId, TokenID tokenId) {
+        final Set<FcTokenAllowanceId> approvedForAll =
+                getAccount(ownerAddress, OnMissing.THROW).getApproveForAllNfts();
+        return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));
     }
 
     @Override

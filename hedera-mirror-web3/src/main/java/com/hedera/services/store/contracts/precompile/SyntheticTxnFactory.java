@@ -21,16 +21,27 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import jakarta.annotation.Nullable;
+import java.util.List;
+import java.util.Objects;
+import lombok.NonNull;
 
 public class SyntheticTxnFactory {
 
@@ -90,5 +101,48 @@ public class SyntheticTxnFactory {
         builder.addAllTokens(dissociation.tokenIds());
 
         return TransactionBody.newBuilder().setTokenDissociate(builder);
+    }
+
+    public TransactionBody.Builder createFungibleApproval(
+            @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
+        return createNonfungibleApproval(approveWrapper, ownerId, null);
+    }
+
+    public TransactionBody.Builder createNonfungibleApproval(
+            final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
+        final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+        if (approveWrapper.isFungible()) {
+            var tokenAllowance = TokenAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setOwner(Objects.requireNonNull(ownerId).asGrpcAccount())
+                    .setSpender(approveWrapper.spender())
+                    .setAmount(approveWrapper.amount().longValueExact());
+            builder.addTokenAllowances(tokenAllowance.build());
+        } else {
+            final var op = NftAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setSpender(approveWrapper.spender())
+                    .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
+            if (ownerId != null) {
+                op.setOwner(ownerId.asGrpcAccount());
+                if (!ownerId.equals(operatorId)) {
+                    op.setDelegatingSpender(Objects.requireNonNull(operatorId).asGrpcAccount());
+                }
+            }
+            builder.addNftAllowances(op.build());
+        }
+        return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
+    }
+
+    public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
+        final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
+        builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()
+                        .setOwner(owner.asGrpcAccount())
+                        .setTokenId(approveWrapper.tokenId())
+                        .addAllSerialNumbers(
+                                List.of(approveWrapper.serialNumber().longValueExact()))
+                        .build()))
+                .build();
+        return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
     }
 }
