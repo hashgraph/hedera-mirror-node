@@ -24,11 +24,12 @@ class BaseAllowanceViewModel {
   /**
    * Constructs base allowance view model
    *
-   * @param {{owner: string, spender: string, timestampRange: {begin: string, end: string}}} baseAllowance
+   * @param {{owner: string, spender: string, amountGranted: long, timestampRange: {begin: string, end: string}}} baseAllowance
    */
   constructor(baseAllowance) {
     this.owner = EntityId.parse(baseAllowance.owner).toString();
     this.spender = EntityId.parse(baseAllowance.spender).toString();
+    this.amount_granted = baseAllowance.amountGranted;
     this.timestamp = {
       from: nsToSecNs(baseAllowance.timestampRange.begin),
       to: nsToSecNs(baseAllowance.timestampRange.end),
