@@ -231,7 +231,20 @@ class ContractService extends BaseService {
   getDetailedContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     const query = [
-      `with ${ContractService.entityCTE}`,
+      `with ${ContractService.entityCTE},
+      ${EthereumTransaction.tableName} as (
+        select 
+          ${EthereumTransaction.HASH}, ${EthereumTransaction.ACCESS_LIST}, ${EthereumTransaction.CHAIN_ID}, ${EthereumTransaction.GAS_PRICE},
+          ${EthereumTransaction.MAX_FEE_PER_GAS}, ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, ${EthereumTransaction.NONCE},
+          ${EthereumTransaction.SIGNATURE_R}, ${EthereumTransaction.SIGNATURE_S}, ${EthereumTransaction.TYPE},
+          ${EthereumTransaction.RECOVERY_ID}
+        from ${EthereumTransaction.tableName}
+      ),
+      ${RecordFile.tableName} as (
+        select
+          ${RecordFile.HASH}, ${RecordFile.INDEX}, ${RecordFile.GAS_USED}, ${RecordFile.CONSENSUS_END}
+        from ${RecordFile.tableName}
+      )`,
       ` select
           ${contractResultsFields},
           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS},
