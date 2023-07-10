@@ -1996,12 +1996,34 @@ components:
     ContractResult:
       type: object
       properties:
+        access_list:
+          description: The hex encoded access_list of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0xabcd"
         address:
           description: The hex encoded evm address of contract
           example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
           type: string
         amount:
           description: The number of tinybars sent to the function
+          example: 10
+          format: int64
+          nullable: true
+          type: integer
+        block_gas_used:
+          description: The total amount of gas used in the block
+          example: 2000
+          format: int64
+          nullable: true
+          type: integer
+        block_hash:
+          description: The hex encoded block (record file chain) hash
+          example: "0x6ceecd8bb224da491"
+          nullable: true
+          type: string
+        block_number:
+          description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
           example: 10
           format: int64
           nullable: true
@@ -2015,6 +2037,11 @@ components:
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
           nullable: true
           type: string
+        chain_id:
+          description: The hex encoded chain_id of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0x0127"
         contract_id:
           $ref: "#/components/schemas/EntityId"
         created_contract_ids:
@@ -2028,6 +2055,10 @@ components:
           example: "Out of gas"
           nullable: true
           type: string
+        failed_initcode:
+          description: The hex encoded initcode of a failed contract create transaction
+          example: "0x856739"
+          type: string
         from:
           $ref: "#/components/schemas/EvmAddress"
         function_parameters:
@@ -2040,6 +2071,11 @@ components:
           example: 100000
           format: int64
           type: integer
+        gas_price:
+          description: The hex encoded gas_price of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0x4a817c800"
         gas_used:
           description: The units of gas used to execute contract
           example: 1000
@@ -2050,10 +2086,36 @@ components:
           description: A hex encoded 32 byte hash and it is only populated for Ethereum transaction case
           example: "0xfebbaa29c513d124a6377246ea3506ad917d740c21a88f61a1c55ba338fc2bb1"
           type: string
+        max_fee_per_gas:
+          description: The hex encoded max_fee_per_gas of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0x5"
+        max_priority_fee_per_gas:
+          description: The hex encoded max_priority_fee_per_gas of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0x100"
+        nonce:
+          description: The nonce of the wrapped ethereum transaction
+          nullable: true
+          format: int64
+          type: integer
+          example: 1
+        r:
+          description: The hex encoded signature_r of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043"
         result:
           description: The result of the transaction
           example: SUCCESS
           type: string
+        s:
+          description: The hex encoded signature_s of the wrapped ethereum transaction
+          nullable: true
+          type: string
+          example: "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355"
         status:
           description: The status of the transaction, 0x1 for a SUCCESS transaction and 0x0 for all else
           example: 0x1
@@ -2062,6 +2124,16 @@ components:
           $ref: "#/components/schemas/Timestamp"
         to:
           $ref: "#/components/schemas/EvmAddressNullable"
+        type:
+          description: The type of the wrapped ethereum transaction, 0 (Pre-Eip1559) or 2 (Post-Eip1559)
+          nullable: true
+          type: integer
+          example: 2
+        v:
+          description: The recovery_id of the wrapped ethereum transaction
+          nullable: true
+          type: integer
+          example: 1
     ContractResultDetails:
       allOf:
         - $ref: "#/components/schemas/ContractResult"
