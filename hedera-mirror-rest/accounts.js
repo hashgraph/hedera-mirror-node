@@ -160,7 +160,7 @@ const getEntityBalanceQuery = (
     );
   } else {
     queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id, created_timestamp as consensus_timestamp
+      `with latest_token_balance as (select account_id, balance, token_id
                                      from token_account
                                      where associated is true)`
     );
