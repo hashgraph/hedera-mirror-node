@@ -153,14 +153,14 @@ const getEntityBalanceQuery = (
 
   // If timestamp parameter is present then get values from token_balance
   const queries = [];
-  if (tokenBalanceQuery.params.length === 2) {
+  if (accountBalanceQuery.query) {
     queries.push(
       `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
                                        from token_balance)`
     );
   } else {
     queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
+      `with latest_token_balance as (select account_id, balance, token_id, created_timestamp as consensus_timestamp
                                      from token_account
                                      where associated is true)`
     );
@@ -413,23 +413,23 @@ const getOneAccount = async (req, res) => {
       eqValues,
       false
     );
-    const accountBalanceTs = await balances.getAccountBalanceTimestamp(
+    const balanceFileTs = await balances.getAccountBalanceTimestamp(
       balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
       balanceFileTsParams,
       order
     );
     //Setting the timestamp to be the account balance timestamp
-    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(accountBalanceTs);
+    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(balanceFileTs);
 
-    //Allow type coercion as the neValues will always be bigint and accountBalanceTs may be a number
-    const timestampExcluded = neValues.some((value) => value == accountBalanceTs);
+    //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
+    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
 
     if (timestampExcluded) {
       throw new NotFoundError('Not found');
     }
 
     accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
-    accountBalanceQuery.params = [accountBalanceTs ?? null];
+    accountBalanceQuery.params = [balanceFileTs ?? null];
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(
