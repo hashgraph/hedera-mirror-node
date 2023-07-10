@@ -41,6 +41,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -271,5 +272,14 @@ public class ServicesConfiguration {
     @Bean
     CreateLogic createLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new CreateLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    BurnPrecompile burnPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final BurnLogic burnLogic) {
+        return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
     }
 }
