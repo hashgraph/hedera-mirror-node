@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.services.txns.validation;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
 
-/**
- * Copied Logic type from hedera-services. Unnecessary methods are deleted.
- */
-public interface OptionValidator {
+public record Dissociation(AccountID accountId, List<TokenID> tokenIds) {
 
-    ResponseCodeEnum nftMetadataCheck(byte[] metadata);
+    public static Dissociation singleDissociation(AccountID accountId, TokenID tokenID) {
+        return new Dissociation(accountId, List.of(tokenID));
+    }
 
-    ResponseCodeEnum maxBatchSizeMintCheck(int length);
-
-    ResponseCodeEnum maxBatchSizeBurnCheck(int length);
-
-    boolean isValidExpiry(final Timestamp expiry);
+    public static Dissociation multiDissociation(AccountID accountId, List<TokenID> tokenIds) {
+        return new Dissociation(accountId, tokenIds);
+    }
 }

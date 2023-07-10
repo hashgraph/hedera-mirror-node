@@ -23,6 +23,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -31,6 +33,7 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -156,5 +159,17 @@ class ContextOptionValidatorTest {
     void ifContractExpiryNotEnabledItsOk() {
         final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(OK, status);
+    }
+
+    @Test
+    void validateTimestampExpired() {
+        final var expiry = Timestamp.getDefaultInstance();
+        assertFalse(subject.isValidExpiry(expiry));
+    }
+
+    @Test
+    void validateValidExpirationTimestamp() {
+        final var expiry = Timestamp.newBuilder().setSeconds(9999999999L).build();
+        assertTrue(subject.isValidExpiry(expiry));
     }
 }
