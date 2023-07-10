@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -88,15 +89,21 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
 
-    /*
-     * For an approved transfer, create an offsetting account allowance to decrement from the amount
-     * of the existing crypto allowance already established by the owner and granted to the sender.
-     *
-     *  1. Approval is only indicated on the debit side of the transfer, therefore the amount is already negative.
-     *  2. The transaction payer is the sender, and the account amount account ID is that of the owner.
-     */
-    private static CryptoAllowance createAdjustingAllowanceByAmount(AccountAmount accountAmount, long payerAccountNum) {
+    private static CryptoAllowance createAdjustingCryptoAllowanceByAmount(
+            AccountAmount accountAmount, long payerAccountNum) {
+
         return CryptoAllowance.builder()
+                .owner(accountAmount.getAccountID().getAccountNum())
+                .spender(payerAccountNum)
+                .amount(accountAmount.getAmount())
+                .build();
+    }
+
+    private static TokenAllowance createAdjustingTokenAllowanceByAmount(
+            AccountAmount accountAmount, long payerAccountNum, long tokenId) {
+
+        return TokenAllowance.builder()
+                .tokenId(tokenId)
                 .owner(accountAmount.getAccountID().getAccountNum())
                 .spender(payerAccountNum)
                 .amount(accountAmount.getAmount())
@@ -168,6 +175,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem, transaction);
+            updateTokenAllowanceAmounts(recordItem);
             insertAssessedCustomFees(recordItem);
         }
 
@@ -266,7 +274,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void updateCryptoAllowanceAmounts(RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody();
-        if (!transactionBody.hasCryptoTransfer()) {
+        if (!transactionBody.hasCryptoTransfer()
+                || !entityProperties.getPersist().isCryptoTransferAmounts()) {
             return;
         }
 
@@ -276,8 +285,28 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         accountAmountsList.stream()
                 .filter(AccountAmount::getIsApproval)
-                .map(accountAmount -> createAdjustingAllowanceByAmount(accountAmount, payerAccountNum))
+                .map(accountAmount -> createAdjustingCryptoAllowanceByAmount(accountAmount, payerAccountNum))
                 .forEach(entityListener::onCryptoAllowance);
+    }
+
+    private void updateTokenAllowanceAmounts(RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody();
+        if (!transactionBody.hasCryptoTransfer()
+                || !entityProperties.getPersist().isTokens()) {
+            return;
+        }
+
+        var tokenTransferLists = transactionBody.getCryptoTransfer().getTokenTransfersList();
+        var payerAccountNum = transactionBody.getTransactionID().getAccountID().getAccountNum();
+
+        for (var tokenTransferList : tokenTransferLists) {
+            var tokenId = tokenTransferList.getToken().getTokenNum();
+            tokenTransferList.getTransfersList().stream()
+                    .filter(AccountAmount::getIsApproval)
+                    .map(accountAmount ->
+                            createAdjustingTokenAllowanceByAmount(accountAmount, payerAccountNum, tokenId))
+                    .forEach(entityListener::onTokenAllowance);
+        }
     }
 
     /*
