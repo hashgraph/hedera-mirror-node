@@ -59,7 +59,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -121,7 +121,8 @@ public class ServicesConfiguration {
             PricedUsageCalculator pricedUsageCalculator,
             List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         // queryUsageEstimators and txnResourceUsegaEstimator will be implemented in separate PR
-        final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators = new HashMap<>();
+        final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
+                new EnumMap<>(HederaFunctionality.class);
 
         for (final var estimator : txnResourceUsageEstimators) {
             if (estimator.toString().contains("TokenAssociate")) {
