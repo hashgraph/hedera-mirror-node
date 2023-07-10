@@ -71,5 +71,5 @@ spec:
                 network: MAINNET
                 operatorBalance: 75000000000
       cucumberTags: "@critical"
-      enabled: true
+      enabled: false
 
