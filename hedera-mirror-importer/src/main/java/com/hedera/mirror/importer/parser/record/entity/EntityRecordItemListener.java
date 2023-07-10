@@ -31,7 +31,7 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -141,7 +141,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusTimestamp, recordItem);
+            processItemizedTransfers(consensusTimestamp, recordItem, transaction);
         }
 
         var status = recordItem.getTransactionRecord().getReceipt().getStatus();
@@ -204,7 +204,7 @@ public class EntityRecordItemListener implements RecordItemListener {
      * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private void processNonFeeTransfers(long consensusTimestamp, RecordItem recordItem) {
+    private void processItemizedTransfers(long consensusTimestamp, RecordItem recordItem, Transaction transaction) {
         if (!entityProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
@@ -221,13 +221,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     continue;
                 }
 
-                NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
-                nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setConsensusTimestamp(consensusTimestamp);
-                nonFeeTransfer.setEntityId(entityId);
-                nonFeeTransfer.setIsApproval(aa.getIsApproval());
-                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                entityListener.onNonFeeTransfer(nonFeeTransfer);
+                ItemizedTransfer itemizedTransfer = new ItemizedTransfer();
+                itemizedTransfer.setAmount(aa.getAmount());
+                itemizedTransfer.setConsensusTimestamp(consensusTimestamp);
+                itemizedTransfer.setEntityId(entityId);
+                itemizedTransfer.setIsApproval(aa.getIsApproval());
+                itemizedTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+                transaction.addItemizedTransfer(itemizedTransfer);
             }
         }
     }

@@ -45,19 +45,8 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
-import com.hedera.mirror.common.domain.transaction.Prng;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
-import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.transaction.*;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -120,7 +109,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<Nft> nfts;
     private final Collection<NodeStake> nodeStakes;
-    private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<ItemizedTransfer> itemizedTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
@@ -187,7 +176,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nfts = new ArrayList<>();
         networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
-        nonFeeTransfers = new ArrayList<>();
+        itemizedTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
@@ -363,8 +352,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        nonFeeTransfers.add(nonFeeTransfer);
+    public void onNonFeeTransfer(ItemizedTransfer itemizedTransfer) throws ImporterException {
+        itemizedTransfers.add(itemizedTransfer);
     }
 
     @Override
@@ -495,7 +484,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowances.clear();
             nftAllowanceState.clear();
             nodeStakes.clear();
-            nonFeeTransfers.clear();
+            itemizedTransfers.clear();
             prngs.clear();
             schedules.clear();
             stakingRewardTransfers.clear();
@@ -557,7 +546,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            batchPersister.persist(nonFeeTransfers);
+            batchPersister.persist(itemizedTransfers);
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 

@@ -49,7 +49,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -876,15 +876,15 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onNonFeeTransfer() {
         // given
-        NonFeeTransfer nonFeeTransfer1 = domainBuilder
-                .nonFeeTransfer()
+        ItemizedTransfer itemizedTransfer1 = domainBuilder
+                .itemizedTransfer()
                 .customize(n -> n.amount(1L)
                         .consensusTimestamp(1L)
                         .entityId(EntityId.of(1L, ACCOUNT))
                         .payerAccountId(TRANSACTION_PAYER))
                 .get();
-        NonFeeTransfer nonFeeTransfer2 = domainBuilder
-                .nonFeeTransfer()
+        ItemizedTransfer itemizedTransfer2 = domainBuilder
+                .itemizedTransfer()
                 .customize(n -> n.amount(2L)
                         .consensusTimestamp(2L)
                         .entityId(EntityId.of(2L, ACCOUNT))
@@ -892,12 +892,12 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .get();
 
         // when
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer2);
+        sqlEntityListener.onNonFeeTransfer(itemizedTransfer1);
+        sqlEntityListener.onNonFeeTransfer(itemizedTransfer2);
         completeFileAndCommit();
 
         // then
-        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
+        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(itemizedTransfer1, itemizedTransfer2);
     }
 
     @Test

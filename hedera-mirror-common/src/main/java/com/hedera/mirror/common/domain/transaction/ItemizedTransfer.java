@@ -32,7 +32,7 @@ import org.springframework.data.domain.Persistable;
 @Data
 @Entity
 @NoArgsConstructor
-public class NonFeeTransfer implements Persistable<Long> {
+public class ItemizedTransfer implements Persistable<Long> {
 
     private Long amount;
 

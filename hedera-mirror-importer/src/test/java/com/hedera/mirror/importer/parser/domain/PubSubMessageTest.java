@@ -198,7 +198,7 @@ class PubSubMessageTest {
 
     @Test
     void testSerializationAllFieldsSet() throws Exception {
-        Iterable<AccountAmount> nonFeeTransfers = Lists.newArrayList(
+        Iterable<AccountAmount> itemizedTransfers = Lists.newArrayList(
                 AccountAmount.newBuilder()
                         .setAccountID(ACCOUNT_ID)
                         .setAmount(INT64_VALUE)
@@ -213,7 +213,7 @@ class PubSubMessageTest {
                 10,
                 new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
                 getTransactionRecord(),
-                nonFeeTransfers);
+                itemizedTransfers);
         ObjectMapper objectMapper = new ObjectMapper();
         String actual = objectMapper.writeValueAsString(pubSubMessage);
         String pre =
@@ -230,7 +230,7 @@ class PubSubMessageTest {
                 """;
         String post =
                 """
-                  "nonFeeTransfers" : [ {
+                  "itemizedTransfers" : [ {
                     "accountID": {
                       "shardNum": "0",
                       "realmNum": "0",

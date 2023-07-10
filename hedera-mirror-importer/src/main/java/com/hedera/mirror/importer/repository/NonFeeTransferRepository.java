@@ -16,15 +16,15 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, Long>, RetentionRepository {
+public interface NonFeeTransferRepository extends CrudRepository<ItemizedTransfer, Long>, RetentionRepository {
 
     @Modifying
     @Override
-    @Query("delete from NonFeeTransfer where consensusTimestamp <= ?1")
+    @Query("delete from ItemizedTransfer where consensusTimestamp <= ?1")
     int prune(long consensusTimestamp);
 }

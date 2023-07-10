@@ -39,8 +39,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -1167,7 +1167,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
                 () -> assertThat(findNonFeeTransfers())
-                        .extracting(NonFeeTransfer::getEntityId)
+                        .extracting(ItemizedTransfer::getEntityId)
                         .extracting(EntityId::getEntityNum)
                         .contains(newAccount.getAccountNum(), entity.getNum()));
     }
@@ -1245,7 +1245,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
                 () -> assertThat(findNonFeeTransfers())
-                        .extracting(NonFeeTransfer::getEntityId)
+                        .extracting(ItemizedTransfer::getEntityId)
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds));
     }
 

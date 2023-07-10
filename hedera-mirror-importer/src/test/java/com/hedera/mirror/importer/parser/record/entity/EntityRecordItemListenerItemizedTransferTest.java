@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration tests relating to RecordItemParser and non_fee_transfer.
  */
-class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long PAYER_ACCOUNT_NUM = 1111;
     private static final AccountID PAYER_ACCOUNT_ID =

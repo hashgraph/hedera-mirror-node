@@ -53,7 +53,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NonFeeTransferExtractionStrategyImplTest {
+class ItemizedTransferExtractionStrategyImplTest {
     private static final long payerAccountNum = 999L;
     private static final AccountID payerAccountId =
             AccountID.newBuilder().setAccountNum(payerAccountNum).build();
