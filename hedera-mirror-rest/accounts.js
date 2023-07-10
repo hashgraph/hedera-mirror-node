@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
@@ -362,7 +363,7 @@ const getOneAccount = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
-  const transactionsFilter = filters.find((filter) => filter.key === filterKeys.TRANSACTIONS);
+  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
   const parsedQueryParams = req.query;
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
   const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
