@@ -416,7 +416,8 @@ zfs:
   # move to zfs.serviceAccount.zfsNode.serviceAccount instead and set create to false once init containers pr resolved in zfs local pv repo
   init:
     serviceAccount:
-      name: default
+      iAmName: zfs-driver-preprod-sa@mirrornode-non-prod-314918.iam.gserviceaccount.com
+      name: zfs-service-account
   coordinator:
     diskSize: 128GB
   enabled: false

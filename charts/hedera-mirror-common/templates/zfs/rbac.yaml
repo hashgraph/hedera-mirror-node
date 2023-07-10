@@ -6,7 +6,7 @@ metadata:
 rules:
   - apiGroups: [""] # "" indicates the core API group
     resources: ["pods", "nodes"]
-    verbs: ["get", "watch", "list"]
+    verbs: ["get", "list"]
 
 ---
 kind: ClusterRoleBinding
@@ -17,7 +17,7 @@ metadata:
 subjects:
   #TODO parameterize
   - kind: ServiceAccount
-    name: default
+    name: {{ .Values.zfs.init.serviceAccount.name }}
     namespace: common
 roleRef:
   kind: ClusterRole
