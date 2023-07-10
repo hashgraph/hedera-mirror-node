@@ -67,7 +67,7 @@ dependencies {
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.13.0")
-        api("io.cucumber:cucumber-bom:7.12.1")
+        api("io.cucumber:cucumber-bom:7.13.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.56.1")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.1")
