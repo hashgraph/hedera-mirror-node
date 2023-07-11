@@ -393,6 +393,18 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         });
     }
 
+    @Test
+    void getEndStakePeriod() {
+        assertThat(entityStakeRepository.getEndStakePeriod()).isEmpty();
+
+        long endStakePeriod = domainBuilder.id();
+        domainBuilder
+                .entityStake()
+                .customize(es -> es.endStakePeriod(endStakePeriod).id(800L))
+                .persist();
+        assertThat(entityStakeRepository.getEndStakePeriod()).contains(endStakePeriod);
+    }
+
     @ParameterizedTest
     @CsvSource({
         ",,true,true", // empty node_stake, empty entity_stake, has staking reward account
@@ -804,29 +816,6 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         var entityStake = domainBuilder.entityStake().get();
         entityStakeRepository.save(entityStake);
         assertThat(entityStakeRepository.findById(entityStake.getId())).get().isEqualTo(entityStake);
-    }
-
-    @Test
-    void saveTriggerHistoryRow() {
-        // given
-        var entityStake = domainBuilder.entityStake().get();
-        var update1 = TestUtils.clone(entityStake);
-        update1.setPendingReward(200L);
-        update1.setTimestampLower(update1.getTimestampLower() + 300L);
-        var update2 = TestUtils.clone(update1);
-        update2.setPendingReward(500L);
-        update2.setTimestampLower(update2.getTimestampLower() + 2000L);
-
-        // when
-        entityStakeRepository.save(entityStake);
-        entityStakeRepository.save(update1);
-        entityStakeRepository.save(update2);
-
-        // then
-        entityStake.setTimestampUpper(update1.getTimestampLower());
-        update1.setTimestampUpper(update2.getTimestampLower());
-        assertThat(entityStakeRepository.findAll()).containsExactly(update2);
-        assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrder(entityStake, update1);
     }
 
     private void assertEntityStartStart(List<Entity> expected) {

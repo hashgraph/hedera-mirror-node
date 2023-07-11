@@ -116,7 +116,7 @@ alter table if exists entity_stake
 create index if not exists entity_stake_history__id_lower_timestamp
     on entity_stake_history (id, lower(timestamp_range));
 create index if not exists entity_stake_history__timestamp_range
-    on entity_stake_history (timestamp_range);
+    on entity_stake_history using gist (timestamp_range);
 
 -- ethereum_transaction
 alter table ethereum_transaction

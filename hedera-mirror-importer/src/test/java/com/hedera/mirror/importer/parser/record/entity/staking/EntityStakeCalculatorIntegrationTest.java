@@ -26,7 +26,10 @@ import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
@@ -38,6 +41,7 @@ import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import java.time.Instant;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
@@ -54,7 +58,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
 
     @Test
-    void entityStakeCalculation() {
+    void calculate() {
         // given
         long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
         var newPeriodInstant = TestUtils.asStartOfEpochDay(epochDay + 1);
@@ -180,7 +184,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                 .get();
 
         // when
-        // The staking period just ended
+        // The staking period epochDay just ended
         var endOfStakingPeriod = TestUtils.toTimestamp(DomainUtils.convertToNanosMax(newPeriodInstant.minusNanos(1)));
         var recordItem = recordItemBuilder
                 .nodeStakeUpdate()
@@ -191,19 +195,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(nodeStakeTimestamp)))
                 .build();
         // process the NodeStakeUpdateTransaction
-        transactionTemplate.executeWithoutResult(s -> {
-            var instant = Instant.ofEpochSecond(0, nodeStakeTimestamp);
-            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-            var recordFile = domainBuilder
-                    .recordFile()
-                    .customize(rf -> rf.consensusStart(nodeStakeTimestamp)
-                            .consensusEnd(nodeStakeTimestamp)
-                            .name(filename))
-                    .get();
-            recordStreamFileListener.onStart();
-            entityRecordItemListener.onItem(recordItem);
-            recordStreamFileListener.onEnd(recordFile);
-        });
+        persistRecordItem(recordItem);
 
         // then
         await().atMost(Durations.FIVE_SECONDS)
@@ -219,11 +211,99 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrder(entityStake1, entityStake800);
     }
 
+    @Test
+    void calculateTwoPeriods() {
+        // given
+        long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
+        // Consensus timestamps for NodeStakeUpdate transactions
+        long nodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 200L;
+        long lastNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 300L;
+        long secondLastNodeStakeTimestamp =
+                DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 100L;
+
+        // Account 800's entity stake is up to end period epochDay - 2, calculation for period epochDay - 1 is skipped
+        // for some reason, when the NodeStakeUpdate transaction for end period epochDay is processed, there should be
+        // entity stake calculation done for two periods, epochDay - 1 and epochDay
+        long balanceTimestamp = secondLastNodeStakeTimestamp - 2000L;
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(800L).num(800L).timestampRange(Range.atLeast(balanceTimestamp - 5000)))
+                .persist();
+        var entityStake = domainBuilder
+                .entityStake()
+                .customize(e -> e.endStakePeriod(epochDay - 2)
+                        .id(800L)
+                        .timestampRange(Range.atLeast(secondLastNodeStakeTimestamp)))
+                .persist();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(balanceTimestamp))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(800L, EntityType.ACCOUNT))))
+                .persist();
+        domainBuilder
+                .nodeStake()
+                .customize(ns -> ns.consensusTimestamp(lastNodeStakeTimestamp)
+                        .epochDay(epochDay - 1)
+                        .nodeId(0L))
+                .persist();
+
+        // when
+        // The staking period epochDay just ended
+        var endOfStakingPeriod = TestUtils.toTimestamp(DomainUtils.convertToNanosMax(
+                TestUtils.asStartOfEpochDay(epochDay + 1).minusNanos(1)));
+        var recordItem = recordItemBuilder
+                .nodeStakeUpdate()
+                .transactionBody(t -> t.clearNodeStake()
+                        .addNodeStake(NodeStake.newBuilder().setNodeId(0L).setRewardRate(100L))
+                        .setEndOfStakingPeriod(endOfStakingPeriod))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(nodeStakeTimestamp)))
+                .build();
+        // process the NodeStakeUpdateTransaction
+        persistRecordItem(recordItem);
+
+        // then
+        var expectedCurrent = entityStake.toBuilder()
+                .endStakePeriod(epochDay)
+                .timestampRange(Range.atLeast(nodeStakeTimestamp))
+                .build();
+        var expectedHistory = List.of(
+                entityStake.toBuilder()
+                        .timestampRange(Range.closedOpen(secondLastNodeStakeTimestamp, lastNodeStakeTimestamp))
+                        .build(),
+                entityStake.toBuilder()
+                        .endStakePeriod(epochDay - 1)
+                        .timestampRange(Range.closedOpen(lastNodeStakeTimestamp, nodeStakeTimestamp))
+                        .build());
+        await().atMost(Durations.FIVE_SECONDS)
+                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .untilAsserted(() -> assertThat(entityStakeRepository.findAll()).containsExactly(expectedCurrent));
+        assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+    }
+
     private void persistCryptoTransfer(long amount, long entityId, long timestamp) {
         domainBuilder
                 .cryptoTransfer()
                 .customize(c -> c.amount(amount).consensusTimestamp(timestamp).entityId(entityId))
                 .persist();
+    }
+
+    private void persistRecordItem(RecordItem recordItem) {
+        transactionTemplate.executeWithoutResult(s -> {
+            long timestamp = recordItem.getConsensusTimestamp();
+            var instant = Instant.ofEpochSecond(0, timestamp);
+            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+            var recordFile = domainBuilder
+                    .recordFile()
+                    .customize(rf ->
+                            rf.consensusStart(timestamp).consensusEnd(timestamp).name(filename))
+                    .get();
+            recordStreamFileListener.onStart();
+            entityRecordItemListener.onItem(recordItem);
+            recordStreamFileListener.onEnd(recordFile);
+        });
     }
 
     private DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder<?, ?>> fromEntity(Entity entity) {

@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.entity.EntityStake;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -36,9 +37,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
           staked_node_id     bigint not null,
           stake_period_start bigint not null
         ) on commit drop;
-        create index if not exists entity_state_start__id on entity_state_start (id);
-        create index if not exists entity_state_start__staked_account_id
-          on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
         with end_period as (
           select epoch_day, consensus_timestamp
@@ -102,10 +100,17 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
          ) balance_change on entity_id = id,
          balance_timestamp bt
          where bt.consensus_timestamp is not null;
+
+        create index if not exists entity_state_start__id on entity_state_start (id);
+        create index if not exists entity_state_start__staked_account_id
+          on entity_state_start (staked_account_id) where staked_account_id <> 0;
         """,
             nativeQuery = true)
     @Transactional
     void createEntityStateStart();
+
+    @Query(value = "select endStakePeriod from EntityStake where id = 800")
+    Optional<Long> getEndStakePeriod();
 
     @Query(
             value =
@@ -155,6 +160,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
     @Query(
             value =
                     """
+            create temp table entity_stake_temp (like entity_stake) on commit drop;
             with ending_period as (
               select epoch_day, consensus_timestamp
               from node_stake
@@ -182,46 +188,92 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               from entity_state_start
               where staked_account_id <> 0
               group by staked_account_id
-            ), updated as (
-              select
-                ess.decline_reward as decline_reward_start,
-                epoch_day as end_stake_period,
-                ess.id,
-                (case
-                   when coalesce(decline_reward_start, true) is true
-                        or coalesce(staked_node_id_start, -1) = -1
-                        then 0
-                   when reward_rate is null then pending_reward
-                   when ess.stake_period_start > epoch_day - 1 then 0
-                   when ess.stake_period_start = epoch_day - 1 then reward_rate * stake_total_start_whole_bar
-                   when epoch_day - ess.stake_period_start > 365
-                     then pending_reward + reward_rate * stake_total_start_whole_bar
-                       - coalesce((select reward_rate from node_stake where epoch_day = ep.epoch_day - 365 and node_id = staked_node_id_start), 0) * stake_total_start_whole_bar
-                   else pending_reward + reward_rate * stake_total_start_whole_bar
-                  end) as pending_reward,
-                ess.staked_node_id as staked_node_id_start,
-                coalesce(ps.staked_to_me, 0) as staked_to_me,
-                (case when ess.decline_reward is true or ess.staked_node_id = -1 then 0
-                      else ess.balance + coalesce(ps.staked_to_me, 0)
-                 end) as stake_total_start,
-              int8range(ep.consensus_timestamp, null) as timestamp_range
-              from entity_state_start ess
-                left join ending_period_stake_state on entity_id = ess.id
-                left join proxy_staking ps on ps.staked_account_id = ess.id,
-                ending_period ep
             )
-            insert into entity_stake
-            table updated
+            insert into entity_stake_temp (decline_reward_start, end_stake_period, id, pending_reward,
+              staked_node_id_start, staked_to_me, stake_total_start, timestamp_range)
+            select
+              ess.decline_reward as decline_reward_start,
+              epoch_day as end_stake_period,
+              ess.id,
+              (case
+                 when coalesce(decline_reward_start, true) is true
+                      or coalesce(staked_node_id_start, -1) = -1
+                      then 0
+                 when reward_rate is null then pending_reward
+                 when ess.stake_period_start > epoch_day - 1 then 0
+                 when ess.stake_period_start = epoch_day - 1 then reward_rate * stake_total_start_whole_bar
+                 when epoch_day - ess.stake_period_start > 365
+                   then pending_reward + reward_rate * stake_total_start_whole_bar
+                     - coalesce((select reward_rate from node_stake where epoch_day = ep.epoch_day - 365 and node_id = staked_node_id_start), 0) * stake_total_start_whole_bar
+                 else pending_reward + reward_rate * stake_total_start_whole_bar
+                end) as pending_reward,
+              ess.staked_node_id as staked_node_id_start,
+              coalesce(ps.staked_to_me, 0) as staked_to_me,
+              (case when ess.decline_reward is true or ess.staked_node_id = -1 then 0
+                    else ess.balance + coalesce(ps.staked_to_me, 0)
+               end) as stake_total_start,
+              int8range(ep.consensus_timestamp, null) as timestamp_range
+            from entity_state_start ess
+              left join ending_period_stake_state on entity_id = ess.id
+              left join proxy_staking ps on ps.staked_account_id = ess.id,
+              ending_period ep;
+            create index on entity_stake_temp (id);
+
+            -- history table
+            insert into entity_stake_history (
+                decline_reward_start,
+                end_stake_period,
+                id,
+                pending_reward,
+                staked_node_id_start,
+                staked_to_me,
+                stake_total_start,
+                timestamp_range
+              )
+            select
+              e.decline_reward_start,
+              e.end_stake_period,
+              e.id,
+              e.pending_reward,
+              e.staked_node_id_start,
+              e.staked_to_me,
+              e.stake_total_start,
+              int8range(lower(e.timestamp_range), lower(t.timestamp_range))
+            from entity_stake e
+            join entity_stake_temp t on t.id = e.id;
+
+            -- current table
+            insert into entity_stake (
+                decline_reward_start,
+                end_stake_period,
+                id,
+                pending_reward,
+                staked_node_id_start,
+                staked_to_me,
+                stake_total_start,
+                timestamp_range
+              )
+            select
+              t.decline_reward_start,
+              t.end_stake_period,
+              t.id,
+              t.pending_reward,
+              t.staked_node_id_start,
+              t.staked_to_me,
+              t.stake_total_start,
+              t.timestamp_range
+            from entity_stake_temp t
             on conflict (id) do update
-              set decline_reward_start = excluded.decline_reward_start,
-                  end_stake_period     = excluded.end_stake_period,
-                  pending_reward       = excluded.pending_reward,
-                  staked_node_id_start = excluded.staked_node_id_start,
-                  staked_to_me         = excluded.staked_to_me,
-                  stake_total_start    = excluded.stake_total_start,
-                  timestamp_range      = excluded.timestamp_range;
+            set
+              decline_reward_start = excluded.decline_reward_start,
+              end_stake_period = excluded.end_stake_period,
+              pending_reward = excluded.pending_reward,
+              staked_node_id_start = excluded.staked_node_id_start,
+              staked_to_me = excluded.staked_to_me,
+              stake_total_start = excluded.stake_total_start,
+              timestamp_range = excluded.timestamp_range;
             """,
             nativeQuery = true)
     @Transactional
-    int updateEntityStake();
+    void updateEntityStake();
 }

@@ -42,35 +42,4 @@ create table if not exists entity_stake_history (like entity_stake including def
 create index if not exists entity_stake_history__id_lower_timestamp
   on entity_stake_history (id, lower(timestamp_range));
 create index if not exists entity_stake_history__timestamp_range
-  on entity_stake_history (timestamp_range);
-
--- trigger function to add history row
-create function add_entity_stake_history() returns trigger as
-$$
-begin
-  insert into entity_stake_history (
-    decline_reward_start,
-    end_stake_period,
-    id,
-    pending_reward,
-    staked_node_id_start,
-    staked_to_me,
-    stake_total_start,
-    timestamp_range)
-  values (
-    OLD.decline_reward_start,
-    OLD.end_stake_period,
-    OLD.id,
-    OLD.pending_reward,
-    OLD.staked_node_id_start,
-    OLD.staked_to_me,
-    OLD.stake_total_start,
-    int8range(lower(OLD.timestamp_range), lower(NEW.timestamp_range)));
-    return NULL; -- result is ignored since this is an AFTER trigger
-end
-$$ language plpgsql;
-
-create trigger entity_stake_trigger
-  after update on entity_stake
-  for each row
-  execute function add_entity_stake_history();
+  on entity_stake_history using gist (timestamp_range);

@@ -20,6 +20,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import jakarta.inject.Named;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -57,8 +58,12 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
                     var stopwatch = Stopwatch.createStarted();
                     entityStakeRepository.createEntityStateStart();
                     log.info("Created entity_state_start in {}", stopwatch);
-                    int count = entityStakeRepository.updateEntityStake();
-                    log.info("Completed pending reward calculation for {} entities in {}", count, stopwatch);
+                    entityStakeRepository.updateEntityStake();
+                    Optional<Long> endStakePeriod = entityStakeRepository.getEndStakePeriod();
+                    log.info(
+                            "Completed pending reward calculation of end stake period {} in {}",
+                            endStakePeriod.orElse(null),
+                            stopwatch);
                 });
             }
         } finally {
