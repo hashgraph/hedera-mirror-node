@@ -151,11 +151,20 @@ const getEntityBalanceQuery = (
     entityStakeQuery.params
   );
 
-  const queries = [
-    `with latest_token_balance as (select account_id, balance, token_id, created_timestamp
-                                       from token_account
-                                       where associated is true)`,
-  ];
+  // If timestamp parameter is present then get values from token_balance
+  const queries = [];
+  if (accountBalanceQuery.query) {
+    queries.push(
+      `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
+                                       from token_balance)`
+    );
+  } else {
+    queries.push(
+      `with latest_token_balance as (select account_id, balance, token_id
+                                     from token_account
+                                     where associated is true)`
+    );
+  }
 
   const selectFields = [
     entityFields,
@@ -385,12 +394,8 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    let tokenBalanceTsQuery = transactionTsQuery
-      .replaceAll('t.consensus_timestamp', 'created_timestamp')
-      .replaceAll('?', (_) => `$${++paramCount}`);
-
+    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
     tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
-    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(transactionTsParams);
 
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
@@ -408,20 +413,23 @@ const getOneAccount = async (req, res) => {
       eqValues,
       false
     );
-    const accountBalanceTs = await balances.getAccountBalanceTimestamp(
+    const balanceFileTs = await balances.getAccountBalanceTimestamp(
       balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
       balanceFileTsParams,
       order
     );
-    //Allow type coercion as the neValues will always be bigint and accountBalanceTs may be a number
-    const timestampExcluded = neValues.some((value) => value == accountBalanceTs);
+    //Setting the timestamp to be the account balance timestamp
+    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(balanceFileTs);
+
+    //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
+    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
 
     if (timestampExcluded) {
       throw new NotFoundError('Not found');
     }
 
     accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
-    accountBalanceQuery.params = [accountBalanceTs ?? null];
+    accountBalanceQuery.params = [balanceFileTs ?? null];
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(

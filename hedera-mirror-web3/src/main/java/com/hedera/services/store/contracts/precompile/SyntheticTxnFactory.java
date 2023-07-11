@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.models.Id;
@@ -35,6 +36,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -162,5 +164,17 @@ public class SyntheticTxnFactory {
                         .build()))
                 .build();
         return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
+    }
+
+    public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
+        final var builder = TokenBurnTransactionBody.newBuilder();
+
+        builder.setToken(burnWrapper.tokenType());
+        if (burnWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(burnWrapper.serialNos());
+        } else {
+            builder.setAmount(burnWrapper.amount());
+        }
+        return TransactionBody.newBuilder().setTokenBurn(builder);
     }
 }
