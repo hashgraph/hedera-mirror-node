@@ -4,8 +4,9 @@ kind: StorageClass
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: zfs
+allowVolumeExpansion: true
 parameters: {{- toYaml .Values.zfs.parameters | nindent 2 }}
 provisioner: zfs.csi.openebs.io
 reclaimPolicy: Retain
-volumeBindingMode:  WaitForFirstConsumer
+volumeBindingMode: WaitForFirstConsumer
 {{- end -}}
