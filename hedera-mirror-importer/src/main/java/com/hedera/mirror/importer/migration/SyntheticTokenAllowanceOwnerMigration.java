@@ -29,79 +29,84 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
     private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
             """
-            begin;
+                    begin;
 
-            create temp table token_allowance_temp (
-              amount            bigint not null,
-              created_timestamp bigint not null,
-              owner             bigint not null,
-              payer_account_id  bigint not null,
-              spender           bigint not null,
-              token_id          bigint not null,
-              primary key (owner, spender, token_id, created_timestamp)
-            ) on commit drop;
+                    create temp table token_allowance_temp (
+                      amount_granted    bigint not null,
+                      amount            bigint not null,
+                      created_timestamp bigint not null,
+                      owner             bigint not null,
+                      payer_account_id  bigint not null,
+                      spender           bigint not null,
+                      token_id          bigint not null,
+                      primary key (owner, spender, token_id, created_timestamp)
+                    ) on commit drop;
 
-            with affected as (
-              select ta.*, cr.consensus_timestamp, cr.sender_id
-              from (
-                select * from token_allowance
-                union all
-                select * from token_allowance_history
-              ) ta
-              join contract_result cr on cr.consensus_timestamp = lower(ta.timestamp_range)
-            ), delete_token_allowance as (
-              delete from token_allowance ta
-              using affected a
-              where ta.owner in (a.owner, a.sender_id) and ta.spender = a.spender and ta.token_id = a.token_id
-              returning
-                ta.amount,
-                lower(ta.timestamp_range) as created_timestamp,
-                a.sender_id as owner,
-                ta.payer_account_id,
-                ta.spender,
-                ta.token_id
-            ), delete_token_allowance_history as (
-              delete from token_allowance_history ta
-              using affected a
-              where (ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range) or
-                (ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id)
-              returning
-                ta.amount,
-                lower(ta.timestamp_range) as created_timestamp,
-                a.sender_id as owner,
-                ta.payer_account_id,
-                ta.spender,
-                ta.token_id
-            )
-            insert into token_allowance_temp (amount, created_timestamp, owner, payer_account_id, spender, token_id)
-            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
-            union all
-            select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
+                    with affected as (
+                      select ta.*, cr.consensus_timestamp, cr.sender_id
+                      from (
+                        select * from token_allowance
+                        union all
+                        select * from token_allowance_history
+                      ) ta
+                      join contract_result cr on cr.consensus_timestamp = lower(ta.timestamp_range)
+                    ), delete_token_allowance as (
+                      delete from token_allowance ta
+                      using affected a
+                      where ta.owner in (a.owner, a.sender_id) and ta.spender = a.spender and ta.token_id = a.token_id
+                      returning
+                        ta.amount_granted,
+                        ta.amount,
+                        lower(ta.timestamp_range) as created_timestamp,
+                        a.sender_id as owner,
+                        ta.payer_account_id,
+                        ta.spender,
+                        ta.token_id
+                    ), delete_token_allowance_history as (
+                      delete from token_allowance_history ta
+                      using affected a
+                      where (ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range) or
+                        (ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id)
+                      returning
+                        ta.amount_granted,
+                        ta.amount,
+                        lower(ta.timestamp_range) as created_timestamp,
+                        a.sender_id as owner,
+                        ta.payer_account_id,
+                        ta.spender,
+                        ta.token_id
+                    )
+                    insert into token_allowance_temp (amount_granted, amount, created_timestamp, owner, payer_account_id, spender, token_id)
+                    select amount_granted, amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
+                    union all
+                    select amount_granted, amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
 
-            with correct_timestamp_range as (
-              select
-                amount,
-                owner,
-                payer_account_id,
-                spender,
-                int8range(created_timestamp, (
-                  select c.created_timestamp
-                  from token_allowance_temp c
-                  where c.owner = p.owner and c.spender = p.spender and c.token_id = p.token_id
-                    and c.created_timestamp > p.created_timestamp
-                  order by c.created_timestamp
-                  limit 1)) as timestamp_range,
-                token_id
-              from token_allowance_temp p
-            ), history as (
-              insert into token_allowance_history (amount, owner, payer_account_id, spender, timestamp_range, token_id)
-              select * from correct_timestamp_range where upper(timestamp_range) is not null
-            )
-            insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
-            select * from correct_timestamp_range where upper(timestamp_range) is null;
+                    with correct_timestamp_range as (
+                      select
+                        amount_granted,
+                        amount,
+                        owner,
+                        payer_account_id,
+                        spender,
+                        int8range(created_timestamp, (
+                          select c.created_timestamp
+                          from token_allowance_temp c
+                          where c.owner = p.owner and c.spender = p.spender and c.token_id = p.token_id
+                            and c.created_timestamp > p.created_timestamp
+                          order by c.created_timestamp
+                          limit 1)) as timestamp_range,
+                        created_timestamp,
+                        token_id
+                      from token_allowance_temp p
+                    ), history as (
+                      insert into token_allowance_history (amount_granted, amount, owner, payer_account_id, spender, timestamp_range, created_timestamp, token_id)
+                      select * from correct_timestamp_range where upper(timestamp_range) is not null
+                    )
+                    insert into token_allowance (amount_granted, amount, owner, payer_account_id, spender, timestamp_range, created_timestamp, token_id)
+                    select * from correct_timestamp_range where upper(timestamp_range) is null;
 
-            commit;
-            """;
+                    commit;
+                    """;
 
     private final JdbcTemplate jdbcTemplate;
 
