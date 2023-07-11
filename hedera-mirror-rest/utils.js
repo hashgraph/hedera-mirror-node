@@ -352,6 +352,9 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
       break;
+    case constants.filterKeys.TRANSACTIONS:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
@@ -1307,6 +1310,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
+        break;
+      case constants.filterKeys.TRANSACTIONS:
+        comparator.value = parseBooleanValue(comparator.value);
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
