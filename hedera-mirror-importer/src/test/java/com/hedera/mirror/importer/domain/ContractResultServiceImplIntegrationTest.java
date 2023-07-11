@@ -247,6 +247,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .gasLimit(ethereumTransaction.getGasLimit())
                 .gasUsed(0L)
                 .payerAccountId(recordItem.getPayerAccountId())
+                .senderId(recordItem.getPayerAccountId())
                 .transactionHash(ethereumTransaction.getHash())
                 .transactionIndex(recordItem.getTransactionIndex())
                 .transactionNonce(

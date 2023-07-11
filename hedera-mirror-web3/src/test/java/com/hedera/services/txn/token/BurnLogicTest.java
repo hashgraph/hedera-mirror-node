@@ -19,7 +19,6 @@ package com.hedera.services.txn.token;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -134,10 +133,8 @@ class BurnLogicTest {
                         new TokenRelationshipKey(token.getId().asEvmAddress(), treasury.getAccountAddress()),
                         OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getUniqueToken(firstNftId, OnMissing.THROW)).willReturn(uniqueToken);
-        given(store.getUniqueToken(secondNftId, OnMissing.THROW)).willReturn(uniqueToken);
         given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(token.setLoadedUniqueTokens(anyMap())).willReturn(updatedToken);
+        given(store.loadUniqueTokens(token, serials)).willReturn(updatedToken);
         given(tokenAfterBurn.getTreasury()).willReturn(treasury);
         given(updatedToken.burn(treasuryRel, serials)).willReturn(tokenModificationResult);
         given(tokenModificationResult.token()).willReturn(tokenAfterBurn);
