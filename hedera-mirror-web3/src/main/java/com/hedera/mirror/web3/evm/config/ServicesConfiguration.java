@@ -46,6 +46,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
@@ -69,7 +70,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Spring configuration for beans related to com.hedera.services components
- * */
+ */
 @Configuration
 public class ServicesConfiguration {
 
@@ -281,5 +282,14 @@ public class ServicesConfiguration {
             final SyntheticTxnFactory syntheticTxnFactory,
             final BurnLogic burnLogic) {
         return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
+    }
+
+    @Bean
+    TokenCreatePrecompile tokenCreatePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            CreateLogic createLogic) {
+        return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
     }
 }
