@@ -33,6 +33,43 @@
         "num": 98
       }
     ],
+    "balances": [
+      {
+        "timestamp": "1234567890300000010",
+        "id": 7,
+        "balance": 80,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 7
+          },
+          {
+            "token_num": 99999,
+            "balance": 77
+          }
+        ]
+      },
+      {
+        "timestamp": "1234567890300000010",
+        "id": 8,
+        "balance": 80,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 98
+          },
+          {
+            "token_num": 99999,
+            "balance": 88
+          }
+        ]
+      },
+      {
+        "timestamp": 2200,
+        "id": 9,
+        "balance": 999
+      }
+    ],
     "recordFiles": [
       {
         "consensus_start": 2000,
@@ -246,12 +283,16 @@
       }
     ],
     "balance": {
-      "timestamp": "0.000002345",
+      "timestamp": "1234567890.300000010",
       "balance": 80,
       "tokens": [
         {
           "token_id": "0.0.99998",
-          "balance": 8
+          "balance": 98
+        },
+        {
+          "token_id": "0.0.99999",
+          "balance": 88
         }
       ]
     },

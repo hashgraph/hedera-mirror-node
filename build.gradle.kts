@@ -31,7 +31,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.23.2")
+    set("protobufVersion", "3.23.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.0-RC8")
@@ -67,7 +67,7 @@ dependencies {
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.13.0")
-        api("io.cucumber:cucumber-bom:7.12.1")
+        api("io.cucumber:cucumber-bom:7.13.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.56.1")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.1")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.97")
+        api("software.amazon.awssdk:bom:2.20.101")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
