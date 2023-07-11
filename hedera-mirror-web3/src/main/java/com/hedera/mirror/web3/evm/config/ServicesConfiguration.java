@@ -51,6 +51,7 @@ import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
+import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -274,6 +275,11 @@ public class ServicesConfiguration {
     @Bean
     CreateLogic createLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new CreateLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    GrantKycLogic grantKycLogic() {
+        return new GrantKycLogic();
     }
 
     @Bean
