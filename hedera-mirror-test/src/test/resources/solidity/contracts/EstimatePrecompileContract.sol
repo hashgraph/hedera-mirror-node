@@ -38,16 +38,6 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         }
     }
 
-    function nestedDissociateTokenExternal(address account, address token) external
-    returns (int responseCode)
-    {
-        HederaTokenService.dissociateToken(account, token);
-        responseCode = HederaTokenService.dissociateToken(account, token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token dissociation failed!");
-        }
-    }
-
     function dissociateAndAssociateTokenExternal(address account, address token) external
     returns (int responseCode)
     {
@@ -398,16 +388,8 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     function freezeTokenTwiceExternal(address token, address account) external
     returns (int64 responseCode)
     {
+        HederaTokenService.freezeToken(token, account);
         responseCode = HederaTokenService.freezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function unfreezeTokenTwiceExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.unfreezeToken(token, account);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }

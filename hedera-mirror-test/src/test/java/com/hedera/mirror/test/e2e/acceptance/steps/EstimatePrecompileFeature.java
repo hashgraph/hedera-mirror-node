@@ -12,10 +12,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.*;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.*;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -256,8 +253,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Then("I call estimateGas with dissociate token function for fungible token")
     public void dissociateFunctionEstimateGas() {
         //associating the token with the address
-        tokenClient.associate(receiverAccount, tokenIds.get(0));
-
+        var networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(0));
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
         validateGasEstimation(
                 ContractMethods.DISSOCIATE_TOKEN.getSelector()
                         + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
@@ -267,48 +264,12 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Then("I call estimateGas with dissociate token function for NFT")
     public void dissociateFunctionNFTEstimateGas() {
         //associating the NFT with the address
-        tokenClient.associate(receiverAccount, tokenIds.get(1));
-
+        var networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(1));
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
         validateGasEstimation(
                 ContractMethods.DISSOCIATE_TOKEN.getSelector()
                         + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()), ContractMethods.DISSOCIATE_TOKEN.getActualGas());
-    }
-
-    @Then("I call estimateGas with nested dissociate function that executes it twice for fungible token")
-    public void nestedDissociateFunctionEstimateGas() {
-        //token is already associated
-        //attempting to execute dissociate function twice
-        //expecting a revert
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.NESTED_DISSOCIATE.getSelector()
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
-                .to(contractSolidityAddress)
-                .estimate(true)
-                .build();
-        assertThatThrownBy(
-                () -> mirrorClient.contractsCall(contractCallRequestBody))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
-    }
-
-    @Then("I call estimateGas with nested dissociate function that executes it twice for NFT")
-    public void nestedDissociateFunctionNFTEstimateGas() {
-        //token is already associated
-        //attempting to execute dissociate function twice
-        //expecting a revert
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.NESTED_DISSOCIATE.getSelector()
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
-                .to(contractSolidityAddress)
-                .estimate(true)
-                .build();
-        assertThatThrownBy(
-                () -> mirrorClient.contractsCall(contractCallRequestBody))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("I call estimateGas with dissociate and associate nested function for fungible token")
@@ -467,11 +428,11 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isOne();
 
-//        NetworkTransactionResponse secondTx = tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
-//        assertNotNull(secondTx.getTransactionId());
-//        TransactionReceipt secondReceipt = secondTx.getReceipt();
-//        assertNotNull(secondReceipt);
-//        assertThat(secondReceipt.serials.size()).isOne();
+        NetworkTransactionResponse secondTx = tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
+        assertNotNull(secondTx.getTransactionId());
+        TransactionReceipt secondReceipt = secondTx.getReceipt();
+        assertNotNull(secondReceipt);
+        assertThat(secondReceipt.serials.size()).isOne();
     }
 
 
@@ -862,6 +823,117 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                 + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.NESTED_GRANT_REVOKE_KYC.getActualGas());
     }
 
+    @Then("I call estimateGas with Freeze function for fungible token")
+    public void freezeFungibleEstimateGas() {
+        validateGasEstimation(ContractMethods.FREEZE_TOKEN.getSelector()
+                + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.FREEZE_TOKEN.getActualGas());
+    }
+
+    @Then("I call estimateGas with Freeze function for NFT")
+    public void freezeNonFungibleEstimateGas() {
+        validateGasEstimation(ContractMethods.FREEZE_TOKEN.getSelector()
+                + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.FREEZE_TOKEN.getActualGas());
+    }
+
+    @Then("I call estimateGas with Unfreeze function for fungible token")
+    public void unfreezeFungibleEstimateGas() {
+        var networkResponse = tokenClient.freeze(tokenIds.get(0), admin.getAccountId());
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        validateGasEstimation(ContractMethods.UNFREEZE_TOKEN.getSelector()
+                + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.UNFREEZE_TOKEN.getActualGas());
+    }
+
+    @Then("I call estimateGas with Unfreeze function for NFT")
+    public void unfreezeNonFungibleEstimateGas() {
+        var networkResponse = tokenClient.freeze(tokenIds.get(1), admin.getAccountId());
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        validateGasEstimation(ContractMethods.UNFREEZE_TOKEN.getSelector()
+                + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.UNFREEZE_TOKEN.getActualGas());
+    }
+
+    @Then("I call estimateGas with Freeze function on a fungible token with frozen status")
+    public void freezeAlreadyFrozenTokenEstimateGas() {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.FREEZE_TOKEN.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with Freeze function on a NFT with frozen status")
+    public void freezeAlreadyFrozenTNFTEstimateGas() {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.FREEZE_TOKEN.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with Freeze function twice for fungible token")
+    public void freezeFunctionTwiceEstimateGas() {
+        var networkResponse = tokenClient.unfreeze(tokenIds.get(0), admin.getAccountId());
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.FREEZE_TOKEN_TWICE.getSelector()
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with Freeze function twice for NFT")
+    public void freezeFunctionTwiceNFTEstimateGas() {
+        var networkResponse = tokenClient.unfreeze(tokenIds.get(1), admin.getAccountId());
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(ContractMethods.FREEZE_TOKEN_TWICE.getSelector()
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(admin.getAccountId().toSolidityAddress()))
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("I call estimateGas with nested Freeze and Unfreeze function for fungible token")
+    public void nestedFreezeAndUnfreezeEstimateGas() {
+        validateGasEstimation(ContractMethods.NESTED_FREEZE_UNFREEZE.getSelector()
+                + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.NESTED_FREEZE_UNFREEZE.getActualGas());
+    }
+
+    @Then("I call estimateGas with nested Freeze and Unfreeze function for NFT")
+    public void nestedFreezeAndUnfreezeNFTEstimateGas() {
+        validateGasEstimation(ContractMethods.NESTED_FREEZE_UNFREEZE.getSelector()
+                + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.NESTED_FREEZE_UNFREEZE.getActualGas());
+    }
+
+
     private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
         var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(fileId,
@@ -954,6 +1026,15 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         assertThat(mirrorNft.getSerialNumber()).isEqualTo(serialNumber);
     }
 
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyTx(String txId) {
+        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
+        assertNotNull(txResponse);
+    }
+
     public void createTokenWithCustomFees() {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
 
@@ -1003,15 +1084,14 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         CREATE_NFT_WITH_CUSTOM_FEES("0488c939", 23422),
         CRYPTO_TRANSFER("a6218810", 23422),
         DISSOCIATE_AND_ASSOCIATE("f1938266", 23422),
-        DISSOCIATE_TOKEN("9c219247", 24030),
+        DISSOCIATE_TOKEN("9c219247", 729428),
         DISSOCIATE_TOKENS("2390c1fa", 23422),
         FREEZE_TOKEN("9333700b", 23422),
-        FREEZE_TOKEN_TWICE("17f96caa", 23422),
+        FREEZE_TOKEN_TWICE("17f96caa", 0),
         GRANT_KYC("ec4ca639", 23422),
         GRANT_KYC_TWICE("15533c95", 0),
         MINT_TOKEN("0c0295d4", 40700),
         NESTED_ASSOCIATE("437dffd5", 0),
-        NESTED_DISSOCIATE("f2d75676", 23422),
         NESTED_FREEZE_UNFREEZE("901fe3d0", 23422),
         NESTED_GRANT_REVOKE_KYC("06a1a5d3", 23422),
         REVOKE_KYC("52205b33", 23422),
@@ -1024,7 +1104,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         TRANSFER_TOKEN("4fd6ce0a", 23422),
         TRANSFER_TOKENS("aa835c63", 23422),
         UNFREEZE_TOKEN("e95a71e5", 23422),
-        UNFREEZE_TOKEN_TWICE("c9695924", 23422),
         WIPE_TOKEN_ACCOUNT("5ac4fef8", 23422),
         WIPE_NFT_ACCOUNT("4c09c804", 23422);
 
