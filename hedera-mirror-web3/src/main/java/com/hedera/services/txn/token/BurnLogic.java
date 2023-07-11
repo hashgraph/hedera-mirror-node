@@ -56,7 +56,8 @@ public class BurnLogic {
         this.validator = validator;
     }
 
-    public void burn(final Id targetId, final long amount, List<Long> serialNumbersList, final Store store) {
+    public TokenModificationResult burn(
+            final Id targetId, final long amount, List<Long> serialNumbersList, final Store store) {
         // De-duplicate serial numbers
         serialNumbersList = new ArrayList<>(new LinkedHashSet<>(serialNumbersList));
 
@@ -67,7 +68,6 @@ public class BurnLogic {
         final var treasuryRel = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
 
         /* --- Do the business logic --- */
-
         TokenModificationResult tokenModificationResult;
         if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
             tokenModificationResult = token.burn(treasuryRel, amount);
@@ -79,6 +79,8 @@ public class BurnLogic {
         store.updateToken(tokenModificationResult.token());
         store.updateTokenRelationship(tokenModificationResult.tokenRelationship());
         store.updateAccount(tokenModificationResult.token().getTreasury());
+
+        return tokenModificationResult;
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {

@@ -304,7 +304,7 @@ paths:
       summary: Invoke a smart contract
       description: |
 
-        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed. Currently we support only `latest` block.
 
         **The table below defines the restrictions and support for the endpoint**
 
@@ -315,10 +315,11 @@ paths:
         |                  | static contract state reads for precompile functions with allowance                                          | 0.79+                                   |
         |                  | static contract state reads for precompile functions with isApprovedForAll                                   | 0.81+                                   |
         |                  | non-static contract state reads for non precompile functions                                                 | 0.83+                                   |
-        |                  | non-static contract state reads for precompile functions                                                     | 0.83+                                   |
+        |                  | non-static contract state reads for precompile read only functions                                           | 0.83+                                   |
         | true             | non-static contract state reads and modifications for non precompile functions except lazy account creation  | 0.83+                                   |
-        |                  | non-static contract state reads and modifications for non precompile functions with lazy account creation    | Not supported                           |
-        |                  | non-static contract state reads and modifications for precompile functions                                   | Not supported                           |
+        |                  | non-static contract state reads and modifications for associate precompile functions                         | 0.83+                                   |
+        |                  | non-static contract state reads and modifications for non precompile functions with lazy account creation    | 0.84+                                   |
+        |                  | non-static contract state reads and modifications for precompile functions except associate                  | Not supported                           |
 
         The operations types which are not currently supported should return 501 error status.
 
