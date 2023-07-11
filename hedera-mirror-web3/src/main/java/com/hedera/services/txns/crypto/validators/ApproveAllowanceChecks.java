@@ -16,7 +16,6 @@
 
 package com.hedera.services.txns.crypto.validators;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.loadPossiblyPausedToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -43,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 
 public class ApproveAllowanceChecks extends AllowanceChecks {
-
     /**
      * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
      * transactions
@@ -144,8 +142,8 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
         for (final var allowance : tokenAllowances) {
             final var owner = Id.fromGrpcAccount(allowance.getOwner());
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            final var token = loadPossiblyPausedToken(
-                    Id.fromGrpcToken(allowance.getTokenId()).asEvmAddress(), store);
+            final var token = store.loadPossiblyPausedToken(
+                    Id.fromGrpcToken(allowance.getTokenId()).asEvmAddress());
 
             final var fetchResult = fetchOwnerAccount(owner, payerAccount, store);
             if (fetchResult.getRight() != OK) {
@@ -191,7 +189,8 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             final var delegatingSpender = Id.fromGrpcAccount(allowance.getDelegatingSpender());
             final var tokenId = allowance.getTokenId();
             final var serialNums = allowance.getSerialNumbersList();
-            final var token = loadPossiblyPausedToken(Id.fromGrpcToken(tokenId).asEvmAddress(), store);
+            final var token =
+                    store.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId).asEvmAddress());
             final var approvedForAll = allowance.getApprovedForAll().getValue();
 
             if (token.isFungibleCommon()) {

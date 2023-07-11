@@ -54,7 +54,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, final Store store) {
+    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
         final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);

@@ -25,7 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -102,11 +102,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public Builder body(
-            final Bytes input,
-            final UnaryOperator<byte[]> aliasResolver,
-            final BodyParams bodyParams,
-            final Store store) {
+    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         final var functionId = ((FunctionParam) bodyParams).functionId();
         final var mintAbi =
                 switch (functionId) {
@@ -125,8 +121,9 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
 
         final var mintBody = transactionBody.getTokenMint();
         final var tokenId = mintBody.getToken();

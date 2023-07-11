@@ -184,7 +184,7 @@ class DissociatePrecompileTest {
         final var accountID =
                 EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccountAddress.toArray()));
         final var expected = syntheticTxnFactory.createDissociate(Dissociation.singleDissociation(accountID, tokenID));
-        final var result = dissociatePrecompile.body(dissociateToken, a -> a, hrcParams, store);
+        final var result = dissociatePrecompile.body(dissociateToken, a -> a, hrcParams);
 
         assertEquals(expected.getTokenDissociate(), result.getTokenDissociate());
     }
@@ -316,7 +316,7 @@ class DissociatePrecompileTest {
     }
 
     private TransactionBody.Builder multiDissociatePrecompileDecode(UnaryOperator<byte[]> identity, Bytes input) {
-        return multiDissociatePrecompile.body(input, identity, new FunctionParam(ABI_ID_DISSOCIATE_TOKENS), store);
+        return multiDissociatePrecompile.body(input, identity, new FunctionParam(ABI_ID_DISSOCIATE_TOKENS));
     }
 
     private void givenMinFrameContext() {

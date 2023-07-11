@@ -71,7 +71,8 @@ public class AllowanceChecks {
     }
 
     ResponseCodeEnum validateTotalAllowances(final int totalAllowances) {
-        if (exceedsTxnLimit(totalAllowances, 0)) {
+        // 20 is the default maxAllowanceLimitPerTransaction in hedera-services
+        if (exceedsTxnLimit(totalAllowances, 20)) {
             return MAX_ALLOWANCES_EXCEEDED;
         }
         if (emptyAllowances(totalAllowances)) {

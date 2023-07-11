@@ -46,13 +46,13 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public interface Precompile {
 
     // Construct the synthetic transaction
-    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, Store store);
+    TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
 
     // Change the world state through the given frame
-    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
+    RunResult run(MessageFrame frame, TransactionBody transactionBody);
 
     long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
 

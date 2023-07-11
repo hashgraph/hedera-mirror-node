@@ -103,11 +103,23 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenDissociate(builder);
     }
 
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId from the parameters
+     * */
     public TransactionBody.Builder createFungibleApproval(
             @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
         return createNonfungibleApproval(approveWrapper, ownerId, null);
     }
 
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId from the parameters
+     * */
     public TransactionBody.Builder createNonfungibleApproval(
             final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
@@ -134,6 +146,12 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
     }
 
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId from the parameters
+     * */
     public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
         final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
         builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()

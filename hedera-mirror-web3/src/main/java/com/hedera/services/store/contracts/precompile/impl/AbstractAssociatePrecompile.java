@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
@@ -65,7 +66,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, final TransactionBody transactionBody) {
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
 

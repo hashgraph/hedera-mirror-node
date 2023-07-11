@@ -61,10 +61,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 
     @Override
     public TransactionBody.Builder body(
-            final Bytes input,
-            final UnaryOperator<byte[]> aliasResolver,
-            final BodyParams bodyParams,
-            final Store store) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 
         final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);

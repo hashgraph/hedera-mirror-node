@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public abstract class AbstractWritePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
     protected final SyntheticTxnFactory syntheticTxnFactory;
-    protected TransactionBody.Builder transactionBody;
 
     protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory) {
         this.pricingUtils = pricingUtils;

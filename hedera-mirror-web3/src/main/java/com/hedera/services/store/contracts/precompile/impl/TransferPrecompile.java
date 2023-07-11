@@ -32,7 +32,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
@@ -296,8 +295,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams, Store store) {
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         transferOp = switch (functionId) {
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
@@ -350,7 +348,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         return new EmptyRunResult();
     }
 

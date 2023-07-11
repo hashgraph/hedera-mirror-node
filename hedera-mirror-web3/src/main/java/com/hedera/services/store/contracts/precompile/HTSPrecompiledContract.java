@@ -187,7 +187,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
+            final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
         } catch (final InvalidTransactionException e) {
@@ -227,13 +227,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                     || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                this.transactionBody =
-                        precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress), store);
+                this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
             }
 
         } else {
             this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId), store);
+            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
         }
 
         gasRequirement = defaultGas();

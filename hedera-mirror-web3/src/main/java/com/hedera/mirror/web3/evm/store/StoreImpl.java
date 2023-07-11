@@ -16,7 +16,11 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -64,6 +68,16 @@ public class StoreImpl implements Store {
         } else {
             return token.orElse(Token.getEmptyToken());
         }
+    }
+
+    @Override
+    public Token loadPossiblyPausedToken(final Address tokenAddress) {
+        final var token = getToken(tokenAddress, OnMissing.DONT_THROW);
+
+        validateTrue(!token.isEmptyToken(), INVALID_TOKEN_ID);
+        validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
+
+        return token;
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package com.hedera.services.txns.crypto.validators;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.loadPossiblyPausedToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -81,8 +80,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
             final var serialNums = allowance.getSerialNumbersList();
             final Token token;
             try {
-                token = loadPossiblyPausedToken(
-                        Id.fromGrpcToken(allowance.getTokenId()).asEvmAddress(), store);
+                token = store.loadPossiblyPausedToken(
+                        Id.fromGrpcToken(allowance.getTokenId()).asEvmAddress());
             } catch (InvalidTransactionException e) {
                 return e.getResponseCode();
             }

@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
@@ -51,7 +51,8 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenDissociate().getAccount());
 

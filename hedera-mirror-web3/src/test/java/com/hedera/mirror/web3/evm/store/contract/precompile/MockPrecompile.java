@@ -39,10 +39,7 @@ public class MockPrecompile implements Precompile {
 
     @Override
     public TransactionBody.Builder body(
-            final Bytes input,
-            final UnaryOperator<byte[]> aliasResolver,
-            final BodyParams bodyParams,
-            final Store store) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         return TransactionBody.newBuilder();
     }
 
@@ -52,7 +49,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         // Dummy logic to mimic invalid behaviour
         if (Address.ZERO.equals(frame.getSenderAddress())) {
             throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
