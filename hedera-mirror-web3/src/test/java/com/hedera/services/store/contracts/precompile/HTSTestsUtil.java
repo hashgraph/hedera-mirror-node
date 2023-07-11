@@ -183,8 +183,13 @@ public class HTSTestsUtil {
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper tokensTransferList =
             new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer, transfer));
+
+    public static final TokenTransferWrapper tokensTransferList2 =
+            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList2));
     public static final FungibleTokenTransfer transferToAlias1SenderOnly =
             new FungibleTokenTransfer(-AMOUNT, false, token, sender, null);
     public static final FungibleTokenTransfer transferToAlias1ReceiverOnly =

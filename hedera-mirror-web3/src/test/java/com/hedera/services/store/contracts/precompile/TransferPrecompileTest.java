@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
@@ -29,6 +30,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.addNftExchanges;
@@ -76,12 +78,14 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -269,6 +273,30 @@ class TransferPrecompileTest {
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(HTSTestsUtil.failResult, result);
+    }
+
+    @Test
+    void transferTokenHappyPathWorks() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -832,5 +860,12 @@ class TransferPrecompileTest {
         assertEquals(10, nftExchanges2.get(0).asGrpc().getSenderAccountID().getAccountNum());
         assertEquals(11, nftExchanges2.get(0).asGrpc().getReceiverAccountID().getAccountNum());
         assertFalse(nftExchanges2.get(0).isApproval());
+    }
+
+    private void givenMinimalFrameContext() {
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
     }
 }
