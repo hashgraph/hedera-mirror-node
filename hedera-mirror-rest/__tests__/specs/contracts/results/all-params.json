@@ -1,6 +1,16 @@
 {
   "description": "Contract results api call for all contracts with all params specified",
   "setup": {
+    "accounts": [
+      {
+        "num": 5999,
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
+      },
+      {
+        "num": 9001,
+        "evm_address": "fbb9a1be370150759408cd7af48e9eda2b8ead57"
+      }
+    ],
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -32,7 +42,7 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001,
+        "sender_id": 5999,
         "transaction_hash": "0x160502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 0
       },
@@ -48,7 +58,7 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "sender_id": 8001,
         "transaction_hash": "0x170502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 0
       }
@@ -81,7 +91,7 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
+    "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&from=ebb9a1be370150759408cd7af48e9eda2b8ead57&limit=1&order=asc"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -94,7 +104,7 @@
         "contract_id": "0.0.5001",
         "created_contract_ids": [],
         "error_message": "Not enough gas",
-        "from": "0x0000000000000000000000000000000000001771",
+        "from": "0x000000000000000000000000000000000000176f",
         "function_parameters": "0x0303",
         "gas_limit": 1234556,
         "gas_used": 987,
@@ -104,7 +114,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
+      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&from=ebb9a1be370150759408cd7af48e9eda2b8ead57&limit=1&order=asc"
     }
   }
 }

@@ -1274,10 +1274,13 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value, {
-          evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
-          paramName: comparator.key,
-        }).getEncodedId();
+        if (!EntityId.isValidEvmAddress(comparator.value)) {
+          // Only parse non-evm addresses.
+          comparator.value = EntityId.parse(comparator.value, {
+            evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
+            paramName: comparator.key,
+          }).getEncodedId();
+        }
         break;
       case constants.filterKeys.INTERNAL:
         comparator.value = parseBooleanValue(comparator.value);
