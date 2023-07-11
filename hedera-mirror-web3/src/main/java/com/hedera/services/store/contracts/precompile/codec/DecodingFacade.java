@@ -33,7 +33,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,7 +41,6 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Singleton
 public class DecodingFacade {
     public static final List<NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
     public static final List<FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
