@@ -241,7 +241,7 @@ class StoreImplTest {
     @Test
     void updateTokenRelationship() {
         final var tokenRel = new TokenRelationship(
-                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L));
+                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
         assertEquals(
