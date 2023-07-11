@@ -34,8 +34,15 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static java.math.BigInteger.ZERO;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -71,10 +78,13 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -478,12 +488,114 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(
                 transferOp, "`body` method should be called before `extrapolateDetailsFromSyntheticTxn`");
 
+        final var op = transactionBody.getCryptoTransfer();
+        impliedValidity = validityWithCurrentProps(op);
         final var explicitChanges = constructBalanceChanges();
         if (numLazyCreates > 0 && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
             impliedValidity = NOT_SUPPORTED;
             return;
         }
         impliedTransfers = new ImpliedTransfers(explicitChanges);
+    }
+
+    private ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody transferOp) {
+        final var hbarAdjustWrapper = transferOp.getTransfers();
+        final var tokenAdjustsList = transferOp.getTokenTransfersList();
+        final var hbarAdjusts = hbarAdjustWrapper.getAccountAmountsList();
+
+        if (hasRepeatedAccount(hbarAdjusts)) {
+            return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+        }
+        if (!isNetZeroAdjustment(hbarAdjusts)) {
+            return INVALID_ACCOUNT_AMOUNTS;
+        }
+
+        return validateTokenTransferSemantics(tokenAdjustsList);
+    }
+
+    ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
+        if (tokenTransfersList.isEmpty()) {
+            return OK;
+        }
+        ResponseCodeEnum validity;
+        final Set<TokenID> uniqueTokens = new HashSet<>();
+        final Set<Long> uniqueSerialNos = new HashSet<>();
+        for (var tokenTransfers : tokenTransfersList) {
+            validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers, uniqueSerialNos);
+            if (validity != OK) {
+                return validity;
+            }
+        }
+        if (uniqueTokens.size() < tokenTransfersList.size()) {
+            return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateScopedTransferSemantics(
+            final Set<TokenID> uniqueTokens, final TokenTransferList tokenTransfers, final Set<Long> uniqueSerialNos) {
+        if (!tokenTransfers.hasToken()) {
+            return INVALID_TOKEN_ID;
+        }
+        uniqueTokens.add(tokenTransfers.getToken());
+        final var ownershipChanges = tokenTransfers.getNftTransfersList();
+        uniqueSerialNos.clear();
+        for (final var ownershipChange : ownershipChanges) {
+            if (ownershipChange.getSenderAccountID().equals(ownershipChange.getReceiverAccountID())) {
+                return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+            }
+            if (!uniqueSerialNos.add(ownershipChange.getSerialNumber())) {
+                return INVALID_ACCOUNT_AMOUNTS;
+            }
+        }
+
+        final var adjusts = tokenTransfers.getTransfersList();
+        for (var adjust : adjusts) {
+            if (!adjust.hasAccountID()) {
+                return INVALID_ACCOUNT_ID;
+            }
+        }
+        if (hasRepeatedAccount(adjusts)) {
+            return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+        }
+        if (!isNetZeroAdjustment(adjusts)) {
+            return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+        }
+        return OK;
+    }
+
+    boolean isNetZeroAdjustment(List<AccountAmount> adjusts) {
+        var net = ZERO;
+        for (var adjust : adjusts) {
+            net = net.add(BigInteger.valueOf(adjust.getAmount()));
+        }
+        return net.equals(ZERO);
+    }
+
+    boolean hasRepeatedAccount(List<AccountAmount> adjusts) {
+        final int n = adjusts.size();
+        if (n < 2) {
+            return false;
+        }
+        Set<AccountID> allowanceAAs = new HashSet<>();
+        Set<AccountID> normalAAs = new HashSet<>();
+        for (var i = 0; i < n; i++) {
+            final var adjust = adjusts.get(i);
+            if (adjust.getIsApproval()) {
+                if (!allowanceAAs.contains(adjust.getAccountID())) {
+                    allowanceAAs.add(adjust.getAccountID());
+                } else {
+                    return true;
+                }
+            } else {
+                if (!normalAAs.contains(adjust.getAccountID())) {
+                    normalAAs.add(adjust.getAccountID());
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private List<BalanceChange> constructBalanceChanges() {

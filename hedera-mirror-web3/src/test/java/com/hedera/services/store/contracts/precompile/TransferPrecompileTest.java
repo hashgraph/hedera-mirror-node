@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.services.store.contracts.precompile.impl;
+package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
@@ -28,11 +25,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.addNftExchanges;
@@ -50,29 +46,44 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
-import com.hedera.services.store.contracts.precompile.HbarTransfer;
-import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -159,6 +170,56 @@ class TransferPrecompileTest {
     @Mock
     private AutoCreationLogic autoCreationLogic;
 
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private CryptoTransferTransactionBody cryptoTransferTransactionBody;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private EvmInfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private HederaEvmStackedWorldStateUpdater worldUpdater;
+
+    private HTSPrecompiledContract subject;
+
+    private final TransactionBody.Builder transactionBody =
+            TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder());
+
     @InjectMocks
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
@@ -166,6 +227,17 @@ class TransferPrecompileTest {
 
     @BeforeEach
     void setup() {
+
+        transferPrecompile = new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
+        PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
+        subject = new HTSPrecompiledContract(
+                infrastructureFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
         staticTransferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }
 
@@ -175,10 +247,32 @@ class TransferPrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForTransferSingleToken() {
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
+    void transferFailsFastGivenWrongSyntheticValidity() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        given(frame.getRemainingGas()).willReturn(10000L);
 
+        staticTransferPrecompile
+                .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
+
+        given(worldUpdater.getStore()).willReturn(store);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        Assertions.assertEquals(HTSTestsUtil.failResult, result);
+    }
+
+    @Test
+    void gasRequirementReturnsCorrectValueForTransferSingleToken() {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         staticTransferPrecompile
@@ -195,53 +289,8 @@ class TransferPrecompileTest {
     }
 
     @Test
-    void testBody() {
-        transferParams = new TransferParams(ABI_ID_TRANSFER_TOKENS, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
-        final Bytes transferTokensInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
-        staticTransferPrecompile
-                .when(() -> decodeTransferTokens(eq(transferTokensInput), any()))
-                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
-        transferPrecompile.body(transferTokensInput, a -> a, transferParams);
-        assertEquals(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER, transferPrecompile.transferOp);
-
-        transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
-        final Bytes cryptoTransferInput = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
-        staticTransferPrecompile
-                .when(() -> decodeCryptoTransfer(eq(cryptoTransferInput), any()))
-                .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
-        transferPrecompile.body(cryptoTransferInput, a -> a, transferParams);
-        assertEquals(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER, transferPrecompile.transferOp);
-
-        transferParams = new TransferParams(ABI_ID_TRANSFER_NFTS, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
-        final Bytes transferNftsInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
-        staticTransferPrecompile
-                .when(() -> decodeTransferNFTs(eq(transferNftsInput), any()))
-                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER);
-        transferPrecompile.body(transferNftsInput, a -> a, transferParams);
-        assertEquals(CRYPTO_TRANSFER_NFTS_WRAPPER, transferPrecompile.transferOp);
-
-        transferParams = new TransferParams(ABI_ID_TRANSFER_NFT, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
-        final Bytes transferNftInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
-        staticTransferPrecompile
-                .when(() -> decodeTransferNFT(eq(transferNftInput), any()))
-                .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
-        transferPrecompile.body(transferNftInput, a -> a, transferParams);
-        assertEquals(CRYPTO_TRANSFER_NFT_WRAPPER, transferPrecompile.transferOp);
-    }
-
-    @Test
     void minimumFeeInTinybarsHbarOnlyCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile
@@ -260,8 +309,6 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -283,8 +330,6 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -306,8 +351,6 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarNftCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -328,8 +371,6 @@ class TransferPrecompileTest {
     @Test
     void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
         transferParams = new TransferParams(ABI_ID_CRYPTO_TRANSFER_V2, senderAddress);
-        transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile
