@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -34,15 +33,11 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
  */
 public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrecompile {
 
-    protected final MirrorEvmContractAliases aliases;
     protected final SyntheticTxnFactory syntheticTxnFactory;
 
     protected AbstractGrantRevokeKycPrecompile(
-            MirrorEvmContractAliases aliases,
-            SyntheticTxnFactory syntheticTxnFactory,
-            PrecompilePricingUtils pricingUtils) {
+            SyntheticTxnFactory syntheticTxnFactory, PrecompilePricingUtils pricingUtils) {
         super(pricingUtils);
-        this.aliases = aliases;
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
 }
