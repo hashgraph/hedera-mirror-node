@@ -51,7 +51,8 @@ class GrantKycLogicTest {
 
     @Mock
     private Store store;
-
+    @Mock
+    private TokenRelationship modifiedRelationship;
     private TransactionBody tokenGrantKycTxn;
     private GrantKycLogic subject;
 
@@ -67,13 +68,14 @@ class GrantKycLogicTest {
         TokenRelationship accRel = mock(TokenRelationship.class);
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
                 .willReturn(accRel);
+        given(accRel.setKycGranted(true)).willReturn(modifiedRelationship);
 
         // when:
         subject.grantKyc(idOfToken, idOfAccount, store);
 
         // then:
         verify(accRel).setKycGranted(true);
-        verify(store).updateTokenRelationship(accRel);
+        verify(store).updateTokenRelationship(modifiedRelationship);
     }
 
     @Test
