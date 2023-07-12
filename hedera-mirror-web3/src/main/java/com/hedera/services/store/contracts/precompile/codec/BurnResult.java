@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.services.txns.validation;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import java.util.List;
 
-/**
- * Copied Logic type from hedera-services. Unnecessary methods are deleted.
- */
-public interface OptionValidator {
-
-    ResponseCodeEnum nftMetadataCheck(byte[] metadata);
-
-    ResponseCodeEnum maxBatchSizeMintCheck(int length);
-
-    ResponseCodeEnum maxBatchSizeBurnCheck(int length);
-
-    boolean isValidExpiry(final Timestamp expiry);
-}
+public record BurnResult(long totalSupply, List<Long> serialNumbers) implements RunResult {}

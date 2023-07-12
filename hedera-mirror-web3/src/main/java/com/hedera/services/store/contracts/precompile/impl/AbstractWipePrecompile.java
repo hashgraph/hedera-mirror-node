@@ -16,10 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.Precompile;
@@ -31,11 +27,15 @@ import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.hyperledger.besu.evm.frame.MessageFrame;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * This class is a modified copy of AbstractWipePrecompile from hedera-services repo.
@@ -49,12 +49,12 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
 
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 
-    final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    final WipeLogic wipeLogic;
 
     protected AbstractWipePrecompile(
-            PrecompilePricingUtils pricingUtils, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            PrecompilePricingUtils pricingUtils, WipeLogic wipeLogic) {
         super(pricingUtils);
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.wipeLogic = wipeLogic;
     }
 
     @Override
@@ -66,7 +66,6 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
         final var accountId = Id.fromGrpcAccount(wipeBody.getAccount());
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
-        final var wipeLogic = new WipeLogic(mirrorNodeEvmProperties);
         final var validity = wipeLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
 
@@ -84,8 +83,8 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
                 TokenType.FUNGIBLE_COMMON == modifiedToken.getType() ? modifiedToken.getTotalSupply() : 0L,
                 TokenType.NON_FUNGIBLE_UNIQUE == modifiedToken.getType()
                         ? modifiedToken.mintedUniqueTokens().stream()
-                                .map(UniqueToken::getSerialNumber)
-                                .toList()
+                        .map(UniqueToken::getSerialNumber)
+                        .toList()
                         : new ArrayList<>());
     }
 }

@@ -16,12 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
-import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asContract;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
@@ -32,6 +26,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFre
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
@@ -44,14 +39,21 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
+
+import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asContract;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
 
 public class HTSTestsUtil {
 
@@ -65,7 +67,7 @@ public class HTSTestsUtil {
     public static final AccountID receiverAliased =
             AccountID.newBuilder().setAlias(unsafeWrap(new byte[20])).build();
     public static final AccountID receiverAliased2 = AccountID.newBuilder()
-            .setAlias(unsafeWrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}))
+            .setAlias(unsafeWrap(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}))
             .build();
     public static final AccountID feeCollector = asAccount("0.0.4");
     public static final AccountID account = asAccount("0.0.3");
@@ -121,6 +123,8 @@ public class HTSTestsUtil {
 
     public static final Address contractAddress = Address.ALTBN128_MUL;
 
+    public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    public static final BurnWrapper nonFungibleBurn = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
     public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
     public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
@@ -140,6 +144,7 @@ public class HTSTestsUtil {
     public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
     public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
+    public static final WipeWrapper fungibleWipeMaxAmount = WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);
@@ -175,17 +180,20 @@ public class HTSTestsUtil {
             Bytes.fromHexString("0xc87b56dd0000000000000000000000000000000000000000000000000000000000000001");
 
     public static final TokenTransferWrapper nftTransferList =
-            new TokenTransferWrapper(List.of(new NftExchange(1, token, sender, receiver)), new ArrayList<>() {});
+            new TokenTransferWrapper(List.of(new NftExchange(1, token, sender, receiver)), new ArrayList<>() {
+            });
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_NFT_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(nftTransferList));
     public static final FungibleTokenTransfer transfer =
             new FungibleTokenTransfer(AMOUNT, false, token, sender, receiver);
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER =
-            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer));
+            new TokenTransferWrapper(new ArrayList<>() {
+            }, List.of(transfer));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_TOKEN_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper tokensTransferList =
-            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer, transfer));
+            new TokenTransferWrapper(new ArrayList<>() {
+            }, List.of(transfer, transfer));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList));
     public static final FungibleTokenTransfer transferToAlias1SenderOnly =
@@ -197,7 +205,8 @@ public class HTSTestsUtil {
     public static final FungibleTokenTransfer transferToAlias2ReceiverOnly =
             new FungibleTokenTransfer(AMOUNT, false, token, null, receiverAliased2);
     public static final TokenTransferWrapper tokensTransferListAliasedX2 = new TokenTransferWrapper(
-            new ArrayList<>() {},
+            new ArrayList<>() {
+            },
             List.of(
                     transferToAlias1SenderOnly,
                     transferToAlias1ReceiverOnly,
@@ -208,25 +217,29 @@ public class HTSTestsUtil {
     public static final FungibleTokenTransfer transferSenderOnly =
             new FungibleTokenTransfer(AMOUNT, false, token, sender, null);
     public static final TokenTransferWrapper tokensTransferListSenderOnly =
-            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transferSenderOnly, transferSenderOnly));
+            new TokenTransferWrapper(new ArrayList<>() {
+            }, List.of(transferSenderOnly, transferSenderOnly));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_SENDER_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferListSenderOnly));
     public static final FungibleTokenTransfer transferReceiverOnly =
             new FungibleTokenTransfer(AMOUNT, false, token, null, receiver);
     public static final TokenTransferWrapper tokensTransferListReceiverOnly =
-            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transferReceiverOnly, transferReceiverOnly));
+            new TokenTransferWrapper(new ArrayList<>() {
+            }, List.of(transferReceiverOnly, transferReceiverOnly));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_RECEIVER_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferListReceiverOnly));
     public static final TokenTransferWrapper nftsTransferList = new TokenTransferWrapper(
             List.of(new NftExchange(1, token, sender, receiver), new NftExchange(2, token, sender, receiver)),
-            new ArrayList<>() {});
+            new ArrayList<>() {
+            });
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_NFTS_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(nftsTransferList));
     public static final TokenTransferWrapper nftsTransferListAliasReceiver = new TokenTransferWrapper(
             List.of(
                     new NftExchange(1, token, sender, receiverAliased),
                     new NftExchange(2, token, sender, receiverAliased)),
-            new ArrayList<>() {});
+            new ArrayList<>() {
+            });
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(nftsTransferListAliasReceiver));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_EMPTY_WRAPPER =

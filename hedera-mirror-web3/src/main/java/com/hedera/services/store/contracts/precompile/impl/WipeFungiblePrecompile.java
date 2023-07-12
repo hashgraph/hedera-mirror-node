@@ -16,13 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE;
-
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -30,13 +24,20 @@ import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.WipeLogic;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import org.apache.tuweni.bytes.Bytes;
+
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE;
 
 /**
  * This class is a modified copy of WipeFungiblePrecompile from hedera-services repo.
@@ -53,8 +54,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public WipeFungiblePrecompile(
             final PrecompilePricingUtils pricingUtils,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        super(pricingUtils, mirrorNodeEvmProperties);
+            final WipeLogic wipeLogic) {
+        super(pricingUtils, wipeLogic);
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
