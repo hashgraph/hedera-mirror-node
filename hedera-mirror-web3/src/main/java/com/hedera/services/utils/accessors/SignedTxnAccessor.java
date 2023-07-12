@@ -187,6 +187,21 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
+    public SignatureMap getSigMap() {
+        return sigMap;
+    }
+
+    @Override
+    public byte[] getMemoUtf8Bytes() {
+        return utf8MemoBytes;
+    }
+
+    @Override
+    public byte[] getTxnBytes() {
+        return txnBytes;
+    }
+
+    @Override
     public String getMemo() {
         return memo;
     }

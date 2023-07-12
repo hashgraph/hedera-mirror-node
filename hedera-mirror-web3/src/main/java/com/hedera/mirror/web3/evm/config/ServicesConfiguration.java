@@ -121,7 +121,6 @@ public class ServicesConfiguration {
             UsagePricesProvider usagePricesProvider,
             PricedUsageCalculator pricedUsageCalculator,
             List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
-        // queryUsageEstimators and txnResourceUsegaEstimator will be implemented in separate PR
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
 

@@ -122,7 +122,6 @@ public class AccessorBasedUsages {
     private void estimateCryptoTransfer(
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var xferMeta = accessor.availXferUsageMeta();
-        xferMeta.setTokenMultiplier(0);
         cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
     }
 

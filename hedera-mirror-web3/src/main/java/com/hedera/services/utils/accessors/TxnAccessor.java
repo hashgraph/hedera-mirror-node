@@ -22,6 +22,7 @@ import com.hedera.services.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -37,6 +38,12 @@ public interface TxnAccessor {
     SubType getSubType();
 
     AccountID getPayer();
+
+    byte[] getMemoUtf8Bytes();
+
+    byte[] getTxnBytes();
+
+    SignatureMap getSigMap();
 
     TransactionID getTxnId();
 

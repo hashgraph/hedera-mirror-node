@@ -366,7 +366,8 @@ public class TokenOpsUsageUtilsTest {
                                     .setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
                             .addKeys(A_COMPLEX_KEY)))
             .build();
-    private static final Key wipeKey = Key.newBuilder()
+
+    public static Key C_COMPLEX_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
                     .setKeys(KeyList.newBuilder()
@@ -376,6 +377,7 @@ public class TokenOpsUsageUtilsTest {
                                     .setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
                             .addKeys(B_COMPLEX_KEY)))
             .build();
+    private static final Key wipeKey = C_COMPLEX_KEY;
 
     public static Key A_KEY_LIST = Key.newBuilder()
             .setKeyList(KeyList.newBuilder()
