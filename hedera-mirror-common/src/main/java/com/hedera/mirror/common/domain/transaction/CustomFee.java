@@ -18,10 +18,7 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.TokenIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -50,10 +47,8 @@ public class CustomFee implements Persistable<CustomFee.Id> {
 
     private Long amountDenominator;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId collectorAccountId;
 
-    @Convert(converter = TokenIdConverter.class)
     private EntityId denominatingTokenId;
 
     private Long maximumAmount;
@@ -82,7 +77,6 @@ public class CustomFee implements Persistable<CustomFee.Id> {
 
         private long createdTimestamp;
 
-        @Convert(converter = TokenIdConverter.class)
         private EntityId tokenId;
     }
 }

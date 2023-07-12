@@ -17,10 +17,8 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
@@ -44,7 +42,6 @@ public class EthereumTransaction implements Persistable<Long> {
     @ToString.Exclude
     private byte[] callData;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId callDataId;
 
     @ToString.Exclude
@@ -76,7 +73,6 @@ public class EthereumTransaction implements Persistable<Long> {
 
     private Long nonce;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     private Integer recoveryId;

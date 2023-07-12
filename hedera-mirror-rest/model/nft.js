@@ -24,9 +24,9 @@ class Nft {
     this.delegatingSpender = nft.delegating_spender;
     this.deleted = nft.deleted;
     this.metadata = nft.metadata;
-    this.modifiedTimestamp = nft.modified_timestamp;
     this.serialNumber = nft.serial_number;
     this.spender = nft.spender;
+    this.timestampRange = nft.timestamp_range;
     this.tokenId = nft.token_id;
   }
 
@@ -38,9 +38,9 @@ class Nft {
   static DELEGATING_SPENDER = 'delegating_spender';
   static DELETED = 'deleted';
   static METADATA = 'metadata';
-  static MODIFIED_TIMESTAMP = 'modified_timestamp';
   static SERIAL_NUMBER = 'serial_number';
   static SPENDER = 'spender';
+  static TIMESTAMP_RANGE = 'timestamp_range';
   static TOKEN_ID = 'token_id';
 
   /**

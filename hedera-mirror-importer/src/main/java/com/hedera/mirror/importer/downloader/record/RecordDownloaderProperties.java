@@ -21,17 +21,19 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import jakarta.validation.constraints.NotNull;
-import java.nio.file.Path;
 import java.time.Duration;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-@Data
-@Component
-@Validated
+@Component("recordDownloaderProperties")
 @ConfigurationProperties("hedera.mirror.importer.downloader.record")
+@Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Validated
 public class RecordDownloaderProperties implements DownloaderProperties {
 
     private final MirrorProperties mirrorProperties;
@@ -48,11 +50,6 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     private boolean writeFiles = false;
 
     private boolean writeSignatures = false;
-
-    @Override
-    public Path getStreamPath() {
-        return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
-    }
 
     @Override
     public StreamType getStreamType() {

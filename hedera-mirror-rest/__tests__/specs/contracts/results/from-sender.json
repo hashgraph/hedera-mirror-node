@@ -1,0 +1,284 @@
+{
+  "description": "Contract results api call for all contracts with from specified as payer and sender",
+  "setup": {
+    "accounts": [
+      {
+        "num": 5999,
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
+      },
+      {
+        "num": 9001,
+        "evm_address": "fbb9a1be370150759408cd7af48e9eda2b8ead57"
+      },
+      {
+        "num": 9999,
+        "evm_address": "dbb9a1be370150759408cd7af48e9eda2b8ead57"
+      }
+    ],
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
+    "contractresults": [
+      {
+        "amount": 20,
+        "bloom": [1, 1],
+        "call_result": [2, 2],
+        "consensus_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "created_contract_ids": [],
+        "error_message": "Not enough gas",
+        "function_parameters": [3, 3],
+        "function_result": [4, 4],
+        "gas_limit": 1234556,
+        "gas_used": 987,
+        "sender_id": 5999,
+        "transaction_hash": "0x160502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
+      },
+      {
+        "amount": 99,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "1676540001234500005",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "sender_id": 9999,
+        "transaction_hash": "0x170502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "transaction_nonce": 0
+      },
+      {
+        "amount": 300,
+        "bloom": [9, 9],
+        "call_result": [1, 1],
+        "consensus_timestamp": "1676540001234900005",
+        "contract_id": 5002,
+        "created_contract_ids": [7002],
+        "gas_used": 100,
+        "sender_id": 9001,
+        "transaction_nonce": 0
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/results?from=5999&from=fbb9a1be370150759408cd7af48e9eda2b8ead57",
+        "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=9001",
+        "/api/v1/contracts/results?from=000000000000000000000000000000000000176F&from=fbb9a1be370150759408cd7af48e9eda2b8ead57",
+        "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=0x0000000000000000000000000000000000002329",
+        "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=0xfbb9a1be370150759408cd7af48e9eda2b8ead57"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "results": [
+          {
+            "access_list": "0x",
+            "address": "0x000000000000000000000000000000000000138a",
+            "amount": 300,
+            "block_gas_used": null,
+            "block_hash": "0x",
+            "block_number": null,
+            "bloom": "0x0909",
+            "call_result": "0x0101",
+            "chain_id": "0x",
+            "contract_id": "0.0.5002",
+            "created_contract_ids": ["0.0.7002"],
+            "error_message": null,
+            "failed_initcode": null,
+            "from": "0x0000000000000000000000000000000000002329",
+            "function_parameters": "0x010102020303",
+            "gas_limit": 1000,
+            "gas_price": "0x",
+            "gas_used": 100,
+            "hash": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "max_fee_per_gas": "0x",
+            "max_priority_fee_per_gas": "0x",
+            "nonce": null,
+            "r": "0x",
+            "result": "SUCCESS",
+            "s": "0x",
+            "status": "0x1",
+            "timestamp": "1676540001.234900005",
+            "to": "0x000000000000000000000000000000000000138a",
+            "transaction_index": 1,
+            "type": null,
+            "v": null
+          },
+          {
+            "access_list": "0x",
+            "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+            "amount": 20,
+            "block_gas_used": null,
+            "block_hash": "0x",
+            "block_number": null,
+            "bloom": "0x0101",
+            "call_result": "0x0202",
+            "chain_id": "0x",
+            "contract_id": "0.0.5001",
+            "created_contract_ids": [],
+            "error_message": "Not enough gas",
+            "failed_initcode": null,
+            "from": "0x000000000000000000000000000000000000176f",
+            "function_parameters": "0x0303",
+            "gas_limit": 1234556,
+            "gas_price": "0x",
+            "gas_used": 987,
+            "hash": "0x160502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "max_fee_per_gas": "0x",
+            "max_priority_fee_per_gas": "0x",
+            "nonce": null,
+            "r": "0x",
+            "result": "SUCCESS",
+            "s": "0x",
+            "status": "0x1",
+            "timestamp": "1676540001.234390005",
+            "to": "0x0000000000000000000000000000000000001389",
+            "transaction_index": 1,
+            "type": null,
+            "v": null
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results?from=5999&from=9001&from=9999",
+        "/api/v1/contracts/results?from=5999&from=fbb9a1be370150759408cd7af48e9eda2b8ead57&from=9999",
+        "/api/v1/contracts/results?from=000000000000000000000000000000000000176F&from=9999&from=fbb9a1be370150759408cd7af48e9eda2b8ead57",
+        "/api/v1/contracts/results?from=9999&from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=0x0000000000000000000000000000000000002329",
+        "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=0xfbb9a1be370150759408cd7af48e9eda2b8ead57&from=dbb9a1be370150759408cd7af48e9eda2b8ead57",
+        "/api/v1/contracts/results?from=ebb9a1be370150759408cd7af48e9eda2b8ead57&from=000000000000000000000000000000000000270F&from=0xfbb9a1be370150759408cd7af48e9eda2b8ead57"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "results": [
+          {
+            "access_list": "0x",
+            "address": "0x000000000000000000000000000000000000138a",
+            "amount": 300,
+            "block_gas_used": null,
+            "block_hash": "0x",
+            "block_number": null,
+            "bloom": "0x0909",
+            "call_result": "0x0101",
+            "chain_id": "0x",
+            "contract_id": "0.0.5002",
+            "created_contract_ids": ["0.0.7002"],
+            "error_message": null,
+            "failed_initcode": null,
+            "from": "0x0000000000000000000000000000000000002329",
+            "function_parameters": "0x010102020303",
+            "gas_limit": 1000,
+            "gas_price": "0x",
+            "gas_used": 100,
+            "hash": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "max_fee_per_gas": "0x",
+            "max_priority_fee_per_gas": "0x",
+            "nonce": null,
+            "r": "0x",
+            "result": "SUCCESS",
+            "s": "0x",
+            "status": "0x1",
+            "timestamp": "1676540001.234900005",
+            "to": "0x000000000000000000000000000000000000138a",
+            "transaction_index": 1,
+            "type": null,
+            "v": null
+          },
+          {
+            "access_list": "0x",
+            "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+            "amount": 99,
+            "block_gas_used": null,
+            "block_hash": "0x",
+            "block_number": null,
+            "bloom": "0x0505",
+            "call_result": "0x0606",
+            "chain_id": "0x",
+            "contract_id": "0.0.5001",
+            "created_contract_ids": ["0.0.7001"],
+            "error_message": null,
+            "failed_initcode": null,
+            "from": "0x000000000000000000000000000000000000270f",
+            "function_parameters": "0x0707",
+            "gas_limit": 987654,
+            "gas_price": "0x",
+            "gas_used": 123,
+            "hash": "0x170502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "max_fee_per_gas": "0x",
+            "max_priority_fee_per_gas": "0x",
+            "nonce": null,
+            "r": "0x",
+            "result": "SUCCESS",
+            "s": "0x",
+            "status": "0x1",
+            "timestamp": "1676540001.234500005",
+            "to": "0x0000000000000000000000000000000000001389",
+            "transaction_index": 1,
+            "type": null,
+            "v": null
+          },
+          {
+            "access_list": "0x",
+            "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+            "amount": 20,
+            "block_gas_used": null,
+            "block_hash": "0x",
+            "block_number": null,
+            "bloom": "0x0101",
+            "call_result": "0x0202",
+            "chain_id": "0x",
+            "contract_id": "0.0.5001",
+            "created_contract_ids": [],
+            "error_message": "Not enough gas",
+            "failed_initcode": null,
+            "from": "0x000000000000000000000000000000000000176f",
+            "function_parameters": "0x0303",
+            "gas_limit": 1234556,
+            "gas_price": "0x",
+            "gas_used": 987,
+            "hash": "0x160502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "max_fee_per_gas": "0x",
+            "max_priority_fee_per_gas": "0x",
+            "nonce": null,
+            "r": "0x",
+            "result": "SUCCESS",
+            "s": "0x",
+            "status": "0x1",
+            "timestamp": "1676540001.234390005",
+            "to": "0x0000000000000000000000000000000000001389",
+            "transaction_index": 1,
+            "type": null,
+            "v": null
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    }
+  ]
+}

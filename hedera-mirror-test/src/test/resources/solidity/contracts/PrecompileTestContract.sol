@@ -53,7 +53,7 @@ contract PrecompileTestContract is HederaTokenService {
         IHederaTokenService.RoyaltyFee[] memory royaltyFees
     )
     {
-        int256 responseCode;
+        int64 responseCode;
         (responseCode, fixedFees, fractionalFees, royaltyFees) = HederaTokenService.getTokenCustomFees(token);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();

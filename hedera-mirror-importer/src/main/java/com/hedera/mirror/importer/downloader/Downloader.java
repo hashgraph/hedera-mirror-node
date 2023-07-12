@@ -46,11 +46,13 @@ import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.nio.file.Path;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
@@ -218,7 +220,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var startAfterFilename = getStartAfterFilename();
         var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
-        var nodes = consensusNodeService.getNodes();
+        var nodes = partialCollection(consensusNodeService.getNodes());
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         var totalDownloads = new AtomicInteger();
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
@@ -293,7 +295,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     return streamFile;
                 })
                 .map(StreamFile::getName)
-                .map(StreamFilename::new)
+                .map(StreamFilename::from)
                 .orElse(StreamFilename.EPOCH);
     }
 
@@ -381,16 +383,13 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 if (downloaderProperties.isWriteFiles()) {
                     Utility.archiveFile(
-                            streamFile.getName(),
-                            streamFile.getBytes(),
-                            downloaderProperties.getNodeStreamPath(nodeId));
+                            streamFileData.getFilePath(), streamFile.getBytes(), mirrorProperties.getDataPath());
                 }
 
                 if (downloaderProperties.isWriteSignatures()) {
-                    signatures.forEach(s -> {
-                        Path destination = downloaderProperties.getNodeStreamPath(nodeId);
-                        Utility.archiveFile(s.getFilename().getFilename(), s.getBytes(), destination);
-                    });
+                    var destination = mirrorProperties.getDataPath();
+                    signatures.forEach(
+                            s -> Utility.archiveFile(s.getFilename().getFilePath(), s.getBytes(), destination));
                 }
 
                 if (!downloaderProperties.isPersistBytes()) {
@@ -535,5 +534,44 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 .tag("type", streamType)
                 .tag("status", status.toString())
                 .register(meterRegistry);
+    }
+
+    /**
+     * Returns a randomly-selected (and randomly-ordered) collection of CondensusNode elements from the
+     * input, where the total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
+     *
+     * @param allNodes the entire set of ConsensusNodes
+     * @return a randomly-ordered subcollection
+     */
+    private Collection<ConsensusNode> partialCollection(Collection<ConsensusNode> allNodes) {
+        var downloadRatio = downloaderProperties.getCommon().getDownloadRatio();
+        // no need to randomize (just return entire list) if # of nodes is 0 or 1 or downloadRatio == 1
+        if (allNodes.size() <= 1 || downloadRatio.compareTo(BigDecimal.ONE) == 0) {
+            return allNodes;
+        }
+
+        var nodes = new ArrayList<ConsensusNode>(allNodes);
+        // shuffle nodes into a random order
+        Collections.shuffle(nodes);
+
+        long totalStake = nodes.get(0).getTotalStake();
+        // only keep "just enough" nodes to reach/exceed downloadRatio
+        long neededStake = BigDecimal.valueOf(totalStake)
+                .multiply(downloadRatio)
+                .setScale(0, RoundingMode.CEILING)
+                .longValue();
+        long aggregateStake = 0; // sum of the stake of all nodes evaluated so far
+        int lastEntry = 0;
+        while (aggregateStake < neededStake) {
+            aggregateStake += nodes.get(lastEntry++).getStake();
+        }
+
+        log.debug(
+                "partialCollection: Kept {} of {} nodes, for stake of {} / {}",
+                lastEntry,
+                allNodes.size(),
+                aggregateStake,
+                totalStake);
+        return nodes.subList(0, lastEntry);
     }
 }

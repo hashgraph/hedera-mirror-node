@@ -22,11 +22,13 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
@@ -36,44 +38,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
+    private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 
     private EntityIdUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static ContractID asContract(final AccountID id) {
-        return ContractID.newBuilder()
-                .setRealmNum(id.getRealmNum())
-                .setShardNum(id.getShardNum())
-                .setContractNum(id.getAccountNum())
-                .build();
-    }
-
-    public static AccountID asAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return AccountID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setAccountNum(nativeParts[2])
-                .build();
-    }
-
-    public static ContractID asContract(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return ContractID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setContractNum(nativeParts[2])
-                .build();
-    }
-
-    public static TokenID asToken(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TokenID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTokenNum(nativeParts[2])
-                .build();
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
@@ -82,11 +50,6 @@ public final class EntityIdUtils {
         } else {
             return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
         }
-    }
-
-    public static Id asModelId(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
     }
 
     public static byte[] asEvmAddress(final AccountID id) {
@@ -117,6 +80,10 @@ public final class EntityIdUtils {
 
     public static long numFromEvmAddress(final byte[] bytes) {
         return Longs.fromBytes(bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]);
+    }
+
+    public static AccountID accountIdFromEvmAddress(final Address address) {
+        return accountIdFromEvmAddress(address.toArrayUnsafe());
     }
 
     public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
@@ -189,6 +156,14 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static AccountID toGrpcAccountId(final Id id) {
+        return AccountID.newBuilder()
+                .setShardNum(id.shard())
+                .setRealmNum(id.realm())
+                .setAccountNum(id.num())
+                .build();
+    }
+
     private static long[] parseLongTriple(final String dotDelimited) {
         final long[] triple = new long[3];
         int i = 0;
@@ -233,5 +208,31 @@ public final class EntityIdUtils {
             return null;
         }
         return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+    }
+
+    public static String readableId(final Object o) {
+        if (o instanceof Id id) {
+            return String.format(ENTITY_ID_FORMAT, id.shard(), id.realm(), id.num());
+        }
+        if (o instanceof AccountID id) {
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+        }
+        if (o instanceof TokenID id) {
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+        }
+        if (o instanceof NftID id) {
+            final var tokenID = id.getTokenID();
+            return String.format(
+                    ENTITY_ID_FORMAT + ".%d",
+                    tokenID.getShardNum(),
+                    tokenID.getRealmNum(),
+                    tokenID.getTokenNum(),
+                    id.getSerialNumber());
+        }
+        return String.valueOf(o);
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
+        return alias.size() > EVM_ADDRESS_SIZE;
     }
 }

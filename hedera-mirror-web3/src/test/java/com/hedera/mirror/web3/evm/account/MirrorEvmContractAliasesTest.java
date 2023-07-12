@@ -17,23 +17,36 @@
 package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-import java.util.Optional;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hederahashgraph.api.proto.java.Key;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,104 +54,204 @@ class MirrorEvmContractAliasesTest {
 
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
-    private static final String HEX2 = "0x00000000000000000000000000000000000004e5";
-    private static final Address ADDRESS2 = Address.fromHexString(HEX2);
-    private static final String INVALID_HEX_ADDRESS = "0x000000000000000000000000004e5";
+
+    private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
+    private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
+
     private static final EntityId entityId = new EntityId(0L, 0L, 3L, EntityType.TOKEN);
-    private static final Address INVALID_ADDRESS = Address.fromHexString(INVALID_HEX_ADDRESS);
+    private static final Id id = new Id(0L, 0L, 3L);
 
     @Mock
-    private MirrorEntityAccess mirrorEntityAccess;
+    private Store store;
 
     @Mock
-    private Entity entity;
+    private Token token;
+
+    @Mock
+    private Account account;
 
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @BeforeEach
     void setup() {
-        mirrorEvmContractAliases = new MirrorEvmContractAliases(mirrorEntityAccess);
+        mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
     }
 
     @Test
-    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddress() {
-        Address alias = ADDRESS;
-        Address address = ADDRESS2;
-        mirrorEvmContractAliases.aliases.put(alias, address);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(alias)).isEqualTo(address);
+    void resolveForEvmShouldReturnInputWhenItIsMirrorAddress() {
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ADDRESS)).isEqualTo(ADDRESS);
     }
 
     @Test
-    void resolveForEvmForContractWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.CONTRACT);
-        when(entity.getEvmAddress()).thenReturn(ADDRESS2.toArray());
+    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromAliases() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
 
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS2);
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
-    void resolveForEvmForTokenWhenNoAliasesShouldReturnEvmAddressFromEntityId() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOKEN);
-        when(entity.toEntityId()).thenReturn(entityId);
+    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
 
-        final var expected = Bytes.wrap(toEvmAddress(entityId));
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(expected);
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
-    void resolveForEvmForContractWhenNoAliasesShouldReturnEvmAddressFromEntityId() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.CONTRACT);
-        when(entity.toEntityId()).thenReturn(entityId);
+    void resolveForEvmWhenAliasAndPendingAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.aliases.put(ALIAS, Address.ZERO);
 
-        final var expected = Bytes.wrap(toEvmAddress(entityId));
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(expected);
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
-    void resolveForEvmWhenTypeIsNotTokenOrContractShouldFail() {
-        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
-        when(entity.getType()).thenReturn(EntityType.TOPIC);
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ADDRESS))
-                .isInstanceOf(InvalidParametersException.class)
-                .hasMessage("Not a contract or token: " + HEX);
+    void resolveForEvmWhenAliasIsPresentAndIsPendingRemovalShouldReturnEntityEvmAddress() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getId()).thenReturn(id);
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
+    }
+
+    @Test
+    void resolveForEvmForAccountWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
+        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
+        when(store.getAccount(ALIAS, OnMissing.THROW)).thenReturn(account);
+        when(account.getAccountAddress()).thenReturn(Address.wrap(Bytes.wrap(toEvmAddress(entityId))));
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
+    }
+
+    @Test
+    void resolveForEvmForTokenWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
+        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
+        when(token.getId()).thenReturn(id);
+
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
     }
 
     @Test
     void resolveForEvmWhenInvalidAddressShouldFail() {
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("No such contract or token: " + HEX2);
+        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
+        when(store.getAccount(ALIAS, OnMissing.THROW))
+                .thenThrow(new InvalidTransactionException(FAIL_INVALID, "Entity is missing", ""));
+
+        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ALIAS))
+                .isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test
     void initializeWithEmptyAliasesMap() {
         assertThat(mirrorEvmContractAliases.aliases).isNotNull().isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingAliases).isNotNull().isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isNotNull().isEmpty();
     }
 
     @Test
     void link() {
-        mirrorEvmContractAliases.aliases.clear();
+        mirrorEvmContractAliases.link(ALIAS, ADDRESS);
 
-        Address alias = ADDRESS;
-        Address address = ADDRESS2;
-        mirrorEvmContractAliases.link(alias, address);
-
-        assertThat(mirrorEvmContractAliases.aliases).hasSize(1).hasEntrySatisfying(alias, v -> assertThat(v)
-                .isEqualTo(address));
+        assertThat(mirrorEvmContractAliases.pendingAliases).hasSize(1).containsEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
     }
 
     @Test
     void unlink() {
-        mirrorEvmContractAliases.aliases.clear();
-        mirrorEvmContractAliases.aliases.put(ADDRESS, ADDRESS2);
-        mirrorEvmContractAliases.unlink(ADDRESS);
-        assertThat(mirrorEvmContractAliases.aliases).isEmpty();
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        mirrorEvmContractAliases.unlink(ALIAS);
+
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+        assertThat(mirrorEvmContractAliases.pendingRemovals).hasSize(1).contains(ALIAS);
+    }
+
+    @Test
+    void commitAddsAllFromPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        mirrorEvmContractAliases.commit();
+
+        assertThat(mirrorEvmContractAliases.aliases).containsEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+    }
+
+    @Test
+    void commitRemovesAllFromPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        mirrorEvmContractAliases.commit();
+
+        assertThat(mirrorEvmContractAliases.aliases).doesNotContainEntry(ALIAS, ADDRESS);
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+    }
+
+    @Test
+    void resetPendingChangesClearsPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        mirrorEvmContractAliases.resetPendingChanges();
+
+        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+    }
+
+    @Test
+    void resetPendingChangesClearsPendingRemovals() {
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        mirrorEvmContractAliases.resetPendingChanges();
+
+        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+    }
+
+    @Test
+    void isInUseShouldBeTrueIfInPendingAliases() {
+        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
+    }
+
+    @Test
+    void isInUseShouldBeTrueIfInAliasesAndNotInPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
+    }
+
+    @Test
+    void isInUseShouldBeFalseIfInAliasesAndInPendingRemovals() {
+        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
+    }
+
+    @Test
+    void isInUseShouldBeFalseIfNotInAliasesOrPending() {
+        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
+    }
+
+    @Test
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
+        final byte[] ECDSA_PUBLIC_KEY =
+                Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+        Address recoveredAddress = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        JKey jKey = JKey.mapKey(key);
+        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, ADDRESS);
+
+        try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
+            utilities
+                    .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
+                    .thenReturn(new byte[0]);
+            assertTrue(mirrorEvmContractAliases.isInUse(recoveredAddress));
+        }
+    }
+
+    @Test
+    void ignoresNullKeys() {
+        assertFalse(mirrorEvmContractAliases.maybeLinkEvmAddress(null, ADDRESS));
     }
 }

@@ -17,21 +17,13 @@
 package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.RangeToStringDeserializer;
-import com.hedera.mirror.common.converter.RangeToStringSerializer;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
 import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
@@ -52,10 +44,9 @@ import org.hibernate.annotations.Type;
 public abstract class AbstractEntity implements History {
 
     public static final long ACCOUNT_ID_CLEARED = 0L;
-    public static final long NODE_ID_CLEARED = -1L;
-
     public static final long DEFAULT_EXPIRY_TIMESTAMP =
             TimeUnit.MILLISECONDS.toNanos(Date.valueOf("2100-1-1").getTime());
+    public static final long NODE_ID_CLEARED = -1L;
 
     @Column(updatable = false)
     @ToString.Exclude
@@ -70,8 +61,7 @@ public abstract class AbstractEntity implements History {
                     """
             case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
                  else null
-            end
-            """)
+            end""")
     private Long balance;
 
     @Column(updatable = false)
@@ -81,6 +71,12 @@ public abstract class AbstractEntity implements History {
 
     private Boolean deleted;
 
+    @UpsertColumn(
+            coalesce =
+                    """
+            case when coalesce(e_type, type) = ''ACCOUNT'' then coalesce({0}, e_{0}, {1})
+                 else coalesce({0}, e_{0})
+            end""")
     private Long ethereumNonce;
 
     @Column(updatable = false)
@@ -102,12 +98,10 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long num;
 
-    @Convert(converter = UnknownIdConverter.class)
     private EntityId obtainerId;
 
     private Boolean permanentRemoval;
 
-    @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
     private String publicKey;
@@ -129,9 +123,6 @@ public abstract class AbstractEntity implements History {
     @ToString.Exclude
     private byte[] submitKey;
 
-    @JsonDeserialize(using = RangeToStringDeserializer.class)
-    @JsonSerialize(using = RangeToStringSerializer.class)
-    @Type(PostgreSQLGuavaRangeType.class)
     private Range<Long> timestampRange;
 
     @Enumerated(EnumType.STRING)

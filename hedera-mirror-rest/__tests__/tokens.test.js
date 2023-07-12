@@ -285,13 +285,20 @@ const verifyExtractSqlFromTokenRequest = (
 
 describe('token formatNftHistoryRow', () => {
   const defaultRow = {
-    consensus_timestamp: '123456000987654',
+    consensus_timestamp: 123456000987654,
     nonce: 0,
+    nft_transfer: [
+      {
+        is_approval: true,
+        receiver_account_id: 2000,
+        serial_number: 1,
+        sender_account_id: 3000,
+        token_id: 4000,
+      },
+    ],
     payer_account_id: '500',
-    receiver_account_id: '2000',
-    sender_account_id: '3000',
     type: 14,
-    valid_start_ns: '123450000111222',
+    valid_start_ns: 123450000111222,
     is_approval: true,
   };
   const expected = {
@@ -325,12 +332,20 @@ describe('token formatNftHistoryRow', () => {
       name: 'tokendeletion',
       row: {
         ...defaultRow,
-        receiver_account_id: null,
-        sender_account_id: null,
+        nft_transfer: [
+          {
+            is_approval: false,
+            receiver_account_id: null,
+            serial_number: 1,
+            sender_account_id: null,
+            token_id: 4000,
+          },
+        ],
         type: 35,
       },
       expected: {
         ...expected,
+        is_approval: false,
         receiver_account_id: null,
         sender_account_id: null,
         type: 'TOKENDELETION',
@@ -362,7 +377,6 @@ describe('token formatTokenBalanceRow tests', () => {
 
 describe('token extractSqlFromTokenBalancesRequest tests', () => {
   const operators = Object.values(opsMap);
-  const initialQuery = tokens.tokenBalancesSelectQuery;
   const tokenId = '1009'; // encoded
   const accountId = '960'; // encoded
   const balance = '2000';
@@ -374,22 +388,15 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     {
       name: 'no filters',
       tokenId,
-      initialQuery,
       filters: [],
       expected: {
         query: `
-          select tb.consensus_timestamp,
-                 tb.account_id,
-                 tb.balance
-          from token_balance tb
-          where tb.token_id = $1
-            and tb.consensus_timestamp = (
-            select tb.consensus_timestamp
-            from token_balance tb
-            order by tb.consensus_timestamp desc
-            limit 1
-          )
-          order by tb.account_id desc
+          select ti.account_id,
+                 ti.balance,
+                 (select max(consensus_end) from record_file) as consensus_timestamp
+          from token_account ti
+          where ti.token_id = $1
+          order by ti.account_id desc
           limit $2`,
         params: [tokenId, defaultLimit],
         order: constants.orderFilterValues.DESC,
@@ -399,7 +406,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     {
       name: `timestamp > ${timestampNsLow} and timestamp < ${timestampNsHigh}`,
       tokenId,
-      initialQuery,
       filters: [
         {
           key: constants.filterKeys.TIMESTAMP,
@@ -414,20 +420,20 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          select tb.consensus_timestamp,
-                 tb.account_id,
-                 tb.balance
-          from token_balance tb
-          where tb.token_id = $1
-            and tb.consensus_timestamp = (
-            select tb.consensus_timestamp
-            from token_balance tb
-            where tb.consensus_timestamp > $2
-              and tb.consensus_timestamp < $3
-            order by tb.consensus_timestamp desc
+          select ti.account_id,
+                 ti.balance,
+                 ti.consensus_timestamp
+          from token_balance ti
+          where ti.token_id = $1
+            and ti.consensus_timestamp = (
+            select ti.consensus_timestamp
+            from token_balance ti
+            where ti.consensus_timestamp > $2
+              and ti.consensus_timestamp < $3
+            order by ti.consensus_timestamp desc
             limit 1
           )
-          order by tb.account_id desc
+          order by ti.account_id desc
           limit $4`,
         params: [tokenId, timestampNsLow, timestampNsHigh, defaultLimit],
         order: constants.orderFilterValues.DESC,
@@ -438,7 +444,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       return {
         name: `timestamp ${op} ${timestampNsLow}`,
         tokenId,
-        initialQuery,
         filters: [
           {
             key: constants.filterKeys.TIMESTAMP,
@@ -448,19 +453,19 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
-            from token_balance tb
-            where tb.token_id = $1
-              and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              where tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='}
+            select ti.account_id,
+                   ti.balance,
+                   ti.consensus_timestamp
+            from token_balance ti
+            where ti.token_id = $1
+              and ti.consensus_timestamp = (
+              select ti.consensus_timestamp
+              from token_balance ti
+              where ti.consensus_timestamp ${op !== opsMap.eq ? op : '<='}
                 $2
-              order by tb.consensus_timestamp desc
+              order by ti.consensus_timestamp desc
               limit 1)
-            order by tb.account_id desc
+            order by ti.account_id desc
             limit $3`,
           params: [tokenId, timestampNsLow, defaultLimit],
           order: constants.orderFilterValues.DESC,
@@ -471,7 +476,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     {
       name: 'limit = 30',
       tokenId,
-      initialQuery,
       filters: [
         {
           key: constants.filterKeys.LIMIT,
@@ -481,18 +485,12 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
-            from token_balance tb
-            where tb.token_id = $1
-              and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
-            order by tb.account_id desc
+            select ti.account_id,
+                   ti.balance,
+                   (select max(consensus_end) from record_file) as consensus_timestamp
+            from token_account ti
+            where ti.token_id = $1
+            order by ti.account_id desc
             limit $2`,
         params: [tokenId, 30],
         order: constants.orderFilterValues.DESC,
@@ -503,7 +501,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       return {
         name: `account.id ${op} ${accountId}`,
         tokenId,
-        initialQuery,
         filters: [
           {
             key: constants.filterKeys.ACCOUNT_ID,
@@ -513,19 +510,13 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
-            from token_balance tb
-            where tb.token_id = $1
-              and tb.account_id ${op} $2
-              and tb.consensus_timestamp = (
-                select tb.consensus_timestamp
-                from token_balance tb
-                order by tb.consensus_timestamp desc
-                limit 1
-              )
-            order by tb.account_id desc
+            select ti.account_id,
+                   ti.balance,
+                   (select max(consensus_end) from record_file) as consensus_timestamp
+            from token_account ti
+            where ti.token_id = $1
+              and ti.account_id ${op} $2
+            order by ti.account_id desc
             limit $3`,
           params: [tokenId, accountId, defaultLimit],
           order: constants.orderFilterValues.DESC,
@@ -537,7 +528,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       return {
         name: `balance ${op} ${balance}`,
         tokenId,
-        initialQuery,
         filters: [
           {
             key: constants.filterKeys.ACCOUNT_BALANCE,
@@ -547,21 +537,55 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
-            from token_balance tb
-            where tb.token_id = $1
-              and tb.balance ${op} $2
-              and tb.consensus_timestamp = (
-                select tb.consensus_timestamp
-                from token_balance tb
-                order by tb.consensus_timestamp desc
-                limit 1
-              )
-            order by tb.account_id desc
+            select ti.account_id,
+                   ti.balance,
+                   (select max(consensus_end) from record_file) as consensus_timestamp
+            from token_account ti
+            where ti.token_id = $1
+              and ti.balance ${op} $2
+            order by ti.account_id desc
             limit $3`,
           params: [tokenId, balance, defaultLimit],
+          order: constants.orderFilterValues.DESC,
+          limit: defaultLimit,
+        },
+      };
+    }),
+    ...operators.map((op) => {
+      const timestamp = '12345';
+      return {
+        name: `balance ${op} ${balance} and timestamp ${timestamp}`,
+        tokenId,
+        filters: [
+          {
+            key: constants.filterKeys.ACCOUNT_BALANCE,
+            operator: op,
+            value: balance,
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: opsMap.eq,
+            value: timestamp,
+          },
+        ],
+        expected: {
+          query: `
+            select ti.account_id,
+                   ti.balance,
+                   ti.consensus_timestamp
+            from token_balance ti
+            where ti.token_id = $1
+              and ti.balance ${op} $2
+              and ti.consensus_timestamp = (
+              select ti.consensus_timestamp
+              from token_balance ti
+              where ti.consensus_timestamp <= $3
+              order by ti.consensus_timestamp desc
+              limit 1
+              )
+            order by ti.account_id desc
+            limit $4`,
+          params: [tokenId, balance, timestamp, defaultLimit],
           order: constants.orderFilterValues.DESC,
           limit: defaultLimit,
         },
@@ -571,7 +595,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       return {
         name: `order ${order}`,
         tokenId,
-        initialQuery,
         filters: [
           {
             key: constants.filterKeys.ORDER,
@@ -581,20 +604,53 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
-            from token_balance tb
-            where tb.token_id = $1
-              and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
-            order by tb.account_id ${order}
+            select ti.account_id,
+                   ti.balance,
+                   (select max(consensus_end) from record_file) as consensus_timestamp
+            from token_account ti
+            where ti.token_id = $1
+            order by ti.account_id ${order}
             limit $2`,
           params: [tokenId, defaultLimit],
+          order,
+          limit: defaultLimit,
+        },
+      };
+    }),
+    ...Object.values(constants.orderFilterValues).map((order) => {
+      const timestamp = '12345';
+      return {
+        name: `order ${order} timestamp 12345`,
+        tokenId,
+        filters: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: opsMap.eq,
+            value: order,
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: opsMap.eq,
+            value: timestamp,
+          },
+        ],
+        expected: {
+          query: `
+            select ti.account_id,
+                   ti.balance,
+                   ti.consensus_timestamp
+            from token_balance ti
+            where ti.token_id = $1
+              and ti.consensus_timestamp = (
+              select ti.consensus_timestamp
+              from token_balance ti
+              where ti.consensus_timestamp <= $2
+              order by ti.consensus_timestamp desc
+              limit 1
+              )
+            order by ti.account_id ${order}
+            limit $3`,
+          params: [tokenId, timestamp, defaultLimit],
           order,
           limit: defaultLimit,
         },
@@ -603,7 +659,6 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     {
       name: `account publickey "${publicKey}"`,
       tokenId,
-      initialQuery,
       filters: [
         {
           key: constants.filterKeys.ACCOUNT_PUBLICKEY,
@@ -613,22 +668,16 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          select tb.consensus_timestamp,
-                 tb.account_id,
-                 tb.balance
-          from token_balance tb
+          select ti.account_id,
+                 ti.balance,
+                 (select max(consensus_end) from record_file) as consensus_timestamp
+          from token_account ti
                  join entity e
                       on e.type = '${constants.entityTypes.ACCOUNT}'
-                        and e.id = tb.account_id
+                        and e.id = ti.account_id
                         and e.public_key = $2
-          where tb.token_id = $1
-            and tb.consensus_timestamp = (
-            select tb.consensus_timestamp
-            from token_balance tb
-            order by tb.consensus_timestamp desc
-            limit 1
-          )
-          order by tb.account_id desc
+          where ti.token_id = $1
+          order by ti.account_id desc
           limit $3`,
         params: [tokenId, publicKey, defaultLimit],
         order: constants.orderFilterValues.DESC,
@@ -636,9 +685,48 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       },
     },
     {
+      name: `account publickey "${publicKey}" timestamp `,
+      tokenId,
+      filters: [
+        {
+          key: constants.filterKeys.ACCOUNT_PUBLICKEY,
+          operator: opsMap.eq,
+          value: publicKey,
+        },
+        {
+          key: constants.filterKeys.TIMESTAMP,
+          operator: opsMap.eq,
+          value: timestampNsLow,
+        },
+      ],
+      expected: {
+        query: `
+          select ti.account_id,
+                 ti.balance,
+                 ti.consensus_timestamp
+          from token_balance ti
+                 join entity e
+                      on e.type = '${constants.entityTypes.ACCOUNT}'
+                        and e.id = ti.account_id
+                        and e.public_key = $2
+          where ti.token_id = $1
+            and ti.consensus_timestamp = (
+            select ti.consensus_timestamp
+            from token_balance ti
+            where ti.consensus_timestamp <= $3
+            order by ti.consensus_timestamp desc
+            limit 1
+          )
+          order by ti.account_id desc
+          limit $4`,
+        params: [tokenId, publicKey, timestampNsLow, defaultLimit],
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+    {
       name: 'all filters',
       tokenId,
-      initialQuery,
       filters: [
         {
           key: constants.filterKeys.ACCOUNT_ID,
@@ -673,27 +761,77 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-          select tb.consensus_timestamp,
-                 tb.account_id,
-                 tb.balance
-          from token_balance tb
+          select ti.account_id,
+                 ti.balance,
+                 ti.consensus_timestamp
+          from token_balance ti
                  join entity e
                       on e.type = '${constants.entityTypes.ACCOUNT}'
-                        and e.id = tb.account_id
+                        and e.id = ti.account_id
                         and e.public_key = $4
-          where tb.token_id = $1
-            and tb.account_id = $2
-            and tb.balance = $3
-            and tb.consensus_timestamp = (
-            select tb.consensus_timestamp
-            from token_balance tb
-            where tb.consensus_timestamp <= $5
-            order by tb.consensus_timestamp desc
+          where ti.token_id = $1
+            and ti.account_id = $2
+            and ti.balance = $3
+            and ti.consensus_timestamp = (
+            select ti.consensus_timestamp
+            from token_balance ti
+            where ti.consensus_timestamp <= $5
+            order by ti.consensus_timestamp desc
             limit 1
           )
-          order by tb.account_id asc
+          order by ti.account_id asc
           limit $6`,
         params: [tokenId, accountId, balance, publicKey, timestampNsLow, 1],
+        order: constants.orderFilterValues.ASC,
+        limit: 1,
+      },
+    },
+    {
+      name: 'all filters except timestamp',
+      tokenId,
+      filters: [
+        {
+          key: constants.filterKeys.ACCOUNT_ID,
+          operator: opsMap.eq,
+          value: accountId,
+        },
+        {
+          key: constants.filterKeys.ACCOUNT_BALANCE,
+          operator: opsMap.eq,
+          value: balance,
+        },
+        {
+          key: constants.filterKeys.ACCOUNT_PUBLICKEY,
+          operator: opsMap.eq,
+          value: publicKey,
+        },
+        {
+          key: constants.filterKeys.LIMIT,
+          operator: opsMap.eq,
+          value: 1,
+        },
+        {
+          key: constants.filterKeys.ORDER,
+          operator: opsMap.eq,
+          value: constants.orderFilterValues.ASC,
+        },
+      ],
+      expected: {
+        query: `
+          select ti.account_id,
+                 ti.balance,
+                 (select max(consensus_end) from record_file) as consensus_timestamp
+          from token_account ti
+                 join entity e
+                      on e.type = '${constants.entityTypes.ACCOUNT}'
+                        and e.id = ti.account_id
+                        and e.public_key = $4
+          where ti.token_id = $1
+            and ti.account_id = $2
+            and ti.balance = $3
+          order by ti.account_id asc
+          limit $5`,
+        params: [tokenId, accountId, balance, publicKey, 1],
         order: constants.orderFilterValues.ASC,
         limit: 1,
       },
@@ -701,9 +839,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
   ];
 
   for (const spec of testSpecs) {
-    const {name, tokenId, initialQuery, filters, expected} = spec;
+    const {name, tokenId, filters, expected} = spec;
     test(name, () => {
-      const actual = tokens.extractSqlFromTokenBalancesRequest(tokenId, initialQuery, filters);
+      const actual = tokens.extractSqlFromTokenBalancesRequest(tokenId, filters);
       assertSqlQueryEqual(actual.query, expected.query);
       expect(actual).toEqual(
         expect.objectContaining({
@@ -1009,9 +1147,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1050,9 +1188,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1091,9 +1229,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1142,9 +1280,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1195,9 +1333,9 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
                                   nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
-                                  nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.spender,
+                                  nft.timestamp_range,
                                   nft.token_id
                            from nft
                            left join entity e on e.id = nft.token_id
@@ -1232,95 +1370,69 @@ describe('token validateSerialNumberParam tests', () => {
   });
 });
 
-describe('token validateTokenIdParam tests', () => {
-  const invalidTokenIds = ['', '-1', null, undefined, 'end'];
-  const validTokenIds = ['1', '0.1', '0.20.1'];
-
-  invalidTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for invalid ${tokenId}`, () => {
-      expect(() => tokens.validateTokenIdParam(tokenId)).toThrowErrorMatchingSnapshot();
-    });
-  });
-
-  validTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for valid ${tokenId}`, () => {
-      tokens.validateTokenIdParam(tokenId);
-    });
-  });
-});
-
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
   const getExpectedQuery = (order = constants.orderFilterValues.DESC, timestampFilters = []) => {
-    let paramIndex = 3;
-    const transferTimestampCondition = timestampFilters
-      .map((f) => `nft_tr.consensus_timestamp ${f.operator} $${paramIndex++}`)
+    let paramIndex = 4;
+    const nftTimestampCondition = timestampFilters
+      .map((f) => `lower(timestamp_range) ${f.operator} $${paramIndex++}`)
       .join(' and ');
-    const deleteTimestampCondition = transferTimestampCondition.replace(
-      'nft_tr.consensus_timestamp',
-      'consensus_timestamp'
-    );
+    const deleteTimestampCondition = nftTimestampCondition.replace('lower(timestamp_range)', 'consensus_timestamp');
     const limitQuery = `limit $${paramIndex}`;
-    return `with serial_transfers as (
-      select
-        consensus_timestamp,
-        receiver_account_id,
-        sender_account_id,
-        token_id,
-        is_approval
-      from nft_transfer nft_tr
-      where nft_tr.token_id = $1 and nft_tr.serial_number = $2
-        ${(transferTimestampCondition && ' and ' + transferTimestampCondition) || ''}
-      order by consensus_timestamp ${order}
+    return `with nft_event as (
+      select lower(timestamp_range) as timestamp
+      from nft
+      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
+      union all
+      select lower(timestamp_range) as timestamp
+      from nft_history
+      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
+      order by timestamp ${order}
       ${limitQuery}
-    ), token_transactions as (
-      select
-        nft_tr.consensus_timestamp,
-        nft_tr.receiver_account_id,
-        nft_tr.sender_account_id,
-        nft_tr.is_approval,
-        t.nonce,
-        t.payer_account_id,
-        t.type,
-        t.valid_start_ns
-      from serial_transfers nft_tr
-      join transaction t
-      on nft_tr.consensus_timestamp = t.consensus_timestamp
-    ), token_deletion as (
+    ), nft_transaction as (
       select
         consensus_timestamp,
+        (select jsonb_path_query_array(
+          nft_transfer,
+          '$[*] ? (@.token_id == $token_id && @.serial_number == $serial_number)',
+          $1)
+        ) as nft_transfer,
         nonce,
         payer_account_id,
         type,
         valid_start_ns
       from transaction
-      where consensus_timestamp = (
-          select lower(timestamp_range)
-          from entity
-          where id = $1 and deleted is true
-        ) ${(deleteTimestampCondition && ' and ' + deleteTimestampCondition) || ''}
+      join nft_event on timestamp = consensus_timestamp
+    ), token_deletion as (
+      select
+        consensus_timestamp,
+        jsonb_build_array(jsonb_build_object(
+          'is_approval', false,
+          'receiver_account_id', null,
+          'sender_account_id', null,
+          'serial_number', $3,
+          'token_id', $2)) as nft_transfer,
+        nonce,
+        payer_account_id,
+        type,
+        valid_start_ns
+      from transaction
+      where consensus_timestamp = (select lower(timestamp_range) from entity where id = $2 and deleted is true)
+        ${deleteTimestampCondition && 'and ' + deleteTimestampCondition}
     )
-    select * from token_transactions
-    union
-    select
-      consensus_timestamp,
-      null as receiver_account_id,
-      null as sender_account_id,
-      null as is_approval,
-      nonce,
-      payer_account_id,
-      type,
-      valid_start_ns
-    from token_deletion
+    select * from nft_transaction
+    union all
+    select * from token_deletion
     order by consensus_timestamp ${order}
     ${limitQuery}`;
   };
 
-  const tokenId = '1009'; // encoded
-  const serialNumber = '960';
+  const tokenId = 1009; // encoded
+  const serialNumber = 9886299254743552n; // larger than MAX_SAFE_INTEGER
+  const defaultParams = [`{"token_id":${tokenId},"serial_number":${serialNumber}}`, tokenId, serialNumber];
 
   test('Verify simple query', () => {
     const expectedQuery = getExpectedQuery();
-    const expectedParams = [tokenId, serialNumber, defaultLimit];
+    const expectedParams = [...defaultParams, defaultLimit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, []);
     assertSqlQueryEqual(actual.query, expectedQuery);
@@ -1336,7 +1448,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     ];
 
     const expectedQuery = getExpectedQuery(order);
-    const expectedParams = [tokenId, serialNumber, limit];
+    const expectedParams = [...defaultParams, limit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
     assertSqlQueryEqual(actual.query, expectedQuery);
@@ -1348,7 +1460,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     const filters = [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: timestamp}];
 
     const expectedQuery = getExpectedQuery(constants.orderFilterValues.DESC, filters);
-    const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
+    const expectedParams = [...defaultParams, timestamp, defaultLimit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
     assertSqlQueryEqual(actual.query, expectedQuery);
@@ -1372,7 +1484,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    kyc_key,
                    max_supply,
                    e.memo,
-                   t.modified_timestamp,
+                   lower(t.timestamp_range) as modified_timestamp,
                    name,
                    pause_key,
                    pause_status,

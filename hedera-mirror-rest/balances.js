@@ -154,13 +154,14 @@ const getBalances = async (req, res) => {
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
-const getAccountBalanceTimestamp = async (tsQuery, tsParams) => {
+const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
   const query = `
     select consensus_timestamp
     from account_balance_file
-    where ${tsQuery}
-    order by consensus_timestamp desc
+     ${tsQuery ? ' where ' : ''} ${tsQuery}
+    order by consensus_timestamp ${order}
     limit 1`;
+
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
   const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
   return rows[0]?.consensus_timestamp;
@@ -247,4 +248,5 @@ const acceptedBalancesParameters = new Set([
 
 export default {
   getBalances,
+  getAccountBalanceTimestamp,
 };

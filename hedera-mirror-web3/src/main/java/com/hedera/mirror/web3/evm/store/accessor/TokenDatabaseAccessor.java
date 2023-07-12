@@ -21,7 +21,6 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
@@ -39,11 +38,10 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
-public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
+public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private final TokenRepository tokenRepository;
 
@@ -54,18 +52,19 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Address address) {
+    public @NonNull Optional<Token> get(@NonNull Object address) {
         return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
     }
 
     private Token tokenFromEntity(Entity entity) {
-        final var databaseToken =
-                tokenRepository.findById(new TokenId(entity.toEntityId())).orElse(null);
+        final var databaseToken = tokenRepository.findById(entity.getId()).orElse(null);
 
         if (databaseToken == null) {
             return null;
         }
+
         return new Token(
+                entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -88,11 +87,12 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
                 getTreasury(databaseToken.getTreasuryAccountId()),
-                null,
+                getAutoRenewAccount(entity),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
                 entity.getEffectiveExpiration(),
+                entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
@@ -111,14 +111,23 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Address, Token> {
         }
     }
 
+    private Account getAutoRenewAccount(Entity entity) {
+        return new Account(
+                entity.getId(),
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                entity.getBalance() != null ? entity.getBalance() : 0L);
+    }
+
     private Account getTreasury(EntityId treasuryId) {
         if (treasuryId == null) {
             return null;
         }
         return entityRepository
                 .findByIdAndDeletedIsFalse(treasuryId.getId())
-                .map(entity ->
-                        new Account(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance()))
+                .map(entity -> new Account(
+                        entity.getId(),
+                        new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                        entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 

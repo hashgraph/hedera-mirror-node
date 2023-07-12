@@ -18,10 +18,8 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import jakarta.inject.Named;
 import java.text.MessageFormat;
-import lombok.Value;
 
 @Named
-@Value
 public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
@@ -60,14 +58,6 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     token_account_temp t
                     left join current e on e.account_id = t.account_id
                     and e.token_id = t.token_id
-                ),
-                token as (
-                  select
-                    token_id,
-                    freeze_key,
-                    freeze_default,
-                    kyc_key
-                  from token
                 ),
                 existing_history as (
                   insert into
@@ -145,14 +135,14 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                         end
                         else e_kyc_status
                     end kyc_status,
-                    coalesce(timestamp_range, e_timestamp_range, null),
+                    coalesce(existing.timestamp_range, e_timestamp_range, null),
                     coalesce(existing.token_id, e_token_id, null)
                   from
                     existing
                     join token on existing.token_id = token.token_id
                   where
                     (existing.created_timestamp is not null or e_created_timestamp is not null) and
-                    (existing.timestamp_range is not null and upper(timestamp_range) is not null)
+                    (existing.timestamp_range is not null and upper(existing.timestamp_range) is not null)
                 )
                 insert into
                   token_account (

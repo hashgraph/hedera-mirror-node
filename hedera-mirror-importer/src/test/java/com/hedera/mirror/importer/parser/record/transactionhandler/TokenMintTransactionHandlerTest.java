@@ -25,9 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -72,8 +73,8 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
     }
 
     @Test
@@ -96,8 +97,8 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
 
         var nfts = assertThat(nft.getAllValues()).hasSize(expectedNfts);
         for (int i = 0; i < expectedNfts; i++) {
@@ -105,10 +106,10 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
                     .isNotNull()
                     .returns(recordItem.getConsensusTimestamp(), Nft::getCreatedTimestamp)
                     .returns(false, Nft::getDeleted)
-                    .returns(recordItem.getConsensusTimestamp(), Nft::getModifiedTimestamp)
                     .returns(transactionBody.getMetadata(i).toByteArray(), Nft::getMetadata)
-                    .returns(receipt.getSerialNumbers(i), n -> n.getId().getSerialNumber())
-                    .returns(transaction.getEntityId(), n -> n.getId().getTokenId());
+                    .returns(receipt.getSerialNumbers(i), AbstractNft::getSerialNumber)
+                    .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
+                    .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
         }
     }
 
@@ -133,8 +134,7 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(nft.getAllValues())
                 .hasSize(expectedNfts)
-                .extracting(Nft::getId)
-                .extracting(NftId::getSerialNumber)
+                .extracting(Nft::getSerialNumber)
                 .containsExactly(1L, 2L);
     }
 

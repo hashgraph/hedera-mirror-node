@@ -18,6 +18,7 @@
       {
         "auto_renew_account_id": "7007",
         "created_timestamp": "987654999123200",
+        "ethereum_nonce": 1,
         "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "evm_address": "abbcccddddeeeeeefffffff000000068fed9dddd",
         "file_id": "5001",
@@ -106,6 +107,7 @@
     "file_id": "0.0.5001",
     "max_automatic_token_associations": 0,
     "memo": "contract memo",
+    "nonce": 1,
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,

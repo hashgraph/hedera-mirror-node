@@ -32,6 +32,38 @@
         "num": 98
       }
     ],
+    "balances": [
+      {
+        "timestamp": "1234567890000000004",
+        "id": 8,
+        "balance": 555,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 71
+          },
+          {
+            "token_num": 99999,
+            "balance": 72
+          }
+        ]
+      },
+      {
+        "timestamp": "1234567880000000004",
+        "id": 7,
+        "balance": 444,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 61
+          },
+          {
+            "token_num": 99999,
+            "balance": 62
+          }
+        ]
+      }
+    ],
     "entityStakes": [
       {
         "decline_reward_start": false,
@@ -171,6 +203,7 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
@@ -182,6 +215,7 @@
             "amount": 900
           }
         ],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.800-1234567890-000000015",
         "transfers": [
@@ -212,12 +246,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 1,
         "parent_consensus_timestamp": "1234567890.000000005",
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000004",
         "transfers": [],
@@ -232,12 +268,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000004",
         "transfers": [
@@ -268,12 +306,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.7-1234567890-000000000",
         "transfers": [

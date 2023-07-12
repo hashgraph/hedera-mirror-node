@@ -43,6 +43,7 @@ class ContractViewModel {
     this.file_id = EntityId.parse(contract.fileId, {isNullable: true}).toString();
     this.max_automatic_token_associations = entity.maxAutomaticTokenAssociations;
     this.memo = entity.memo;
+    this.nonce = entity.ethereumNonce;
     this.obtainer_id = EntityId.parse(entity.obtainerId, {isNullable: true}).toString();
     this.permanent_removal = entity.permanentRemoval;
     this.proxy_account_id = EntityId.parse(entity.proxyAccountId, {isNullable: true}).toString();

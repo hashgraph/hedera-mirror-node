@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
@@ -82,9 +83,9 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .returns(null, Nft::getDelegatingSpender)
                 .returns(null, Nft::getDeleted)
                 .returns(null, Nft::getMetadata)
-                .returns(timestamp, Nft::getModifiedTimestamp)
                 .satisfies(n -> assertThat(n.getId().getSerialNumber()).isPositive())
                 .returns(null, Nft::getSpender)
-                .satisfies(n -> assertThat(n.getId().getTokenId().getId()).isPositive())));
+                .returns(Range.atLeast(timestamp), Nft::getTimestampRange)
+                .satisfies(n -> assertThat(n.getTokenId()).isPositive())));
     }
 }

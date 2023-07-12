@@ -43,13 +43,14 @@ jobs:
           echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: ./hedera-mirror-rosetta/container
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
+          provenance: false
           tags: ${{ env.MODULE }}:latest
 
       - name: Upload Artifact
@@ -115,7 +116,11 @@ jobs:
       - name: Run Mirror Node in Offline Mode
         if: matrix.online-only != 'true'
         run: |
-          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet \
+          # create an isolated network for offline mode and insert an iptables rule to drop any packets from the
+          # isolated network
+          docker network create --gateway 192.168.10.1 --subnet 192.168.10.0/24 isolated
+          sudo iptables -I DOCKER-USER --destination 0.0.0.0/0 --source 192.168.10.0/24 -j DROP
+          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet --network isolated \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5701:5700 "${MODULE}:latest")
           echo "OFFLINE_CONTAINER_ID=$OFFLINE_CONTAINER_ID" >> $GITHUB_ENV
@@ -207,7 +212,7 @@ jobs:
           rm -fr tmp
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2.15.0
+        uses: securego/gosec@v2.16.0
         with:
           args: ./...
 
