@@ -234,11 +234,13 @@ public class HTSTestsUtil {
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_EMPTY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(Collections.emptyList()), Collections.emptyList());
     public static final List<HbarTransfer> hbarTransfers =
-            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(-AMOUNT, false, sender, null));
+            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList2));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_NFT_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.singletonList(nftsTransferList));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER = new CryptoTransferWrapper(

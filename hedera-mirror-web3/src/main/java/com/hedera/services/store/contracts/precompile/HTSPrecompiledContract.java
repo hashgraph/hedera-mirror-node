@@ -246,7 +246,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             if (AbiConstants.ABI_ID_TRANSFER_TOKENS == functionId
                     || AbiConstants.ABI_ID_TRANSFER_TOKEN == functionId
                     || AbiConstants.ABI_ID_TRANSFER_NFTS == functionId
-                    || AbiConstants.ABI_ID_TRANSFER_NFT == functionId) {
+                    || AbiConstants.ABI_ID_TRANSFER_NFT == functionId
+                    || AbiConstants.ABI_ID_CRYPTO_TRANSFER == functionId
+                    || AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 == functionId) {
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
             } else {

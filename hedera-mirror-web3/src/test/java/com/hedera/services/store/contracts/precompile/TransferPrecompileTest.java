@@ -16,7 +16,9 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_EMPTY_WRAPPER;
@@ -24,8 +26,11 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -59,11 +64,6 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.fees.pricing.AssetsLoader;
-import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
@@ -72,10 +72,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import java.util.Optional;
@@ -175,37 +173,7 @@ class TransferPrecompileTest {
     private AutoCreationLogic autoCreationLogic;
 
     @Mock
-    private ExchangeRate exchangeRate;
-
-    @Mock
-    private HbarCentExchange exchange;
-
-    @Mock
-    private SyntheticTxnFactory syntheticTxnFactory;
-
-    @Mock
-    private TransactionBody.Builder mockSynthBodyBuilder;
-
-    @Mock
-    private CryptoTransferTransactionBody cryptoTransferTransactionBody;
-
-    @Mock
-    private FeeObject mockFeeObject;
-
-    @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
     private EvmInfrastructureFactory infrastructureFactory;
-
-    @Mock
-    private AssetsLoader assetLoader;
-
-    @Mock
-    private UsagePricesProvider resourceCosts;
-
-    @Mock
-    private AccessorFactory accessorFactory;
 
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
@@ -285,6 +253,103 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void transferNftsHappyPathWorks() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeTransferNFTs(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        ;
+    }
+
+    @Test
+    void cryptoTransferHappyPathWorks() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransfer(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void hbarOnlyTransferHappyPathWorks() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void hbarFungibleTransferHappyPathWorks() {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2);
 
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
