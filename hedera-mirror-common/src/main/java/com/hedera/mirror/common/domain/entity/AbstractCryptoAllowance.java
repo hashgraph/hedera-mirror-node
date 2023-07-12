@@ -37,13 +37,13 @@ import lombok.experimental.SuperBuilder;
 @Upsertable(history = true)
 public abstract class AbstractCryptoAllowance implements History {
 
-    @Column(updatable = false)
-    private Long createdTimestamp;
+    @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else coalesce(e_{0}, 0) + coalesce({0}, 0) end")
+    private long amount;
 
     private long amountGranted;
 
-    @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else coalesce(e_{0}, 0) + coalesce({0}, 0) end")
-    private long amount;
+    @Column(updatable = false)
+    private Long createdTimestamp;
 
     @jakarta.persistence.Id
     private long owner;

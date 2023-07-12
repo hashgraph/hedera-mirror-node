@@ -93,7 +93,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return cryptoAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
                         cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender(), ACCOUNT)),
-                        CryptoAllowance::getAmountGranted,
+                        CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
     }
@@ -104,7 +104,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                         tokenAllowance -> new FcTokenAllowanceId(
                                 entityNumFromId(EntityId.of(tokenAllowance.getTokenId(), TOKEN)),
                                 entityNumFromId(EntityId.of(tokenAllowance.getSpender(), ACCOUNT))),
-                        AbstractTokenAllowance::getAmountGranted,
+                        AbstractTokenAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
     }

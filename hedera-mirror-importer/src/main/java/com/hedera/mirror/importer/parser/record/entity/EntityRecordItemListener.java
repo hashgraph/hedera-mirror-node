@@ -89,27 +89,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
 
-    private static CryptoAllowance createAdjustingCryptoAllowanceByAmount(
-            AccountAmount accountAmount, long payerAccountNum) {
-
-        return CryptoAllowance.builder()
-                .owner(accountAmount.getAccountID().getAccountNum())
-                .spender(payerAccountNum)
-                .amount(accountAmount.getAmount())
-                .build();
-    }
-
-    private static TokenAllowance createAdjustingTokenAllowanceByAmount(
-            AccountAmount accountAmount, long payerAccountNum, long tokenId) {
-
-        return TokenAllowance.builder()
-                .tokenId(tokenId)
-                .owner(accountAmount.getAccountID().getAccountNum())
-                .spender(payerAccountNum)
-                .amount(accountAmount.getAmount())
-                .build();
-    }
-
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
@@ -148,7 +127,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // Insert transfers even on failure
         insertTransferList(recordItem);
-        updateCryptoAllowanceAmounts(recordItem);
         insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
@@ -175,7 +153,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem, transaction);
-            updateTokenAllowanceAmounts(recordItem);
             insertAssessedCustomFees(recordItem);
         }
 
@@ -272,43 +249,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void updateCryptoAllowanceAmounts(RecordItem recordItem) {
-        var transactionBody = recordItem.getTransactionBody();
-        if (!transactionBody.hasCryptoTransfer()
-                || !entityProperties.getPersist().isCryptoTransferAmounts()) {
-            return;
-        }
-
-        var payerAccountNum = transactionBody.getTransactionID().getAccountID().getAccountNum();
-        var accountAmountsList =
-                transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
-
-        accountAmountsList.stream()
-                .filter(AccountAmount::getIsApproval)
-                .map(accountAmount -> createAdjustingCryptoAllowanceByAmount(accountAmount, payerAccountNum))
-                .forEach(entityListener::onCryptoAllowance);
-    }
-
-    private void updateTokenAllowanceAmounts(RecordItem recordItem) {
-        var transactionBody = recordItem.getTransactionBody();
-        if (!transactionBody.hasCryptoTransfer()
-                || !entityProperties.getPersist().isTokens()) {
-            return;
-        }
-
-        var tokenTransferLists = transactionBody.getCryptoTransfer().getTokenTransfersList();
-        var payerAccountNum = transactionBody.getTransactionID().getAccountID().getAccountNum();
-
-        for (var tokenTransferList : tokenTransferLists) {
-            var tokenId = tokenTransferList.getToken().getTokenNum();
-            tokenTransferList.getTransfersList().stream()
-                    .filter(AccountAmount::getIsApproval)
-                    .map(accountAmount ->
-                            createAdjustingTokenAllowanceByAmount(accountAmount, payerAccountNum, tokenId))
-                    .forEach(entityListener::onTokenAllowance);
-        }
-    }
-
     /*
      * Extracts crypto transfers from the record. The extra logic around 'failedTransfer' is to detect and remove
      * spurious non-fee transfers that occurred due to a services bug in the past as documented in
@@ -347,6 +287,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                 cryptoTransfer.setIsApproval(accountAmountInsideBody.getIsApproval());
                 if (failedTransfer) {
                     cryptoTransfer.setErrata(ErrataType.DELETE);
+                } else {
+                    // Emit allowance amount representing approved transfer debit
+                    var cryptoAllowance = CryptoAllowance.builder()
+                            .owner(account.getEntityNum())
+                            .spender(payerAccountId.getEntityNum())
+                            .amount(cryptoTransfer.getAmount())
+                            .build();
+                    entityListener.onCryptoAllowance(cryptoAllowance);
                 }
             }
             entityListener.onCryptoTransfer(cryptoTransfer);
@@ -418,7 +366,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
 
-            handleNegativeAccountAmounts(tokenId, body, accountAmount, amount, tokenTransfer);
+            handleNegativeAccountAmounts(payerAccountId, tokenId, body, accountAmount, amount, tokenTransfer);
             entityListener.onTokenTransfer(tokenTransfer);
 
             if (isDeletedTokenDissociate) {
@@ -494,6 +442,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void handleNegativeAccountAmounts(
+            EntityId payerAccountId,
             EntityId tokenId,
             TransactionBody body,
             AccountAmount accountAmount,
@@ -519,6 +468,18 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
             } else {
                 tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
+            }
+
+            if (tokenTransfer.getIsApproval() == Boolean.TRUE) {
+                // Emit allowance amount representing approved transfer debit
+                var tokenAllowance = TokenAllowance.builder()
+                        .tokenId(tokenId.getEntityNum())
+                        .owner(accountAmount.getAccountID().getAccountNum())
+                        .spender(payerAccountId.getEntityNum())
+                        .amount(accountAmount.getAmount())
+                        .build();
+
+                entityListener.onTokenAllowance(tokenAllowance);
             }
         }
     }
