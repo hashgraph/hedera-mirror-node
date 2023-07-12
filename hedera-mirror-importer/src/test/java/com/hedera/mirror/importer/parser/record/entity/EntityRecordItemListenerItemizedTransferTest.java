@@ -94,7 +94,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
     @BeforeEach
     void before() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(false);
+        entityProperties.getPersist().setItemizedTransfers(false);
 
         expectedEntityNum.clear();
         expectedNonFeeTransfersCount = 0;
@@ -109,7 +109,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     @Test
     void contractCallAggregatedTransfers() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenSuccessfulContractCallTransactionAggregatedTransfers();
         assertEverything();
     }
@@ -122,7 +122,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     @Test
     void contractCreateAggregatedTransfers() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenSuccessfulContractCreateTransactionAggregatedTransfers();
         assertEverything();
     }
@@ -135,14 +135,14 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     @Test
     void cryptoCreateItemizedTransfersStoreNonFeeTransfers() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenSuccessfulCryptoCreateTransaction();
         assertEverything();
     }
 
     @Test
     void cryptoCreateAggregatedTransfers() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenSuccessfulCryptoCreateTransactionAggregatedTransfers();
         assertEverything();
     }
@@ -155,7 +155,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     @Test
     void cryptoTransferAggregatedTransfers() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenSuccessfulCryptoTransferTransactionAggregatedTransfers();
         assertEverything();
     }
@@ -174,14 +174,14 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     @Test
     void cryptoTransferFailedItemizedTransfersInvalidEntity() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenFailedCryptoTransferTransactionInvalidEntity();
         assertEverything();
     }
 
     @Test
     void cryptoTransferFailedItemizedTransfersConfigAlways() {
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         givenFailedCryptoTransferTransaction();
         assertEverything();
     }
@@ -351,14 +351,14 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     private void givenSuccessfulContractCallTransaction() {
         contractCallWithTransferList(transferListForContractCallItemized());
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
 
     private void givenSuccessfulContractCallTransactionAggregatedTransfers() {
         contractCallWithTransferList(transferListForContractCallAggregated());
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -366,7 +366,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
     private void givenSuccessfulContractCreateTransaction() {
         contractCreateWithTransferList(transferListForContractCreateItemized());
         expectedEntityNum.add(NEW_CONTRACT_NUM);
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -375,7 +375,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
         contractCreateWithTransferList(transferListForContractCreateAggregated());
         expectedEntityNum.add(NEW_CONTRACT_NUM);
 
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -383,7 +383,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
     private void givenSuccessfulCryptoCreateTransaction() {
         cryptoCreateWithTransferList(transferListForCryptoCreateItemized());
         expectedEntityNum.add(NEW_ACCOUNT_NUM);
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -391,7 +391,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
     private void givenSuccessfulCryptoCreateTransactionAggregatedTransfers() {
         cryptoCreateWithTransferList(transferListForCryptoCreateAggregated());
         expectedEntityNum.add(NEW_ACCOUNT_NUM);
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -419,14 +419,14 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
 
     private void givenSuccessfulCryptoTransferTransaction() {
         cryptoTransferWithTransferList(transferListForCryptoTransferItemized());
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
 
     private void givenSuccessfulCryptoTransferTransactionAggregatedTransfers() {
         cryptoTransferWithTransferList(transferListForCryptoTransferAggregated());
-        if (entityProperties.getPersist().isNonFeeTransfers()) {
+        if (entityProperties.getPersist().isItemizedTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }

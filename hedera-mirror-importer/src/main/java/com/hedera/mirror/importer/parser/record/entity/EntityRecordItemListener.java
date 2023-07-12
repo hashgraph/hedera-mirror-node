@@ -200,12 +200,15 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
-     * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
+     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to create
+     * an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
     private void processItemizedTransfers(long consensusTimestamp, RecordItem recordItem, Transaction transaction) {
 
+        if (!entityProperties.getPersist().isItemizedTransfers()) {
+            return;
+        }
         var body = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getTransactionRecord();
         for (var aa : itemizedTransfersExtractor.extractItemizedTransfers(body, transactionRecord)) {

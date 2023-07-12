@@ -49,7 +49,7 @@ public class EntityProperties {
 
         private boolean files = true;
 
-        private boolean nonFeeTransfers = false;
+        private boolean itemizedTransfers = false;
 
         private boolean pendingReward = true;
 

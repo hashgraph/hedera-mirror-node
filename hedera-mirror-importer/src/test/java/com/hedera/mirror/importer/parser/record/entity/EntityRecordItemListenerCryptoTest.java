@@ -1120,7 +1120,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoTransferWithAlias() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         Entity entity = domainBuilder.entity().persist();
         var newAccount =
                 AccountID.newBuilder().setAccountNum(domainBuilder.id()).build();
@@ -1177,7 +1177,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Entity contract = domainBuilder.entity().persist();
         assertThat(entityRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
 
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
 
         long transferAmount = 123;
         var transfer1 = accountAliasAmount(DomainUtils.fromBytes(contract.getEvmAddress()), transferAmount)
@@ -1214,7 +1214,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // given
         // both accounts have alias, and only account2's alias is in db
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
 
         Entity account1 = domainBuilder.entity().get();
         Entity account2 = domainBuilder.entity().persist();
