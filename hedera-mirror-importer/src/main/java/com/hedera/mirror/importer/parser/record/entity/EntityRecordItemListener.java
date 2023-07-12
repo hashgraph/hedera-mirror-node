@@ -49,7 +49,6 @@ import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.contractresult.TransferContractResult;
-import com.hedera.mirror.importer.parser.record.ItemizedTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -82,7 +81,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-    private final ItemizedTransferExtractionStrategy itemizedTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
@@ -210,8 +208,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
         var body = recordItem.getTransactionBody();
-        var transactionRecord = recordItem.getTransactionRecord();
-        for (var aa : itemizedTransfersExtractor.extractItemizedTransfers(body, transactionRecord)) {
+        var transfers = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
+        for (var aa : transfers) {
             if (aa.getAmount() != 0) {
                 var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
                 if (EntityId.isEmpty(entityId)) {

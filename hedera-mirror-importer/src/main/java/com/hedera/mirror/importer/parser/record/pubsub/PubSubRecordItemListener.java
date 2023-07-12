@@ -29,7 +29,6 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.importer.parser.record.ItemizedTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -53,7 +52,6 @@ public class PubSubRecordItemListener implements RecordItemListener {
     private final PubSubProperties pubSubProperties;
     private final PubSubTemplate pubSubTemplate;
     private final AddressBookService addressBookService;
-    private final ItemizedTransferExtractionStrategy itemizedTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -115,7 +113,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
-        var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
+        var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody());
         return new PubSubMessage(
                 consensusTimestamp,
                 entity,
@@ -128,8 +126,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
     /**
      * Set of explicit transfers in the transaction.
      */
-    private Iterable<AccountAmount> addNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
-        var nonFeeTransfers = itemizedTransfersExtractor.extractItemizedTransfers(body, transactionRecord);
+    private Iterable<AccountAmount> addNonFeeTransfers(TransactionBody body) {
+        var nonFeeTransfers = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         if (!nonFeeTransfers.iterator().hasNext()) { // return null if empty
             return null;
         }
