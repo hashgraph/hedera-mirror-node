@@ -61,6 +61,8 @@ class SyntheticContractResultServiceImplTest {
         receiverId =
                 EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
         amount = recordItem.getTransactionBody().getTokenMint().getAmount();
+
+        entityProperties.getPersist().setSyntheticContractResults(true);
     }
 
     @Test
