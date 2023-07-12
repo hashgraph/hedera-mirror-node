@@ -88,7 +88,7 @@ public class TokenRelationship {
         this.balanceChange = balanceChange;
     }
 
-    public TokenRelationship(Token token, Account account, Boolean hasAssociation) {
+    public TokenRelationship(Token token, Account account, boolean hasAssociation) {
         this(
                 token,
                 account,
