@@ -28,12 +28,14 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
@@ -167,6 +169,37 @@ public class StoreImpl implements Store {
     @Override
     public void wrap() {
         stackedStateFrames.push();
+    }
+
+    /**
+     * Returns a {@link Token} model with loaded unique tokens
+     *
+     * @param token         the token model, on which to load the unique tokens
+     * @param serialNumbers the serial numbers to load
+     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is missing, deleted, or
+     *                                                                                expired and pending removal
+     */
+    public Token loadUniqueTokens(final Token token, final List<Long> serialNumbers) {
+        final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
+        for (final long serialNumber : serialNumbers) {
+            final var uniqueToken = loadUniqueToken(token.getId(), serialNumber);
+            loadedUniqueTokens.put(serialNumber, uniqueToken);
+        }
+
+        return token.setLoadedUniqueTokens(loadedUniqueTokens);
+    }
+
+    /**
+     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can
+     * be used to implement business logic in a transaction.
+     *
+     * @param tokenId   TokenId of the NFT
+     * @param serialNum Serial number of the NFT
+     * @return The {@link UniqueToken} model of the requested unique token
+     */
+    private UniqueToken loadUniqueToken(final Id tokenId, final Long serialNum) {
+        final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNum);
+        return getUniqueToken(nftId, OnMissing.THROW);
     }
 
     private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {

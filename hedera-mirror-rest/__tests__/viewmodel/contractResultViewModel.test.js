@@ -25,7 +25,7 @@ describe('ContractResultViewModel', () => {
     contractId: 1500,
     createdContractIds: [1501, 1502],
     errorMessage: 'unknown error',
-    payerAccountId: 1100,
+    senderId: 1100,
     functionParameters: Buffer.from([0x1, 0x2, 0x3, 0x4]),
     gasLimit: 6000,
     gasUsed: 3500,

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
@@ -370,6 +371,8 @@ const getOneAccount = async (req, res) => {
   // Parse the filter parameters for account-numbers, balance, and pagination
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+
+  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
   const parsedQueryParams = req.query;
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
   const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
@@ -451,28 +454,38 @@ const getOneAccount = async (req, res) => {
   const creditDebitQuery = ''; // type=credit|debit is not supported
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [encodedId];
-  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
-  const innerQuery = transactions.getTransactionsInnerQuery(
-    accountQuery,
-    transactionTsQuery,
-    resultTypeQuery,
-    query,
-    creditDebitQuery,
-    transactionTypeQuery,
-    order
-  );
+  let transactionsPromise;
 
-  const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
-  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
+  // when not specified or set as true
+  const includeTransactions = !transactionsFilter || transactionsFilter.value;
+  if (includeTransactions) {
+    const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
+    const innerQuery = transactions.getTransactionsInnerQuery(
+      accountQuery,
+      transactionTsQuery,
+      resultTypeQuery,
+      query,
+      creditDebitQuery,
+      transactionTypeQuery,
+      order
+    );
+
+    const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
+    const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
+    const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
+
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
+    }
+
+    // Execute query & get a promise
+    transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
+  } else {
+    // Promise that returns empty result
+    transactionsPromise = Promise.resolve({rows: []});
   }
-
-  // Execute query & get a promise
-  const transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
   const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
@@ -535,6 +548,7 @@ const acceptedSingleAccountParameters = new Set([
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP,
   constants.filterKeys.TRANSACTION_TYPE,
+  constants.filterKeys.TRANSACTIONS,
 ]);
 
 if (utils.isTestEnv()) {

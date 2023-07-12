@@ -53,6 +53,7 @@ import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
@@ -72,7 +73,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Spring configuration for beans related to com.hedera.services components
- * */
+ */
 @Configuration
 public class ServicesConfiguration {
 
@@ -313,5 +314,10 @@ public class ServicesConfiguration {
                 deleteAllowanceLogic,
                 approveAllowanceChecks,
                 deleteAllowanceChecks);
+    }
+
+    @Bean
+    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new WipeLogic(mirrorNodeEvmProperties);
     }
 }
