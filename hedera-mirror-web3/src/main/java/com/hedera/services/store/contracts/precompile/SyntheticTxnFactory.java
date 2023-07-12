@@ -21,16 +21,20 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -104,5 +108,15 @@ public class SyntheticTxnFactory {
             builder.setAmount(burnWrapper.amount());
         }
         return TransactionBody.newBuilder().setTokenBurn(builder);
+    }
+
+    public TransactionBody.Builder createGrantKyc(
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
+        final var builder = TokenGrantKycTransactionBody.newBuilder();
+
+        builder.setToken(grantRevokeKycWrapper.token());
+        builder.setAccount(grantRevokeKycWrapper.account());
+
+        return TransactionBody.newBuilder().setTokenGrantKyc(builder);
     }
 }
