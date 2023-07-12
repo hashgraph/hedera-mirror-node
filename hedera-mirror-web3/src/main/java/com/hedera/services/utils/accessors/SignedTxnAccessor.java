@@ -62,6 +62,10 @@ import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. setTokenWipeUsageMeta uses the TransactionBody
+ */
 public class SignedTxnAccessor implements TxnAccessor {
 
     private static final String ACCESSOR_LITERAL = " accessor";

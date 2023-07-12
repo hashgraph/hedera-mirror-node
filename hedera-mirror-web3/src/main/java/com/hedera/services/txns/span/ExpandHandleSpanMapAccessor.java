@@ -28,10 +28,13 @@ import com.hedera.services.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import javax.inject.Named;
 
 /** Minimal helper class for getting/setting entries in a span map. */
-@Named
+
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove FeeSchedule, UtilPrng, File logic
+ */
 public class ExpandHandleSpanMapAccessor {
     private static final String TOKEN_CREATE_META_KEY = "tokenCreateMeta";
     private static final String TOKEN_BURN_META_KEY = "tokenBurnMeta";

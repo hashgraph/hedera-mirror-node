@@ -36,6 +36,10 @@ import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import java.nio.charset.StandardCharsets;
 
+/**
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. remove cryptoInfoUsage logic
+ */
 public class CryptoOpsUsage {
     private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
     private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
