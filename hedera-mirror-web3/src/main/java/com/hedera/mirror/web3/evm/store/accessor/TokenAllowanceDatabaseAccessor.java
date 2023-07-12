@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance.Id;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import jakarta.inject.Named;
@@ -26,12 +26,12 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Id, TokenAllowance> {
+public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, TokenAllowance> {
 
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
     @Override
-    public @NonNull Optional<TokenAllowance> get(@NonNull Id key) {
-        return tokenAllowanceRepository.findById(key);
+    public @NonNull Optional<TokenAllowance> get(@NonNull Object key) {
+        return tokenAllowanceRepository.findById((AbstractTokenAllowance.Id) key);
     }
 }

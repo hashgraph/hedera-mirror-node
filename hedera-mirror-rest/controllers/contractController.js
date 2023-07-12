@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import {Range} from 'pg-range';
 
 import BaseController from './baseController';
 import Bound from './bound';
@@ -31,11 +30,10 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  Transaction,
   TransactionResult,
   TransactionType,
 } from '../model';
-import {ContractService, FileDataService, RecordFileService, TransactionService} from '../service';
+import {ContractService, EntityService, FileDataService, RecordFileService, TransactionService} from '../service';
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
@@ -59,6 +57,7 @@ const contractSelectFields = [
   Entity.KEY,
   Entity.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Entity.MEMO,
+  Entity.ETHEREUM_NONCE,
   Entity.OBTAINER_ID,
   Entity.PERMANENT_REMOVAL,
   Entity.PROXY_ACCOUNT_ID,
@@ -78,7 +77,6 @@ const ethereumTransactionType = Number(TransactionType.getProtoId('ETHEREUMTRANS
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
-const emptyBloomBuffer = Buffer.alloc(256);
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
@@ -146,57 +144,6 @@ const extractSqlFromContractFilters = async (filters) => {
   filterQuery.params = params;
 
   return filterQuery;
-};
-
-/**
- * Extracts the aggregated timestamp range condition from the timestamp filters
- * @param filters
- */
-const extractTimestampConditionsFromContractFilters = (filters) => {
-  const conditions = [];
-  const params = [];
-  const timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
-
-  filters
-    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
-    .forEach((filter) => {
-      // the first param is the contract id, the param for the current filter will be pushed later, so add 2
-      const position = `$${params.length + 1}`;
-      let condition;
-      let range;
-
-      if (filter.operator === utils.opsMap.ne) {
-        // handle ne filter differently
-        condition = `not ${timestampRangeColumn} @> ${position}`; // @> is the pg range "contains" operator
-        range = Range(filter.value, filter.value, '[]');
-      } else {
-        condition = `${timestampRangeColumn} && ${position}`; // && is the pg range "overlaps" operator
-
-        switch (filter.operator) {
-          case utils.opsMap.lt:
-            range = Range(null, filter.value, '()');
-            break;
-          case utils.opsMap.eq:
-          case utils.opsMap.lte:
-            range = Range(null, filter.value, '(]');
-            break;
-          case utils.opsMap.gt:
-            range = Range(filter.value, null, '()');
-            break;
-          case utils.opsMap.gte:
-            range = Range(filter.value, null, '[)');
-            break;
-        }
-      }
-
-      conditions.push(condition);
-      params.push(range);
-    });
-
-  return {
-    conditions,
-    params,
-  };
 };
 
 /**
@@ -456,7 +403,7 @@ class ContractController extends BaseController {
 
     let internal = false;
 
-    const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
+    const contractResultSenderFullName = ContractResult.getFullName(ContractResult.SENDER_ID);
     const contractResultFromInValues = [];
 
     const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
@@ -485,13 +432,16 @@ class ContractController extends BaseController {
 
       switch (filter.key) {
         case filterKeys.FROM:
-          // handle repeated values
+          // Evm addresses are not parsed by utils.buildAndValidateFilters, so they are converted to encoded ids here.
+          if (EntityId.isValidEvmAddress(filter.value)) {
+            filter.value = await EntityService.getEncodedId(filter.value);
+          }
           this.updateConditionsAndParamsWithInValues(
             filter,
             contractResultFromInValues,
             params,
             conditions,
-            contractResultFromFullName,
+            contractResultSenderFullName,
             conditions.length + 1
           );
           break;
@@ -573,7 +523,7 @@ class ContractController extends BaseController {
     }
 
     // update query with repeated values
-    this.updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultFromFullName);
+    this.updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultSenderFullName);
     this.updateQueryFiltersWithInValues(
       params,
       conditions,
@@ -732,7 +682,7 @@ class ContractController extends BaseController {
     );
 
     const {conditions: timestampConditions, params: timestampParams} =
-      extractTimestampConditionsFromContractFilters(filters);
+      utils.extractTimestampRangeConditionFilters(filters);
 
     const {query, params} = getContractByIdOrAddressContractEntityQuery({
       timestampConditions,
@@ -782,7 +732,6 @@ class ContractController extends BaseController {
       contracts: rows.map((row) => formatContractRow(row, ContractViewModel)),
       links: {},
     };
-
     const lastRow = _.last(response.contracts);
     const lastContractId = lastRow !== undefined ? lastRow.contract_id : null;
     response.links.next = utils.getPaginationLink(
@@ -1050,6 +999,7 @@ class ContractController extends BaseController {
       acceptedContractResultsParameters,
       contractResultsFilterValidityChecks
     );
+
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
@@ -1351,7 +1301,6 @@ if (utils.isTestEnv()) {
       contractSelectFields,
       contractWithBytecodeSelectFields,
       extractSqlFromContractFilters,
-      extractTimestampConditionsFromContractFilters,
       formatContractRow,
       getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,

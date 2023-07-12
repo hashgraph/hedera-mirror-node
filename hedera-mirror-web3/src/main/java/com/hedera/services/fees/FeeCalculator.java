@@ -16,20 +16,22 @@
 
 package com.hedera.services.fees;
 
-import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 
 /**
- * Defines a type able to calculate the fees required for various operations within Hedera Services.
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Use abstraction for the state by introducing {@link Store} interface
+ *  2. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
 public interface FeeCalculator {
 
-    FeeObject estimatePayment(
-            Query query, FeeData usagePrices, StackedStateFrames<?> state, Timestamp at, ResponseType type);
+    FeeObject estimatePayment(Query query, FeeData usagePrices, Store store, Timestamp at, ResponseType type);
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    FeeObject computeFee(JKey payerKey, StackedStateFrames<?> state, Timestamp at);
+    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, Store store, Timestamp at);
 }

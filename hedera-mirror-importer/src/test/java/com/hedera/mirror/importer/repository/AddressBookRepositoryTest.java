@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.FILE
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .isEqualTo(addressBook)
                 .extracting(AddressBook::getEntries)
                 .usingRecursiveComparison()
-                .ignoringFieldsOfTypes(AtomicReference.class)
+                .ignoringFieldsOfTypes(AtomicReference.class, EntityType.class)
                 .isEqualTo(addressBook.getEntries());
     }
 

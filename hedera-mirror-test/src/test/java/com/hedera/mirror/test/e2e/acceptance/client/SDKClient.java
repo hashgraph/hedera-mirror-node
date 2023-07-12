@@ -50,7 +50,7 @@ import org.springframework.util.CollectionUtils;
 @CustomLog
 @Named
 @Value
-public class SDKClient implements AutoCloseable {
+public class SDKClient implements Cleanable {
 
     private final Client client;
     private final ExpandedAccountId defaultOperator;
@@ -90,23 +90,33 @@ public class SDKClient implements AutoCloseable {
     }
 
     @Override
-    public void close() throws TimeoutException {
+    public void clean() {
         var createdAccountId = expandedOperatorAccountId.getAccountId();
         var operatorId = defaultOperator.getAccountId();
 
         if (!operatorId.equals(createdAccountId)) {
             try {
-                new AccountDeleteTransaction()
+                var response = new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
                         .setTransferAccountId(operatorId)
-                        .execute(client);
-                log.info("Deleted temporary operator account {}", createdAccountId);
+                        .execute(client)
+                        .getReceipt(client);
+                log.info("Deleted temporary operator account {} via {}", createdAccountId, response.transactionId);
             } catch (Exception e) {
                 log.warn("Unable to delete temporary operator account {}", createdAccountId, e);
             }
         }
 
-        client.close();
+        try {
+            client.close();
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int getOrder() {
+        return LOWEST_PRECEDENCE;
     }
 
     private Client createClient() throws InterruptedException {
@@ -141,7 +151,8 @@ public class SDKClient implements AutoCloseable {
     private ExpandedAccountId getOperatorAccount() {
         try {
             if (acceptanceTestProperties.isCreateOperatorAccount()) {
-                PrivateKey privateKey = PrivateKey.generateED25519();
+                // Use the same operator key in case we need to later manually update/delete any created entities.
+                PrivateKey privateKey = defaultOperator.getPrivateKey();
                 PublicKey publicKey = privateKey.getPublicKey();
                 var accountId = new AccountCreateTransaction()
                         .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
@@ -194,6 +205,7 @@ public class SDKClient implements AutoCloseable {
 
     private boolean validateNode(String endpoint, AccountId nodeAccountId) {
         boolean valid = false;
+        var stopwatch = Stopwatch.createStarted();
 
         try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
@@ -203,10 +215,10 @@ public class SDKClient implements AutoCloseable {
                     .setMaxAttempts(3)
                     .setMaxBackoff(Duration.ofSeconds(2))
                     .execute(client, Duration.ofSeconds(10L));
-            log.info("Validated node: {}", nodeAccountId);
+            log.info("Validated node {} in {}", nodeAccountId, stopwatch);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: {}", nodeAccountId, e.getMessage());
+            log.warn("Unable to validate node {} after {}: {}", nodeAccountId, stopwatch, e.getMessage());
         }
 
         return valid;

@@ -17,11 +17,7 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.fees.BasicHbarCentExchange;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
@@ -36,14 +32,13 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
-    private final CacheProperties cacheProperties;
-
     public static final String CACHE_MANAGER_FEE = "cacheManagerFee";
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
     public static final String CACHE_MANAGER_STATE = "cacheManagerState";
     public static final String CACHE_MANAGER_ENTITY = "cacheManagerEntity";
     public static final String CACHE_MANAGER_TOKEN = "cacheManagerToken";
+    private final CacheProperties cacheProperties;
 
     @Bean(CACHE_MANAGER_STATE)
     CacheManager cacheManagerState() {
@@ -91,21 +86,5 @@ public class EvmConfiguration {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
-    }
-
-    @Bean
-    GasCalculatorHederaV22 gasCalculatorHederaV22(
-            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
-        return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
-    }
-
-    @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
-        return new BasicFcfsUsagePrices(ratesAndFeesLoader);
-    }
-
-    @Bean
-    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
-        return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 }

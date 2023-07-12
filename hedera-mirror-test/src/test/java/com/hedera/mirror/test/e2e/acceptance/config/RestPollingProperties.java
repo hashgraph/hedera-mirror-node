@@ -24,7 +24,9 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.Set;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -34,6 +36,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest")
 @Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class RestPollingProperties {
 
@@ -59,7 +62,9 @@ public class RestPollingProperties {
 
     public boolean shouldRetry(Throwable t) {
         // Don't retry negative test cases
-        if (t instanceof WebClientResponseException wcre && wcre.getStatusCode() == HttpStatus.BAD_REQUEST) {
+        if (t instanceof WebClientResponseException wcre
+                && (wcre.getStatusCode() == HttpStatus.BAD_REQUEST
+                        || wcre.getStatusCode() == HttpStatus.NOT_IMPLEMENTED)) {
             return false;
         }
         return retryableExceptions.stream()

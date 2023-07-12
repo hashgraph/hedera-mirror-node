@@ -21,7 +21,7 @@ import JSONBigFactory from 'json-bigint';
 import long from 'long';
 import * as math from 'mathjs';
 import pg from 'pg';
-import pgRange from 'pg-range';
+import pgRange, {Range} from 'pg-range';
 import util from 'util';
 
 import * as constants from './constants';
@@ -29,7 +29,8 @@ import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
-import {FeeSchedule, TransactionResult, TransactionType} from './model';
+import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
+import {filterKeys} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -350,6 +351,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
+      break;
+    case constants.filterKeys.TRANSACTIONS:
+      ret = isValidBooleanOpAndValue(op, val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -677,6 +681,61 @@ const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}
     (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
     false
   );
+};
+
+/**
+ * Extracts the aggregated timestamp range condition from the timestamp filters
+ * @param filters
+ * @param offset
+ * @param timestampRangeColumn
+ */
+const extractTimestampRangeConditionFilters = (
+  filters,
+  offset = 0,
+  timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE)
+) => {
+  const conditions = [];
+  const params = [];
+
+  filters
+    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
+    .forEach((filter) => {
+      const position = `$${params.length + offset + 1}`;
+      let condition;
+      let range;
+
+      if (filter.operator === opsMap.ne) {
+        // handle ne filter differently
+        condition = `not ${timestampRangeColumn} @> ${position}`; // @> is the pg range "contains" operator
+        range = Range(filter.value, filter.value, '[]');
+      } else {
+        condition = `${timestampRangeColumn} && ${position}`; // && is the pg range "overlaps" operator
+
+        switch (filter.operator) {
+          case opsMap.lt:
+            range = Range(null, filter.value, '()');
+            break;
+          case opsMap.eq:
+          case opsMap.lte:
+            range = Range(null, filter.value, '(]');
+            break;
+          case opsMap.gt:
+            range = Range(filter.value, null, '()');
+            break;
+          case opsMap.gte:
+            range = Range(filter.value, null, '[)');
+            break;
+        }
+      }
+
+      conditions.push(condition);
+      params.push(range);
+    });
+
+  return {
+    conditions,
+    params,
+  };
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -1215,10 +1274,13 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value, {
-          evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
-          paramName: comparator.key,
-        }).getEncodedId();
+        if (!EntityId.isValidEvmAddress(comparator.value)) {
+          // Only parse non-evm addresses.
+          comparator.value = EntityId.parse(comparator.value, {
+            evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
+            paramName: comparator.key,
+          }).getEncodedId();
+        }
         break;
       case constants.filterKeys.INTERNAL:
         comparator.value = parseBooleanValue(comparator.value);
@@ -1251,6 +1313,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
+        break;
+      case constants.filterKeys.TRANSACTIONS:
+        comparator.value = parseBooleanValue(comparator.value);
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
@@ -1384,61 +1449,82 @@ const getStakingPeriod = (stakingPeriod) => {
  * beyond a configured limit), or a set of equals operators within the same limit.
  *
  * @param {[]}timestampFilters an array of timestamp filters
+ * @param filterRequired indicates whether timestamp filters can be empty
+ * @param allowNe indicates whether existence of ne filter is error condition
+ * @param allowOpenRange indicates if we allow lt or gt to be passed individually
+ * @param strictCheckOverride override feature flag to force strict checking
+ * @return [range, eqValues, neqValues] - range is null in the case of equals
  */
-const checkTimestampRange = (timestampFilters) => {
+const checkTimestampRange = (
+  timestampFilters,
+  filterRequired = true,
+  allowNe = false,
+  allowOpenRange = false,
+  strictCheckOverride = true
+) => {
+  const forceStrictChecks = strictCheckOverride || config.strictTimestampParam;
+
   //No timestamp params provided
   if (timestampFilters.length === 0) {
-    throw new InvalidArgumentError('No timestamp range or eq operator provided');
+    if (filterRequired) {
+      throw new InvalidArgumentError('No timestamp range or eq operator provided');
+    }
+
+    return [null, [], []];
   }
 
   const valuesByOp = {};
   Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
-  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(filter.value));
+  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(BigInt(filter.value)));
 
   const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
   const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
 
-  if (valuesByOp[opsMap.ne].length > 0) {
-    // Don't allow ne
-    throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
-  }
+  if (forceStrictChecks) {
+    if (!allowNe && valuesByOp[opsMap.ne].length > 0) {
+      // Don't allow ne
+      throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
+    }
 
-  if (gtGteLength > 1) {
-    //Don't allow multiple gt/gte
-    throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
-  }
+    if (gtGteLength > 1) {
+      //Don't allow multiple gt/gte
+      throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
+    }
 
-  if (ltLteLength > 1) {
-    //Don't allow multiple lt/lte
-    throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
-  }
+    if (ltLteLength > 1) {
+      //Don't allow multiple lt/lte
+      throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
+    }
 
-  if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0)) {
-    //Combined eq with other operator
-    throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
+    if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0 || valuesByOp[opsMap.ne].length > 0)) {
+      //Combined eq with other operator
+      throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
+    }
   }
 
   if (valuesByOp[opsMap.eq].length > 0) {
-    //Only eq provided, no range needed
-    return;
+    return [null, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
   }
 
-  if (gtGteLength === 0 || ltLteLength === 0) {
+  if (!allowOpenRange && (gtGteLength === 0 || ltLteLength === 0)) {
     //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
   }
 
-  // there should be exactly one gt/gte and one lt/lte at this point
-  const earliest =
-    valuesByOp[opsMap.gt].length > 0 ? BigInt(valuesByOp[opsMap.gt][0]) + 1n : BigInt(valuesByOp[opsMap.gte][0]);
-  const latest =
-    valuesByOp[opsMap.lt].length > 0 ? BigInt(valuesByOp[opsMap.lt][0]) - 1n : BigInt(valuesByOp[opsMap.lte][0]);
-  const difference = latest - earliest + 1n;
+  // there should be exactly one gt/gte and/or one lt/lte at this point
+  const earliest = valuesByOp[opsMap.gt].length ? valuesByOp[opsMap.gt][0] + 1n : valuesByOp[opsMap.gte][0];
+  const latest = valuesByOp[opsMap.lt].length ? valuesByOp[opsMap.lt][0] - 1n : valuesByOp[opsMap.lte][0];
 
+  const difference = latest !== undefined && earliest !== undefined ? latest - earliest + 1n : undefined;
   const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+
+  // If difference is undefined, we want to ignore because we allow open ranges and that is known to be true at this point
   if (difference > maxTimestampRangeNs || difference <= 0n) {
     throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
   }
+
+  const range = earliest >= 0 || latest >= 0 ? Range(earliest ?? null, latest ?? null, '[]') : null;
+  return [range, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
 };
 
 /**
@@ -1494,6 +1580,74 @@ const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => 
   return Math.round(Math.max(tinyBars, 1));
 };
 
+const boundToOp = {
+  '(': opsMap.gt,
+  '[': opsMap.gte,
+  ')': opsMap.lt,
+  ']': opsMap.lte,
+};
+const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
+  const conditions = [];
+  const params = [];
+
+  if (range) {
+    const bounds = [...range.bounds];
+    if (range.begin) {
+      conditions.push(`${column} ${boundToOp[bounds[0]]} ?`);
+      params.push(range.begin);
+    }
+    if (range.end) {
+      conditions.push(`${column} ${boundToOp[bounds[1]]} ?`);
+      params.push(range.end);
+    }
+  }
+
+  if (neValues.length) {
+    if (buildAsIn) {
+      conditions.push(`${column} not in (?`.concat(', ?'.repeat(neValues.length - 1)).concat(')'));
+    } else {
+      neValues.forEach((_) => conditions.push(`${column} != ?`));
+    }
+    params.push(...neValues);
+  }
+
+  if (eqValues.length) {
+    if (buildAsIn) {
+      conditions.push(`${column} in (?`.concat(', ?'.repeat(eqValues.length - 1)).concat(')'));
+    } else {
+      eqValues.forEach((_) => conditions.push(`${column} = ?`));
+    }
+    params.push(...eqValues);
+  }
+
+  return [conditions.join(' and '), params];
+};
+
+const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) => {
+  const conditions = [];
+  const params = [];
+
+  if (range) {
+    conditions.push(`${column} && ?`);
+    params.push(range);
+  }
+  if (neValues.length) {
+    neValues.forEach((value) => {
+      conditions.push(`not ${column} @> ?::bigint`);
+      params.push(value);
+    });
+  }
+
+  if (eqValues.length) {
+    eqValues.forEach((value) => {
+      conditions.push(`${column} && ?`);
+      params.push(Range(null, value, '(]'));
+    });
+  }
+
+  return [conditions.join(' and '), params];
+};
+
 const JSONParse = JSONBig.parse;
 const JSONStringify = JSONBig.stringify;
 
@@ -1505,6 +1659,8 @@ export {
   buildAndValidateFilters,
   buildComparatorFilter,
   buildFilters,
+  buildTimestampQuery,
+  buildTimestampRangeQuery,
   buildPgSqlObject,
   calculateExpiryTimestamp,
   checkTimestampRange,
@@ -1516,6 +1672,7 @@ export {
   encodeBinary,
   encodeKey,
   encodeUtf8,
+  extractTimestampRangeConditionFilters,
   filterDependencyCheck,
   filterValidityChecks,
   formatComparator,

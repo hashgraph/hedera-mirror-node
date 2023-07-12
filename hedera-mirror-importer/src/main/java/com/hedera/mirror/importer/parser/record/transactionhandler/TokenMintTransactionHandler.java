@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -60,9 +61,10 @@ class TokenMintTransactionHandler implements TransactionHandler {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
 
-        var token = Token.of(tokenId);
+        var token = new Token();
+        token.setTimestampLower(consensusTimestamp);
+        token.setTokenId(tokenId.getId());
         token.setTotalSupply(newTotalSupply);
-        token.setModifiedTimestamp(consensusTimestamp);
         entityListener.onToken(token);
 
         var serialNumbers = recordItem.getTransactionRecord().getReceipt().getSerialNumbersList();
@@ -76,11 +78,14 @@ class TokenMintTransactionHandler implements TransactionHandler {
                 break;
             }
 
-            var nft = new Nft(serialNumbers.get(i), tokenId);
-            nft.setCreatedTimestamp(consensusTimestamp);
-            nft.setDeleted(false);
-            nft.setMetadata(toBytes(transactionBody.getMetadata(i)));
-            nft.setModifiedTimestamp(consensusTimestamp);
+            var nft = Nft.builder()
+                    .createdTimestamp(consensusTimestamp)
+                    .deleted(false)
+                    .metadata(toBytes(transactionBody.getMetadata(i)))
+                    .serialNumber(serialNumbers.get(i))
+                    .timestampRange(Range.atLeast(consensusTimestamp))
+                    .tokenId(tokenId.getId())
+                    .build();
             entityListener.onNft(nft);
         }
     }

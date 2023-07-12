@@ -41,6 +41,7 @@ const baseUrl = __ENV.BASE_URL;
 const baseUrlPrefix = __ENV.BASE_URL_PREFIX;
 
 setEnvDefault('DEFAULT_BALANCE_TIMESTAMP', Date.now() / 1000);
+setEnvDefault('DEFAULT_TOKEN_BALANCE_TIMESTAMP', Date.now() / 1000);
 setEnvDefault('DEFAULT_START_ACCOUNT', 0);
 
 const restUrlFromNext = (next) => next && `${baseUrl}${next}`;
@@ -104,12 +105,13 @@ const getPropertiesForEntity = (extractProperties, properties) => {
 };
 
 const computeAccountParameters = wrapComputeParametersFunc(
-  ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY'],
+  ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY', 'DEFAULT_ACCOUNT_ID_TIMESTAMP'],
   () => {
     const extractProperties = (account) => {
       const {
         balance: {balance},
         key,
+        created_timestamp: timestamp,
       } = account;
       if (key === null) {
         throw new Error('The account has no key');
@@ -123,6 +125,7 @@ const computeAccountParameters = wrapComputeParametersFunc(
         DEFAULT_ACCOUNT_BALANCE: balance,
         DEFAULT_ACCOUNT_ID: account.account,
         DEFAULT_PUBLIC_KEY: key.key,
+        DEFAULT_ACCOUNT_ID_TIMESTAMP: timestamp,
       };
     };
     return getPropertiesForEntity(extractProperties, {
@@ -363,6 +366,7 @@ const setupTestParameters = (requiredParameters) => {
   const testParameters = {
     BASE_URL_PREFIX: baseUrlPrefix,
     DEFAULT_BALANCE_TIMESTAMP: __ENV['DEFAULT_BALANCE_TIMESTAMP'],
+    DEFAULT_TOKEN_BALANCE_TIMESTAMP: __ENV['DEFAULT_TOKEN_BALANCE_TIMESTAMP'],
     DEFAULT_LIMIT: __ENV['DEFAULT_LIMIT'],
   };
   Object.assign(testParameters, computeTestParameters(requiredParameters, allHandlers));

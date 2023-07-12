@@ -16,10 +16,9 @@
 
 package com.hedera.mirror.common.domain.topic;
 
+import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,8 +52,7 @@ class TopicMessageTest {
                 .build();
         topicMessage.setInitialTransactionId(transactionID.toByteArray());
 
-        ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        String json = objectMapper.writeValueAsString(topicMessage);
+        String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
         assertThat(json)
                 .isEqualTo("{" + "\"@type\":\"TopicMessage\","
                         + "\"chunk_num\":1,"

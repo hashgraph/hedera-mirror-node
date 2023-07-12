@@ -34,8 +34,16 @@ describe('getQuery', () => {
     limit: 20,
   };
 
-  const selectColumnsStatement = `select account_id,nft.created_timestamp,delegating_spender,nft.deleted or coalesce(e.deleted, false) as deleted,metadata,modified_timestamp,
-            serial_number,spender,token_id`;
+  const selectColumnsStatement = `select
+    account_id,
+    nft.created_timestamp,
+    delegating_spender,
+    nft.deleted or coalesce(e.deleted, false) as deleted,
+    metadata,
+    serial_number,
+    spender,
+    nft.timestamp_range,
+    token_id`;
 
   const specs = [
     {

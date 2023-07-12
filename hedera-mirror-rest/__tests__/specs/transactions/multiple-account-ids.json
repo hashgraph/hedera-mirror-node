@@ -124,12 +124,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1565779444-711927000",
         "transfers": [
@@ -160,6 +162,7 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
@@ -171,6 +174,7 @@
             "amount": 70
           }
         ],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.800-1565779333-711927003",
         "transfers": [
@@ -201,6 +205,7 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
@@ -212,6 +217,7 @@
             "amount": 60
           }
         ],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.800-1565779333-711927002",
         "transfers": [
@@ -242,12 +248,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1565779333-711927000",
         "transfers": [
@@ -278,12 +286,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.10-1565779209-711927000",
         "transfers": [
@@ -314,12 +324,14 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "staking_reward_transfers": [],
+        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.10-1565779111-711927000",
         "transfers": [

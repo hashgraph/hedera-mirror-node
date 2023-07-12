@@ -60,29 +60,6 @@ public abstract class CachingStateFrame<K> {
         });
     }
 
-    /** Strongly-typed access to values stored in this `CachingStateFrame`.
-     *
-     * A `CachingStateFrame` can cache values of several _different_ types.  For type safety you want, as a caller
-     * to make sure you are asking for and getting back values of the correct type, given the key.  Because of the
-     * way that generics work in Java - through type erasure - there isn't enough information available at runtime
-     * to validate this.  Thus, values are set and retrieved (and deleted) through these `Accessor`s.
-     *
-     * There's one per value type stored in this `CachingStateFrame`, and they're created at construction time, so it's
-     * very cheap to get the `Accessor` for your value type and then use it (IOW, no `Accessor` is created and then
-     * thrown away when you do that).
-     */
-    public interface Accessor<K, V> {
-
-        /** Get a value from this `CachingStateFrame`, given its key, respecting stacked-cache behavior */
-        Optional<V> get(@NonNull final K key);
-
-        /** Set a value at a given key, in this `CachingStateFrame`, respecting stacked-cache behavior */
-        void set(@NonNull final K key, @NonNull V value);
-
-        /** Delete the value associated with this key from this `CachingStateFrame`, respecting stacked-cache behavior */
-        void delete(@NonNull final K key);
-    }
-
     /** Get the accessor for a kind of value that is managed by this cache. */
     @SuppressWarnings("unchecked")
     @NonNull
@@ -112,12 +89,12 @@ public abstract class CachingStateFrame<K> {
         return upstreamFrame.map(pf -> 1 + pf.height()).orElse(1);
     }
 
-    // Following are accessors to internal per-type caches - implemented by specific subclasses of `CachingStateFrame`.
-
     /** Get a value (of given type) from the given cache, given the key */
     @NonNull
     protected abstract Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key);
+
+    // Following are accessors to internal per-type caches - implemented by specific subclasses of `CachingStateFrame`.
 
     /** Set a value (of given type) to the given cache, given the key and value */
     protected abstract void setValue(
@@ -134,6 +111,44 @@ public abstract class CachingStateFrame<K> {
     @NonNull
     protected Map<Class<?>, UpdatableReferenceCache<K>> getInternalCaches() {
         return accessors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, kv -> kv.getValue().cache));
+    }
+
+    /** Strongly-typed access to values stored in this `CachingStateFrame`.
+     *
+     * A `CachingStateFrame` can cache values of several _different_ types.  For type safety you want, as a caller
+     * to make sure you are asking for and getting back values of the correct type, given the key.  Because of the
+     * way that generics work in Java - through type erasure - there isn't enough information available at runtime
+     * to validate this.  Thus, values are set and retrieved (and deleted) through these `Accessor`s.
+     *
+     * There's one per value type stored in this `CachingStateFrame`, and they're created at construction time, so it's
+     * very cheap to get the `Accessor` for your value type and then use it (IOW, no `Accessor` is created and then
+     * thrown away when you do that).
+     */
+    public interface Accessor<K, V> {
+
+        /** Get a value from this `CachingStateFrame`, given its key, respecting stacked-cache behavior */
+        Optional<V> get(@NonNull final K key);
+
+        /** Set a value at a given key, in this `CachingStateFrame`, respecting stacked-cache behavior */
+        void set(@NonNull final K key, @NonNull V value);
+
+        /** Delete the value associated with this key from this `CachingStateFrame`, respecting stacked-cache behavior */
+        void delete(@NonNull final K key);
+    }
+
+    /** Signals that a type error occurred with the _value_ type */
+    public static class CacheAccessIncorrectType extends EvmException {
+
+        @Serial
+        private static final long serialVersionUID = 8163169205069277937L;
+
+        public CacheAccessIncorrectType(@NonNull final String message) {
+            super(message);
+        }
+
+        public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
+            super(message, cause);
+        }
     }
 
     /** Enables type-safe access to one type of cached entities in this level of the cache.  (Accessor is _tied_
@@ -183,21 +198,6 @@ public abstract class CachingStateFrame<K> {
         public void delete(@NonNull final K key) {
             // Can't check type of value matches because we don't have one
             deleteValue(klass, cache, key);
-        }
-    }
-
-    /** Signals that a type error occurred with the _value_ type */
-    public static class CacheAccessIncorrectType extends EvmException {
-
-        @Serial
-        private static final long serialVersionUID = 8163169205069277937L;
-
-        public CacheAccessIncorrectType(@NonNull final String message) {
-            super(message);
-        }
-
-        public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
-            super(message, cause);
         }
     }
 }

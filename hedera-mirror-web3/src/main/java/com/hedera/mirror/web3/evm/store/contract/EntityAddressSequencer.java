@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +36,14 @@ public class EntityAddressSequencer {
                 .setRealmNum(newContractSponsor.getRealmNum())
                 .setShardNum(newContractSponsor.getShardNum())
                 .setContractNum(getNextEntityId())
+                .build();
+    }
+
+    public AccountID getNewAccountId() {
+        return AccountID.newBuilder()
+                .setRealmNum(0)
+                .setShardNum(0)
+                .setAccountNum(getNextEntityId())
                 .build();
     }
 

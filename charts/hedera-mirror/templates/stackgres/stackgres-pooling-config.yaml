@@ -1,0 +1,12 @@
+{{- if .Values.stackgres.enabled -}}
+apiVersion: stackgres.io/v1
+kind: SGPoolingConfig
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  pgBouncer:
+    pgbouncer.ini:
+      pgbouncer: {{ toYaml .Values.stackgres.pgbouncer | nindent 8 }}
+{{- end -}}

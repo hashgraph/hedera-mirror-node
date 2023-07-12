@@ -37,11 +37,10 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -79,13 +78,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
+import org.springframework.util.CollectionUtils;
 
-@Log4j2
+@CustomLog
 @Named
 @Order(0)
 @ConditionOnEntityRecordParser
@@ -118,12 +118,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<LiveHash> liveHashes;
     private final Collection<NetworkStake> networkStakes;
     private final Collection<NftAllowance> nftAllowances;
+    private final Collection<Nft> nfts;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
+    private final Collection<Token> tokens;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
@@ -134,11 +136,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
-    private final Map<NftId, Nft> nfts;
+    private final Map<AbstractNft.Id, Nft> nftState;
     private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
-    private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
-    private final Map<Long, Token> tokens;
+    private final Map<Long, Token> tokenState;
     private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
@@ -183,6 +184,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
+        nfts = new ArrayList<>();
         networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
@@ -190,6 +192,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
+        tokens = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
@@ -199,11 +202,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
-        nfts = new HashMap<>();
+        nftState = new HashMap<>();
         nftAllowanceState = new HashMap<>();
-        nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
-        tokens = new HashMap<>();
+        tokenState = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
     }
@@ -222,9 +224,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         flush();
         if (recordFile != null) {
+            var sidecars = recordFile.getSidecars();
             recordFileRepository.save(recordFile);
-            sidecarFileRepository.saveAll(recordFile.getSidecars());
-            log.info("Processed {} sidecars", recordFile.getSidecars().size());
+
+            if (!sidecars.isEmpty()) {
+                sidecarFileRepository.saveAll(sidecars);
+                log.info("Processed {} sidecars", sidecars.size());
+            }
         }
     }
 
@@ -337,57 +343,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        nfts.merge(nft.getId(), nft, this::mergeNft);
+        var merged = nftState.merge(nft.getId(), nft, this::mergeNft);
+        if (merged == nft) {
+            // only add the merged object to the collection if the state is replaced with the new nft object, i.e.,
+            // attributes only in the previous state are merged into the new nft object
+            nfts.add(nft);
+        }
     }
 
     @Override
     public void onNftAllowance(NftAllowance nftAllowance) {
         var merged = nftAllowanceState.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
         nftAllowances.add(merged);
-    }
-
-    @Override
-    @SuppressWarnings({"java:S2259"})
-    // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
-    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        var nftTransferId = nftTransfer.getId();
-        long tokenId = nftTransferId.getTokenId().getId();
-        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-            flushNftState();
-
-            long payerAccountId = nftTransfer.getPayerAccountId().getId();
-            var newTreasury = nftTransfer.getReceiverAccountId();
-            var previousTreasury = nftTransfer.getSenderAccountId();
-
-            nftRepository.updateTreasury(
-                    tokenId,
-                    previousTreasury.getId(),
-                    newTreasury.getId(),
-                    nftTransferId.getConsensusTimestamp(),
-                    payerAccountId,
-                    nftTransfer.getIsApproval());
-            return;
-        }
-
-        if (entityProperties.getPersist().isTrackBalance()) {
-            if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(-1);
-                onTokenAccount(tokenAccount);
-            }
-
-            if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
-                var tokenAccount = new TokenAccount();
-                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
-                tokenAccount.setTokenId(tokenId);
-                tokenAccount.setBalance(1);
-                onTokenAccount(tokenAccount);
-            }
-        }
-
-        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
@@ -441,8 +408,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        // tokens could experience multiple updates in a single record file, handle updates in memory for this case
-        tokens.merge(token.getTokenId().getTokenId().getId(), token, this::mergeToken);
+        var merged = tokenState.merge(token.getTokenId(), token, this::mergeToken);
+        tokens.add(merged);
     }
 
     @Override
@@ -492,6 +459,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionHashes.add(transaction.toTransactionHash());
         }
 
+        onNftTransferList(transaction);
+
         if (transactions.size() == sqlProperties.getBatchSize()) {
             flush();
         }
@@ -521,10 +490,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             fileData.clear();
             liveHashes.clear();
             networkStakes.clear();
+            nftState.clear();
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
-            nftTransferState.clear();
             nodeStakes.clear();
             nonFeeTransfers.clear();
             prngs.clear();
@@ -536,6 +505,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenAllowances.clear();
             tokenAllowanceState.clear();
             tokens.clear();
+            tokenState.clear();
             deletedTokenDissociateTransfers.clear();
             tokenTransfers.clear();
             transactions.clear();
@@ -579,16 +549,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
-            batchPersister.persist(tokens.values());
+            batchPersister.persist(tokens);
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
             batchPersister.persist(tokenAccounts);
             batchPersister.persist(tokenAllowances);
-            batchPersister.persist(nfts.values()); // persist nft after token entity
+            batchPersister.persist(nfts); // persist nft after token entity
             batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransferState.values());
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 
@@ -608,9 +577,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void flushNftState() {
         try {
             // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            batchPersister.persist(tokens.values());
+            batchPersister.persist(tokens);
             batchPersister.persist(tokenAccounts);
-            batchPersister.persist(nfts.values());
+            batchPersister.persist(nfts);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
@@ -618,6 +587,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             tokens.clear();
             tokenAccounts.clear();
+            tokenState.clear();
+            nftState.clear();
             nfts.clear();
         }
     }
@@ -751,38 +722,48 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {
-        if (newNft.getAccountId() != null) { // only domains generated by NftTransfers should set account
-            cachedNft.setAccountId(newNft.getAccountId());
+        var dest = newNft;
+        var src = cachedNft;
+        if (Objects.equals(cachedNft.getTimestampLower(), newNft.getTimestampLower())) {
+            // Two NFT updates for the same nft can have the same lower timestamp in 3 cases
+            // - token mint, the NFT object built in the transaction handler has everything but accountId, the NFT
+            //   object built in EntityRecordItemListener has accountId for ownership transfer
+            // - duplicate NFT objects due to possible duplicate nft transfers in record
+            // - same NFT with multiple transfers in record
+            // We should merge updates from newNft to cachedNft instead
+            if (newNft.getAccountId() != null) {
+                // If the same nft is transferred from Alice to Bob, and from Bob to Carol at the same time, set the
+                // owner account to Carol
+                cachedNft.setAccountId(newNft.getAccountId());
+            }
+
+            dest = cachedNft;
+            src = newNft;
         }
 
-        if (cachedNft.getCreatedTimestamp() == null && newNft.getCreatedTimestamp() != null) {
-            cachedNft.setCreatedTimestamp(newNft.getCreatedTimestamp());
+        // Never merge delegatingSpender and spender since any change to the same nft afterward should clear them
+        if (dest.getAccountId() == null) {
+            dest.setAccountId(src.getAccountId());
         }
 
-        if (newNft.getDeleted() != null) {
-            cachedNft.setDeleted(newNft.getDeleted());
+        if (dest.getCreatedTimestamp() == null) {
+            dest.setCreatedTimestamp(src.getCreatedTimestamp());
         }
 
-        if (newNft.getMetadata() != null) {
-            cachedNft.setMetadata(newNft.getMetadata());
+        if (dest.getDeleted() == null) {
+            dest.setDeleted(src.getDeleted());
         }
 
-        cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
-
-        // copy allowance related fields
-        cachedNft.setDelegatingSpender(newNft.getDelegatingSpender());
-        cachedNft.setSpender(newNft.getSpender());
-
-        return cachedNft;
-    }
-
-    private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
-        // flatten multi receiver transfers
-        if (!Objects.equals(cachedNftTransfer.getReceiverAccountId(), newNftTransfer.getReceiverAccountId())) {
-            cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
+        if (dest.getMetadata() == null) {
+            dest.setMetadata(src.getMetadata());
         }
 
-        return cachedNftTransfer;
+        if (dest.getTimestampLower() > src.getTimestampLower()) {
+            // Only close the source NFT timestamp range when the dest timestamp is after the src
+            src.setTimestampUpper(dest.getTimestampLower());
+        }
+
+        return dest;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {
@@ -795,59 +776,77 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return cachedSchedule;
     }
 
-    private Token mergeToken(Token cachedToken, Token newToken) {
-        if (newToken.getFreezeKey() != null) {
-            cachedToken.setFreezeKey(newToken.getFreezeKey());
+    /**
+     * Merges two token objects into one. The previous may or not be an initial create with all fields while the current
+     * will always be a partial update. Copy immutable fields from the previous to the current and close the previous'
+     * timestamp range. Copy other fields from the previous if not set in current.
+     *
+     * @param previous token to merge into the current
+     * @param current  token
+     * @return the merged token
+     */
+    private Token mergeToken(Token previous, Token current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setDecimals(previous.getDecimals());
+        current.setFreezeDefault(previous.getFreezeDefault());
+        current.setInitialSupply(previous.getInitialSupply());
+        current.setMaxSupply(previous.getMaxSupply());
+        current.setSupplyType(previous.getSupplyType());
+        current.setType(previous.getType());
+
+        if (current.getFeeScheduleKey() == null) {
+            current.setFeeScheduleKey(previous.getFeeScheduleKey());
         }
 
-        if (newToken.getKycKey() != null) {
-            cachedToken.setKycKey(newToken.getKycKey());
+        if (current.getFreezeKey() == null) {
+            current.setFreezeKey(previous.getFreezeKey());
         }
 
-        if (newToken.getName() != null) {
-            cachedToken.setName(newToken.getName());
+        if (current.getKycKey() == null) {
+            current.setKycKey(previous.getKycKey());
         }
 
-        if (newToken.getPauseKey() != null) {
-            cachedToken.setPauseKey(newToken.getPauseKey());
+        if (current.getName() == null) {
+            current.setName(previous.getName());
         }
 
-        if (newToken.getPauseStatus() != null) {
-            cachedToken.setPauseStatus(newToken.getPauseStatus());
+        if (current.getPauseKey() == null) {
+            current.setPauseKey(previous.getPauseKey());
         }
 
-        if (newToken.getSupplyKey() != null) {
-            cachedToken.setSupplyKey(newToken.getSupplyKey());
+        if (current.getPauseStatus() == null) {
+            current.setPauseStatus(previous.getPauseStatus());
         }
 
-        if (newToken.getSymbol() != null) {
-            cachedToken.setSymbol(newToken.getSymbol());
+        if (current.getSupplyKey() == null) {
+            current.setSupplyKey(previous.getSupplyKey());
         }
 
-        if (newToken.getTotalSupply() != null) {
-            Long newTotalSupply = newToken.getTotalSupply();
-            if (cachedToken.getTotalSupply() != null && newTotalSupply < 0) {
-                // if the cached token has total supply set, and the new total supply is negative because it's an update
-                // from the token transfer of a token dissociate of a deleted token, aggregate the change
-                cachedToken.setTotalSupply(cachedToken.getTotalSupply() + newTotalSupply);
-            } else {
-                // if the cached token doesn't have total supply or the new total supply is non-negative, set it to the
-                // new token's total supply. Later step should apply the change on the current total supply in db if
-                // the value is negative.
-                cachedToken.setTotalSupply(newToken.getTotalSupply());
-            }
+        if (current.getSymbol() == null) {
+            current.setSymbol(previous.getSymbol());
         }
 
-        if (newToken.getTreasuryAccountId() != null) {
-            cachedToken.setTreasuryAccountId(newToken.getTreasuryAccountId());
+        if (current.getTreasuryAccountId() == null) {
+            current.setTreasuryAccountId(previous.getTreasuryAccountId());
         }
 
-        if (newToken.getWipeKey() != null) {
-            cachedToken.setWipeKey(newToken.getWipeKey());
+        if (current.getWipeKey() == null) {
+            current.setWipeKey(previous.getWipeKey());
         }
 
-        cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
-        return cachedToken;
+        Long currentTotalSupply = current.getTotalSupply();
+        Long previousTotalSupply = previous.getTotalSupply();
+
+        if (currentTotalSupply == null) {
+            current.setTotalSupply(previousTotalSupply);
+        } else if (previousTotalSupply != null && currentTotalSupply < 0) {
+            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
+            current.setTotalSupply(previousTotalSupply + currentTotalSupply);
+        }
+
+        return current;
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
@@ -909,5 +908,46 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
         previous.setTimestampUpper(current.getTimestampLower());
         return current;
+    }
+
+    private void onNftTransferList(Transaction transaction) {
+        var nftTransferList = transaction.getNftTransfer();
+        if (CollectionUtils.isEmpty(nftTransferList)) {
+            return;
+        }
+
+        for (var nftTransfer : nftTransferList) {
+            long tokenId = nftTransfer.getTokenId().getId();
+            if (nftTransfer.getSerialNumber() == NftTransfer.WILDCARD_SERIAL_NUMBER) {
+                // nft treasury change, there should be only one such nft transfer in the list
+                flushNftState();
+                nftRepository.updateTreasury(
+                        transaction.getConsensusTimestamp(),
+                        nftTransfer.getReceiverAccountId().getId(),
+                        nftTransfer.getSenderAccountId().getId(),
+                        nftTransfer.getTokenId().getId());
+                return;
+            }
+
+            if (!entityProperties.getPersist().isTrackBalance()) {
+                return;
+            }
+
+            if (!EntityId.isEmpty(nftTransfer.getSenderAccountId())) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(-1);
+                onTokenAccount(tokenAccount);
+            }
+
+            if (!EntityId.isEmpty(nftTransfer.getReceiverAccountId())) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(1);
+                onTokenAccount(tokenAccount);
+            }
+        }
     }
 }

@@ -42,6 +42,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
+ * Copied model from hedera-services.
+ *
  * Encapsulates the state and operations of a Hedera token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
@@ -50,12 +52,18 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
  * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
  * signature for a {@code NON_FUNGIBLE_UNIQUE} is
- * {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ * {@link Token#mint(TokenRelationship, List, RichInstant)}.
  * <p>
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
+ *
+ * Differences from the original:
+ * 1. Added factory method that returns empty instance
+ * 2. Added mapToDomain method from TokenTypesManager
+ * 3. Removed OwnershipTracker
  */
 public class Token {
+    private final Long entityId;
     private final Id id;
     private final List<UniqueToken> mintedUniqueTokens;
     private final List<UniqueToken> removedUniqueTokens;
@@ -85,11 +93,50 @@ public class Token {
     private final String symbol;
     private final int decimals;
     private final long autoRenewPeriod;
+    private final long createdTimestamp;
     private final long lastUsedSerialNumber;
     private final List<CustomFee> customFees;
 
+    public Token(Id id) {
+        this(
+                0L,
+                id,
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new HashMap<>(),
+                false,
+                null,
+                null,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                false,
+                false,
+                false,
+                0,
+                0,
+                false,
+                "",
+                "",
+                "",
+                0,
+                0,
+                0,
+                new ArrayList<>());
+    }
+
     @SuppressWarnings("java:S107")
     public Token(
+            Long entityId,
             Id id,
             List<UniqueToken> mintedUniqueTokens,
             List<UniqueToken> removedUniqueTokens,
@@ -113,6 +160,7 @@ public class Token {
             boolean paused,
             boolean autoRemoved,
             long expiry,
+            long createdTimestamp,
             boolean isNew,
             String memo,
             String name,
@@ -121,10 +169,14 @@ public class Token {
             long autoRenewPeriod,
             long lastUsedSerialNumber,
             List<CustomFee> customFees) {
+        this.entityId = entityId;
         this.id = id;
-        this.mintedUniqueTokens = mintedUniqueTokens;
-        this.removedUniqueTokens = removedUniqueTokens;
-        this.loadedUniqueTokens = loadedUniqueTokens;
+        this.mintedUniqueTokens =
+                Collections.emptyList().equals(mintedUniqueTokens) ? new ArrayList<>() : mintedUniqueTokens;
+        this.removedUniqueTokens =
+                Collections.emptyList().equals(removedUniqueTokens) ? new ArrayList<>() : removedUniqueTokens;
+        this.loadedUniqueTokens =
+                Collections.emptyMap().equals(loadedUniqueTokens) ? new HashMap<>() : loadedUniqueTokens;
         this.supplyHasChanged = supplyHasChanged;
         this.type = type;
         this.supplyType = supplyType;
@@ -144,6 +196,7 @@ public class Token {
         this.paused = paused;
         this.autoRemoved = autoRemoved;
         this.expiry = expiry;
+        this.createdTimestamp = createdTimestamp;
         this.isNew = isNew;
         this.memo = memo;
         this.name = name;
@@ -154,391 +207,8 @@ public class Token {
         this.customFees = customFees;
     }
 
-    /**
-     * Creates new instance of {@link Token} with updated totalSupply in order to keep the object's immutability and
-     * avoid entry points for changing the state.
-     *
-     * @param oldToken
-     * @param totalSupply
-     * @return the new instance of {@link Token} with updated {@link #totalSupply} property
-     */
-    private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                true,
-                oldToken.type,
-                oldToken.supplyType,
-                totalSupply,
-                oldToken.maxSupply,
-                oldToken.kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated treasury in order to keep the object's
-     * immutability and avoid entry points for changing the state.
-     *
-     * @param oldToken
-     * @param treasury
-     * @return new instance of {@link Token} with updated {@link #treasury} property
-     */
-    private Token createNewTokenWithNewTreasury(Token oldToken, Account treasury) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                oldToken.kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated lastUsedSerialNumber in order to keep the object's
-     * immutability and avoid entry points for changing the state.
-     *
-     * @param oldToken
-     * @param lastUsedSerialNumber
-     * @return new instance of {@link Token} with updated {@link #lastUsedSerialNumber} property
-     */
-    private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                oldToken.kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with deleted property in order to keep the object's
-     * immutability and avoid entry points for changing the state.
-     *
-     * @param oldToken
-     * @param isDeleted
-     * @return new instance of {@link Token} with {@link #deleted} property
-     */
-    private Token createNewTokenWithDeletedFlag(Token oldToken, boolean isDeleted) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                oldToken.kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                isDeleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated type in order to keep the object's immutability and avoid
-     * entry points for changing the state.
-     *
-     * @param oldToken
-     * @param tokenType
-     * @return new instance of {@link Token} with updated {@link #type} property
-     */
-    private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                tokenType,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                oldToken.kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated kycKey in order to keep the object's immutability and avoid
-     * entry points for changing the state.
-     *
-     * @param oldToken
-     * @param kycKey
-     * @return new instance of {@link Token} with updated {@link #kycKey} property
-     */
-    private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated freezeKey in order to keep the object's immutability and avoid
-     * entry points for changing the state.
-     *
-     * @param oldToken
-     * @param freezeKey
-     * @return new instance of {@link Token} with updated {@link #freezeKey} property
-     */
-    private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                kycKey,
-                freezeKey,
-                oldToken.supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated supplyKey in order to keep the object's immutability and avoid
-     * entry points for changing the state.
-     *
-     * @param oldToken
-     * @param supplyKey
-     * @return new instance of {@link Token} with updated {@link #supplyKey} property
-     */
-    private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                kycKey,
-                oldToken.freezeKey,
-                supplyKey,
-                oldToken.wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
-    }
-
-    /**
-     * Creates new instance of {@link Token} with updated wipeKey in order to keep the object's immutability and avoid
-     * entry points for changing the state.
-     *
-     * @param oldToken
-     * @param wipeKey
-     * @return new instance of {@link Token} with updated {@link #wipeKey} property
-     */
-    private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
-        return new Token(
-                oldToken.id,
-                oldToken.mintedUniqueTokens,
-                oldToken.removedUniqueTokens,
-                oldToken.loadedUniqueTokens,
-                oldToken.supplyHasChanged,
-                oldToken.type,
-                oldToken.supplyType,
-                oldToken.totalSupply,
-                oldToken.maxSupply,
-                kycKey,
-                oldToken.freezeKey,
-                oldToken.supplyKey,
-                wipeKey,
-                oldToken.adminKey,
-                oldToken.feeScheduleKey,
-                oldToken.pauseKey,
-                oldToken.frozenByDefault,
-                oldToken.treasury,
-                oldToken.autoRenewAccount,
-                oldToken.deleted,
-                oldToken.paused,
-                oldToken.autoRemoved,
-                oldToken.expiry,
-                oldToken.isNew,
-                oldToken.memo,
-                oldToken.name,
-                oldToken.symbol,
-                oldToken.decimals,
-                oldToken.autoRenewPeriod,
-                oldToken.lastUsedSerialNumber,
-                oldToken.customFees);
+    public static Token getEmptyToken() {
+        return new Token(Id.DEFAULT);
     }
 
     /**
@@ -569,6 +239,7 @@ public class Token {
         final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
         final var pauseKey = asUsableFcKey(op.getPauseKey());
         return new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -592,6 +263,7 @@ public class Token {
                 false,
                 false,
                 tokenExpiry,
+                0,
                 true,
                 op.getMemo(),
                 op.getName(),
@@ -606,8 +278,689 @@ public class Token {
     private static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
             return TokenType.NON_FUNGIBLE_UNIQUE;
+        } else {
+            return TokenType.FUNGIBLE_COMMON;
         }
-        return TokenType.FUNGIBLE_COMMON;
+    }
+
+    public boolean isEmptyToken() {
+        return this.equals(getEmptyToken());
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated loadedUniqueTokens in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param loadedUniqueTokens
+     * @return the new instance of {@link Token} with updated {@link #loadedUniqueTokens} property
+     */
+    private Token createNewTokenWithLoadedUniqueTokens(Token oldToken, Map<Long, UniqueToken> loadedUniqueTokens) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated maxSupply in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param maxSupply
+     * @return the new instance of {@link Token} with updated {@link #maxSupply} property
+     */
+    private Token createNewTokenWithNewMaxSupply(Token oldToken, long maxSupply) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated totalSupply in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param totalSupply
+     * @return the new instance of {@link Token} with updated {@link #totalSupply} property
+     */
+    private Token createNewTokenWithNewTotalSupply(Token oldToken, long totalSupply) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                true,
+                oldToken.type,
+                oldToken.supplyType,
+                totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated treasury in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param treasury
+     * @return new instance of {@link Token} with updated {@link #treasury} property
+     */
+    private Token createNewTokenWithNewTreasury(Token oldToken, Account treasury) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated lastUsedSerialNumber in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param lastUsedSerialNumber
+     * @return new instance of {@link Token} with updated {@link #lastUsedSerialNumber} property
+     */
+    private Token createNewTokenWithNewLastUsedSerialNumber(Token oldToken, long lastUsedSerialNumber) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with deleted property in order to keep the object's
+     * immutability and avoid entry points for changing the state.
+     *
+     * @param oldToken
+     * @param isDeleted
+     * oldToken.entityId,
+     * @return new instance of {@link Token} with {@link #deleted} property
+     */
+    private Token createNewTokenWithDeletedFlag(Token oldToken, boolean isDeleted) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                isDeleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated type in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param tokenType
+     * @return new instance of {@link Token} with updated {@link #type} property
+     */
+    private Token createNewTokenWithTokenType(Token oldToken, TokenType tokenType) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                tokenType,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated kycKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param kycKey
+     * @return new instance of {@link Token} with updated {@link #kycKey} property
+     */
+    private Token createNewTokenWithKycKey(Token oldToken, JKey kycKey) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated freezeKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param freezeKey
+     * @return new instance of {@link Token} with updated {@link #freezeKey} property
+     */
+    private Token createNewTokenWithFreezeKey(Token oldToken, JKey freezeKey) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated supplyKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param supplyKey
+     * @return new instance of {@link Token} with updated {@link #supplyKey} property
+     */
+    private Token createNewTokenWithSupplyKey(Token oldToken, JKey supplyKey) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated wipeKey in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param wipeKey
+     * @return new instance of {@link Token} with updated {@link #wipeKey} property
+     */
+    private Token createNewTokenWithWipeKey(Token oldToken, JKey wipeKey) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated treasury in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param treasury
+     * @return new instance of {@link Token} with updated {@link #treasury} property
+     */
+    private Token createNewTokenWithTreasury(Token oldToken, Account treasury) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated paused in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param paused
+     * @return new instance of {@link Token} with updated {@link #paused} property
+     */
+    private Token createNewTokenWithPaused(Token oldToken, boolean paused) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param decimals
+     * @return new instance of {@link Token} with updated {@link #decimals} property
+     */
+    private Token createNewTokenWithDecimals(Token oldToken, int decimals) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+
+    /**
+     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param mintedUniqueTokens
+     * @return new instance of {@link Token} with updated {@link #mintedUniqueTokens} property
+     */
+    private Token createNewTokenWithMintedUniqueTokens(Token oldToken, List<UniqueToken> mintedUniqueTokens) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                mintedUniqueTokens,
+                oldToken.removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
     }
 
     /**
@@ -633,17 +986,13 @@ public class Token {
      * Minting unique tokens creates new instances of the given base unique token. Increments the serial number of the
      * given base unique token, and assigns each of the numbers to each new unique token instance.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-     * @param treasuryRel      - the relationship between the treasury account and the token
-     * @param metadata         - a list of user-defined metadata, related to the nft instances.
-     * @param creationTime     - the consensus time of the token mint transaction
+     * @param treasuryRel  - the relationship between the treasury account and the token
+     * @param metadata     - a list of user-defined metadata, related to the nft instances.
+     * @param creationTime - the consensus time of the token mint transaction
      * @return new instance of {@link Token} with updated fields to keep the object's immutability
      */
     public TokenModificationResult mint(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<ByteString> metadata,
-            final RichInstant creationTime) {
+            final TokenRelationship treasuryRel, final List<ByteString> metadata, final RichInstant creationTime) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -654,6 +1003,7 @@ public class Token {
         var tokenMod = changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
         long newLastUsedSerialNumber = this.lastUsedSerialNumber;
 
+        Token tokenWithMintedUniqueTokens = null;
         for (final ByteString m : metadata) {
             newLastUsedSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
@@ -661,10 +1011,11 @@ public class Token {
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
-            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), newLastUsedSerialNumber));
+            tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(mintedUniqueTokens);
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
-        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        var newToken = createNewTokenWithNewTreasury(
+                tokenWithMintedUniqueTokens != null ? tokenWithMintedUniqueTokens : tokenMod.token(), newTreasury);
         return new TokenModificationResult(
                 createNewTokenWithNewLastUsedSerialNumber(newToken, newLastUsedSerialNumber),
                 tokenMod.tokenRelationship());
@@ -685,15 +1036,11 @@ public class Token {
     /**
      * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
      *
-     * @param ownershipTracker - a tracker of changes made to the nft ownership
-     * @param treasuryRel-     the relationship between the treasury account and the token
-     * @param serialNumbers    - the serial numbers, representing the unique tokens which will be
-     *                         destroyed.
+     * @param treasuryRel-  the relationship between the treasury account and the token
+     * @param serialNumbers - the serial numbers, representing the unique tokens which will be
+     *                      destroyed.
      */
-    public TokenModificationResult burn(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship treasuryRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
@@ -703,7 +1050,6 @@ public class Token {
 
             final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
             removedUniqueTokens.add(
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
@@ -746,15 +1092,11 @@ public class Token {
      * Wiping unique tokens removes the unique token instances, associated to the given account, as
      * well as reduces the total supply.
      *
-     * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-     * @param accountRel       - the relationship between the account, which owns the tokens, and the
-     *                         token
-     * @param serialNumbers    - a list of serial numbers, representing the tokens to be wiped
+     * @param accountRel    - the relationship between the account, which owns the tokens, and the
+     *                      token
+     * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
      */
-    public TokenModificationResult wipe(
-            final OwnershipTracker ownershipTracker,
-            final TokenRelationship accountRel,
-            final List<Long> serialNumbers) {
+    public TokenModificationResult wipe(final TokenRelationship accountRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
@@ -771,7 +1113,6 @@ public class Token {
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
         for (final long serialNum : serialNumbers) {
-            ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(
                     id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
         }
@@ -875,36 +1216,16 @@ public class Token {
         return createNewTokenWithDeletedFlag(this, isDeleted);
     }
 
-    public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {
-        return createNewTokenWithNewLastUsedSerialNumber(this, lastUsedSerialNumber);
-    }
-
-    public Token setType(TokenType tokenType) {
-        return createNewTokenWithTokenType(this, tokenType);
-    }
-
-    public Token setKycKey(JKey kycKey) {
-        return createNewTokenWithKycKey(this, kycKey);
-    }
-
-    public Token setFreezeKey(JKey freezeKey) {
-        return createNewTokenWithFreezeKey(this, freezeKey);
-    }
-
-    public Token setWipeKey(JKey wipeKey) {
-        return createNewTokenWithWipeKey(this, wipeKey);
-    }
-
-    public Token setSupplyKey(JKey supplyKey) {
-        return createNewTokenWithSupplyKey(this, supplyKey);
-    }
-
     public boolean hasAdminKey() {
         return adminKey != null;
     }
 
     public Account getTreasury() {
         return treasury;
+    }
+
+    public Token setTreasury(Account treasury) {
+        return createNewTokenWithTreasury(this, treasury);
     }
 
     public Account getAutoRenewAccount() {
@@ -919,8 +1240,20 @@ public class Token {
         return maxSupply;
     }
 
+    public Token setMaxSupply(long maxSupply) {
+        return createNewTokenWithNewMaxSupply(this, maxSupply);
+    }
+
     public JKey getSupplyKey() {
         return supplyKey;
+    }
+
+    public Token setSupplyKey(JKey supplyKey) {
+        return createNewTokenWithSupplyKey(this, supplyKey);
+    }
+
+    public Token setMintedUniqueTokens(final List<UniqueToken> mintedUniqueTokens) {
+        return createNewTokenWithMintedUniqueTokens(this, mintedUniqueTokens);
     }
 
     public boolean hasFreezeKey() {
@@ -939,12 +1272,24 @@ public class Token {
         return wipeKey;
     }
 
+    public Token setWipeKey(JKey wipeKey) {
+        return createNewTokenWithWipeKey(this, wipeKey);
+    }
+
     public JKey getKycKey() {
         return kycKey;
     }
 
+    public Token setKycKey(JKey kycKey) {
+        return createNewTokenWithKycKey(this, kycKey);
+    }
+
     public JKey getFreezeKey() {
         return freezeKey;
+    }
+
+    public Token setFreezeKey(JKey freezeKey) {
+        return createNewTokenWithFreezeKey(this, freezeKey);
     }
 
     public JKey getPauseKey() {
@@ -968,12 +1313,24 @@ public class Token {
         return paused;
     }
 
+    public Token setPaused(boolean paused) {
+        return createNewTokenWithPaused(this, paused);
+    }
+
+    public Long getEntityId() {
+        return entityId;
+    }
+
     public Id getId() {
         return id;
     }
 
     public TokenType getType() {
         return type;
+    }
+
+    public Token setType(TokenType tokenType) {
+        return createNewTokenWithTokenType(this, tokenType);
     }
 
     public boolean isFungibleCommon() {
@@ -986,6 +1343,10 @@ public class Token {
 
     public long getLastUsedSerialNumber() {
         return lastUsedSerialNumber;
+    }
+
+    public Token setLastUsedSerialNumber(final long lastUsedSerialNumber) {
+        return createNewTokenWithNewLastUsedSerialNumber(this, lastUsedSerialNumber);
     }
 
     public List<CustomFee> getCustomFees() {
@@ -1020,6 +1381,10 @@ public class Token {
         return loadedUniqueTokens;
     }
 
+    public Token setLoadedUniqueTokens(final Map<Long, UniqueToken> loadedUniqueTokens) {
+        return createNewTokenWithLoadedUniqueTokens(this, loadedUniqueTokens);
+    }
+
     public boolean isBelievedToHaveBeenAutoRemoved() {
         return autoRemoved;
     }
@@ -1052,8 +1417,16 @@ public class Token {
         return decimals;
     }
 
+    public Token setDecimals(int decimals) {
+        return createNewTokenWithDecimals(this, decimals);
+    }
+
     public long getAutoRenewPeriod() {
         return autoRenewPeriod;
+    }
+
+    public long getCreatedTimestamp() {
+        return this.createdTimestamp;
     }
 
     /* NOTE: The object methods below are only overridden to improve

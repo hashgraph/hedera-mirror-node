@@ -123,94 +123,6 @@ describe('extractSqlFromContractFilters', () => {
   });
 });
 
-describe('extractTimestampConditionsFromContractFilters', () => {
-  const timestampKey = constants.filterKeys.TIMESTAMP;
-  const timestampColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
-  const specs = [
-    {
-      name: emptyFilterString,
-      input: [],
-      expected: {
-        conditions: [],
-        params: [],
-      },
-    },
-    {
-      name: 'no timestamp filters',
-      input: [
-        {
-          key: constants.filterKeys.ORDER,
-          operator: utils.opsMap.eq,
-          value: constants.orderFilterValues.ASC,
-        },
-      ],
-      expected: {
-        conditions: [],
-        params: [],
-      },
-    },
-    {
-      name: 'timestamp filters',
-      input: [
-        {
-          key: timestampKey,
-          operator: utils.opsMap.eq, // will be converted to lte
-          value: '200',
-        },
-        {
-          key: timestampKey,
-          operator: utils.opsMap.gt,
-          value: '201',
-        },
-        {
-          key: timestampKey,
-          operator: utils.opsMap.gte,
-          value: '202',
-        },
-        {
-          key: timestampKey,
-          operator: utils.opsMap.lt,
-          value: '203',
-        },
-        {
-          key: timestampKey,
-          operator: utils.opsMap.lte,
-          value: '204',
-        },
-        {
-          key: timestampKey,
-          operator: utils.opsMap.ne,
-          value: '205',
-        },
-      ],
-      expected: {
-        conditions: [
-          `${timestampColumn} && $1`,
-          `${timestampColumn} && $2`,
-          `${timestampColumn} && $3`,
-          `${timestampColumn} && $4`,
-          `${timestampColumn} && $5`,
-          `not ${timestampColumn} @> $6`,
-        ],
-        params: [
-          Range(null, '200', '(]'),
-          Range('201', null, '()'),
-          Range('202', null, '[)'),
-          Range(null, '203', '()'),
-          Range(null, '204', '(]'),
-          Range('205', '205', '[]'),
-        ],
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractTimestampConditionsFromContractFilters(spec.input)).toEqual(spec.expected);
-    });
-  });
-});
-
 describe('formatContractRow', () => {
   const input = {
     auto_renew_account_id: 1005,
@@ -501,9 +413,9 @@ describe('extractContractResultsByIdQuery', () => {
         ...defaultExpected,
         conditions: [
           primaryContractFilter,
-          'cr.payer_account_id > $2',
+          'cr.sender_id > $2',
           'cr.transaction_nonce = $3',
-          'cr.payer_account_id in ($4,$5)',
+          'cr.sender_id in ($4,$5)',
         ],
         params: [defaultContractId, '1000', 0, '1001', '1002'],
       },

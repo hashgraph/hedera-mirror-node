@@ -23,7 +23,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -71,8 +73,8 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
     }
 
     @Test
@@ -93,14 +95,14 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
-                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
+                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
 
         assertThat(nft.getValue())
                 .returns(true, Nft::getDeleted)
-                .returns(recordItem.getConsensusTimestamp(), Nft::getModifiedTimestamp)
-                .returns(transactionBody.getSerialNumbers(0), n -> n.getId().getSerialNumber())
-                .returns(transaction.getEntityId(), n -> n.getId().getTokenId());
+                .returns(transactionBody.getSerialNumbers(0), AbstractNft::getSerialNumber)
+                .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
+                .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
     }
 
     @Test

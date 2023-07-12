@@ -27,13 +27,16 @@ import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Named
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
 @Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class AcceptanceTestProperties {
 
@@ -44,7 +47,8 @@ public class AcceptanceTestProperties {
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
-    private boolean createOperatorAccount = false;
+    // A new account is usually necessary since shared accounts like 0.0.2 might reach maxTokensPerAccount, etc
+    private boolean createOperatorAccount = true;
 
     private boolean emitBackgroundMessages = false;
 
@@ -70,8 +74,9 @@ public class AcceptanceTestProperties {
     @NotNull
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
+    @Max(50_000_000_000L * 100_000_000L)
     @Min(100_000_000L)
-    private long operatorBalance = Hbar.from(260).toTinybars();
+    private long operatorBalance = Hbar.from(700).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";

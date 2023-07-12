@@ -26,6 +26,7 @@ import * as accountsBalanceNe from './accountsBalanceNe.js';
 import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
 import * as accountsId from './accountsId.js';
+import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 import * as accountsIdNe from './accountsIdNe.js';
 import * as accountsNfts from './accountsNfts.js';
 import * as accountsTokens from './accountsTokens.js';
@@ -58,6 +59,7 @@ import * as tokens from './tokens.js';
 import * as tokensFungibleCommon from './tokensFungibleCommon.js';
 import * as tokensId from './tokensId.js';
 import * as tokensIdBalances from './tokensIdBalances.js';
+import * as tokensIdBalancesTimestamp from './tokensIdBalancesTimestamp.js';
 import * as tokensNfts from './tokensNfts.js';
 import * as tokensNftsSerial from './tokensNftsSerial.js';
 import * as tokensNftsSerialTransactions from './tokensNftsSerialTransactions.js';
@@ -85,6 +87,7 @@ const tests = {
   accountsCryptoAllowanceSpender,
   accountsId,
   accountsIdNe,
+  accountsIdTimestampLte,
   accountsNfts,
   accountsTokens,
   accountsTokenAllowance,
@@ -116,6 +119,7 @@ const tests = {
   tokensFungibleCommon,
   tokensId,
   tokensIdBalances,
+  tokensIdBalancesTimestamp,
   tokensNfts,
   tokensNftsSerial,
   tokensNftsSerialTransactions,

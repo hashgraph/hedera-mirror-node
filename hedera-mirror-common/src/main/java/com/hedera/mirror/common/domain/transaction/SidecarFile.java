@@ -17,11 +17,8 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -38,7 +35,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -82,8 +78,6 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     private Integer size;
 
     @Builder.Default
-    @Type(ListArrayType.class)
-    @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Integer> types = Collections.emptyList();
 
     @JsonIgnore

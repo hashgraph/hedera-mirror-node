@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,9 +30,9 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -56,6 +57,9 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     private TokenAllowance expectedTokenAllowance;
 
     private EntityId payerAccountId;
+
+    @Mock
+    protected SyntheticContractResultService syntheticContractResultService;
 
     @BeforeEach
     void beforeEach() {
@@ -73,11 +77,12 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var nftOwner = recordItemBuilder.accountId();
         var nftTokenId = recordItemBuilder.tokenId().getTokenNum();
         expectedNft = Nft.builder()
-                .id(new NftId(1L, EntityId.of(nftTokenId, EntityType.TOKEN)))
                 .accountId(EntityId.of(nftOwner))
                 .delegatingSpender(EntityId.EMPTY)
-                .modifiedTimestamp(consensusTimestamp)
+                .serialNumber(1)
                 .spender(EntityId.of(recordItemBuilder.accountId()))
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .tokenId(nftTokenId)
                 .build();
         when(entityIdService.lookup(nftOwner)).thenReturn(Optional.of(expectedNft.getAccountId()));
         expectedNftAllowance = NftAllowance.builder()
@@ -103,7 +108,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new CryptoApproveAllowanceTransactionHandler(
-                entityIdService, entityListener, syntheticContractLogService);
+                entityIdService, entityListener, syntheticContractLogService, syntheticContractResultService);
     }
 
     @Override
@@ -273,8 +278,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
                 .setSpender(AccountID.newBuilder()
                         .setAccountNum(expectedNft.getSpender().getEntityNum() + 1))
-                .setTokenId(TokenID.newBuilder()
-                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getTokenId())));
         // duplicate nft approved for all allowance, approved for all flag is flipped from the last one
         builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(!expectedNftAllowance.isApprovedForAll()))
@@ -283,8 +287,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
                 .setSpender(AccountID.newBuilder()
                         .setAccountNum(expectedNft.getSpender().getEntityNum()))
-                .setTokenId(TokenID.newBuilder()
-                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getTokenId())));
         // the last one is honored
         builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(expectedNftAllowance.isApprovedForAll()))
@@ -293,8 +296,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .addSerialNumbers(expectedNft.getId().getSerialNumber())
                 .setSpender(AccountID.newBuilder()
                         .setAccountNum(expectedNft.getSpender().getEntityNum()))
-                .setTokenId(TokenID.newBuilder()
-                        .setTokenNum(expectedNft.getId().getTokenId().getEntityNum())));
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getTokenId())));
 
         // duplicate token allowance
         builder.addTokenAllowances(com.hederahashgraph.api.proto.java.TokenAllowance.newBuilder()

@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -30,13 +31,11 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,9 +43,11 @@ import org.apache.logging.log4j.Logger;
  * Temporary extracted class from services.
  * </p>
  * Loads the required fee schedules from the Hedera "file system".
+ *
+ *  Copied Logic type from hedera-services. Differences with the original:
+ *  1. Remove unused methods: loadPriceSchedules, activePricingSequence
+ *  2. Use RatesAndFeesLoader for the calculations
  */
-@Named
-@RequiredArgsConstructor
 @SuppressWarnings("deprecation")
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
@@ -76,10 +77,34 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 
     private final RatesAndFeesLoader ratesAndFeesLoader;
 
+    public BasicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
+        this.ratesAndFeesLoader = ratesAndFeesLoader;
+    }
+
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
         final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
         return pricesGiven(function, at, feeSchedules).get(DEFAULT);
+    }
+
+    @Override
+    public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
+        try {
+            final var transactionValidStart = accessor.getTxnId().getTransactionValidStart();
+            final var at = transactionValidStart.getSeconds() > 0
+                    ? transactionValidStart
+                    : Timestamp.newBuilder()
+                            .setSeconds(Instant.now().getEpochSecond())
+                            .setNanos(Instant.now().getNano())
+                            .build();
+            return pricesGiven(
+                    accessor.getFunction(),
+                    at,
+                    ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at)));
+        } catch (final Exception e) {
+            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+        }
+        return DEFAULT_RESOURCE_PRICES;
     }
 
     @Override

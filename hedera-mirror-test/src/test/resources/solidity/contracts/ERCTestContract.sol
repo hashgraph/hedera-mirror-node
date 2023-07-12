@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 contract ERCTestContract {
-
     function name(address token) public view returns (string memory) {
         return IERC20Metadata(token).name();
     }
@@ -47,5 +46,21 @@ contract ERCTestContract {
 
     function tokenURI(address token, uint256 tokenId) public view returns (string memory) {
         return IERC721Metadata(token).tokenURI(tokenId);
+    }
+
+    function nameIERC721(address token) public view returns (string memory) {
+        return IERC721Metadata(token).name();
+    }
+
+    function symbolIERC721(address token) public view returns (string memory) {
+        return IERC721Metadata(token).symbol();
+    }
+
+    function totalSupplyIERC721(address token) external view returns (uint256) {
+        return IERC721Enumerable(token).totalSupply();
+    }
+
+    function balanceOfIERC721(address token, address account) external view returns (uint256) {
+        return IERC721(token).balanceOf(account);
     }
 }

@@ -77,90 +77,36 @@
         "type": "FUNGIBLE_COMMON"
       }
     ],
-    "balances": [
+    "tokenaccounts": [
       {
-        "timestamp": 2000,
-        "id": 1,
-        "realm_num": 15,
-        "balance": 10,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 80
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 180
-          }
-        ]
-      },
-      {
-        "timestamp": 2000,
-        "id": 2,
-        "realm_num": 15,
-        "balance": 20,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 1000
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 1890
-          }
-        ]
-      },
-      {
-        "timestamp": 2000,
-        "id": 3,
-        "realm_num": 15,
-        "balance": 30
-      },
-      {
-        "timestamp": 2000,
-        "id": 4,
-        "realm_num": 15,
-        "balance": 40
-      },
-      {
-        "timestamp": 2000,
-        "id": 5,
-        "realm_num": 15,
-        "balance": 50
-      },
-      {
-        "timestamp": 2000,
-        "id": 6,
-        "realm_num": 15,
-        "balance": 60
-      },
-      {
-        "timestamp": 2000,
-        "id": 7,
-        "realm_num": 15,
-        "balance": 70
-      },
-      {
-        "timestamp": 2000,
-        "id": 8,
-        "realm_num": 15,
+        "token_id": "0.20.1",
+        "account_id": "0.15.1",
         "balance": 80
       },
       {
-        "timestamp": 2000,
-        "id": 9,
-        "realm_num": 15,
-        "balance": 90
+        "token_id": "0.20.2",
+        "account_id": "0.15.1",
+        "balance": 180
       },
       {
-        "timestamp": 2000,
-        "id": 10,
-        "realm_num": 15,
-        "balance": 100
+        "token_id": "0.20.1",
+        "account_id": "0.15.2",
+        "balance": 1000
+      },
+      {
+        "token_id": "0.20.2",
+        "account_id": "0.15.2",
+        "balance": 1890
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 5432
+      },
+      {
+        "consensus_start": 50,
+        "consensus_end": 100
       }
     ],
     "transactions": [],
@@ -169,7 +115,7 @@
   "url": "/api/v1/tokens/0.20.1/balances",
   "responseStatus": 200,
   "responseJson": {
-    "timestamp": "0.000002000",
+    "timestamp": "0.000005432",
     "balances": [
       {
         "account": "0.15.2",
