@@ -32,7 +32,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -47,6 +46,8 @@ import java.util.EnumSet;
  *  1. Remove FeeSchedule, UtilPrng, File logic
  */
 public class AccessorBasedUsages {
+
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
             CryptoTransfer,
             CryptoCreate,
@@ -65,17 +66,12 @@ public class AccessorBasedUsages {
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;
     private final OpUsageCtxHelper opUsageCtxHelper;
-    private final EvmProperties evmProperties;
 
     public AccessorBasedUsages(
-            TokenOpsUsage tokenOpsUsage,
-            CryptoOpsUsage cryptoOpsUsage,
-            OpUsageCtxHelper opUsageCtxHelper,
-            EvmProperties evmProperties) {
+            TokenOpsUsage tokenOpsUsage, CryptoOpsUsage cryptoOpsUsage, OpUsageCtxHelper opUsageCtxHelper) {
         this.tokenOpsUsage = tokenOpsUsage;
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.opUsageCtxHelper = opUsageCtxHelper;
-        this.evmProperties = evmProperties;
     }
 
     public void assess(
@@ -126,11 +122,7 @@ public class AccessorBasedUsages {
     private void estimateCryptoTransfer(
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var xferMeta = accessor.availXferUsageMeta();
-        xferMeta.setTokenMultiplier(
-                0
-                // TODO
-                // evmProperties.feesTokenTransferUsageMultiplier()
-                );
+        xferMeta.setTokenMultiplier(0);
         cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
     }
 
@@ -150,9 +142,9 @@ public class AccessorBasedUsages {
         final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
         final var cryptoContext =
                 opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn(), store, hederaEvmContractAliases);
-        cryptoOpsUsage.cryptoUpdateUsage(sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into, 0);
-        // TODO
-        // evmProperties.explicitAutoAssocSlotLifetime());
+        // explicitAutoAssocSlotLifetime is three months in services
+        cryptoOpsUsage.cryptoUpdateUsage(
+                sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into, THREE_MONTHS_IN_SECONDS);
     }
 
     private void estimateCryptoApproveAllowance(

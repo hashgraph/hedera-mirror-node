@@ -82,7 +82,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
-                // TODO not sure if this key is the required key
                 parseJkey(entity.getKey()));
     }
 

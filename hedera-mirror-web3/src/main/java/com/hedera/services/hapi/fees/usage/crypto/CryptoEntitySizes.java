@@ -23,6 +23,7 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
  *  Exact copy from hedera-services
  */
 public enum CryptoEntitySizes {
+    @SuppressWarnings("java:S6548")
     CRYPTO_ENTITY_SIZES;
 
     /* { deleted, smartContract, receiverSigRequired } */

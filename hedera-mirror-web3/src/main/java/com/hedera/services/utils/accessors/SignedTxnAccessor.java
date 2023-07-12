@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -77,8 +76,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private final byte[] txnBytes;
     private final byte[] utf8MemoBytes;
     private final String memo;
-
-    private final TokenWipeAccountTransactionBody body;
     private final Transaction signedTxnWrapper;
     private final SignatureMap sigMap;
     private final TransactionID txnId;
@@ -132,7 +129,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         // Note that the SignatureMap was parsed with either the top-level
         // Transaction or the SignedTransaction, so we've already checked
         // it for unknown fields either way; only still need to check the body
-        body = getTxn().getTokenWipe();
         memo = txn.getMemo();
         txnId = txn.getTransactionID();
         sigMapSize = sigMap.getSerializedSize();
@@ -274,7 +270,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     private void setTokenWipeUsageMeta() {
-        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(body);
+        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
         getSpanMapAccessor().setTokenWipeMeta(this, tokenWipeMeta);
     }
 

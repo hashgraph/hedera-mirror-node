@@ -50,6 +50,7 @@ import java.util.function.Predicate;
  *  Exact copy from hedera-services
  */
 public enum TokenOpsUsageUtils {
+    @SuppressWarnings("java:S6548")
     TOKEN_OPS_USAGE_UTILS;
 
     private static final int AMOUNT_REPR_BYTES = 8;
@@ -136,7 +137,8 @@ public enum TokenOpsUsageUtils {
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
     }
 
-    public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op) {
+    public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn) {
+        final var op = txn.getTokenWipe();
         final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
         return tokenWipeUsageFrom(op, subType);
     }

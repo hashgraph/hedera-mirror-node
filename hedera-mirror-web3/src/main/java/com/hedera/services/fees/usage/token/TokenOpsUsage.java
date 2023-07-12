@@ -48,6 +48,7 @@ public final class TokenOpsUsage {
     private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
     private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
 
+    @SuppressWarnings("java:S3776")
     public int bytesNeededToRepr(final List<CustomFee> feeSchedule) {
         int numFixedHbarFees = 0;
         int numFixedHtsFees = 0;
