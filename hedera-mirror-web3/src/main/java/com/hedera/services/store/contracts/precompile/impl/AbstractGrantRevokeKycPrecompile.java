@@ -16,19 +16,12 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TokenID;
 
 /**
  * This class is a modified copy of AbstractGrantRevokeKycPrecompile from hedera-services repo.
@@ -40,12 +33,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
  *  4. Run method is modified to accept {@link Store} as a parameter, so that we abstract from the internal state that is used for the execution
  */
 public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrecompile {
+
     protected final MirrorEvmContractAliases aliases;
-    protected GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp;
-    protected Id tokenId;
-    protected Id accountId;
-    protected HederaFunctionality function = null;
-    protected SyntheticTxnFactory syntheticTxnFactory;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
 
     protected AbstractGrantRevokeKycPrecompile(
             MirrorEvmContractAliases aliases,
@@ -54,11 +44,5 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
         super(pricingUtils);
         this.aliases = aliases;
         this.syntheticTxnFactory = syntheticTxnFactory;
-    }
-
-    public void initialise() {
-        requireNonNull(grantRevokeOp);
-        tokenId = Id.fromGrpcToken(grantRevokeOp.token());
-        accountId = Id.fromGrpcAccount(grantRevokeOp.account());
     }
 }
