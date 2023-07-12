@@ -1,6 +1,8 @@
 alter table if exists transaction
     add column if not exists itemized_transfer jsonb null;
 
+BEGIN TRANSACTION;
+
 create temp table nested_itemized_transfer (consensus_timestamp bigint not null, transfer jsonb not null) on commit drop;
 
 with nested_general_itemized_transfer as (
@@ -28,4 +30,8 @@ set itemized_transfer = transfer
     from nested_itemized_transfer
 where nested_itemized_transfer.consensus_timestamp = transaction.consensus_timestamp;
 
+
 drop table if exists non_fee_transfer;
+
+
+COMMIT TRANSACTION;
