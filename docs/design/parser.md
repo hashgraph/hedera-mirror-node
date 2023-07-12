@@ -100,7 +100,7 @@ package com.hedera.mirror.importer.parser.record;
 public interface EntityListener {
     void onTransaction(c.h.m.i.d.Transaction transaction) throws ImporterException;
     void onCryptoTransfer(c.h.m.i.d.CryptoTransfer cryptoTransfer) throws ImporterException;
-    void onNonFeeTransfer(c.h.m.i.d.NonFeeTransfer itemizedTransfer) throws ImporterException;
+    void onItemizedTransfer(c.h.m.i.d.ItemizedTransfer itemizedTransfer) throws ImporterException;
     void onTopicMessage(c.h.m.i.d.TopicMessage topicMessage) throws ImporterException;
     void onContractResult(c.h.m.i.d.ContractResult contractResult) throws ImporterException;
     void onFileData(c.h.m.i.d.FileData fileData) throws ImporterException;
