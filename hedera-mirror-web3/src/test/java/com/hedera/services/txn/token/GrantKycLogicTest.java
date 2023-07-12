@@ -51,8 +51,10 @@ class GrantKycLogicTest {
 
     @Mock
     private Store store;
+
     @Mock
     private TokenRelationship modifiedRelationship;
+
     private TransactionBody tokenGrantKycTxn;
     private GrantKycLogic subject;
 
