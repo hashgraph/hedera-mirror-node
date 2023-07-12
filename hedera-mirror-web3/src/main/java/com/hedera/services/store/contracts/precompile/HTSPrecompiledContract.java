@@ -21,12 +21,14 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UNSUPPORTED_ERROR;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -37,8 +39,11 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -206,34 +211,68 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+
         final int functionId = input.getInt(0);
-        if (AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN == functionId) {
-            RedirectTarget target;
-            try {
-                target = DescriptorUtils.getRedirectTarget(input);
-            } catch (final Exception e) {
-                throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-            }
-            final var isExplicitRedirectCall = target.massagedInput() != null;
-            if (isExplicitRedirectCall) {
-                input = target.massagedInput();
-            }
-            final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+        switch (functionId) {
+            case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN:
+                RedirectTarget target;
+                try {
+                    target = DescriptorUtils.getRedirectTarget(input);
+                } catch (final Exception e) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+                }
+                var isExplicitRedirectCall = target.massagedInput() != null;
+                if (isExplicitRedirectCall) {
+                    input = target.massagedInput();
+                }
+                var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
 
-            final var nestedFunctionSelector = target.descriptor();
+                var nestedFunctionSelector = target.descriptor();
 
-            this.precompile = precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                this.precompile =
+                        precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
 
-            if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
-                    || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
-            }
+                if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
+                        || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
+                    this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                }
+                break;
+            case AbiConstants.ABI_ID_APPROVE:
+            case AbiConstants.ABI_ID_APPROVE_NFT:
+            case AbiConstants.ABI_ID_ERC_APPROVE:
+                try {
+                    target = DescriptorUtils.getRedirectTarget(input);
+                } catch (final Exception e) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+                }
+                tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+                nestedFunctionSelector = target.descriptor();
+                final var token = store.getToken(asTypedEvmAddress(tokenId), OnMissing.THROW);
+                final var isFungible = token.isFungibleCommon();
+                final var ownerId = isFungible
+                        ? Id.DEFAULT
+                        : store.getUniqueToken(
+                                        new NftId(
+                                                tokenId.getShardNum(),
+                                                tokenId.getRealmNum(),
+                                                tokenId.getTokenNum(),
+                                                token.getLastUsedSerialNumber()),
+                                        OnMissing.THROW)
+                                .getOwner();
 
-        } else {
-            this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+                this.precompile =
+                        precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
+                        || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
+                    this.transactionBody = precompile.body(
+                            input, aliasResolver, new ApproveParams(tokenId, senderAddress, isFungible, ownerId));
+                }
+                break;
+            default:
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+                break;
         }
-
         gasRequirement = defaultGas();
     }
 
