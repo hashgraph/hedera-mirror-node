@@ -109,7 +109,7 @@ public class SyntheticTxnFactory {
      * Copied Logic type from hedera-services.
      *
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId from the parameters
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
      * */
     public TransactionBody.Builder createFungibleApproval(
             @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
@@ -120,7 +120,7 @@ public class SyntheticTxnFactory {
      * Copied Logic type from hedera-services.
      *
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId from the parameters
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
      * */
     public TransactionBody.Builder createNonfungibleApproval(
             final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
@@ -152,7 +152,7 @@ public class SyntheticTxnFactory {
      * Copied Logic type from hedera-services.
      *
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId from the parameters
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
      * */
     public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
         final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();

@@ -41,8 +41,10 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveResult;
@@ -72,6 +74,15 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+/**
+ * This class is a modified copy of AssociatePrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
+ *  4. Using {@link Id} instead of EntityId as types for the owner and operator
+ */
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private static final Function ERC_TOKEN_APPROVE_FUNCTION = new Function("approve(address,uint256)", BOOL);
     private static final Bytes ERC_TOKEN_APPROVE_SELECTOR = Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
@@ -145,7 +156,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     @Override
     public RunResult run(final MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var store = updater.getStore();
+        final var accountAccessor = updater.getAccountAccessor();
 
         // We need to get all these fields from the transactionBody somehow :D
         boolean isFungible = false;
@@ -224,9 +237,10 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final var tokenAddress = asTypedEvmAddress(tokenId);
         if (isFungible) {
             frame.addLog(getLogForFungibleAdjustAllowance(
-                    tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), amount));
+                    tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), amount, accountAccessor));
         } else {
-            frame.addLog(getLogForNftAdjustAllowance(tokenAddress, senderAddress, null, serialNumber));
+            frame.addLog(getLogForNftAdjustAllowance(
+                    tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), serialNumber, accountAccessor));
         }
         return new ApproveResult(tokenId, isFungible);
     }
@@ -300,25 +314,31 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     private Log getLogForFungibleAdjustAllowance(
-            final Address logger, final Address senderAddress, final Address spenderAddress, final long amount) {
+            final Address logger,
+            final Address senderAddress,
+            final Address spenderAddress,
+            final long amount,
+            final AccountAccessor accountAccessor) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                // TODO
-                // .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
-                // .forIndexedArgument(ledgers.canonicalAddress(spenderAddress))
+                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
+                .forIndexedArgument(accountAccessor.canonicalAddress(spenderAddress))
                 .forDataItem(amount)
                 .build();
     }
 
     private Log getLogForNftAdjustAllowance(
-            final Address logger, final Address senderAddress, final Address spenderAddress, final long serialNumber) {
+            final Address logger,
+            final Address senderAddress,
+            final Address spenderAddress,
+            final long serialNumber,
+            final AccountAccessor accountAccessor) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                // TODO
-                // .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
-                // .forIndexedArgument(ledgers.canonicalAddress(spenderAddress))
+                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
+                .forIndexedArgument(accountAccessor.canonicalAddress(spenderAddress))
                 .forIndexedArgument(serialNumber)
                 .build();
     }

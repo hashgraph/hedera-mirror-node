@@ -207,7 +207,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final int functionId = input.getInt(0);
-
         if (AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN == functionId) {
             RedirectTarget target;
             try {
