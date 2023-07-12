@@ -49,7 +49,7 @@ import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.contractresult.TransferContractResult;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
+import com.hedera.mirror.importer.parser.record.ItemizedTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -82,7 +82,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
+    private final ItemizedTransferExtractionStrategy itemizedTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
@@ -205,13 +205,10 @@ public class EntityRecordItemListener implements RecordItemListener {
      * network+service fee (paid to treasury).
      */
     private void processItemizedTransfers(long consensusTimestamp, RecordItem recordItem, Transaction transaction) {
-        if (!entityProperties.getPersist().isNonFeeTransfers()) {
-            return;
-        }
 
         var body = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getTransactionRecord();
-        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
+        for (var aa : itemizedTransfersExtractor.extractItemizedTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
                 if (EntityId.isEmpty(entityId)) {

@@ -70,12 +70,12 @@ class ItemizedTransferExtractionStrategyImplTest {
     private EntityIdService entityIdService;
 
     @InjectMocks
-    private NonFeeTransferExtractionStrategyImpl extractionStrategy;
+    private ItemizedTransferExtractionStrategyImpl extractionStrategy;
 
     @Test
     void extractNonFeeTransfersCryptoTransfer() {
         var transactionBody = getCryptoTransferTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
                 () -> assertEquals(
                         3, StreamSupport.stream(result.spliterator(), false).count()),
@@ -86,7 +86,7 @@ class ItemizedTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersCryptoCreate() {
         var transactionBody = getCryptoCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewAccountTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getNewAccountTransactionRecord());
         assertAll(
                 () -> assertEquals(
                         2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -97,7 +97,7 @@ class ItemizedTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersFailedCryptoCreate() {
         var transactionBody = getCryptoCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(
                         1, StreamSupport.stream(result.spliterator(), false).count()),
@@ -107,7 +107,7 @@ class ItemizedTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersContractCreate() {
         var transactionBody = getContractCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewContractTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getNewContractTransactionRecord());
         assertAll(
                 () -> assertEquals(
                         2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -118,7 +118,7 @@ class ItemizedTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersFailedContractCreate() {
         var transactionBody = getContractCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(
                         1, StreamSupport.stream(result.spliterator(), false).count()),
@@ -138,7 +138,7 @@ class ItemizedTransferExtractionStrategyImplTest {
                 .build();
         when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
                 .thenReturn(Optional.of(EntityId.of(contractId)));
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, transactionRecord);
         assertAll(
                 () -> assertEquals(
                         2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -163,7 +163,7 @@ class ItemizedTransferExtractionStrategyImplTest {
                 .build();
         when(entityIdService.lookup(contractIdReceipt, contractIdBody))
                 .thenReturn(Optional.of(EntityId.of(contractIdReceipt)));
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, transactionRecord);
         assertAll(
                 () -> assertEquals(
                         2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -180,14 +180,14 @@ class ItemizedTransferExtractionStrategyImplTest {
                         ContractID.getDefaultInstance(),
                         transactionBody.getContractCall().getContractID()))
                 .thenReturn(Optional.ofNullable(entityId));
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, transactionRecord);
         assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
 
     @Test
     void extractNonFeeTransfersFileCreateNone() {
         var transactionBody = getFileCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewFileTransactionRecord());
+        var result = extractionStrategy.extractItemizedTransfers(transactionBody, getNewFileTransactionRecord());
         assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
 

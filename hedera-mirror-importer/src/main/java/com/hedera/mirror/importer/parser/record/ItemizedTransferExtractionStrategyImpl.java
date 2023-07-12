@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @CustomLog
 @Named
 @RequiredArgsConstructor
-public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
+public class ItemizedTransferExtractionStrategyImpl implements ItemizedTransferExtractionStrategy {
 
     private final EntityIdService entityIdService;
 
@@ -47,7 +47,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
      * @return iterable of transfers. If transaction has no non-fee transfers, then iterable will have no elements.
      */
     @Override
-    public Iterable<AccountAmount> extractNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
+    public Iterable<AccountAmount> extractItemizedTransfers(TransactionBody body, TransactionRecord transactionRecord) {
         AccountID payerAccountId = body.getTransactionID().getAccountID();
 
         if (body.hasCryptoTransfer()) {

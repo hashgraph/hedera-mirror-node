@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
+import com.hedera.mirror.importer.parser.record.ItemizedTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -53,7 +53,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
     private final PubSubProperties pubSubProperties;
     private final PubSubTemplate pubSubTemplate;
     private final AddressBookService addressBookService;
-    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
+    private final ItemizedTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -129,7 +129,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
      * Set of explicit transfers in the transaction.
      */
     private Iterable<AccountAmount> addNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
-        var nonFeeTransfers = nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord);
+        var nonFeeTransfers = nonFeeTransfersExtractor.extractItemizedTransfers(body, transactionRecord);
         if (!nonFeeTransfers.iterator().hasNext()) { // return null if empty
             return null;
         }
