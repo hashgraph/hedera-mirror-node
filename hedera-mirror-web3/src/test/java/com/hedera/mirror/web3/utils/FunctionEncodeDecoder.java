@@ -27,6 +27,11 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.utils.EntityIdUtils;
 import jakarta.inject.Named;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -61,7 +66,14 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_INT_BYTES = "(address,int64,bytes[])";
     private static final String DOUBLE_ADDRESS_INT64 = "(address,address,int64)";
     private static final String DOUBLE_ADDRESS_INT64S = "(address,address,int64[])";
-
+    private static final String TOKEN_INT64_INT32 =
+            "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32)";
+    private static final String TOKEN =
+            "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
+    private static final String TOKEN_INT64_INT32_FIXED_FEE_FRACTIONAL_FEE =
+            "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[])";
+    private static final String TOKEN_FIXED_FEE_FRACTIONAL_FEE =
+            "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -152,12 +164,23 @@ public class FunctionEncodeDecoder {
                             .map(FunctionEncodeDecoder::convertAddress)
                             .toList()
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]));
-            case ADDRESS_INT_BYTES -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
-            case ADDRESS_INT_INTS -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
-            case DOUBLE_ADDRESS_INT64 -> Tuple.of(
+            case ADDRESS_INT_BYTES, ADDRESS_INT_INTS -> Tuple.of(
+                    convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
+            case DOUBLE_ADDRESS_INT64, DOUBLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
-            case DOUBLE_ADDRESS_INT64S -> Tuple.of(
-                    convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
+            case TOKEN_INT64_INT32 -> Tuple.of(
+                    encodeToken((TokenCreateWrapper) parameters[0]), parameters[1], parameters[2]);
+            case TOKEN -> Tuple.of(encodeToken((TokenCreateWrapper) parameters[0]));
+            case TOKEN_INT64_INT32_FIXED_FEE_FRACTIONAL_FEE -> Tuple.of(
+                    encodeToken((TokenCreateWrapper) parameters[0]),
+                    parameters[1],
+                    parameters[2],
+                    encodeFixedFee((FixedFeeWrapper) parameters[3]),
+                    encodeFractionalFee((FractionalFeeWrapper) parameters[4]));
+            case TOKEN_FIXED_FEE_FRACTIONAL_FEE -> Tuple.of(
+                    encodeToken((TokenCreateWrapper) parameters[0]),
+                    encodeFixedFee((FixedFeeWrapper) parameters[1]),
+                    encodeRoyaltyFee((RoyaltyFeeWrapper) parameters[2]));
             default -> Tuple.EMPTY;
         };
     }
@@ -179,5 +202,80 @@ public class FunctionEncodeDecoder {
         } catch (IOException e) {
             return "Failed to parse";
         }
+    }
+
+    private Tuple encodeToken(TokenCreateWrapper tokenCreateWrapper) {
+        return Tuple.of(
+                tokenCreateWrapper.getName(),
+                tokenCreateWrapper.getSymbol(),
+                tokenCreateWrapper.getTreasury() != null
+                        ? convertAddress(EntityIdUtils.asTypedEvmAddress(tokenCreateWrapper.getTreasury()))
+                        : convertAddress(Address.ZERO),
+                tokenCreateWrapper.getMemo(),
+                tokenCreateWrapper.isSupplyTypeFinite(),
+                tokenCreateWrapper.getMaxSupply(),
+                tokenCreateWrapper.isFreezeDefault(),
+                new Tuple[] {
+                    Tuple.of(
+                            BigInteger.ONE,
+                            Tuple.of(
+                                    true,
+                                    convertAddress(Address.ZERO),
+                                    new byte[] {},
+                                    new byte[] {},
+                                    convertAddress(Address.ZERO)))
+                },
+                Tuple.of(
+                        tokenCreateWrapper.getExpiry().second(),
+                        convertAddress(EntityIdUtils.asTypedEvmAddress(
+                                tokenCreateWrapper.getExpiry().autoRenewAccount())),
+                        tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+    }
+
+    private Tuple[] encodeFixedFee(FixedFeeWrapper fixedFeeWrapper) {
+        final var customFee = fixedFeeWrapper.asGrpc();
+        return new Tuple[] {
+            Tuple.of(
+                    customFee.getFixedFee().getAmount(),
+                    convertAddress(EntityIdUtils.asTypedEvmAddress(
+                            customFee.getFixedFee().getDenominatingTokenId())),
+                    false,
+                    false,
+                    convertAddress(EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId())))
+        };
+    }
+
+    private Tuple[] encodeFractionalFee(FractionalFeeWrapper fractionalFeeWrapper) {
+        return new Tuple[] {
+            Tuple.of(
+                    fractionalFeeWrapper.numerator(),
+                    fractionalFeeWrapper.denominator(),
+                    fractionalFeeWrapper.minimumAmount(),
+                    fractionalFeeWrapper.maximumAmount(),
+                    fractionalFeeWrapper.netOfTransfers(),
+                    convertAddress(
+                            fractionalFeeWrapper.feeCollector() != null
+                                    ? EntityIdUtils.asTypedEvmAddress(fractionalFeeWrapper.feeCollector())
+                                    : Address.ZERO))
+        };
+    }
+
+    private Tuple[] encodeRoyaltyFee(RoyaltyFeeWrapper royaltyFeeWrapper) {
+        return new Tuple[] {
+            Tuple.of(
+                    royaltyFeeWrapper.numerator(),
+                    royaltyFeeWrapper.denominator(),
+                    royaltyFeeWrapper.asGrpc().getRoyaltyFee().getFallbackFee().getAmount(),
+                    convertAddress(EntityIdUtils.asTypedEvmAddress(royaltyFeeWrapper
+                            .asGrpc()
+                            .getRoyaltyFee()
+                            .getFallbackFee()
+                            .getDenominatingTokenId())),
+                    false,
+                    convertAddress(
+                            royaltyFeeWrapper.feeCollector() != null
+                                    ? EntityIdUtils.asTypedEvmAddress(royaltyFeeWrapper.feeCollector())
+                                    : Address.ZERO))
+        };
     }
 }

@@ -29,10 +29,14 @@ import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -120,5 +124,44 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
+    public TransactionBody.Builder createTokenCreate(TokenCreateWrapper tokenCreateWrapper) {
+        final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
+        txnBodyBuilder.setName(tokenCreateWrapper.getName());
+        txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
+        txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
+        txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
+        txnBodyBuilder.setSupplyType(
+                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+        txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
+        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
+        if (tokenCreateWrapper.getTreasury() != null) {
+            txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+        }
+        txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
+        txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
+        if (tokenCreateWrapper.getExpiry().second() != 0) {
+            txnBodyBuilder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().second())
+                    .build());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
+            txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0) {
+            txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+        }
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
+                .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
+                .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
+                .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+                .toList());
+        return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 }

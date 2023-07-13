@@ -286,14 +286,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
             new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
         }),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createFungibleTokenWithCustomFeesExternal",
-                new Object[] {new Object[] {}, 0L, 0, new Object[] {}, new Object[] {}}),
-        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {new Object[] {}}),
-        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createNonFungibleTokenWithCustomFeesExternal",
-                new Object[] {new Object[] {}, new Object[] {}, new Object[] {}}),
         APPROVE("approveExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
@@ -330,8 +322,15 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
         WIPE_TOKEN(
                 "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ACCOUNT_ADDRESS, 1L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}});
-
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createFungibleTokenWithCustomFeesExternal",
+                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
+        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createNonFungibleTokenWithCustomFeesExternal",
+                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER});
         private final String name;
         private final Object[] functionParameters;
     }

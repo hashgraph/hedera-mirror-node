@@ -33,7 +33,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyF
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -158,14 +157,12 @@ class CreateLogicTest {
         given(treasury.getId()).willReturn(treasuryId);
         given(token.getCustomFees()).willReturn(Collections.emptyList());
         given(evmProperties.getMaxTokensPerAccount()).willReturn(1000);
-        given(store.getToken(any(), any())).willReturn(token);
-        given(store.getTokenRelationship(any(), any())).willReturn(TokenRelationship.getEmptyTokenRelationship());
         given(op.getInitialSupply()).willReturn(10L);
 
         runCreateLogic();
         verify(store, atLeast(2)).updateAccount(any());
         verify(store).updateToken(any());
-        verify(store, atLeast(2)).updateTokenRelationship(any());
+        verify(store).updateTokenRelationship(any());
     }
 
     @Test
@@ -192,7 +189,6 @@ class CreateLogicTest {
         given(token.isNonFungibleUnique()).willReturn(true);
         given(token.isFungibleCommon()).willReturn(true);
         given(evmProperties.getMaxTokensPerAccount()).willReturn(1000);
-        given(store.getTokenRelationship(any(), any())).willReturn(TokenRelationship.getEmptyTokenRelationship());
         given(op.getInitialSupply()).willReturn(10L);
         given(store.hasAssociation(any())).willReturn(true).willReturn(true).willReturn(false);
         prepareDenomToken();
@@ -209,7 +205,6 @@ class CreateLogicTest {
         staticMock.when(() -> Id.fromGrpcToken(any())).thenReturn(tokenId);
         given(tokenId.asEvmAddress()).willReturn(tokenAddress);
         given(store.getAccount(any(), any())).willReturn(treasury).willReturn(account);
-        given(store.getToken(any(), any())).willReturn(token);
         given(op.hasAutoRenewAccount()).willReturn(true);
         staticToken.when(Token::getEmptyToken).thenCallRealMethod();
         staticToken
@@ -228,7 +223,6 @@ class CreateLogicTest {
         given(token.getCustomFees()).willReturn(List.of(feeSpy));
         given(token.isFungibleCommon()).willReturn(true);
         given(evmProperties.getMaxTokensPerAccount()).willReturn(1000);
-        given(store.getTokenRelationship(any(), any())).willReturn(TokenRelationship.getEmptyTokenRelationship());
         given(op.getInitialSupply()).willReturn(10L);
         runCreateLogic();
         verify(feeSpy).setFixedFee(any());

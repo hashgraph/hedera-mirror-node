@@ -17,6 +17,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
@@ -24,6 +25,7 @@ import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FRACTION
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
+import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.FIXED_FEE_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.FRACTIONAL_FEE_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
@@ -35,7 +37,10 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
+import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -50,18 +55,22 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.Fractio
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.CreateLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -193,46 +202,54 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V3.selector());
     private final EncodingFacade encoder;
     private final SyntheticTxnFactory syntheticTxnFactory;
+    private final OptionValidator validator;
     private final CreateLogic createLogic;
-    private TokenCreateWrapper tokenCreateOp;
 
     public TokenCreatePrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
+            final OptionValidator validator,
             final CreateLogic createLogic) {
         super(pricingUtils);
         this.encoder = encoder;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.createLogic = createLogic;
+        this.validator = validator;
     }
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        final var functionId = input.getInt(0);
-        tokenCreateOp = switch (functionId) {
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decodeFungibleCreateWithFees(
-                    input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decodeNonFungibleCreate(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decodeNonFungibleCreateWithFees(
-                    input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 -> decodeFungibleCreateV2(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decodeFungibleCreateWithFeesV2(
-                    input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2 -> decodeNonFungibleCreateV2(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decodeNonFungibleCreateWithFeesV2(
-                    input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 -> decodeFungibleCreateV3(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3 -> decodeFungibleCreateWithFeesV3(
-                    input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3 -> decodeNonFungibleCreateV3(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> decodeNonFungibleCreateWithFeesV3(
-                    input, aliasResolver);
-            default -> null;};
+        final var functionId = ((FunctionParam) bodyParams).functionId();
+        final var tokenCreateOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decodeFungibleCreateWithFees(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decodeNonFungibleCreate(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decodeNonFungibleCreateWithFees(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 -> decodeFungibleCreateV2(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decodeFungibleCreateWithFeesV2(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2 -> decodeNonFungibleCreateV2(
+                            input, aliasResolver);
+                    case AbiConstants
+                            .ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decodeNonFungibleCreateWithFeesV2(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 -> decodeFungibleCreateV3(input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3 -> decodeFungibleCreateWithFeesV3(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3 -> decodeNonFungibleCreateV3(
+                            input, aliasResolver);
+                    case AbiConstants
+                            .ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> decodeNonFungibleCreateWithFeesV3(
+                            input, aliasResolver);
+                    default -> null;
+                };
 
-        // TODO: will be implemented in next PR
-        return null;
+        verifySolidityInput(Objects.requireNonNull(tokenCreateOp));
+        return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
     }
 
     @Override
@@ -242,17 +259,30 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
-        return null;
+
+        final var tokenCreateOp = transactionBody.getTokenCreation();
+        Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
+
+        /* --- Execute the transaction and capture its results --- */
+        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, store, tokenCreateOp);
+        return new TokenCreateResult(tokenIdFromEvmAddress(frame.getSenderAddress()));
     }
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of();
-    }
-
-    @Override
-    public void handleSentHbars(MessageFrame frame) {
-        super.handleSentHbars(frame);
+        return Set.of(
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3,
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3);
     }
 
     @Override
@@ -601,5 +631,69 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         tokenCreateWrapper.setRoyaltyFees(royaltyFees);
 
         return tokenCreateWrapper;
+    }
+
+    private void verifySolidityInput(final TokenCreateWrapper tokenCreateOp) {
+        /*
+         * Verify initial supply and decimals fall withing the allowed ranges of the types
+         * they convert to (long and int, respectively), since in the Solidity interface
+         * they are specified as uint256s and illegal values may be passed as input.
+         */
+        if (tokenCreateOp.isFungible()) {
+            validateTrue(
+                    tokenCreateOp.getInitSupply().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1,
+                    INVALID_TRANSACTION_BODY);
+            validateTrue(
+                    tokenCreateOp.getDecimals().compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) < 1,
+                    INVALID_TRANSACTION_BODY);
+        }
+
+        /*
+         * Check keys validity. The `TokenKey` struct in `IHederaTokenService.sol`
+         * defines a `keyType` bit field, which smart contract developers will use to
+         * set the type of key the `KeyValue` field will be used for. For example, if the
+         * `keyType` field is set to `00000001`, then the key value will be used for adminKey.
+         * If it is set to `00000011` the key value will be used for both adminKey and kycKey.
+         * Since an array of `TokenKey` structs is passed to the precompile, we have to
+         * check if each one specifies the type of key it applies to (that the bit field
+         * is not `00000000` and no bit bigger than 6 is set) and also that there are not multiple
+         * keys values for the same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
+         */
+        final var tokenKeys = tokenCreateOp.getTokenKeys();
+        if (!tokenKeys.isEmpty()) {
+            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+                final var tokenKey = tokenKeys.get(i);
+                validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
+                final var tokenKeyBitField = tokenKey.keyType();
+                validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
+                for (int j = i + 1; j < tokenKeysSize; j++) {
+                    validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType()) == 0, INVALID_TRANSACTION_BODY);
+                }
+            }
+        }
+
+        /*
+         * The denomination of a fixed fee depends on the values of tokenId, useHbarsForPayment
+         * useCurrentTokenForPayment. Exactly one of the values of the struct should be set.
+         */
+        if (!tokenCreateOp.getFixedFees().isEmpty()) {
+            for (final var fixedFee : tokenCreateOp.getFixedFees()) {
+                validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
+            }
+        }
+
+        /*
+         * When a royalty fee with fallback fee is specified, we need to check that
+         * the fallback fixed fee is valid.
+         */
+        if (!tokenCreateOp.getRoyaltyFees().isEmpty()) {
+            for (final var royaltyFee : tokenCreateOp.getRoyaltyFees()) {
+                if (royaltyFee.fallbackFixedFee() != null) {
+                    validateTrue(
+                            royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT,
+                            INVALID_TRANSACTION_BODY);
+                }
+            }
+        }
     }
 }
