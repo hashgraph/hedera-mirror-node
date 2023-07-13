@@ -143,36 +143,4 @@ class PricedUsageCalculatorTest {
         assertSame(feesCaptor.getValue(), assessCaptor.getValue());
         assertNotSame(inHandleAccum, feesCaptor.getValue());
     }
-
-    // TODO
-
-    //    @Test
-    //    void computesInHandleAsExpected() {
-    //        // setup:
-    //        final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
-    //
-    //        given(calculator.fees(subject.getHandleScopedAccumulator(), mockPrices, mockRate, multiplier))
-    //                .willReturn(mockFees);
-    //
-    //        // when:
-    //        final var actual = subject.inHandleFees(mockPrices, mockRate);
-    //
-    //        // then:
-    //        assertEquals(mockFees, actual);
-    //    }
-    //
-    //    @Test
-    //    void computesExtraHandleAsExpected() {
-    //        // setup:
-    //        final ArgumentCaptor<UsageAccumulator> feesCaptor = ArgumentCaptor.forClass(UsageAccumulator.class);
-    //
-    //        given(calculator.fees(feesCaptor.capture(), eq(mockPrices), eq(mockRate), longThat(l -> l == multiplier)))
-    //                .willReturn(mockFees);
-    //
-    //        // when:
-    //        final var actual = subject.extraHandleFees(mockPrices, mockRate);
-    //
-    //        // then:
-    //        assertEquals(mockFees, actual);
-    //    }
 }

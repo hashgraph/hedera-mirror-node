@@ -64,7 +64,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
- *  1. setTokenWipeUsageMeta uses the TransactionBody
+ *  1. setTokenWipeUsageMeta is added to setOpUsageMeta
  */
 public class SignedTxnAccessor implements TxnAccessor {
 
@@ -143,7 +143,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         getFunction();
         setBaseUsageMeta();
         setOpUsageMeta();
-        setTokenWipeUsageMeta();
     }
 
     public static byte[] unwrapUnsafelyIfPossible(@NonNull final ByteString byteString) {
@@ -256,6 +255,8 @@ public class SignedTxnAccessor implements TxnAccessor {
             setTokenCreateUsageMeta();
         } else if (function == TokenBurn) {
             setTokenBurnUsageMeta();
+        } else if (function == TokenAccountWipe) {
+            setTokenWipeUsageMeta();
         } else if (function == TokenFreezeAccount) {
             setTokenFreezeUsageMeta();
         } else if (function == TokenUnfreezeAccount) {

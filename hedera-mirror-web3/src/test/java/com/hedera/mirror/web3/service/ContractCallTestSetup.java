@@ -742,25 +742,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void feeSchedulesPersist() {
-        //        for (var function: HederaFunctionality.values()) {
-        //            if(function.name() == "UNKNOWN") continue;
-        //            feeSchedules.getCurrentFeeScheduleOrBuilder().getTransactionFeeScheduleList().add(
-        //                    TransactionFeeSchedule.newBuilder()
-        //                                    .setHederaFunctionality(function)
-        //                                    .addFees(FeeData.newBuilder()
-        //                                            .setServicedata(FeeComponents.newBuilder()
-        //                                                    .setGas(852000)
-        //                                                    .build())
-        //                                            .build()).build());
-        //            feeSchedules.getNextFeeScheduleOrBuilder().getTransactionFeeScheduleList().add(
-        //                    TransactionFeeSchedule.newBuilder()
-        //                            .setHederaFunctionality(function)
-        //                            .addFees(FeeData.newBuilder()
-        //                                    .setServicedata(FeeComponents.newBuilder()
-        //                                            .setGas(852000)
-        //                                            .build())
-        //                                    .build()).build());
-        //        }
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(feeSchedules.toByteArray())
