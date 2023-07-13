@@ -86,7 +86,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.v = null;
     this.nonce = null;
 
-    if (!_.isNil(ethTransaction)) {
+    if (!_.isNil(ethTransaction) && !_.values(ethTransaction).every(_.isNull)) {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
       this.amount = typeof ethTransaction.value === 'number' ? ethTransaction.value : toBigIntBE(Buffer.from(ethTransaction.value));
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
