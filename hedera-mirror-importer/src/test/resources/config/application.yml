@@ -24,6 +24,8 @@ hedera:
           pubsub:
             topicName: testTopic
           entity:
+            persist:
+              syntheticContractResults: true
             redis:
               enabled: false
           retry:

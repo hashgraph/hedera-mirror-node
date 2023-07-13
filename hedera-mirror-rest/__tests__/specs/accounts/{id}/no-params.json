@@ -32,6 +32,38 @@
         "num": 98
       }
     ],
+    "balances": [
+      {
+        "timestamp": "1234567890000000004",
+        "id": 8,
+        "balance": 555,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 71
+          },
+          {
+            "token_num": 99999,
+            "balance": 72
+          }
+        ]
+      },
+      {
+        "timestamp": "1234567880000000004",
+        "id": 7,
+        "balance": 444,
+        "tokens": [
+          {
+            "token_num": 99998,
+            "balance": 61
+          },
+          {
+            "token_num": 99999,
+            "balance": 62
+          }
+        ]
+      }
+    ],
     "entityStakes": [
       {
         "decline_reward_start": false,

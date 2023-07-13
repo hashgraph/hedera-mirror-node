@@ -22,14 +22,18 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class SyntheticTxnFactory {
@@ -90,5 +94,31 @@ public class SyntheticTxnFactory {
         builder.addAllTokens(dissociation.tokenIds());
 
         return TransactionBody.newBuilder().setTokenDissociate(builder);
+    }
+
+    public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
+        final var builder = TokenBurnTransactionBody.newBuilder();
+
+        builder.setToken(burnWrapper.tokenType());
+        if (burnWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(burnWrapper.serialNos());
+        } else {
+            builder.setAmount(burnWrapper.amount());
+        }
+        return TransactionBody.newBuilder().setTokenBurn(builder);
+    }
+
+    public TransactionBody.Builder createWipe(final WipeWrapper wipeWrapper) {
+        final var builder = TokenWipeAccountTransactionBody.newBuilder();
+
+        builder.setToken(wipeWrapper.token());
+        builder.setAccount(wipeWrapper.account());
+        if (wipeWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(wipeWrapper.serialNumbers());
+        } else {
+            builder.setAmount(wipeWrapper.amount());
+        }
+
+        return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 }

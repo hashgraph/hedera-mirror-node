@@ -241,7 +241,7 @@ class StoreImplTest {
     @Test
     void updateTokenRelationship() {
         final var tokenRel = new TokenRelationship(
-                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L));
+                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
         assertEquals(
@@ -281,5 +281,29 @@ class StoreImplTest {
         subject.wrap();
         subject.updateUniqueToken(nft);
         assertEquals(nft, subject.getUniqueToken(nftId, OnMissing.DONT_THROW));
+    }
+
+    @Test
+    void loadUniqueTokensWithoutThrow() {
+        final var nftId = new NftId(0, 0, 6, 1);
+        when(nftRepository.findActiveById(6, 1)).thenReturn(Optional.of(nft));
+        when(nft.getId()).thenReturn(new AbstractNft.Id(1, 6));
+        when(nft.getSerialNumber()).thenReturn(1L);
+        when(nft.getTokenId()).thenReturn(6L);
+        final var serials = List.of(nftId.serialNo());
+        final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
+        final var updatedToken = subject.loadUniqueTokens(token, serials);
+        assertThat(updatedToken.getLoadedUniqueTokens()).hasSize(serials.size());
+        assertThat(updatedToken.getLoadedUniqueTokens().get(nftId.serialNo()).getNftId())
+                .isEqualTo(nftId);
+    }
+
+    @Test
+    void loadUniqueTokensThrowIfMissing() {
+        final var nftId = new NftId(0, 0, 6, 1);
+        final var serials = List.of(nftId.serialNo());
+        final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
+        assertThatThrownBy(() -> subject.loadUniqueTokens(token, serials))
+                .isInstanceOf(InvalidTransactionException.class);
     }
 }
