@@ -54,16 +54,14 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR = Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
     private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
+    private final GrantKycLogic grantKycLogic;
     private GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp;
-    private GrantKycLogic grantKycLogic;
 
     public GrantKycPrecompile(
-            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp,
             final GrantKycLogic grantKycLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
             final PrecompilePricingUtils pricingUtils) {
         super(syntheticTxnFactory, pricingUtils);
-        this.grantRevokeOp = grantRevokeOp;
         this.grantKycLogic = grantKycLogic;
     }
 

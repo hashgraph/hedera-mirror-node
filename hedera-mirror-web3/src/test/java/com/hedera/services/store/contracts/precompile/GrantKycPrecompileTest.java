@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
 import static java.util.function.UnaryOperator.identity;
@@ -138,8 +137,7 @@ public class GrantKycPrecompileTest {
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         grantKycLogic = new GrantKycLogic();
-        grantKycPrecompile = new GrantKycPrecompile(
-                grantRevokeKycWrapper, grantKycLogic, syntheticTxnFactory, precompilePricingUtils);
+        grantKycPrecompile = new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, precompilePricingUtils);
         precompileMapper = new PrecompileMapper(Set.of(grantKycPrecompile));
 
         subject = new HTSPrecompiledContract(
