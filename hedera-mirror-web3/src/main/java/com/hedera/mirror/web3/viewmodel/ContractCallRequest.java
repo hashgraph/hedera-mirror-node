@@ -37,7 +37,7 @@ public class ContractCallRequest {
     @JsonDeserialize(using = BlockTypeDeserializer.class)
     private BlockType block = BlockType.LATEST;
 
-    @Hex(maxLength = 6144 * 2) // HAPI caps request at 6KiB
+    @Hex(maxLength = 24576 * 2) // HAPI caps contract creates at 24KiB
     private String data;
 
     private boolean estimate;
@@ -75,5 +75,17 @@ public class ContractCallRequest {
             to = Address.ZERO.toHexString();
         }
         return true;
+    }
+
+    @AssertTrue(message = "must not exceed call size limit")
+    private boolean hasData() {
+        if (data != null) {
+            final var dataSize = data.length();
+
+            // In case of contract calls we should limit requests to 6KiB
+            return to == null || 6144 * 2 > dataSize;
+        } else {
+            return true;
+        }
     }
 }
