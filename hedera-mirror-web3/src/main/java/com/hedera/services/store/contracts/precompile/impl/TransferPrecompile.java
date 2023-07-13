@@ -144,11 +144,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final AutoCreationLogic autoCreationLogic;
 
     public TransferPrecompile(
-            PrecompilePricingUtils pricingUtils,
+            final PrecompilePricingUtils pricingUtils,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final TransferLogic transferLogic,
-            ContextOptionValidator contextOptionValidator,
-            AutoCreationLogic autoCreationLogic) {
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic) {
         super(pricingUtils);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.transferLogic = transferLogic;

@@ -47,6 +47,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
@@ -311,6 +312,17 @@ public class EvmConfiguration {
     @Bean
     TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
         return new TransferLogic(autoCreationLogic);
+    }
+
+    @Bean
+    TransferPrecompile transferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic) {
+        return new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
     }
 
     @Bean
