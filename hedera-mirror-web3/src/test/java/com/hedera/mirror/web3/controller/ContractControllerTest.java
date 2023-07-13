@@ -414,6 +414,9 @@ class ContractControllerTest {
 
     @Test
     void transferSuccess() {
+        final var request = request();
+        request.setData(null);
+
         webClient
                 .post()
                 .uri(CALL_URI)
