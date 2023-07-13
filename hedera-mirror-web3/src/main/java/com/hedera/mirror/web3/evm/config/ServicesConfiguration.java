@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
@@ -294,5 +295,13 @@ public class ServicesConfiguration {
     @Bean
     WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    GrantKycPrecompile grantKycPrecompile(
+            final GrantKycLogic grantKycLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
     }
 }
