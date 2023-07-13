@@ -79,13 +79,13 @@ public class ContractCallRequest {
 
     @AssertTrue(message = "must not exceed call size limit")
     private boolean hasData() {
-        if (data != null) {
+        if (data == null) {
+            return true;
+        } else {
             final var dataSize = data.length();
 
             // In case of contract calls we should limit requests to 6KiB
-            return to == null || 6144 * 2 > dataSize;
-        } else {
-            return true;
+            return to == null || dataSize <= 6144 * 2;
         }
     }
 }
