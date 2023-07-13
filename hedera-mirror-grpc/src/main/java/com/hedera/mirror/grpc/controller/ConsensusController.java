@@ -21,7 +21,6 @@ import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
@@ -84,14 +83,11 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return filter.build();
     }
 
-    // These 2 routines are based on the grpc version of TopicMessage.java (before it was dropped to use the version
-    // from hedera-mirror-common, where they were used with a lazy getter to keep the result cached.  Consider
-    // creating a static Map<TopicMessage, ConcensusTopicResponse> in this class to cache the values to save time
-    // regenerating the same ConsensusTopicResponse for multiple subscribers to the same topic.
-    protected ConsensusTopicResponse toResponse(TopicMessage t) {
+    // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
+    private ConsensusTopicResponse toResponse(TopicMessage t) {
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(ProtoUtil.toTimestamp(
-                        LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp())))
+                .setConsensusTimestamp(
+                        ProtoUtil.toTimestamp(LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp())))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
                 .setRunningHashVersion(t.getRunningHashVersion())
@@ -102,8 +98,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                     .setNumber(t.getChunkNum())
                     .setTotal(t.getChunkTotal());
 
-            TransactionID transactionID = parseTransactionID(t.getInitialTransactionId(),
-                    t.getTopicId().getEntityNum(), t.getSequenceNumber());
+            TransactionID transactionID = parseTransactionID(
+                    t.getInitialTransactionId(), t.getTopicId().getEntityNum(), t.getSequenceNumber());
             EntityId payerAccountEntity = t.getPayerAccountId();
             Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(t.getValidStartTimestamp());
 
@@ -133,5 +129,4 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return null;
         }
     }
-
 }
