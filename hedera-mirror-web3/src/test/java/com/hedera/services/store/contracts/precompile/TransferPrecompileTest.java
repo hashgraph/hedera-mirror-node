@@ -29,12 +29,15 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
@@ -48,6 +51,8 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFTs;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,7 +84,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -362,6 +369,85 @@ class TransferPrecompileTest {
 
         // then:
         assertEquals(successResult, result);
+    }
+
+    @Test
+    void nftTransferToLazyCreateHappyPathWorks() {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        final var lazyCreationFee = 500L;
+        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, lazyCreationFee));
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void hbarTransferToLazyCreateHappyPathWorks() {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        final var lazyCreationFee = 500L;
+        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, lazyCreationFee));
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void nftTransferToLazyCreateFailsWhenAutoCreationLogicReturnsNonOk() {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        givenMinimalFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        staticTransferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+
+        given(frame.getRemainingGas()).willReturn(10000L);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+
+        final var lazyCreationFee = 500L;
+        when(autoCreationLogic.create(any(), any(), any(), any(), any()))
+                .thenReturn(Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, lazyCreationFee));
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(UInt256.valueOf(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED.getNumber()), result);
     }
 
     @Test
@@ -932,5 +1018,10 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
     }
 }

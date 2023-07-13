@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -491,10 +490,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var op = transactionBody.getCryptoTransfer();
         impliedValidity = validityWithCurrentProps(op);
         final var explicitChanges = constructBalanceChanges();
-        if (numLazyCreates > 0 && !mirrorNodeEvmProperties.isLazyCreationEnabled()) {
-            impliedValidity = NOT_SUPPORTED;
-            return;
-        }
         impliedTransfers = new ImpliedTransfers(explicitChanges);
     }
 

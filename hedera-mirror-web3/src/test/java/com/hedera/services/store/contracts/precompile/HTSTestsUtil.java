@@ -246,7 +246,7 @@ public class HTSTestsUtil {
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), List.of(tokensTransferList, nftsTransferList));
     public static final List<HbarTransfer> hbarTransfersAliased = List.of(
-            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(-AMOUNT, false, sender, null));
+            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfersAliased), Collections.emptyList());
     public static final List<HbarTransfer> twoHbarTransfers = List.of(
