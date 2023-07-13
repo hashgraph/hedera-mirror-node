@@ -47,12 +47,16 @@ import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
+import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
@@ -276,12 +280,38 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    GrantKycLogic grantKycLogic() {
+        return new GrantKycLogic();
+    }
+
+    @Bean
     BurnPrecompile burnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final BurnLogic burnLogic) {
         return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
+    }
+
+    @Bean
+    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new WipeLogic(mirrorNodeEvmProperties);
+    }
+
+    @Bean
+    WipeFungiblePrecompile wipeFungiblePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            WipeLogic wipeLogic) {
+        return new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+    }
+
+    @Bean
+    WipeNonFungiblePrecompile wipeNonFungiblePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            WipeLogic wipeLogic) {
+        return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
     @Bean

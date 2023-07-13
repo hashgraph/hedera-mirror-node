@@ -32,7 +32,7 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "sender_id": 8001,
         "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
         "transaction_result": 22,
         "transaction_index": 1,

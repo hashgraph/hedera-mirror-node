@@ -32,7 +32,7 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001,
+        "sender_id": 6001,
         "transaction_hash": "0x185602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 0
       },
@@ -48,7 +48,7 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "sender_id": 8001,
         "transaction_hash": "0x985602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 1
       },
@@ -64,7 +64,7 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "sender_id": 8001,
         "transaction_hash": "0x995602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 2
       }
