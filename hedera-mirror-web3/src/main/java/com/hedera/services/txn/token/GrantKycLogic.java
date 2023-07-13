@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -40,18 +39,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public class GrantKycLogic {
 
-    public TokenRelationship grantKyc(final Id targetTokenId, final Id targetAccountId, final Store store) {
+    public void grantKyc(final Id targetTokenId, final Id targetAccountId, final Store store) {
         /* --- Load the model objects --- */
         final var tokenRelationshipKey =
                 new TokenRelationshipKey(targetTokenId.asEvmAddress(), targetAccountId.asEvmAddress());
         final var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        TokenRelationship tokenRelationshipResult = tokenRelationship.setKycGranted(true);
+        final var tokenRelationshipResult = tokenRelationship.setKycGranted(true);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(tokenRelationshipResult);
-        return tokenRelationshipResult;
     }
 
     public ResponseCodeEnum validate(final TransactionBody txnBody) {
