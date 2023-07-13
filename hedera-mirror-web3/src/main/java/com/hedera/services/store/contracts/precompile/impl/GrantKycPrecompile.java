@@ -24,14 +24,13 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.GRANT_KYC;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -39,12 +38,12 @@ import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -55,19 +54,26 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR = Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
     private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
+    private GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp;
+    private GrantKycLogic grantKycLogic;
+
     public GrantKycPrecompile(
-            final MirrorEvmContractAliases aliases,
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp,
+            final GrantKycLogic grantKycLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
             final PrecompilePricingUtils pricingUtils) {
-        super(aliases, syntheticTxnFactory, pricingUtils);
+        super(syntheticTxnFactory, pricingUtils);
+        this.grantRevokeOp = grantRevokeOp;
+        this.grantKycLogic = grantKycLogic;
     }
 
     @Override
     public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
-        this.function = TokenGrantKycToAccount;
-        initialise();
+        // --- Init ---
 
-        final var grantKycLogic = new GrantKycLogic();
+        requireNonNull(grantRevokeOp);
+        final var tokenId = Id.fromGrpcToken(grantRevokeOp.token());
+        final var accountId = Id.fromGrpcAccount(grantRevokeOp.account());
 
         // --- Execute the transaction and capture its results ---
 
@@ -87,7 +93,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
-        Objects.requireNonNull(grantRevokeOp);
+        requireNonNull(grantRevokeOp);
         return pricingUtils.getMinimumPriceInTinybars(GRANT_KYC, consensusTime);
     }
 
