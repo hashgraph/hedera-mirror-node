@@ -208,9 +208,7 @@ class EntityRecordItemListenerItemizedTransferTest extends AbstractEntityRecordI
         assertAll(
                 () -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows"),
                 () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "entity rows"),
-                () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(), "crypto_transfer rows"),
-                () -> assertEquals(
-                        expectedNonFeeTransfersCount, nonFeeTransferRepository.count(), "non_fee_transfer " + "rows"));
+                () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(), "crypto_transfer rows"));
     }
 
     private void assertTransactions() {

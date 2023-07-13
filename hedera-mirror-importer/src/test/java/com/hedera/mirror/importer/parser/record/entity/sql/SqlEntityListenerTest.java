@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -871,33 +870,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         mergedUpdate.setTimestampUpper(entityDelete.getTimestampLower());
         assertThat(entityRepository.findAll()).containsExactly(mergedDelete);
         assertThat(findHistory(Entity.class)).containsExactly(mergedCreate, mergedUpdate);
-    }
-
-    @Test
-    void onNonFeeTransfer() {
-        // given
-        ItemizedTransfer itemizedTransfer1 = domainBuilder
-                .itemizedTransfer()
-                .customize(n -> n.amount(1L)
-                        .consensusTimestamp(1L)
-                        .entityId(EntityId.of(1L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
-        ItemizedTransfer itemizedTransfer2 = domainBuilder
-                .itemizedTransfer()
-                .customize(n -> n.amount(2L)
-                        .consensusTimestamp(2L)
-                        .entityId(EntityId.of(2L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
-
-        // when
-        sqlEntityListener.onNonFeeTransfer(itemizedTransfer1);
-        sqlEntityListener.onNonFeeTransfer(itemizedTransfer2);
-        completeFileAndCommit();
-
-        // then
-        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(itemizedTransfer1, itemizedTransfer2);
     }
 
     @Test

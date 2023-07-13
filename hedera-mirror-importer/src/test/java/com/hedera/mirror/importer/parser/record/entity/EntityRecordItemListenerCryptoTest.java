@@ -1007,7 +1007,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertCryptoTransfers(3),
-                () -> assertEquals(0, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record));
     }
 
@@ -1046,7 +1045,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
-                () -> assertEquals(0, nonFeeTransferRepository.count()),
                 () -> assertThat(tokenTransferRepository.findAll())
                         .hasSize(1)
                         .first()
@@ -1164,7 +1162,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertCryptoTransfers(6)
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1))
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2)),
-                () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
                 () -> assertThat(findNonFeeTransfers())
                         .extracting(ItemizedTransfer::getEntityId)
@@ -1194,7 +1191,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
                 () -> assertThat(findNonFeeTransfers()).allSatisfy(nonFeeTransfer -> {
                     assertThat(nonFeeTransfer.getEntityId()).isEqualTo(contract.toEntityId());

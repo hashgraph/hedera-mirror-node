@@ -352,11 +352,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onNonFeeTransfer(ItemizedTransfer itemizedTransfer) throws ImporterException {
-        itemizedTransfers.add(itemizedTransfer);
-    }
-
-    @Override
     public void onPrng(Prng prng) {
         prngs.add(prng);
     }

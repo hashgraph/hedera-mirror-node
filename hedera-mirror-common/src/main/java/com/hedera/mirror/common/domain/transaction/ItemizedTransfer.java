@@ -18,21 +18,16 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
-@Data
-@Entity
 @NoArgsConstructor
-public class ItemizedTransfer implements Persistable<Long> {
+public class ItemizedTransfer {
 
     private Long amount;
 
@@ -46,13 +41,11 @@ public class ItemizedTransfer implements Persistable<Long> {
     private EntityId payerAccountId;
 
     @JsonIgnore
-    @Override
     public Long getId() {
         return consensusTimestamp;
     }
 
     @JsonIgnore
-    @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
