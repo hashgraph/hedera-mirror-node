@@ -17,7 +17,8 @@
 package com.hedera.services.utils;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -34,9 +35,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class TxnUtils {
-    public static com.swirlds.common.system.transaction.Transaction mockTransaction(final byte[] contents) {
-        throw new AssertionError("Not implemented");
-    }
 
     public static JKey nestJKeys(int additionalKeysToNest) {
         if (additionalKeysToNest == 0) {

@@ -19,10 +19,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
+import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -32,44 +29,39 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- *  Copied Logic type from hedera-services. Differences with the original:
- *  1. Use abstraction for the state by introducing {@link Store} interface
- *  2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
- *     thus removing the List<BalanceChange> changes argument from create
- *  3. Remove SyntheticTxnFactory
- *  4. Remove UsageLimits and GlobalDynamicProperties
- *  5. trackAliases consumes 2 Addresses
- *  6. The class is stateless and the arguments are passed into the functions
- *  7. Use {@link EntityAddressSequencer} in place of EntityIdSource
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. Remove alias logic and pending creations, use {@link MirrorEvmContractAliases} instead
+ * thus removing the List<BalanceChange> changes argument from create
+ * 3. Remove SyntheticTxnFactory
+ * 4. Remove UsageLimits and GlobalDynamicProperties
+ * 5. trackAliases consumes 2 Addresses
+ * 6. The class is stateless and the arguments are passed into the functions
+ * 7. Use {@link EntityAddressSequencer} in place of EntityIdSource
  */
 public abstract class AbstractAutoCreationLogic {
 
-    public static final String AUTO_MEMO = "auto-created account";
-    private static final String LAZY_MEMO = "lazy-created account";
-    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private final FeeCalculator feeCalculator;
     private final EvmProperties evmProperties;
+    private final SyntheticTxnFactory syntheticTxnFactory;
 
-    protected AbstractAutoCreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
+    protected AbstractAutoCreationLogic(
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            final SyntheticTxnFactory syntheticTxnFactory) {
         this.feeCalculator = feeCalculator;
         this.evmProperties = evmProperties;
+        this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
     /**
@@ -99,14 +91,12 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
-        JKey jKey = null;
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L);
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
-            jKey = asFcKeyUnchecked(key);
-            syntheticCreation = createAccount(alias, key, 0L, 0);
+            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, 0);
         }
         var fee = autoCreationFeeFor(syntheticCreation, store, timestamp);
         if (isAliasEVMAddress) {
@@ -115,6 +105,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var newId = ids.getNewAccountId();
         final var account = new Account(
+                0L,
                 Id.fromGrpcAccount(newId),
                 0L,
                 0L,
@@ -129,15 +120,16 @@ public abstract class AbstractAutoCreationLogic {
                 0,
                 0,
                 0,
-                0L);
+                0L,
+                false);
         store.updateAccount(account);
         replaceAliasAndSetBalanceOnChange(change, newId);
-        trackAlias(jKey, account.getAccountAddress(), mirrorEvmContractAliases);
+        trackAlias(alias, account.getAccountAddress(), mirrorEvmContractAliases);
         return Pair.of(OK, fee);
     }
 
     protected abstract void trackAlias(
-            final JKey jKey, final Address alias, final MirrorEvmContractAliases mirrorEvmContractAliases);
+            final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases);
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
@@ -160,50 +152,5 @@ public abstract class AbstractAutoCreationLogic {
         final var accessor = synthAccessorFor(cryptoCreateTxn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
-    }
-
-    /**
-     * This logic is copied from hedera-services.
-     * Once SyntheticTxnFactory is introduced, move this class to it.
-     * @param alias
-     * @param balance
-     * @return
-     */
-    private TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
-        final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
-        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
-    }
-
-    /**
-     * This logic is copied from hedera-services.
-     * Once SyntheticTxnFactory is introduced, move this class to it.
-     * @param alias
-     * @param key
-     * @param balance
-     * @param maxAutoAssociations
-     * @return
-     */
-    private TransactionBody.Builder createAccount(
-            final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
-
-        if (maxAutoAssociations > 0) {
-            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
-        }
-        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
-    }
-
-    /**
-     * This logic is copied from hedera-services.
-     * Once SyntheticTxnFactory is introduced, move this class to it.
-     * @param balance
-     * @return
-     */
-    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
-        return CryptoCreateTransactionBody.newBuilder()
-                .setInitialBalance(balance)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 }

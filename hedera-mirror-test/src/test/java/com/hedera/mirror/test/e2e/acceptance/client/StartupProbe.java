@@ -21,6 +21,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
+import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
@@ -68,7 +69,6 @@ public class StartupProbe {
             })
             .build();
 
-    @SneakyThrows
     public void validateEnvironment(Client client) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         var stopwatch = Stopwatch.createStarted();
@@ -80,19 +80,30 @@ public class StartupProbe {
 
         log.info("Creating a topic to confirm node connectivity");
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
-
-        var topicId = executeQuery(
-                        client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionId))
-                .topicId;
-
+        var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
+        var topicId = executeQuery(client, stopwatch, () -> receiptQuery).topicId;
         log.info("Created topic {} successfully", topicId);
-        callRestEndpoint(stopwatch, transactionId);
 
+        callRestEndpoint(stopwatch, transactionId);
+        long startTime;
+
+        // Submit a topic message and ensure it's seen by mirror node within 30s to ensure the importer is caught up
+        do {
+            startTime = System.currentTimeMillis();
+            submitMessage(client, stopwatch, topicId);
+        } while (System.currentTimeMillis() - startTime > 30_000);
+
+        log.info("Startup probe successful");
+    }
+
+    @SneakyThrows
+    private void submitMessage(Client client, Stopwatch stopwatch, TopicId topicId) {
         var messageLatch = new CountDownLatch(1);
+        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         SubscriptionHandle subscription = null;
 
         try {
-            log.info("Subscribing to the topic");
+            log.info("Subscribing to topic {}", topicId);
             subscription = retryTemplate.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .setMaxAttempts(Integer.MAX_VALUE)
@@ -112,11 +123,11 @@ public class StartupProbe {
             executeQuery(client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionIdMessage));
             log.info("Waiting for the mirror node to publish the topic message");
 
-            if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
-                log.info("Startup probe successful");
-            } else {
+            if (!messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
                 throw new TimeoutException("Timer expired while waiting on message latch");
             }
+
+            log.info("Received the topic message");
         } finally {
             if (subscription != null) {
                 subscription.unsubscribe();

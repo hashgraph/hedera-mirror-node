@@ -68,6 +68,7 @@ public class BitPackUtils {
     public static boolean isValidNum(long num) {
         return num >= 0 && num <= MAX_NUM_ALLOWED;
     }
+
     /**
      * Returns the lower-order 16 bits of a given {@code int}
      *
@@ -89,10 +90,22 @@ public class BitPackUtils {
     }
 
     /**
+     * Set the lower-order 16 bits of automatic association Metadata
+     *
+     * @param autoAssociationMetadata  metadata of already used automatic associations and max allowed automatic
+     *                                 associations
+     * @param maxAutomaticAssociations new max allowed automatic associations to set
+     * @return metadata after changing the new max.
+     */
+    public static int setMaxAutomaticAssociationsTo(int autoAssociationMetadata, int maxAutomaticAssociations) {
+        return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
+    }
+
+    /**
      * Set the higher-order 16 bits of automatic association Metadata
      *
-     * @param autoAssociationMetadata metadata of already used automatic associations and max
-     *     allowed automatic associations
+     * @param autoAssociationMetadata     metadata of already used automatic associations and max
+     *                                    allowed automatic associations
      * @param alreadyUsedAutoAssociations new already used automatic associations to set
      * @return metadata after changing the already used associations count.
      */

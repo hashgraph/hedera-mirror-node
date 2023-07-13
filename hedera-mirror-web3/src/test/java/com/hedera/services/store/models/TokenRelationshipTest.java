@@ -19,7 +19,11 @@ package com.hedera.services.store.models;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -52,6 +56,7 @@ class TokenRelationshipTest {
     @BeforeEach
     void setUp() {
         token = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -75,6 +80,7 @@ class TokenRelationshipTest {
                 false,
                 false,
                 defaultIntValue,
+                defaultIntValue,
                 true,
                 "the mother",
                 "bitcoin",
@@ -85,6 +91,7 @@ class TokenRelationshipTest {
                 Collections.emptyList());
 
         account = new Account(
+                0L,
                 accountId,
                 defaultLongValue,
                 defaultLongValue,
@@ -99,9 +106,10 @@ class TokenRelationshipTest {
                 3,
                 defaultIntValue,
                 defaultIntValue,
-                0L);
+                0L,
+                false);
 
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, true, 0);
     }
 
     @Test
@@ -151,10 +159,10 @@ class TokenRelationshipTest {
 
     @Test
     void automaticAssociationSetterWorks() {
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, false, 0);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, false, true, 0);
         assertFalse(subject.isAutomaticAssociation());
 
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, true, 0);
         assertTrue(subject.isAutomaticAssociation());
     }
 
@@ -162,7 +170,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfFrozenForToken() {
         // given:
         token = token.setFreezeKey(freezeKey);
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, true, 0);
 
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
     }
@@ -171,7 +179,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfFrozenForDeletedToken() {
         token = token.setFreezeKey(freezeKey);
         token = token.setIsDeleted(true);
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, false, 0);
 
         subject = subject.setBalance(0);
         assertEquals(-balance, subject.getBalanceChange());
@@ -192,7 +200,7 @@ class TokenRelationshipTest {
     @Test
     void canChangeBalanceIfNoFreezeKey() {
         // given:
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -205,7 +213,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfKycNotGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, true, 0);
         // verify
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
@@ -214,7 +222,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfKycGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -239,7 +247,7 @@ class TokenRelationshipTest {
         token = token.setFreezeKey(freezeKey);
 
         // when:
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, true, 0);
 
         // then:
         assertTrue(subject.isFrozen());
@@ -258,7 +266,7 @@ class TokenRelationshipTest {
 
     @Test
     void testHashCode() {
-        var rel = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        var rel = new TokenRelationship(token, account, balance, false, false, false, true, true, true, 0);
         assertEquals(rel.hashCode(), subject.hashCode());
     }
 
@@ -268,7 +276,7 @@ class TokenRelationshipTest {
         token.setKycKey(kycKey);
 
         // when:
-        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, true, 0);
 
         // then:
         assertTrue(subject.isKycGranted());

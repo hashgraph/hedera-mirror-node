@@ -16,7 +16,7 @@
 
 package com.hedera.services.store.models;
 
-import static com.hedera.services.utils.EntityIdUtils.asModelId;
+import static com.hedera.services.utils.IdUtils.asModelId;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.state.submerkle.RichInstant;

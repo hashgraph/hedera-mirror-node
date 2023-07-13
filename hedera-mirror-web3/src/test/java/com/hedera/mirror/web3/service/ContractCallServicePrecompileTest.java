@@ -25,11 +25,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -45,7 +42,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTest(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
         final var successfulResponse =
                 functionEncodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
 
@@ -57,7 +54,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTestWithNonStaticFrame(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, false);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
         final var successfulResponse =
                 functionEncodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
 
@@ -69,7 +66,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileUnsupportedModificationTokenFunctionsTest(UnsupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashWithEmptyDataFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -81,7 +79,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileSupportedModificationTokenFunctionsTest(SupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -96,7 +95,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void customFees(FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
         customFeesPersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -143,7 +142,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var functionHash = isNft
                 ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
         customFeesPersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
@@ -188,8 +187,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
 
             assertThat(serialNum).isEqualTo(1L);
-            assertThat(owner).isEqualTo(convertAddress(SENDER_ADDRESS));
-            assertThat(creationTime).isEqualTo(1475067194949034022L);
+            assertThat(owner).isEqualTo(convertAddress(SPENDER_ADDRESS));
+            assertThat(creationTime).isEqualTo(1475067194L);
             assertThat(metadata).isNotEmpty();
             assertThat(spender).isEqualTo(convertAddress(SPENDER_ADDRESS));
             assertThat(maxSupply).isEqualTo(1L);
@@ -210,7 +209,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void nftInfoForInvalidSerialNo() {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -220,7 +219,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void tokenInfoForNonTokenAccount() {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor("getInformationForFungibleToken", ABI_PATH, SENDER_ADDRESS);
-        final var serviceParameters = serviceParametersForEthCall(functionHash, true);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -230,42 +229,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void notExistingPrecompileCallFails() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForEthEstimateGas(functionHash);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
-    }
-
-    private CallServiceParameters serviceParametersForEthCall(Bytes callData, boolean isStatic) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(0L)
-                .receiver(CONTRACT_ADDRESS)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(isStatic)
-                .callType(ETH_CALL)
-                .build();
-    }
-
-    private CallServiceParameters serviceParametersForEthEstimateGas(Bytes callData) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities(false);
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(0L)
-                .receiver(MODIFICATION_CONTRACT_ADDRESS)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .isEstimate(true)
-                .callType(ETH_ESTIMATE_GAS)
-                .build();
     }
 
     @RequiredArgsConstructor
@@ -317,10 +286,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
             new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
         }),
-        MINT_TOKEN("mintTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new byte[0]}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
         CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
         CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createFungibleTokenWithCustomFeesExternal",
@@ -344,8 +309,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
         DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
@@ -359,7 +322,15 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     enum SupportedContractModificationFunctions {
         ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKENS(
-                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}});
+                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
+        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
+        DISSOCIATE_TOKENS(
+                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
+        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
+        WIPE_TOKEN(
+                "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ACCOUNT_ADDRESS, 1L}),
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}});
 
         private final String name;
         private final Object[] functionParameters;

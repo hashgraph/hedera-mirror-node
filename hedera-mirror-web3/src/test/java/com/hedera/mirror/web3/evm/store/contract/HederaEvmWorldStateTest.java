@@ -192,6 +192,7 @@ class HederaEvmWorldStateTest {
         final var actualSubject = subject.updater();
 
         final var accountModel = new com.hedera.services.store.models.Account(
+                0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
                 123L,
@@ -206,7 +207,8 @@ class HederaEvmWorldStateTest {
                 0,
                 0,
                 0,
-                0L);
+                0L,
+                false);
         store.updateAccount(accountModel);
         actualSubject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);

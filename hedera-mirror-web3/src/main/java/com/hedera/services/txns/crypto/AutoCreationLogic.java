@@ -16,11 +16,18 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -33,13 +40,35 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class AutoCreationLogic extends AbstractAutoCreationLogic {
 
-    public AutoCreationLogic(FeeCalculator feeCalculator, EvmProperties evmProperties) {
-        super(feeCalculator, evmProperties);
+    public AutoCreationLogic(
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            final SyntheticTxnFactory syntheticTxnFactory) {
+        super(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
+    /**
+     * Differences with the original:
+     * Due to using {@link Address} in place of {@link ByteString} for the alias map key
+     * we do additional check if the derived alias is more than 20 bytes and call
+     * maybeLinkEvmAddress instead of link.
+     *
+     * @param alias
+     * @param address
+     * @param mirrorEvmContractAliases
+     */
     @Override
     protected void trackAlias(
-            final JKey jKey, final Address alias, final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, alias);
+            final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        if (isAliasSizeGreaterThanEvmAddress(alias)) {
+            // if the alias is not derived from ECDSA public key
+            final var key = asPrimitiveKeyUnchecked(alias);
+            JKey jKey = asFcKeyUnchecked(key);
+            mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, address);
+
+        } else {
+            // if the alias is derived from ECDSA public key
+            mirrorEvmContractAliases.link(Address.wrap(Bytes.wrap(alias.toByteArray())), address);
+        }
     }
 }

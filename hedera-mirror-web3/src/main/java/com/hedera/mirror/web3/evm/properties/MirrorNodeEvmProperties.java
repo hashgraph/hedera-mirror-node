@@ -19,13 +19,12 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -39,9 +38,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
-
-    @NotNull
-    private HederaChainId chainId = HederaChainId.TESTNET;
 
     @Getter
     @Positive
@@ -73,6 +69,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int maxBatchSizeMint = 10;
 
+    @Getter
+    @Min(1)
+    private int maxBatchSizeWipe = 10;
+
+    private int maxCustomFeesAllowed = 10;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
@@ -98,6 +100,24 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
 
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
+
+    @Getter
+    private boolean limitTokenAssociations = false;
+
+    public boolean shouldAutoRenewAccounts() {
+        return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
+    }
+
+    public boolean shouldAutoRenewContracts() {
+        return autoRenewTargetTypes.contains(EntityType.CONTRACT);
+    }
+
+    public boolean shouldAutoRenewSomeEntityType() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
@@ -120,7 +140,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return Bytes32.fromHexString(chainId.getChainId());
+        return network.getChainId();
     }
 
     @Override
@@ -138,25 +158,19 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return maxGasRefundPercentage;
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum HederaNetwork {
-        MAINNET(unhex("00")),
-        TESTNET(unhex("01")),
-        PREVIEWNET(unhex("02")),
-        OTHER(unhex("03"));
-
-        private final byte[] ledgerId;
+    public int maxCustomFeesAllowed() {
+        return maxCustomFeesAllowed;
     }
 
     @Getter
     @RequiredArgsConstructor
-    public enum HederaChainId {
-        MAINNET("0x0127"),
-        TESTNET("0x0128"),
-        PREVIEWNET("0x0129"),
-        OTHER("0x12A");
+    public enum HederaNetwork {
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127")),
+        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128")),
+        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129")),
+        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"));
 
-        private final String chainId;
+        private final byte[] ledgerId;
+        private final Bytes32 chainId;
     }
 }

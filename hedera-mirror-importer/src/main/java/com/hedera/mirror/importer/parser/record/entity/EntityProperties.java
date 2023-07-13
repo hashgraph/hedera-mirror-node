@@ -57,6 +57,8 @@ public class EntityProperties {
 
         private boolean syntheticContractLogs = true;
 
+        private boolean syntheticContractResults = false;
+
         private boolean systemFiles = true;
 
         private boolean tokens = true;
@@ -66,6 +68,8 @@ public class EntityProperties {
         private boolean topicMessageLookups = true;
 
         private boolean trackBalance = true;
+
+        private boolean trackNonce = true;
 
         private boolean transactionHash = false;
 
