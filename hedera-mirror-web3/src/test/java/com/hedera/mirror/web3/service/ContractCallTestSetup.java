@@ -141,6 +141,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
+    protected static final Address ETH_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 358, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
@@ -277,6 +278,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, ethAccount, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         exchangeRatesPersist();
@@ -379,7 +381,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.freezeStatus(freezeStatus)
                         .accountId(ethAccount)
                         .tokenId(tokenEntityId.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .balance(10L))
                 .persist();
     }
 
@@ -478,7 +481,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder
                 .nft()
-                .customize(n -> n.accountId(senderEntityId)
+                .customize(n -> n.accountId(spenderEntityId)
                         .createdTimestamp(1475067194949034022L)
                         .serialNumber(1)
                         .spender(spenderEntityId)
