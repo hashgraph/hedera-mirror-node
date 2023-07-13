@@ -66,9 +66,9 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
         // send the messages in two batches and wait 2 * polling interval between. Limit the first batch to
         // maxBufferSize messages so it definitely won't cause overflow with the SharedPollingTopicListener.
         // The wait also gives the subscriber threads chance to consume messages in slow environment.
-        Flux<TopicMessage> firstBatch = domainBuilderUtils.topicMessages(maxBufferSize, future);
+        Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(maxBufferSize, future);
         Flux<TopicMessage> secondBatch =
-                domainBuilderUtils.topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
+                domainBuilder.topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
 
         // the slow subscriber
         topicListener

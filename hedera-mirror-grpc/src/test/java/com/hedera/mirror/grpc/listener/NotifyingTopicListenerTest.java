@@ -36,20 +36,20 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     private static final String JSON =
             """
-            {
-              "@type":"TopicMessage",
-              "chunk_num":1,
-              "chunk_total":2,
-              "consensus_timestamp":1594401417000000000,
-              "message":"AQID",
-              "payer_account_id":4294968296,
-              "running_hash":"BAUG",
-              "running_hash_version":2,
-              "sequence_number":1,
-              "topic_id":1001,
-              "valid_start_timestamp":1594401416000000000
-            }""";
-    private static final Duration WAIT = Duration.ofSeconds(10L);
+                    {
+                      "@type":"TopicMessage",
+                      "chunk_num":1,
+                      "chunk_total":2,
+                      "consensus_timestamp":1594401417000000000,
+                      "message":"AQID",
+                      "payer_account_id":4294968296,
+                      "running_hash":"BAUG",
+                      "running_hash_version":2,
+                      "sequence_number":1,
+                      "topic_id":1001,
+                      "valid_start_timestamp":1594401416000000000
+                    }""";
+    private static final Duration WAIT = Duration.ofSeconds(1L);
     private static boolean INITIALIZED = false;
     private final NotifyingTopicListener topicListener;
     private final JdbcTemplate jdbcTemplate;
@@ -102,6 +102,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
                 .thenAwait(WAIT)
                 .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage)
                 .thenCancel()
                 .verify(WAIT);

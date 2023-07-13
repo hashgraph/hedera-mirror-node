@@ -21,7 +21,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.DomainBuilderUtils;
+import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.annotation.Resource;
 import java.time.Duration;
@@ -43,7 +43,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     private static final Duration WAIT = Duration.ofSeconds(10L);
 
     @Autowired
-    private DomainBuilderUtils domainBuilderUtils;
+    private ReactiveDomainBuilder domainBuilder;
 
     @Resource
     private PollingTopicMessageRetriever pollingTopicMessageRetriever;
@@ -74,7 +74,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void notEnabled(boolean throttled) {
         retrieverProperties.setEnabled(false);
-        domainBuilderUtils.topicMessage().block();
+        domainBuilder.topicMessage().block();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(TOPIC_ID)
@@ -109,7 +109,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void lessThanPageSize(boolean throttle) {
-        domainBuilderUtils.topicMessage().block();
+        domainBuilder.topicMessage().block();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(TOPIC_ID)
@@ -128,8 +128,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void equalPageSize(boolean throttle) {
         int maxPageSize = overrideMaxPageSize(throttle, 2);
 
-        domainBuilderUtils.topicMessage().block();
-        domainBuilderUtils.topicMessage().block();
+        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -151,7 +151,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void limitEqualPageSize(boolean throttle) {
         int maxPageSize = overrideMaxPageSize(throttle, 2);
 
-        domainBuilderUtils.topicMessages(4, Instant.now()).blockLast();
+        domainBuilder.topicMessages(4, Instant.now()).blockLast();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -174,9 +174,9 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void greaterThanPageSize(boolean throttle) {
         int maxPageSize = overrideMaxPageSize(throttle, 2);
 
-        domainBuilderUtils.topicMessage().block();
-        domainBuilderUtils.topicMessage().block();
-        domainBuilderUtils.topicMessage().block();
+        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -196,7 +196,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void startTimeBefore(boolean throttle) {
-        domainBuilderUtils.topicMessages(10, Instant.now()).blockLast();
+        domainBuilder.topicMessages(10, Instant.now()).blockLast();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(TOPIC_ID)
@@ -214,7 +214,9 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void startTimeEquals(boolean throttle) {
         Instant now = Instant.now();
-        domainBuilderUtils.topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now))).block();
+        domainBuilder
+                .topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now)))
+                .block();
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
@@ -230,7 +232,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void startTimeAfter(boolean throttle) {
         Instant now = Instant.now();
-        domainBuilderUtils.topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now) - 1L))
+        domainBuilder
+                .topicMessage(t -> t.consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now) - 1L))
                 .block();
         TopicMessageFilter filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
@@ -245,9 +248,15 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void topicId(boolean throttle) {
-        domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC))).block();
-        domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC))).block();
-        domainBuilderUtils.topicMessage(t -> t.topicId(EntityId.of(3L, EntityType.TOPIC))).block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)))
+                .block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)))
+                .block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(3L, EntityType.TOPIC)))
+                .block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -270,7 +279,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         retrieverProperties.setMaxPageSize(1);
         retrieverProperties.setTimeout(Duration.ofMillis(10));
 
-        domainBuilderUtils.topicMessages(10, Instant.now()).blockLast();
+        domainBuilder.topicMessages(10, Instant.now()).blockLast();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(TOPIC_ID)
@@ -292,8 +301,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         retrieverProperties.getUnthrottled().setMaxPolls(20);
 
         Instant now = Instant.now();
-        Flux<TopicMessage> firstBatch = domainBuilderUtils.topicMessages(5, now);
-        Flux<TopicMessage> secondBatch = domainBuilderUtils.topicMessages(5, now.plusNanos(5));
+        Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(5, now);
+        Flux<TopicMessage> secondBatch = domainBuilder.topicMessages(5, now.plusNanos(5));
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .topicId(TOPIC_ID)

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.grpc.domain;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -25,9 +24,6 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -37,8 +33,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -49,7 +43,7 @@ import reactor.core.publisher.Mono;
 @Named("grpcDomainBuilder")
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DomainBuilderUtils {
+public class ReactiveDomainBuilder {
 
     private final Instant now = Instant.now();
     private final EntityRepository entityRepository;
@@ -68,8 +62,11 @@ public class DomainBuilderUtils {
     }
 
     public Mono<Entity> entity(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
-        Entity entity = domainBuilder.entity().customize(e -> e.id(100L).type(EntityType.TOPIC))
-                .customize(customizer).get();
+        Entity entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(100L).type(EntityType.TOPIC))
+                .customize(customizer)
+                .get();
         return insert(entity).thenReturn(entity);
     }
 
@@ -86,10 +83,13 @@ public class DomainBuilderUtils {
      */
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
         long consensusTimestamp = InstantToLongConverter.INSTANCE.convert(now.plus(sequenceNumber, ChronoUnit.NANOS));
-        TopicMessage topicMessage = domainBuilder.topicMessage()
-                .customize(e -> e.consensusTimestamp(consensusTimestamp).sequenceNumber(++sequenceNumber)
+        TopicMessage topicMessage = domainBuilder
+                .topicMessage()
+                .customize(e -> e.consensusTimestamp(consensusTimestamp)
+                        .sequenceNumber(++sequenceNumber)
                         .topicId(EntityId.of(100L, EntityType.TOPIC)))
-                .customize(customizer).get();
+                .customize(customizer)
+                .get();
         return insert(topicMessage).thenReturn(topicMessage);
     }
 

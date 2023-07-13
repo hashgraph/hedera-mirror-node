@@ -39,8 +39,9 @@ import org.springframework.data.domain.Persistable;
 @JsonTypeName("TopicMessage")
 @NoArgsConstructor
 public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>, StreamMessage {
-     private static final Comparator<TopicMessage> COMPARATOR =
-             Comparator.nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber));
+
+    private static final Comparator<TopicMessage> COMPARATOR = Comparator.nullsFirst(
+            Comparator.comparing(TopicMessage::getTopicId).thenComparing(TopicMessage::getSequenceNumber));
 
     private Integer chunkNum;
 
@@ -84,5 +85,4 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     public int compareTo(TopicMessage other) {
         return COMPARATOR.compare(this, other);
     }
-
 }

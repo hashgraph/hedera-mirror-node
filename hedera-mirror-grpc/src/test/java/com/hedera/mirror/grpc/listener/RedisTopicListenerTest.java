@@ -40,6 +40,6 @@ class RedisTopicListenerTest extends AbstractSharedTopicListenerTest {
     }
 
     private String getTopic(TopicMessage topicMessage) {
-        return "topic." + topicMessage.getTopicId();
+        return "topic." + topicMessage.getTopicId().getId();
     }
 }
