@@ -1083,10 +1083,20 @@ const addContractStateChange = async (contractStateChangeInput) => {
 };
 
 const addCryptoAllowance = async (cryptoAllowanceInput) => {
-  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'timestamp_range'];
+  const insertFields = [
+    'amount',
+    'amount_granted',
+    'created_timestamp',
+    'owner',
+    'payer_account_id',
+    'spender',
+    'timestamp_range',
+  ];
 
   const cryptoAllowance = {
     amount: 0,
+    amount_granted: 0,
+    created_timestamp: 0,
     owner: 1000,
     payer_account_id: 101,
     spender: 2000,
@@ -1329,10 +1339,21 @@ const addTokenAccount = async (tokenAccount) => {
 };
 
 const addTokenAllowance = async (tokenAllowance) => {
-  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'token_id', 'timestamp_range'];
+  const insertFields = [
+    'amount',
+    'amount_granted',
+    'created_timestamp',
+    'owner',
+    'payer_account_id',
+    'spender',
+    'token_id',
+    'timestamp_range',
+  ];
 
   tokenAllowance = {
     amount: 0,
+    amount_granted: 0,
+    created_timestamp: 0,
     owner: 1000,
     payer_account_id: 1000,
     spender: 2000,
