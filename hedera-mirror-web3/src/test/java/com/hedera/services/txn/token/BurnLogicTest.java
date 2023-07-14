@@ -93,7 +93,7 @@ class BurnLogicTest {
     @Test
     void followsHappyPathForCommon() {
         // setup:
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
 
         givenValidTxnCtx();
         given(store.getToken(id.asEvmAddress(), OnMissing.THROW)).willReturn(token);
@@ -122,7 +122,7 @@ class BurnLogicTest {
         final var serials = List.of(1L, 2L);
         final var firstNftId = new NftId(id.shard(), id.realm(), id.num(), 1);
         final var secondNftId = new NftId(id.shard(), id.realm(), id.num(), 2);
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
 
         givenValidUniqueTxnCtx();
         given(token.getTreasury()).willReturn(treasury);

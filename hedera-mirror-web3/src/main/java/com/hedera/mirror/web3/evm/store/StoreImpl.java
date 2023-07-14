@@ -145,11 +145,7 @@ public class StoreImpl implements Store {
 
     @Override
     public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
-                        .getAccount()
-                        .getId()
-                        .num()
-                > 0;
+        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW).hasAssociation();
     }
 
     @Override
