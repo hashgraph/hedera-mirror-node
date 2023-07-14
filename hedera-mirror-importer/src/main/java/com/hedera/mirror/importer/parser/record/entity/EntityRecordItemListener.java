@@ -235,8 +235,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                     entityListener.onNonFeeTransfer(nonFeeTransfer);
                 }
 
+                // Emit allowance amount representing an approved transfer debit
                 if (entityProperties.getPersist().isTrackAllowance() && aa.getIsApproval()) {
-                    // Emit allowance amount representing approved transfer debit
                     var cryptoAllowance = CryptoAllowance.builder()
                             .amount(aa.getAmount())
                             .owner(entityId.getId())
@@ -373,7 +373,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
 
-            handleNegativeAccountAmounts(payerAccountId, tokenId, body, accountAmount, amount, tokenTransfer);
+            handleNegativeAccountAmounts(tokenId, body, accountAmount, amount, tokenTransfer);
             entityListener.onTokenTransfer(tokenTransfer);
 
             if (isDeletedTokenDissociate) {
@@ -449,7 +449,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void handleNegativeAccountAmounts(
-            EntityId payerAccountId,
             EntityId tokenId,
             TransactionBody body,
             AccountAmount accountAmount,

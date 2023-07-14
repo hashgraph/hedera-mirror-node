@@ -29,8 +29,7 @@ with min_timestamp as (select min(timestamp) as created_timestamp, owner, spende
              from min_timestamp mt
              where cah.owner = mt.owner and cah.spender = mt.spender)
 update crypto_allowance ca
-set amount            = ca.amount_granted,
-    created_timestamp = mt.created_timestamp
+set created_timestamp = mt.created_timestamp
 from min_timestamp mt
 where ca.owner = mt.owner
   and ca.spender = mt.spender;
@@ -62,8 +61,7 @@ with min_timestamp as (select min(timestamp) as created_timestamp, token_id, own
              from min_timestamp mt
              where tah.token_id = mt.token_id and tah.owner = mt.owner and tah.spender = mt.spender)
 update token_allowance ta
-set amount            = ta.amount_granted,
-    created_timestamp = mt.created_timestamp
+set created_timestamp = mt.created_timestamp
 from min_timestamp mt
 where ta.token_id = mt.token_id
   and ta.owner = mt.owner
@@ -78,8 +76,8 @@ with spent_allowance as (select coalesce(sum(ct.amount), 0) as amount, a.owner, 
                            and a.spender = ct.payer_account_id
                            and ct.consensus_timestamp >= lower(a.timestamp_range)
                          group by a.owner, a.spender)
-select a.amount + ca.amount_granted as amount_remaining, ca.*
-from spent_allowance a,
-     crypto_allowance ca
+update crypto_allowance ca
+set amount = a.amount + ca.amount_granted
+from spent_allowance a
 where a.owner = ca.owner
   and a.spender = ca.spender;
