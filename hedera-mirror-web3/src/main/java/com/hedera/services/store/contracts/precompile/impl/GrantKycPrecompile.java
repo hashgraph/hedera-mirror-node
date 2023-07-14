@@ -33,6 +33,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
@@ -49,6 +50,15 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This class is a modified copy of GrantKycPrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
+ *  4. Run method accepts Store argument in order to achieve stateless behaviour and returns {@link RunResult}
+ */
 public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     private static final Function GRANT_TOKEN_KYC_FUNCTION = new Function("grantTokenKyc(address,address)", INT);
     private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR = Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
