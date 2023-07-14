@@ -134,7 +134,7 @@ public class HederaTokenStore {
             if (validity == OK) {
                 final var token = get(tId);
 
-                final var newTokenRelationship = new TokenRelationship(token, account)
+                final var newTokenRelationship = new TokenRelationship(token, account, true)
                         .setFrozen(token.hasFreezeKey() && token.isFrozenByDefault())
                         .setKycGranted(!token.hasKycKey())
                         .setAutomaticAssociation(true);

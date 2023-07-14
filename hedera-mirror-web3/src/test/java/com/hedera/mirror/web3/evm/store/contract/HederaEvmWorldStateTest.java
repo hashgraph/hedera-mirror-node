@@ -208,7 +208,8 @@ class HederaEvmWorldStateTest {
                 0,
                 0,
                 0L,
-                false);
+                false,
+                null);
         store.updateAccount(accountModel);
         actualSubject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
