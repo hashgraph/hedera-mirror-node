@@ -709,7 +709,8 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
         hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
         max_fee_per_gas: '0x56',
         chain_id: [0x1, 0x2a],
-        nonce: 10
+        nonce: 10,
+        value: [0xa0]
       }
     ]);
     await integrationDomainOps.loadRecordFiles([
@@ -740,7 +741,7 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
           type: 2,
           recoveryId: 1,
-          value: 10
+          value: 'a0'
         },
         recordFile: {
           hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
@@ -779,7 +780,8 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
         hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
         max_fee_per_gas: '0x56',
         chain_id: [0x1, 0x2a],
-        nonce: 10
+        nonce: 10,
+        value: [0xa0]
       }
     ]);
     await integrationDomainOps.loadRecordFiles([
@@ -811,7 +813,7 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
           type: 2,
           recoveryId: 1,
-          value: 10
+          value: 'a0'
         },
         recordFile: {
           hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
@@ -876,14 +878,16 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
         max_fee_per_gas: '0x56',
         chain_id: [0x1, 0x2a],
         nonce: 10,
-        consensus_timestamp: '1688790010771950074'
+        consensus_timestamp: '1688790010771950074',
+        value: [0xa0]
       },
       {
         hash: '0x86ef8992c976d5c2dd19f185f5ccaf9b393e6123b8f001d504e7d350b5e38370',
         max_fee_per_gas: '0x57',
         chain_id: [0x1, 0x2a],
         nonce: 11,
-        consensus_timestamp: '1688790010771950075'
+        consensus_timestamp: '1688790010771950075',
+        value: [0xa0]
       }
     ]);
     await integrationDomainOps.loadRecordFiles([
@@ -918,7 +922,7 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
           type: 2,
           recoveryId: 1,
-          value: 10
+          value: 'a0'
         },
         recordFile: {
           hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
@@ -942,7 +946,7 @@ describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () =>
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
           type: 2,
           recoveryId: 1,
-          value: 10
+          value: 'a0'
         },
         recordFile: {
           hash: 'bcd83980fb2a4fa193997a8c774f04ddfb2a8d6b559b96344bb8820211e3d772d1f4c4e4fe3a0badac02010503052fcb',

@@ -237,7 +237,7 @@ class ContractService extends BaseService {
           ${EthereumTransaction.HASH}, ${EthereumTransaction.ACCESS_LIST}, ${EthereumTransaction.CHAIN_ID}, ${EthereumTransaction.GAS_PRICE},
           ${EthereumTransaction.MAX_FEE_PER_GAS}, ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, ${EthereumTransaction.NONCE},
           ${EthereumTransaction.SIGNATURE_R}, ${EthereumTransaction.SIGNATURE_S}, ${EthereumTransaction.TYPE},
-          ${EthereumTransaction.RECOVERY_ID}
+          ${EthereumTransaction.RECOVERY_ID}, ${EthereumTransaction.VALUE}
         from ${EthereumTransaction.tableName}
       ),
       ${RecordFile.tableName} as (
@@ -259,7 +259,7 @@ class ContractService extends BaseService {
             'signatureS', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)}, 'hex'),
             'type', ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
             'recoveryId', ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
-            'value', ${ContractResult.getFullName(ContractResult.AMOUNT)}
+            'value', encode(${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}, 'hex')
           ) as ${EthereumTransaction.tableName},
           json_build_object(
             'hash', ${RecordFile.getFullName(RecordFile.HASH)},

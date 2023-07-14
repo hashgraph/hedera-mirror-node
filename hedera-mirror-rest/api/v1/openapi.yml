@@ -1884,7 +1884,7 @@ components:
               example: "0x553f9311833391c0a3b2f9ed64540a89f2190a511986cd94889f1c0cf7fa63e898b1c6730f14a61755d1fb4ca05fb073"
               type: string
             block_number:
-              description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+              description: The block height calculated as the number of record files starting from zero since network start.
               example: 10
               format: int64
               type: integer
@@ -2028,7 +2028,7 @@ components:
           nullable: true
           type: string
         block_number:
-          description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+          description: The block height calculated as the number of record files starting from zero since network start.
           example: 10
           format: int64
           nullable: true
@@ -2129,6 +2129,12 @@ components:
           $ref: "#/components/schemas/Timestamp"
         to:
           $ref: "#/components/schemas/EvmAddressNullable"
+        transaction_index:
+          description: The position of the transaction in the block
+          nullable: true
+          format: int64
+          type: integer
+          example: 1
         type:
           description: The type of the wrapped ethereum transaction, 0 (Pre-Eip1559) or 2 (Post-Eip1559)
           nullable: true
@@ -2165,7 +2171,7 @@ components:
               nullable: true
               type: string
             block_number:
-              description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+              description: The block height calculated as the number of record files starting from zero since network start.
               example: 10
               format: int64
               nullable: true
