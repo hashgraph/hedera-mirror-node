@@ -21,6 +21,7 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -116,8 +117,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, Store store, Timestamp at) {
-        return feeGiven(accessor, payerKey, store, usagePrices.activePrices(accessor), exchange.rate(at), true);
+    public FeeObject computeFee(
+            TxnAccessor accessor,
+            JKey payerKey,
+            Store store,
+            Timestamp at,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
+        return feeGiven(
+                accessor,
+                payerKey,
+                store,
+                usagePrices.activePrices(accessor),
+                exchange.rate(at),
+                true,
+                mirrorEvmContractAliases);
     }
 
     private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
@@ -132,13 +145,16 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final Store store,
             final Map<SubType, FeeData> prices,
             final ExchangeRate rate,
-            final boolean inHandle) {
+            final boolean inHandle,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
         final var function = accessor.getFunction();
         if (pricedUsageCalculator.supports(function)) {
             final var applicablePrices = prices.get(accessor.getSubType());
             return inHandle
-                    ? pricedUsageCalculator.inHandleFees(applicablePrices, rate)
-                    : pricedUsageCalculator.extraHandleFees(applicablePrices, rate);
+                    ? pricedUsageCalculator.inHandleFees(
+                            accessor, applicablePrices, rate, payerKey, store, mirrorEvmContractAliases)
+                    : pricedUsageCalculator.extraHandleFees(
+                            accessor, applicablePrices, rate, payerKey, store, mirrorEvmContractAliases);
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);

@@ -138,7 +138,8 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
         given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
+        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at), eq(aliasManager)))
+                .willReturn(fees);
 
         final var input = wellKnownChange(evmAddressAlias);
 
@@ -163,7 +164,8 @@ class AutoCreationLogicTest {
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
 
         given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at))).willReturn(fees);
+        given(feeCalculator.computeFee(any(), any(), eq(store), eq(at), eq(aliasManager)))
+                .willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
                 .willReturn(syntheticEDAliasCreation);
