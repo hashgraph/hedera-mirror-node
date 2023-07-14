@@ -140,13 +140,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
         } else {
+            final var nominalOwnerId = ownerId != null ? ownerId : Id.DEFAULT;
             // Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
             // translate this approveAllowance into a deleteAllowance
             if (isNftApprovalRevocation(approveOp)) {
-                final var nominalOwnerId = ownerId != null ? ownerId : Id.DEFAULT;
                 transactionBody = syntheticTxnFactory.createDeleteAllowance(approveOp, nominalOwnerId);
             } else {
-                transactionBody = syntheticTxnFactory.createNonfungibleApproval(approveOp, ownerId, operatorId);
+                transactionBody = syntheticTxnFactory.createNonfungibleApproval(approveOp, nominalOwnerId, operatorId);
             }
         }
 
@@ -159,59 +159,68 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
         final var accountAccessor = updater.getAccountAccessor();
+        final var senderAddress = frame.getSenderAddress();
 
-        // We need to get all these fields from the transactionBody somehow :D
-        boolean isFungible = false;
-        AccountID ownerId;
-        AccountID operatorId;
-        // The spender id is not set in createDeleteAllowance, this might be a problem
-        AccountID spenderAddress = null;
+        // fields needed to be extracted from transactionBody
+        boolean isFungible;
+        Id ownerId;
+        Id operatorId;
+        AccountID spenderAddress = AccountID.getDefaultInstance();
         TokenID tokenId;
         long amount = 0;
         long serialNumber = 0;
-        final var senderAddress = frame.getSenderAddress();
 
+        // get bodies only one can be initialized
+        final var approveAllowanceBody = transactionBody.getCryptoApproveAllowance();
         final var deleteAllowanceBody = transactionBody.getCryptoDeleteAllowance();
         final var isNftApprovalRevocation = deleteAllowanceBody.isInitialized();
+        isFungible = approveAllowanceBody.getTokenAllowances(0).isInitialized();
 
-        if (!isNftApprovalRevocation) {
-            final var approveAllowanceBody = transactionBody.getCryptoApproveAllowance();
-            isFungible = approveAllowanceBody.getTokenAllowances(0).isInitialized();
+        // extract needed fields from the transactionBody
+        if (isNftApprovalRevocation) { // when revoking nft allowance
+            final var deleteNftAllowanceBody = deleteAllowanceBody.getNftAllowances(0);
+            ownerId = Id.fromGrpcAccount(deleteNftAllowanceBody.getOwner());
+            operatorId = Id.fromGrpcAccount(deleteNftAllowanceBody.getOwner());
+            tokenId = deleteNftAllowanceBody.getTokenId();
+            serialNumber = deleteNftAllowanceBody.getSerialNumbers(0);
+
+        } else if (isFungible) { // when setting allowance for fungible token
             final var tokenAllowances = approveAllowanceBody.getTokenAllowances(0);
+            ownerId = Id.fromGrpcAccount(tokenAllowances.getOwner());
+            operatorId = Id.fromGrpcAccount(tokenAllowances.getOwner());
+            spenderAddress = tokenAllowances.getSpender();
+            tokenId = tokenAllowances.getTokenId();
+            amount = tokenAllowances.getAmount();
+        } else { // when setting allowance for non-fungible token
             final var nftAllowances = approveAllowanceBody.getNftAllowances(0);
-            ownerId = tokenAllowances.isInitialized() ? tokenAllowances.getOwner() : nftAllowances.getOwner();
-            operatorId =
-                    tokenAllowances.isInitialized() ? tokenAllowances.getOwner() : nftAllowances.getDelegatingSpender();
-            if (operatorId == null) operatorId = nftAllowances.getOwner();
-            spenderAddress =
-                    tokenAllowances.isInitialized() ? tokenAllowances.getSpender() : nftAllowances.getSpender();
-            tokenId = tokenAllowances.isInitialized() ? tokenAllowances.getTokenId() : nftAllowances.getTokenId();
-            amount = tokenAllowances.isInitialized() ? tokenAllowances.getAmount() : 0;
-            serialNumber = tokenAllowances.isInitialized() ? 0 : nftAllowances.getSerialNumbers(0);
-        } else {
-            ownerId = deleteAllowanceBody.getNftAllowances(0).getOwner();
-            operatorId = deleteAllowanceBody.getNftAllowances(0).getOwner();
-            tokenId = deleteAllowanceBody.getNftAllowances(0).getTokenId();
-            serialNumber = deleteAllowanceBody.getNftAllowances(0).getSerialNumbers(0);
+            ownerId = nftAllowances.getDelegatingSpender().isInitialized()
+                    ? Id.fromGrpcAccount(nftAllowances.getDelegatingSpender())
+                    : Id.fromGrpcAccount(nftAllowances.getOwner());
+            operatorId = Id.fromGrpcAccount(nftAllowances.getDelegatingSpender());
+            spenderAddress = nftAllowances.getSpender();
+            tokenId = nftAllowances.getTokenId();
+            serialNumber = nftAllowances.getSerialNumbers(0);
         }
 
-        validateTrueOrRevert(isFungible || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-        final var grpcOperatorId = Objects.requireNonNull(operatorId);
+        validateTrueOrRevert(
+                isFungible || !accountIdFromEvmAddress(senderAddress).equals(ownerId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        Objects.requireNonNull(operatorId);
         //  Per the ERC-721 spec, "Throws unless `msg.sender` is the current NFT owner, or
         //  an authorized operator of the current owner"
         if (isFungible) {
             final var isApproved = operatorId.equals(ownerId)
-                    || store.hasApprovedForAll(asTypedEvmAddress(ownerId), grpcOperatorId, tokenId);
+                    || store.hasApprovedForAll(ownerId.asEvmAddress(), operatorId.asGrpcAccount(), tokenId);
             validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
         }
 
-        final var payerAccount = store.getAccount(asTypedEvmAddress(grpcOperatorId), OnMissing.THROW);
+        final var payerAccount = store.getAccount(operatorId.asEvmAddress(), OnMissing.THROW);
         if (isNftApprovalRevocation) {
             final var revocationOp = transactionBody.getCryptoDeleteAllowance();
             final var revocationWrapper = revocationOp.getNftAllowancesList();
             final var status = deleteAllowanceChecks.deleteAllowancesValidation(revocationWrapper, payerAccount, store);
             validateTrueOrRevert(status == OK, status);
-            deleteAllowanceLogic.deleteAllowance(store, new ArrayList<>(), revocationWrapper, grpcOperatorId);
+            deleteAllowanceLogic.deleteAllowance(
+                    store, new ArrayList<>(), revocationWrapper, operatorId.asGrpcAccount());
         } else {
             final var status = approveAllowanceChecks.allowancesValidation(
                     transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
@@ -228,7 +237,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                         transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
                         transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                         transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-                        grpcOperatorId);
+                        operatorId.asGrpcAccount());
             } catch (final InvalidTransactionException e) {
                 throw new InvalidTransactionException(e.getResponseCode(), true);
             }
@@ -238,9 +247,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (isFungible) {
             frame.addLog(getLogForFungibleAdjustAllowance(
                     tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), amount, accountAccessor));
-        } else {
+        } else if (!isNftApprovalRevocation) {
             frame.addLog(getLogForNftAdjustAllowance(
                     tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), serialNumber, accountAccessor));
+        } else {
+            frame.addLog(getLogForNftAllowanceRevocation(tokenAddress, senderAddress, serialNumber, accountAccessor));
         }
         return new ApproveResult(tokenId, isFungible);
     }
@@ -339,6 +350,20 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
                 .forIndexedArgument(accountAccessor.canonicalAddress(spenderAddress))
+                .forIndexedArgument(serialNumber)
+                .build();
+    }
+
+    private Log getLogForNftAllowanceRevocation(
+            final Address logger,
+            final Address senderAddress,
+            final long serialNumber,
+            final AccountAccessor accountAccessor) {
+        return EncodingFacade.LogBuilder.logBuilder()
+                .forLogger(logger)
+                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
+                .forIndexedArgument(AccountID.getDefaultInstance())
                 .forIndexedArgument(serialNumber)
                 .build();
     }

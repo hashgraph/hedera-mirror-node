@@ -47,7 +47,6 @@ public class DeleteAllowanceLogic {
             final List<UniqueToken> nftsTouched,
             List<NftRemoveAllowance> nftAllowancesList,
             final AccountID payer) {
-        nftsTouched.clear();
 
         // --- Load models ---
         final Id payerId = fromGrpcAccount(payer);
