@@ -16,6 +16,13 @@
 
 package com.hedera.services.txn.token;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
@@ -30,12 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class RevokeKycLogicTest {
@@ -68,12 +69,15 @@ public class RevokeKycLogicTest {
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
+        TokenRelationship tokenRelationshipResult = mock(TokenRelationship.class);
+        given(tokenRelationship.setKycGranted(false)).willReturn(tokenRelationshipResult);
+
         // when:
         revokeKycLogic.revokeKyc(idOfToken, idOfAccount, store);
 
         // then:
         verify(tokenRelationship).setKycGranted(false);
-        verify(store).updateTokenRelationship(tokenRelationship);
+        verify(store).updateTokenRelationship(tokenRelationshipResult);
     }
 
     @Test
@@ -106,15 +110,13 @@ public class RevokeKycLogicTest {
 
     private void givenMissingTokenTxnCtx() {
         tokenRevokeKycBody = TransactionBody.newBuilder()
-                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
-                        .setAccount(accountID))
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder().setAccount(accountID))
                 .build();
     }
 
     private void givenMissingAccountTxnCtx() {
         tokenRevokeKycBody = TransactionBody.newBuilder()
-                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
-                        .setToken(tokenID))
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder().setToken(tokenID))
                 .build();
     }
 
@@ -125,5 +127,4 @@ public class RevokeKycLogicTest {
                         .setToken(tokenID))
                 .build();
     }
-
 }

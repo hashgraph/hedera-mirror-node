@@ -16,6 +16,8 @@
 
 package com.hedera.services.txn.token;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
@@ -24,13 +26,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 /**
  * Copied Logic type from hedera-services.
  * <p>
  * Differences with the original:
- * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 1. Introduces {@link Store} interface for state abstraction,
+ *    passing an extra argument for {@link Store} to ensure statelessness
  * 2. Used tokenRelationship.setKycGranted instead of tokenRelationship.changeKycState (like in services)
  * 3. Used store.updateTokenRelationship(tokenRelationship) instead of
  *    tokenStore.commitTokenRelationships(List.of(tokenRelationship)) (like in services)
@@ -44,11 +45,11 @@ public class RevokeKycLogic {
         final var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        tokenRelationship.setKycGranted(false);
+        final var tokenRelationshipResult = tokenRelationship.setKycGranted(false);
 
         /* --- Persist the updated models --- */
-        store.updateTokenRelationship(tokenRelationship);
-        return tokenRelationship;
+        store.updateTokenRelationship(tokenRelationshipResult);
+        return tokenRelationshipResult;
     }
 
     public ResponseCodeEnum validate(final TransactionBody txnBody) {
@@ -64,5 +65,4 @@ public class RevokeKycLogic {
 
         return OK;
     }
-
 }
