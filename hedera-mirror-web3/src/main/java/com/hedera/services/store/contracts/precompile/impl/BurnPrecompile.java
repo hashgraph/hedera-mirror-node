@@ -68,7 +68,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final BurnLogic burnLogic;
 
     public BurnPrecompile(
@@ -78,7 +77,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final BurnLogic burnLogic) {
         super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.burnLogic = burnLogic;
     }
 

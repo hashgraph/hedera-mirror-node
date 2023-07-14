@@ -239,9 +239,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                 }
                 break;
-            case AbiConstants.ABI_ID_APPROVE:
-            case AbiConstants.ABI_ID_APPROVE_NFT:
-            case AbiConstants.ABI_ID_ERC_APPROVE:
+            case AbiConstants.ABI_ID_APPROVE, AbiConstants.ABI_ID_APPROVE_NFT, AbiConstants.ABI_ID_ERC_APPROVE:
                 try {
                     target = DescriptorUtils.getRedirectTarget(input);
                 } catch (final Exception e) {

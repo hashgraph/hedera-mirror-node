@@ -153,6 +153,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         return transactionBody;
     }
 
+    @SuppressWarnings("java:S3776")
     @Override
     public RunResult run(final MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
@@ -203,7 +204,10 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         }
 
         validateTrueOrRevert(
-                isFungible || !accountIdFromEvmAddress(senderAddress).equals(ownerId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                isFungible
+                        || !Id.fromGrpcAccount(accountIdFromEvmAddress(senderAddress))
+                                .equals(ownerId),
+                INVALID_TOKEN_NFT_SERIAL_NUMBER);
         Objects.requireNonNull(operatorId);
         //  Per the ERC-721 spec, "Throws unless `msg.sender` is the current NFT owner, or
         //  an authorized operator of the current owner"
