@@ -82,6 +82,9 @@ import org.hyperledger.besu.evm.log.Log;
  *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
  *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
  *  4. Using {@link Id} instead of EntityId as types for the owner and operator
+ *  5. All the necessary fields used in run method are extracted from the txn body
+ *  6. Added getLogForNftAllowanceRevocation because we are not
+ *     setting the spender address in the txn body when revoking nft allowance
  */
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private static final Function ERC_TOKEN_APPROVE_FUNCTION = new Function("approve(address,uint256)", BOOL);
@@ -123,7 +126,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         TokenID tokenId = null;
         Id ownerId = null;
         boolean isFungible = true;
-        Address senderAddress = null;
+        Address senderAddress = Address.ZERO;
         Builder transactionBody;
 
         if (bodyParams instanceof ApproveParams approveParams) {
