@@ -40,6 +40,11 @@ spec:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_DOWNLOADER_THREADS: "35"
+      image:
+        registry: docker.io
+        repository: jesseswirldslabs
+        tag: 0.84.0-SNAPSHOT
+        pullPolicy: Always
       resources:
         limits:
           cpu: 3000m
