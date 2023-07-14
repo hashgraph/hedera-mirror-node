@@ -113,7 +113,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
     Optional<Long> getEndStakePeriod();
 
     @Modifying
-    @Query(value = "lock table entity_history in share row exclusive mode nowait", nativeQuery = true)
+    @Query(value = "lock table entity_stake in share row exclusive mode nowait", nativeQuery = true)
     @Transactional
     void lockFromConcurrentUpdates();
 
