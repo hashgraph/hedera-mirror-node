@@ -18,8 +18,12 @@ package com.hedera.mirror.grpc.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.hedera.mirror.common.converter.EntityIdDeserializer;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.DbProperties;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import io.micrometer.observation.ObservationRegistry;
 import io.vertx.core.Vertx;
@@ -49,7 +53,15 @@ public class NotifyingTopicListener extends SharedTopicListener {
             DbProperties dbProperties, ListenerProperties listenerProperties, ObservationRegistry observationRegistry) {
         super(listenerProperties);
         this.dbProperties = dbProperties;
+
+        // use EntityIdDeserializer/EntityIdSerializer for EntityIds (e.g. payer_account_id)
+        var module = new SimpleModule();
+        module.addDeserializer(EntityId.class, EntityIdDeserializer.INSTANCE);
+        module.addSerializer(EntityIdSerializer.INSTANCE);
+
         objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        objectMapper.registerModule(module);
+
         channel = Mono.defer(this::createChannel).cache();
         Duration interval = listenerProperties.getInterval();
         topicMessages = Flux.defer(this::listen)
