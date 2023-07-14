@@ -429,9 +429,11 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         }));
         other.start();
 
-        while (!locked.get()) {
+        while (true) {
             // busy wait until the table lock is acquired in other thread
-            Thread.sleep(100);
+            if (locked.get()) {
+                break;
+            }
         }
 
         // when, then
