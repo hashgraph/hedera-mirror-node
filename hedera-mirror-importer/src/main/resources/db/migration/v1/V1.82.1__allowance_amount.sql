@@ -2,20 +2,21 @@
 -- HIP-336 Track remaining crypto and fungible token allowances
 -------------------
 
--- update crypto_allowance
+-- Alter crypto_allowance
 alter table if exists crypto_allowance
     rename column amount to amount_granted;
 alter table if exists crypto_allowance
     add column if not exists amount            bigint not null default 0,
     add column if not exists created_timestamp bigint not null default 0;
 
--- update crypto_allowance_history
+-- Alter crypto_allowance_history
 alter table if exists crypto_allowance_history
     rename column amount to amount_granted;
 alter table if exists crypto_allowance_history
     add column if not exists amount            bigint not null default 0,
     add column if not exists created_timestamp bigint not null default 0;
 
+-- Backfill crypto_allowance.created_timestamp
 with min_timestamp as (select min(timestamp) as created_timestamp, owner, spender
                        from (select lower(timestamp_range) as timestamp, owner, spender
                              from crypto_allowance
@@ -34,50 +35,72 @@ from min_timestamp mt
 where ca.owner = mt.owner
   and ca.spender = mt.spender;
 
--- update token_allowance
+-- Backfill crypto_allowance.amount
+with spent_allowance as (select coalesce(sum(ct.amount), 0) as amount, ca.owner, ca.spender
+                         from crypto_transfer ct,
+                              crypto_allowance ca
+                         where ca.amount_granted > 0
+                           and ct.is_approval = true
+                           and ct.amount < 0
+                           and ct.entity_id = ca.owner
+                           and ct.payer_account_id = ca.spender
+                           and ct.consensus_timestamp >= lower(ca.timestamp_range)
+                         group by ca.owner, ca.spender)
+update crypto_allowance ca
+set amount = ca.amount_granted + a.amount
+from spent_allowance a
+where a.owner = ca.owner
+  and a.spender = ca.spender;
+
+-- Alter token_allowance
 alter table if exists token_allowance
     rename column amount to amount_granted;
 alter table if exists token_allowance
     add column if not exists amount            bigint not null default 0,
     add column if not exists created_timestamp bigint not null default 0;
 
--- update token_allowance_history
+-- Alter token_allowance_history
 alter table if exists token_allowance_history
     rename column amount to amount_granted;
 alter table if exists token_allowance_history
     add column if not exists amount            bigint not null default 0,
     add column if not exists created_timestamp bigint not null default 0;
 
-with min_timestamp as (select min(timestamp) as created_timestamp, token_id, owner, spender
-                       from (select lower(timestamp_range) as timestamp, token_id, owner, spender
+-- Backfill token_allowance.created_timestamp
+with min_timestamp as (select min(timestamp) as created_timestamp, owner, spender, token_id
+                       from (select lower(timestamp_range) as timestamp, owner, spender, token_id
                              from token_allowance
                              union all
-                             select lower(timestamp_range) as timestamp, token_id, owner, spender
+                             select lower(timestamp_range) as timestamp, owner, spender, token_id
                              from token_allowance_history) ta
-                       group by token_id, owner, spender),
+                       group by owner, spender, token_id),
      update_history as (
          update token_allowance_history tah
              set amount = tah.amount_granted, created_timestamp = mt.created_timestamp
              from min_timestamp mt
-             where tah.token_id = mt.token_id and tah.owner = mt.owner and tah.spender = mt.spender)
+             where tah.owner = mt.owner and tah.spender = mt.spender and tah.token_id = mt.token_id)
 update token_allowance ta
 set created_timestamp = mt.created_timestamp
 from min_timestamp mt
-where ta.token_id = mt.token_id
-  and ta.owner = mt.owner
-  and ta.spender = mt.spender;
+where ta.owner = mt.owner
+  and ta.spender = mt.spender
+  and ta.token_id = mt.token_id;
 
-with spent_allowance as (select coalesce(sum(ct.amount), 0) as amount, a.owner, a.spender
-                         from crypto_transfer ct,
-                              crypto_allowance a
-                         where ct.is_approval = true
-                           and a.amount_granted > 0
-                           and a.owner = ct.entity_id
-                           and a.spender = ct.payer_account_id
-                           and ct.consensus_timestamp >= lower(a.timestamp_range)
-                         group by a.owner, a.spender)
-update crypto_allowance ca
-set amount = a.amount + ca.amount_granted
+-- Backfill token_allowance.amount
+with spent_allowance as (select coalesce(sum(tt.amount), 0) as amount, ta.owner, ta.spender, ta.token_id
+                         from token_transfer tt,
+                              token_allowance ta
+                         where ta.amount_granted > 0
+                           and tt.is_approval = true
+                           and tt.amount < 0
+                           and tt.account_id = ta.owner
+                           and tt.payer_account_id = ta.spender
+                           and tt.token_id = ta.token_id
+                           and tt.consensus_timestamp >= lower(ta.timestamp_range)
+                         group by ta.owner, ta.spender, ta.token_id)
+update token_allowance ta
+set amount = ta.amount_granted + a.amount
 from spent_allowance a
-where a.owner = ca.owner
-  and a.spender = ca.spender;
+where ta.owner = a.owner
+  and ta.spender = a.spender
+  and ta.token_id = a.token_id;
