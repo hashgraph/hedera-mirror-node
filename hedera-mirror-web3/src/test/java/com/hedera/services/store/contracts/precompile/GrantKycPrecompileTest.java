@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -84,6 +85,9 @@ public class GrantKycPrecompileTest {
 
     @Mock
     private MirrorNodeEvmProperties evmProperties;
+
+    @Mock
+    private MirrorEvmContractAliases contractAliases;
 
     @Mock
     private SyntheticTxnFactory syntheticTxnFactory;
@@ -156,13 +160,14 @@ public class GrantKycPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -177,7 +182,7 @@ public class GrantKycPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
@@ -186,8 +191,8 @@ public class GrantKycPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        final var result = subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

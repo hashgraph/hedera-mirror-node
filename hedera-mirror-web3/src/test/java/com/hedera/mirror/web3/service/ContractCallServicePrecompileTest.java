@@ -330,7 +330,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         WIPE_TOKEN(
                 "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ACCOUNT_ADDRESS, 1L}),
         WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
         GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS});
 
         private final String name;

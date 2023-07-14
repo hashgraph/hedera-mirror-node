@@ -283,11 +283,6 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    GrantKycLogic grantKycLogic() {
-        return new GrantKycLogic();
-    }
-
-    @Bean
     BurnPrecompile burnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
@@ -325,14 +320,6 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    GrantKycPrecompile grantKycPrecompile(
-            final GrantKycLogic grantKycLogic,
-            final SyntheticTxnFactory syntheticTxnFactory,
-            final PrecompilePricingUtils pricingUtils) {
-        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
-    }
-
-    @Bean
     WipeFungiblePrecompile wipeFungiblePrecompile(
             PrecompilePricingUtils precompilePricingUtils,
             SyntheticTxnFactory syntheticTxnFactory,
@@ -346,5 +333,18 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+    }
+
+    @Bean
+    GrantKycLogic grantKycLogic() {
+        return new GrantKycLogic();
+    }
+
+    @Bean
+    GrantKycPrecompile grantKycPrecompile(
+            final GrantKycLogic grantKycLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
     }
 }
