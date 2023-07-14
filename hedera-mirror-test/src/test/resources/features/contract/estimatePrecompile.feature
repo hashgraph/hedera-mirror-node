@@ -29,26 +29,27 @@ Feature: EstimateGas Contract Base Coverage Feature
 #    Then I call estimateGas with transferNFT function
     Then I create 2 more fungible tokens
     Then I create 2 more NFTs
-#    Then I call estimateGas with associateTokens function for fungible tokens
-#    Then I call estimateGas with associateTokens function for NFTs
-#    Then I call estimateGas with dissociateTokens function for fungible tokens
-#    Then I call estimateGas with dissociateTokens function for NFTs
+    Then I call estimateGas with associateTokens function for fungible tokens
+    Then I call estimateGas with associateTokens function for NFTs
+    Then I call estimateGas with dissociateTokens function for fungible tokens
+    Then I call estimateGas with dissociateTokens function for NFTs
 #    Then I call estimateGas with transferTokens function for fungible tokens
 #    Then I call estimateGas with transferTokens function for nfts
 #    Then I call estimateGas with cryptoTransfer function for hbars
 #    Then I call estimateGas with cryptoTransfer function for nft
 #    Then I call estimateGas with cryptoTransfer function for fungible tokens
-#    Then I call estimateGas with mintToken function for fungible token
-#    Then I call estimateGas with mintToken function for NFT
-#    Then I call estimateGas with burnToken function for fungible token
-#    Then I call estimateGas with burnToken function for NFT
+    Then I call estimateGas with mintToken function for fungible token
+    #Then I call estimateGas with mintToken function for NFT
+    Then I call estimateGas with burnToken function for fungible token
+    #Then I call estimateGas with burnToken function for NFT
 #    Then I call estimateGas with CreateFungibleToken function
 #    Then I call estimateGas with CreateNFT function
 #    Then I call estimateGas with CreateFungibleToken function with custom fees
 #    Then I call estimateGas with CreateNFT function with custom fees
-#    Then I call estimateGas with WipeTokenAccount function without KYC
-#    Then I call estimateGas with WipeTokenAccount function
-#    Then I call estimateGas with WipeNFTAccount function
+    Then I call estimateGas with WipeTokenAccount function
+    Then I call estimateGas with WipeTokenAccount function with invalid amount
+    Then I call estimateGas with WipeNFTAccount function
+    Then I call estimateGas with WipeNFTAccount function with invalid serial number
 #    Then I call estimateGas with GrantKYC function for fungible token
 #    Then I call estimateGas with GrantKYC function for NFT
 #    Then I call estimateGas with GrantKYC function on a token with KYC

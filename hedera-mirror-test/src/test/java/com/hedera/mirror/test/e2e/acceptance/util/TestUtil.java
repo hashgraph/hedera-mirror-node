@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.util;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -23,6 +24,11 @@ import com.hedera.hashgraph.sdk.proto.Key;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import com.esaulpaugh.headlong.abi.Tuple;
+
+import java.util.List;
+
 
 @UtilityClass
 public class TestUtil {
@@ -60,5 +66,56 @@ public class TestUtil {
             output.append((char) Integer.parseInt(str, 16));
         }
         return output.toString();
+    }
+
+    public static Address asHeadlongAddress(final String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Tuple accountAmount(final String account, final Long amount, final boolean isApproval) {
+        return Tuple.of(asHeadlongAddress(account), amount, isApproval);
+    }
+
+    public static Address[] asHeadlongAddressArray(final List<String> addressStrings) {
+        return addressStrings.stream()
+                .map(addr -> asHeadlongAddress(addr))
+                .toArray(Address[]::new);
+    }
+
+    public static long[] asLongArray(final List<Long> longList) {
+        return longList.stream()
+                .mapToLong(Long::longValue)
+                .toArray();
+    }
+
+    public static class TokenTransferListBuilder {
+        private Tuple tokenTransferList;
+        private Address token;
+
+        public TokenTransferListBuilder forToken(final String token) {
+            this.token = asHeadlongAddress(token);
+            return this;
+        }
+
+        public TokenTransferListBuilder forTokenAddress(final Address token) {
+            this.token = token;
+            return this;
+        }
+
+        public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[]{});
+            return this;
+        }
+
+        public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+            this.tokenTransferList = Tuple.of(token, new Tuple[]{}, nftTransfers);
+            return this;
+        }
+
+        public Tuple build() {
+            return tokenTransferList;
+        }
     }
 }
