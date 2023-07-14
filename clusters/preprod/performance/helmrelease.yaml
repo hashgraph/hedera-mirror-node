@@ -42,7 +42,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_DOWNLOADER_THREADS: "35"
       image:
         registry: docker.io
-        repository: jesseswirldslabs
+        repository: jesseswirldslabs/hedera-mirror-importer
         tag: 0.84.0-SNAPSHOT
         pullPolicy: Always
       resources:
