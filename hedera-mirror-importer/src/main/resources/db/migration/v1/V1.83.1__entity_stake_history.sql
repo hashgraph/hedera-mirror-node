@@ -43,3 +43,11 @@ create index if not exists entity_stake_history__id_lower_timestamp
   on entity_stake_history (id, lower(timestamp_range));
 create index if not exists entity_stake_history__timestamp_range
   on entity_stake_history using gist (timestamp_range);
+
+begin;
+alter type entity_type add value if not exists 'UNKNOWN' before 'ACCOUNT';
+-- commit the change so the new enum value can be used
+commit;
+
+alter table if exists entity alter column type set default 'UNKNOWN';
+alter table if exists entity_history alter column type set default 'UNKNOWN';

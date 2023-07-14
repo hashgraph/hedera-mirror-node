@@ -56,6 +56,7 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
 
                 transactionOperations.executeWithoutResult(s -> {
                     var stopwatch = Stopwatch.createStarted();
+                    entityStakeRepository.lockFromConcurrentUpdates();
                     entityStakeRepository.createEntityStateStart();
                     log.info("Created entity_state_start in {}", stopwatch);
                     entityStakeRepository.updateEntityStake();
@@ -66,6 +67,9 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
                             stopwatch);
                 });
             }
+        } catch (Exception e) {
+            log.error("Failed to update entity stake", e);
+            throw e;
         } finally {
             running.set(false);
         }

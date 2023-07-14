@@ -61,6 +61,7 @@ class EntityStakeCalculatorImplTest {
         var inorder = inOrder(entityStakeRepository);
         entityStakeCalculator.calculate();
         inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
         inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
         inorder.verify(entityStakeRepository).updated();
@@ -79,6 +80,7 @@ class EntityStakeCalculatorImplTest {
         when(entityStakeRepository.updated()).thenReturn(true);
         entityStakeCalculator.calculate();
         verify(entityStakeRepository).updated();
+        verify(entityStakeRepository, never()).lockFromConcurrentUpdates();
         verify(entityStakeRepository, never()).createEntityStateStart();
         verify(entityStakeRepository, never()).updateEntityStake();
     }
@@ -97,6 +99,7 @@ class EntityStakeCalculatorImplTest {
         when(entityStakeRepository.updated()).thenReturn(false, true);
         entityStakeCalculator.calculate();
         inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
         inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
         inorder.verify(entityStakeRepository).updated();
@@ -134,6 +137,7 @@ class EntityStakeCalculatorImplTest {
                 .until(() -> task1.isDone() && task2.isDone());
         var inorder = inOrder(entityStakeRepository);
         inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
         inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
         inorder.verify(entityStakeRepository).updated();

@@ -21,6 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -36,8 +37,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -403,6 +408,38 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .customize(es -> es.endStakePeriod(endStakePeriod).id(800L))
                 .persist();
         assertThat(entityStakeRepository.getEndStakePeriod()).contains(endStakePeriod);
+    }
+
+    @SneakyThrows
+    @Test
+    @Timeout(5)
+    void lockFormConcurrentUpdates() {
+        // given
+        var locked = new AtomicBoolean(false);
+        var semaphore = new Semaphore(0);
+        var other = new Thread(() -> transactionOperations.executeWithoutResult(s -> {
+            entityStakeRepository.lockFromConcurrentUpdates();
+            locked.set(true);
+            try {
+                // hold the table lock
+                semaphore.acquire();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+        other.start();
+
+        while (!locked.get()) {
+            // busy wait until the table lock is acquired in other thread
+            Thread.sleep(100);
+        }
+
+        // when, then
+        assertThatThrownBy(entityStakeRepository::lockFromConcurrentUpdates).isInstanceOf(Exception.class);
+
+        // cleanup
+        semaphore.release();
+        other.join();
     }
 
     @ParameterizedTest

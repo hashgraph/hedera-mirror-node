@@ -162,8 +162,10 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 create index if not exists nft_allowance_history__owner_spender_token_lower_timestamp
     on nft_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
+-- node_stake
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
+create index if not exists node_stake__epoch_day on node_stake (epoch_day);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp

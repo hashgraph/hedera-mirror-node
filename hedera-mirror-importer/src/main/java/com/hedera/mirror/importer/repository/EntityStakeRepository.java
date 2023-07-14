@@ -112,6 +112,11 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
     @Query(value = "select endStakePeriod from EntityStake where id = 800")
     Optional<Long> getEndStakePeriod();
 
+    @Modifying
+    @Query(value = "lock table entity_history in share row exclusive mode nowait", nativeQuery = true)
+    @Transactional
+    void lockFromConcurrentUpdates();
+
     @Query(
             value =
                     """
@@ -153,8 +158,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * <p>
      * 6. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
      * period, add the reward earned in the ending period to the current as the new pending reward
-     *
-     * @return Number of entity state inserted and updated
      */
     @Modifying
     @Query(
