@@ -22,6 +22,9 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.BOOL_SIZE;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.INT_SIZE;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 
+/**
+ *  Exact copy from hedera-services
+ */
 public enum TokenEntitySizes {
     TOKEN_ENTITY_SIZES;
 
