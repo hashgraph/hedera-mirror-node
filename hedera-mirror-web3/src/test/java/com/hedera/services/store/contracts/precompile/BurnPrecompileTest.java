@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -217,6 +218,9 @@ class BurnPrecompileTest {
     private Store store;
 
     @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
     private ContextOptionValidator contextOptionValidator;
 
     private HTSPrecompiledContract subject;
@@ -255,13 +259,14 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -279,13 +284,14 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -301,7 +307,7 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var transactionBody = TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
 
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -309,7 +315,8 @@ class BurnPrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

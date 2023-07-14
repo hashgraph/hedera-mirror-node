@@ -98,9 +98,10 @@ public abstract class AbstractAutoCreationLogic {
             final var key = asPrimitiveKeyUnchecked(alias);
             syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, 0);
         }
-        var fee = autoCreationFeeFor(syntheticCreation, store, timestamp);
+
+        var fee = autoCreationFeeFor(syntheticCreation, store, timestamp, mirrorEvmContractAliases);
         if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee(store, timestamp);
+            fee += getLazyCreationFinalizationFee(store, timestamp, mirrorEvmContractAliases);
         }
 
         final var newId = ids.getNewAccountId();
@@ -121,8 +122,10 @@ public abstract class AbstractAutoCreationLogic {
                 0,
                 0,
                 0L,
-                false);
+                false,
+                null);
         store.updateAccount(account);
+
         replaceAliasAndSetBalanceOnChange(change, newId);
         trackAlias(alias, account.getAccountAddress(), mirrorEvmContractAliases);
         return Pair.of(OK, fee);
@@ -138,19 +141,27 @@ public abstract class AbstractAutoCreationLogic {
         change.replaceNonEmptyAliasWith(fromAccountId(newAccountId));
     }
 
-    private long getLazyCreationFinalizationFee(Store store, Timestamp timestamp) {
+    private long getLazyCreationFinalizationFee(
+            final Store store, Timestamp timestamp, final MirrorEvmContractAliases mirrorEvmContractAliases) {
         // an AccountID is already accounted for in the
         // fee estimator, so we just need to pass a stub ECDSA key
         // in the synthetic crypto update body
         final var updateTxnBody =
                 CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
-        return autoCreationFeeFor(TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody), store, timestamp);
+        return autoCreationFeeFor(
+                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody),
+                store,
+                timestamp,
+                mirrorEvmContractAliases);
     }
 
     private long autoCreationFeeFor(
-            final TransactionBody.Builder cryptoCreateTxn, final Store store, Timestamp timestamp) {
+            final TransactionBody.Builder cryptoCreateTxn,
+            final Store store,
+            Timestamp timestamp,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         final var accessor = synthAccessorFor(cryptoCreateTxn);
-        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp, mirrorEvmContractAliases);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 }
