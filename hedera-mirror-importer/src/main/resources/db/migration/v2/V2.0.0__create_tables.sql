@@ -181,12 +181,12 @@ comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (
-    amount_granted    bigint    not null,
     amount            bigint    not null,
+    amount_granted    bigint    not null,
+    created_timestamp bigint    not null,
     owner             bigint    not null,
     payer_account_id  bigint    not null,
     spender           bigint    not null,
-    created_timestamp bigint    not null,
     timestamp_range   int8range not null
 ) partition by range (owner);
 comment on table crypto_allowance is 'Hbar allowances delegated by owner to spender';
@@ -573,13 +573,13 @@ comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
 (
-    amount_granted    bigint    not null,
     amount            bigint    not null,
+    amount_granted    bigint    not null,
+    created_timestamp bigint    not null,
     owner             bigint    not null,
     payer_account_id  bigint    not null,
     spender           bigint    not null,
     timestamp_range   int8range not null,
-    created_timestamp bigint    not null,
     token_id          bigint    not null
 ) partition by range (owner);
 comment on table token_allowance is 'Token allowances delegated by owner to spender';

@@ -213,6 +213,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         var body = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getTransactionRecord();
+        var payerAccount = recordItem.getPayerAccountId();
+
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
@@ -223,13 +225,26 @@ public class EntityRecordItemListener implements RecordItemListener {
                     continue;
                 }
 
-                NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
-                nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setConsensusTimestamp(consensusTimestamp);
-                nonFeeTransfer.setEntityId(entityId);
-                nonFeeTransfer.setIsApproval(aa.getIsApproval());
-                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                entityListener.onNonFeeTransfer(nonFeeTransfer);
+                if (entityProperties.getPersist().isNonFeeTransfers()) {
+                    NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
+                    nonFeeTransfer.setAmount(aa.getAmount());
+                    nonFeeTransfer.setConsensusTimestamp(consensusTimestamp);
+                    nonFeeTransfer.setEntityId(entityId);
+                    nonFeeTransfer.setIsApproval(aa.getIsApproval());
+                    nonFeeTransfer.setPayerAccountId(payerAccount);
+                    entityListener.onNonFeeTransfer(nonFeeTransfer);
+                }
+
+                if (entityProperties.getPersist().isTrackAllowance() && aa.getIsApproval()) {
+                    // Emit allowance amount representing approved transfer debit
+                    var cryptoAllowance = CryptoAllowance.builder()
+                            .amount(aa.getAmount())
+                            .owner(entityId.getId())
+                            .payerAccountId(payerAccount)
+                            .spender(payerAccount.getId())
+                            .build();
+                    entityListener.onCryptoAllowance(cryptoAllowance);
+                }
             }
         }
     }
@@ -287,14 +302,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 cryptoTransfer.setIsApproval(accountAmountInsideBody.getIsApproval());
                 if (failedTransfer) {
                     cryptoTransfer.setErrata(ErrataType.DELETE);
-                } else {
-                    // Emit allowance amount representing approved transfer debit
-                    var cryptoAllowance = CryptoAllowance.builder()
-                            .owner(account.getEntityNum())
-                            .spender(payerAccountId.getEntityNum())
-                            .amount(cryptoTransfer.getAmount())
-                            .build();
-                    entityListener.onCryptoAllowance(cryptoAllowance);
                 }
             }
             entityListener.onCryptoTransfer(cryptoTransfer);
@@ -469,18 +476,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else {
                 tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
             }
-
-            if (tokenTransfer.getIsApproval() == Boolean.TRUE) {
-                // Emit allowance amount representing approved transfer debit
-                var tokenAllowance = TokenAllowance.builder()
-                        .tokenId(tokenId.getEntityNum())
-                        .owner(accountAmount.getAccountID().getAccountNum())
-                        .spender(payerAccountId.getEntityNum())
-                        .amount(accountAmount.getAmount())
-                        .build();
-
-                entityListener.onTokenAllowance(tokenAllowance);
-            }
         }
     }
 
@@ -489,8 +484,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
 
-        List<TokenTransferList> tokenTransferListsList =
-                recordItem.getTransactionRecord().getTokenTransferListsList();
+        var payerAccountId = recordItem.getPayerAccountId();
+        var tokenTransferListsList = recordItem.getTransactionRecord().getTokenTransferListsList();
+
         for (int i = 0; i < tokenTransferListsList.size(); i++) {
             TokenTransferList tokenTransferList = tokenTransferListsList.get(i);
 
@@ -500,12 +496,36 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (i == 0) {
                 var tokenId = tokenTransferList.getToken();
                 var entityTokenId = EntityId.of(tokenId);
-                var payerAccountId = recordItem.getPayerAccountId();
 
                 syntheticContractResultService.create(
                         new TransferContractResult(recordItem, entityTokenId, payerAccountId));
             }
         }
+
+        if (!recordItem.getTransactionBody().hasCryptoTransfer()
+                || !entityProperties.getPersist().isTrackAllowance()) {
+            return;
+        }
+
+        var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
+        tokenTransfers.forEach(tokenTransfer -> {
+            var tokenId = EntityId.of(tokenTransfer.getToken());
+
+            tokenTransfer.getTransfersList().forEach(accountAmount -> {
+                // Emit allowance amount representing approved transfer debit
+                if (accountAmount.getIsApproval()) {
+                    var tokenAllowance = TokenAllowance.builder()
+                            .amount(accountAmount.getAmount())
+                            .owner(EntityId.of(accountAmount.getAccountID()).getId())
+                            .payerAccountId(payerAccountId)
+                            .spender(payerAccountId.getId())
+                            .tokenId(tokenId.getId())
+                            .build();
+
+                    entityListener.onTokenAllowance(tokenAllowance);
+                }
+            });
+        });
     }
 
     private void insertNonFungibleTokenTransfers(
