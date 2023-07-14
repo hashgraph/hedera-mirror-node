@@ -65,7 +65,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private final GrantKycLogic grantKycLogic;
-    private GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp;
+    private GrantRevokeKycWrapper<TokenID, AccountID> grantOp;
 
     public GrantKycPrecompile(
             final GrantKycLogic grantKycLogic,
@@ -79,9 +79,9 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
         // --- Init ---
 
-        requireNonNull(grantRevokeOp);
-        final var tokenId = Id.fromGrpcToken(grantRevokeOp.token());
-        final var accountId = Id.fromGrpcAccount(grantRevokeOp.account());
+        requireNonNull(grantOp);
+        final var tokenId = Id.fromGrpcToken(grantOp.token());
+        final var accountId = Id.fromGrpcAccount(grantOp.account());
 
         // --- Execute the transaction and capture its results ---
 
@@ -95,13 +95,13 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        grantRevokeOp = decodeGrantTokenKyc(input, aliasResolver);
-        return syntheticTxnFactory.createGrantKyc(grantRevokeOp);
+        grantOp = decodeGrantTokenKyc(input, aliasResolver);
+        return syntheticTxnFactory.createGrantKyc(grantOp);
     }
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
-        requireNonNull(grantRevokeOp);
+        requireNonNull(grantOp);
         return pricingUtils.getMinimumPriceInTinybars(GRANT_KYC, consensusTime);
     }
 
