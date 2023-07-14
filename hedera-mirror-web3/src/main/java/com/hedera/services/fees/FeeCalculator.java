@@ -17,6 +17,7 @@
 package com.hedera.services.fees;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -33,5 +34,10 @@ public interface FeeCalculator {
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
 
-    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, Store store, Timestamp at);
+    FeeObject computeFee(
+            TxnAccessor accessor,
+            JKey payerKey,
+            Store store,
+            Timestamp at,
+            HederaEvmContractAliases mirrorEvmContractAliases);
 }

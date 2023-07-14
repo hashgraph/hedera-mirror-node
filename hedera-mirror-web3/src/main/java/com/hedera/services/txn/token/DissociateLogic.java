@@ -112,7 +112,7 @@ public class DissociateLogic {
                 store.updateAccount(updatedAccount);
             }
 
-            store.updateTokenRelationship(updatedRelationship);
+            store.updateTokenRelationship(updatedRelationship.markAsNotAssociated());
         });
 
         var numAssociations = account.getNumAssociations();

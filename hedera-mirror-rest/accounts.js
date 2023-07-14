@@ -463,13 +463,13 @@ const getOneAccount = async (req, res) => {
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
     const innerQuery = transactions.getTransactionsInnerQuery(
-        accountQuery,
-        transactionTsQuery,
-        resultTypeQuery,
-        query,
-        creditDebitQuery,
-        transactionTypeQuery,
-        order
+      accountQuery,
+      transactionTsQuery,
+      resultTypeQuery,
+      query,
+      creditDebitQuery,
+      transactionTypeQuery,
+      order
     );
 
     const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
@@ -482,8 +482,7 @@ const getOneAccount = async (req, res) => {
 
     // Execute query & get a promise
     transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
-  }
-  else {
+  } else {
     // Promise that returns empty result
     transactionsPromise = Promise.resolve({rows: []});
   }
@@ -549,7 +548,7 @@ const acceptedSingleAccountParameters = new Set([
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP,
   constants.filterKeys.TRANSACTION_TYPE,
-  constants.filterKeys.TRANSACTIONS
+  constants.filterKeys.TRANSACTIONS,
 ]);
 
 if (utils.isTestEnv()) {

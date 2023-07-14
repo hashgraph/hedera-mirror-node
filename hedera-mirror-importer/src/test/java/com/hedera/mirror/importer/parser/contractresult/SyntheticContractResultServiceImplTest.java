@@ -27,6 +27,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,13 @@ class SyntheticContractResultServiceImplTest {
         receiverId =
                 EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
         amount = recordItem.getTransactionBody().getTokenMint().getAmount();
+
+        entityProperties.getPersist().setSyntheticContractResults(true);
+    }
+
+    @AfterEach
+    void afterEach() {
+        entityProperties.getPersist().setSyntheticContractResults(false);
     }
 
     @Test

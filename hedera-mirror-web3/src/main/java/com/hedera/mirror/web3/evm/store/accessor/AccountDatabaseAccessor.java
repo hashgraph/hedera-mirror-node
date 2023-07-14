@@ -18,17 +18,21 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.*;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
 import java.util.*;
@@ -77,7 +81,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 tokenAssociationsCounts.getSecond(),
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
-                entity.getType().equals(CONTRACT));
+                entity.getType().equals(CONTRACT),
+                parseJkey(entity.getKey()));
     }
 
     private long getOwnedNfts(Long accountId) {
@@ -129,5 +134,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         }
 
         return new Pair<>(all, positive);
+    }
+
+    private JKey parseJkey(byte[] keyBytes) {
+        try {
+            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
+            return null;
+        }
     }
 }
