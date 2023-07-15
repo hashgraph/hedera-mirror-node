@@ -17,7 +17,8 @@
 package com.hedera.mirror.grpc.retriever;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import io.micrometer.observation.ObservationRegistry;
@@ -86,7 +87,9 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 ? (int) (filter.getLimit() - context.getTotal().get())
                 : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, context.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null
+                ? LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1)
+                : filter.getStartTime();
         context.getPageSize().set(0L);
 
         TopicMessageFilter newFilter =

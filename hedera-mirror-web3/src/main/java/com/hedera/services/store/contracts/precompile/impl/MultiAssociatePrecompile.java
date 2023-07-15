@@ -27,6 +27,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -74,8 +75,12 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 
     @Override
     public long getGasRequirement(
-            final long blockTimestamp, final TransactionBody.Builder transactionBody, final Store store) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, store);
+            final long blockTimestamp,
+            final TransactionBody.Builder transactionBody,
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
+        return pricingUtils.computeGasRequirement(
+                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
     }
 
     @Override

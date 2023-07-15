@@ -16,16 +16,20 @@
 
 package com.hedera.mirror.grpc.controller;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -50,7 +54,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(TopicMessage::getResponse)
+                .map(this::toResponse)
                 .onErrorMap(ProtoUtil::toStatusRuntimeException);
     }
 
@@ -77,5 +81,52 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         }
 
         return filter.build();
+    }
+
+    // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
+    private ConsensusTopicResponse toResponse(TopicMessage t) {
+        var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
+                .setConsensusTimestamp(
+                        ProtoUtil.toTimestamp(LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp())))
+                .setMessage(ProtoUtil.toByteString(t.getMessage()))
+                .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
+                .setRunningHashVersion(t.getRunningHashVersion())
+                .setSequenceNumber(t.getSequenceNumber());
+
+        if (t.getChunkNum() != null) {
+            ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
+                    .setNumber(t.getChunkNum())
+                    .setTotal(t.getChunkTotal());
+
+            TransactionID transactionID = parseTransactionID(
+                    t.getInitialTransactionId(), t.getTopicId().getEntityNum(), t.getSequenceNumber());
+            EntityId payerAccountEntity = t.getPayerAccountId();
+            Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(t.getValidStartTimestamp());
+
+            if (transactionID != null) {
+                chunkBuilder.setInitialTransactionID(transactionID);
+            } else if (payerAccountEntity != null && validStartInstant != null) {
+                chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
+                        .setAccountID(ProtoUtil.toAccountID(payerAccountEntity))
+                        .setTransactionValidStart(ProtoUtil.toTimestamp(validStartInstant))
+                        .build());
+            }
+
+            consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
+        }
+
+        return consensusTopicResponseBuilder.build();
+    }
+
+    private TransactionID parseTransactionID(byte[] transactionIdBytes, long topicId, long sequenceNumber) {
+        if (transactionIdBytes == null) {
+            return null;
+        }
+        try {
+            return TransactionID.parseFrom(transactionIdBytes);
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Failed to parse TransactionID for topic {} sequence number {}", topicId, sequenceNumber);
+            return null;
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.grpc.domain;
+package com.hedera.services.fees.usage.token.meta;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.hederahashgraph.api.proto.java.SubType;
 
-@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
-@JsonSubTypes({@JsonSubTypes.Type(value = TopicMessage.class, name = "TopicMessage")})
-public interface StreamMessage {}
+/**
+ *  Exact copy from hedera-services
+ */
+public class TokenBurnMeta extends TokenBurnWipeMeta {
+    public TokenBurnMeta(final int bpt, final SubType subType, final long transferRecordRb, final int serialNumsCount) {
+        super(bpt, subType, transferRecordRb, serialNumsCount);
+    }
+}
