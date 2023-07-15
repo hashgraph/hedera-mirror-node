@@ -22,10 +22,12 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
+@Data
 @NoArgsConstructor
 public class ItemizedTransfer {
 
@@ -43,10 +45,5 @@ public class ItemizedTransfer {
     @JsonIgnore
     public Long getId() {
         return consensusTimestamp;
-    }
-
-    @JsonIgnore
-    public boolean isNew() {
-        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 }

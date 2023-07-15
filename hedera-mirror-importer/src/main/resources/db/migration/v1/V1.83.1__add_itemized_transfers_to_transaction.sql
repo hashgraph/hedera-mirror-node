@@ -16,7 +16,7 @@ group by nt.consensus_timestamp
 
 
 update transaction
-set itemized_transfer = t,,mmm,,,,mransfer
+set itemized_transfer = transfer
     from nested_itemized_transfer
 where nested_itemized_transfer.consensus_timestamp = transaction.consensus_timestamp;
 

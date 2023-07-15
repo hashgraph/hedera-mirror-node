@@ -214,7 +214,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
                 if (EntityId.isEmpty(entityId)) {
                     log.error(
-                            RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
+                            RECOVERABLE_ERROR + "Invalid itemizedTransfer entity id at {}",
                             recordItem.getConsensusTimestamp());
                     continue;
                 }

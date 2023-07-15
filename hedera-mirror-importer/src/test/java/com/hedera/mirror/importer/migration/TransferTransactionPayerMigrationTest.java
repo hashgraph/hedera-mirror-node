@@ -317,23 +317,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 new SharedTransfer(1L, transfer3.getConsensusTimestamp(), PAYER_ID, receiverId, senderId),
                 new SharedTransfer(2L, transfer5.getConsensusTimestamp(), PAYER_ID, receiverId, senderId));
 
-        List<SharedTransfer> expectedNonFeeTransfers = List.of(
-                // assessed custom fee only transfer
-                new SharedTransfer(senderPaymentAmount, transfer1.getConsensusTimestamp(), PAYER_ID, null, senderId),
-                new SharedTransfer(receivedAmount, transfer1.getConsensusTimestamp(), PAYER_ID, receiverId, null),
-                // crypto only transfer
-                new SharedTransfer(senderPaymentAmount, transfer2.getConsensusTimestamp(), PAYER_ID, null, senderId),
-                new SharedTransfer(receivedAmount, transfer2.getConsensusTimestamp(), PAYER_ID, receiverId, null),
-                // nft transfer
-                new SharedTransfer(senderPaymentAmount, transfer3.getConsensusTimestamp(), PAYER_ID, null, senderId),
-                new SharedTransfer(receivedAmount, transfer3.getConsensusTimestamp(), PAYER_ID, receiverId, null),
-                // token transfer
-                new SharedTransfer(senderPaymentAmount, transfer4.getConsensusTimestamp(), PAYER_ID, null, senderId),
-                new SharedTransfer(receivedAmount, transfer4.getConsensusTimestamp(), PAYER_ID, receiverId, null),
-                // token transfer
-                new SharedTransfer(senderPaymentAmount, transfer5.getConsensusTimestamp(), PAYER_ID, null, senderId),
-                new SharedTransfer(receivedAmount, transfer5.getConsensusTimestamp(), PAYER_ID, receiverId, null));
-
         List<SharedTransfer> expectedTokenTransfers = List.of(
                 // token transfer
                 new SharedTransfer(-receivedAmount, transfer4.getConsensusTimestamp(), PAYER_ID, null, senderId),
@@ -348,8 +331,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(findCryptoTransfers()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
 
         assertThat(findNftTransfers()).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
-
-        assertThat(findNonFeeTransfersAsSharedTransfers()).containsExactlyInAnyOrderElementsOf(expectedNonFeeTransfers);
 
         assertThat(findTokenTransfers()).containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
     }
@@ -479,21 +460,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     EntityId.of(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                     EntityId.of(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
                     EntityId.of(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
-            return sharedTransfer;
-        });
-    }
-
-    private List<SharedTransfer> findNonFeeTransfersAsSharedTransfers() {
-        return jdbcOperations.query("select * from non_fee_transfer", (rs, rowNum) -> {
-            Long amount = rs.getLong("amount");
-            EntityId sender = amount < 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
-            EntityId receiver = amount > 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
-            SharedTransfer sharedTransfer = new SharedTransfer(
-                    amount,
-                    rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
-                    receiver,
-                    sender);
             return sharedTransfer;
         });
     }

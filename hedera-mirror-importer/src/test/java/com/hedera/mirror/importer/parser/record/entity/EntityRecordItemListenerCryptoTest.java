@@ -1145,16 +1145,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord recordTransfer = transactionRecordSuccess(
                 transactionBody, builder -> groupCryptoTransfersByAccountId(builder, List.of()));
-
-        parseRecordItemsAndCommit(List.of(
-                RecordItem.builder()
-                        .transactionRecord(recordCreate)
-                        .transaction(accountCreateTransaction)
-                        .build(),
-                RecordItem.builder()
-                        .transactionRecord(recordTransfer)
-                        .transaction(transaction)
-                        .build()));
+        var recordItem1 = RecordItem.builder()
+                .transactionRecord(recordCreate)
+                .transaction(accountCreateTransaction)
+                .build();
+        var recordItem2 = RecordItem.builder()
+                .transactionRecord(recordTransfer)
+                .transaction(transaction)
+                .build();
+        parseRecordItemsAndCommit(List.of(recordItem1, recordItem2));
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
@@ -1163,9 +1162,17 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1))
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2)),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
-                () -> assertThat(findNonFeeTransfers())
-                        .extracting(ItemizedTransfer::getEntityId)
-                        .extracting(EntityId::getEntityNum)
+                () -> assertThat(transactionRepository.findById(recordItem1.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
+                () -> assertThat(transactionRepository.findById(recordItem2.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .map(transfer ->
+                                ((ItemizedTransfer) transfer).getEntityId().getId())
+                        .asList()
                         .contains(newAccount.getAccountNum(), entity.getNum()));
     }
 
@@ -1192,11 +1199,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
-                () -> assertThat(findNonFeeTransfers()).allSatisfy(nonFeeTransfer -> {
-                    assertThat(nonFeeTransfer.getEntityId()).isEqualTo(contract.toEntityId());
-                    assertThat(nonFeeTransfer.getAmount()).isEqualTo(transferAmount);
-                    assertThat(nonFeeTransfer.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId());
-                }));
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .allSatisfy(transfer -> {
+                            assertThat(((ItemizedTransfer) transfer).getEntityId())
+                                    .isEqualTo(contract.toEntityId());
+                            assertThat(((ItemizedTransfer) transfer).getAmount())
+                                    .isEqualTo(transferAmount);
+                            assertThat(((ItemizedTransfer) transfer).getPayerAccountId())
+                                    .isEqualTo(recordItem.getPayerAccountId());
+                        }));
     }
 
     private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
@@ -1228,20 +1242,24 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 transactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
         List<EntityId> expectedEntityIds = List.of(account2.toEntityId());
-
-        // when
-        parseRecordItemAndCommit(RecordItem.builder()
+        var recordItem = RecordItem.builder()
                 .transactionRecord(transactionRecord)
                 .transaction(transaction)
-                .build());
+                .build();
+        // when
+        parseRecordItemAndCommit(recordItem);
 
         // then
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
-                () -> assertThat(findNonFeeTransfers())
-                        .extracting(ItemizedTransfer::getEntityId)
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .map(transfer -> ((ItemizedTransfer) transfer).getEntityId())
+                        .asList()
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds));
     }
 
