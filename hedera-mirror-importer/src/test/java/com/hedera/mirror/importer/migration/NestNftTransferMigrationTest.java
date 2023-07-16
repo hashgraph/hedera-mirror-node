@@ -58,6 +58,11 @@ class NestNftTransferMigrationTest extends IntegrationTest {
 
     private static final String REVERT_DDL = "alter table transaction drop column if exists nft_transfer";
 
+    private static final String ADD_ITEMIZED_TRANSFERS =
+            "alter table transaction add column if not exists itemized_transfer jsonb null";
+
+    private static final String REMOVE_ITEMIZED_TRANSFERS =
+            "alter table transaction drop column if exists itemized_transfer";
     private final @Owner JdbcTemplate jdbcTemplate;
 
     private final TransactionRepository transactionRepository;
@@ -67,12 +72,16 @@ class NestNftTransferMigrationTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
+
         assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
+        jdbcTemplate.update(ADD_ITEMIZED_TRANSFERS);
     }
 
     @AfterEach
     void teardown() {
+
         jdbcTemplate.execute(REVERT_DDL);
+        jdbcTemplate.execute(REMOVE_ITEMIZED_TRANSFERS);
     }
 
     @Test
