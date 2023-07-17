@@ -1048,7 +1048,10 @@ public class Token {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
             validateTrue(uniqueToken != null, FAIL_INVALID);
 
-            final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
+            // Compare directly owner to treasury, oposed to hedera-services logic where owner is set to Id.DEFAULT if
+            // it is treasury.
+            // We have a different workflow in setting the owner value
+            final var treasuryIsOwner = uniqueToken.getOwner().equals(treasuryId);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
             removedUniqueTokens.add(
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
