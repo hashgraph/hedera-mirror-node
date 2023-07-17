@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -259,6 +260,17 @@ public class ServicesConfiguration {
     @Bean
     TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
         return new TransferLogic(autoCreationLogic);
+    }
+
+    @Bean
+    TransferPrecompile transferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic) {
+        return new TransferPrecompile(
+                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
     }
 
     @Bean
