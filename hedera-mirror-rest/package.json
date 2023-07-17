@@ -47,7 +47,8 @@
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.7",
-    "swagger-ui-express": "^5.0.0"
+    "swagger-ui-express": "^5.0.0",
+    "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "bundledDependencies": [
     "@awaitjs/express",
@@ -79,7 +80,8 @@
     "quick-lru",
     "rfc4648",
     "swagger-stats",
-    "swagger-ui-express"
+    "swagger-ui-express",
+    "word-wrap"
   ],
   "devDependencies": {
     "app-root-path": "^3.1.0",
@@ -105,5 +107,8 @@
     "outputDirectory": "build/test-results/test",
     "outputName": "TEST-jest.xml"
   },
-  "baseUrlPath": "/api/v1"
+  "baseUrlPath": "/api/v1",
+  "overrides": {
+    "protobufjs": "^7.2.4"
+  }
 }
