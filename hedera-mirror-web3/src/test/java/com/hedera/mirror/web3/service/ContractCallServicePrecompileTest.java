@@ -299,7 +299,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
@@ -330,7 +329,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
         WIPE_TOKEN(
                 "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ACCOUNT_ADDRESS, 1L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}});
+        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;
