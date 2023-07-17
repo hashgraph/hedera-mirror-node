@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -165,6 +166,9 @@ class UsageBasedFeeCalculatorTest {
     @Mock
     private Store store;
 
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     private UsageBasedFeeCalculator subject;
 
     @BeforeEach
@@ -215,7 +219,9 @@ class UsageBasedFeeCalculatorTest {
 
         // when:
 
-        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, store, at));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases));
     }
 
     @Test
@@ -252,7 +258,7 @@ class UsageBasedFeeCalculatorTest {
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
 
         // when:
-        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at);
+        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());

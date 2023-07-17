@@ -54,6 +54,7 @@ import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
@@ -141,6 +142,9 @@ class TransferPrecompileTest {
     @Mock
     private Store store;
 
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     @BeforeEach
     void setup() {
         staticTransferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
@@ -160,11 +164,13 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferToken(eq(input), any()))
                 .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
-        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any())).thenReturn(EXPECTED_GAS_PRICE);
+        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any(), any()))
+                .thenReturn(EXPECTED_GAS_PRICE);
 
         transferPrecompile.body(input, a -> a, null);
 
-        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store);
+        final long result = transferPrecompile.getGasRequirement(
+                TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
