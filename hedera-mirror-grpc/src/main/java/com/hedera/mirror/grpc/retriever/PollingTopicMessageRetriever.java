@@ -88,9 +88,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, context.getMaxPageSize());
         Instant startTime = last != null
-                ? LongToInstantConverter.INSTANCE
-                        .convert(last.getConsensusTimestamp())
-                        .plusNanos(1)
+                ? LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1)
                 : filter.getStartTime();
         context.getPageSize().set(0L);
 

@@ -77,9 +77,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .filter(t -> t.compareTo(topicContext.getLast()) > 0); // Ignore duplicates
 
         if (filter.getEndTime() != null) {
-            flux = flux.takeWhile(t -> LongToInstantConverter.INSTANCE
-                    .convert(t.getConsensusTimestamp())
-                    .isBefore(filter.getEndTime()));
+            flux = flux.takeWhile(t ->
+                    LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp()).isBefore(filter.getEndTime()));
         }
 
         if (filter.hasLimit()) {
@@ -99,10 +98,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .switchIfEmpty(
                         grpcProperties.isCheckTopicExists()
                                 ? Mono.error(new EntityNotFoundException(topicId))
-                                : Mono.just(Entity.builder()
-                                        .memo("")
-                                        .type(EntityType.TOPIC)
-                                        .build()))
+                                : Mono.just(
+                                        Entity.builder().memo("").type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
@@ -117,9 +114,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         long limit =
                 filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
         Instant startTime = last != null
-                ? LongToInstantConverter.INSTANCE
-                        .convert(last.getConsensusTimestamp())
-                        .plusNanos(1)
+                ? LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1)
                 : filter.getStartTime();
         TopicMessageFilter newFilter =
                 filter.toBuilder().limit(limit).startTime(startTime).build();
@@ -168,9 +163,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessageFilter newFilter = topicContext.getFilter().toBuilder()
                 .endTime(LongToInstantConverter.INSTANCE.convert(current.getConsensusTimestamp()))
                 .limit(numMissingMessages)
-                .startTime(LongToInstantConverter.INSTANCE
-                        .convert(last.getConsensusTimestamp())
-                        .plusNanos(1))
+                .startTime(LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1))
                 .build();
 
         log.info(

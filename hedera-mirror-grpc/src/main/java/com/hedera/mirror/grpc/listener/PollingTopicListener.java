@@ -73,9 +73,7 @@ public class PollingTopicListener implements TopicListener {
                 : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
         Instant startTime = last != null
-                ? LongToInstantConverter.INSTANCE
-                        .convert(last.getConsensusTimestamp())
-                        .plusNanos(1)
+                ? LongToInstantConverter.INSTANCE.convert(last.getConsensusTimestamp()).plusNanos(1)
                 : filter.getStartTime();
         TopicMessageFilter newFilter =
                 filter.toBuilder().limit(pageSize).startTime(startTime).build();
