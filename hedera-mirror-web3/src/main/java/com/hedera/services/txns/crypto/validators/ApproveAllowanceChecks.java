@@ -177,6 +177,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @param store store
      * @return response code
      */
+    @SuppressWarnings("java:S3776")
     ResponseCodeEnum validateNftAllowances(
             final List<NftAllowance> nftAllowancesList, final Account payerAccount, final Store store) {
         if (nftAllowancesList.isEmpty()) {
