@@ -52,6 +52,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.services.fees.FeeCalculator;
@@ -143,8 +144,6 @@ class TokenCreatePrecompileTest {
     private static final long TEST_NODE_FEE = 300_000;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
 
     @Mock
     private AssetsLoader assetLoader;
@@ -200,11 +199,12 @@ class TokenCreatePrecompileTest {
     @Mock
     private Iterator<MessageFrame> dequeIterator;
 
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
-    private SyntheticTxnFactory syntheticTxnFactory;
     private HTSPrecompiledContract subject;
-    private PrecompileMapper precompileMapper;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -214,10 +214,10 @@ class TokenCreatePrecompileTest {
 
         final var precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
-        syntheticTxnFactory = new SyntheticTxnFactory();
+        final var syntheticTxnFactory = new SyntheticTxnFactory();
         tokenCreatePrecompile =
                 new TokenCreatePrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic);
-        precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
+        final var precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
@@ -603,7 +603,7 @@ class TokenCreatePrecompileTest {
         final var transactionBody =
                 TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
 
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -611,7 +611,8 @@ class TokenCreatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(CREATE_FUNGIBLE_NO_FEES_INPUT, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1055,7 +1056,7 @@ class TokenCreatePrecompileTest {
     }
 
     private void givenValidGasCalculation() {
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
 

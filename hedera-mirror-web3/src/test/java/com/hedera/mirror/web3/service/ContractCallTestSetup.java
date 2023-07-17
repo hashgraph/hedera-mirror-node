@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import com.google.common.collect.Range;
@@ -120,6 +121,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
                                             .build())
+                                    .build()))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
                                     .build())))
             .setNextFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
@@ -152,7 +160,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
-                                            .build()))))
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build())))
             .build();
 
     protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);

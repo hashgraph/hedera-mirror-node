@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Resource;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -260,7 +261,8 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string"));
+                .isEqualTo(new GenericErrorResponse(List.of(
+                        "data field invalid hexadecimal string", "data field must not exceed call size limit")));
     }
 
     @Test
