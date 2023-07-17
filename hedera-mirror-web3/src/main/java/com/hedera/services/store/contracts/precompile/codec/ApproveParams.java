@@ -16,12 +16,11 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hedera.mirror.web3.evm.store.Store;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Record containing specific body arguments for Approve precompiles.
  * */
-public record ApproveParams(TokenID token, Address senderAddress, boolean isFungible, Id ownerId)
+public record ApproveParams(Address tokenAddress, Address senderAddress, Store store, boolean isFungible)
         implements BodyParams {}

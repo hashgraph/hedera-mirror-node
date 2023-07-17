@@ -24,12 +24,15 @@ import static com.hedera.services.hapi.utils.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_APPROVE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -39,6 +42,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -54,10 +58,12 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -123,26 +129,42 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
-        TokenID tokenId = null;
-        Id ownerId = null;
-        boolean isFungible = true;
-        Address senderAddress = Address.ZERO;
+        Address tokenAddress;
+        Address senderAddress;
+        Store store;
+        boolean isFungible;
         Builder transactionBody;
 
         if (bodyParams instanceof ApproveParams approveParams) {
-            tokenId = approveParams.token();
-            senderAddress = approveParams.senderAddress();
             isFungible = approveParams.isFungible();
-            ownerId = approveParams.ownerId();
+            store = approveParams.store();
+            tokenAddress = approveParams.tokenAddress();
+            senderAddress = approveParams.senderAddress();
+        } else {
+            throw new InvalidTransactionException("Invalid body parameters", FAIL_INVALID, true);
         }
 
-        final var nestedInput = tokenId == null ? input : input.slice(24);
+        final var nestedInput = tokenAddress.equals(Address.ZERO) ? input : input.slice(24);
         final var operatorId = Id.fromGrpcAccount(accountIdFromEvmAddress(senderAddress));
-        final var approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver);
+        final var approveOp = decodeTokenApprove(
+                nestedInput,
+                EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArrayUnsafe()),
+                isFungible,
+                aliasResolver);
 
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
         } else {
+            final var tokenId = approveOp.tokenId();
+            final var serialNumber = approveOp.serialNumber();
+            final var ownerId = store.getUniqueToken(
+                            new NftId(
+                                    tokenId.getShardNum(),
+                                    tokenId.getRealmNum(),
+                                    tokenId.getTokenNum(),
+                                    serialNumber.longValue()),
+                            OnMissing.THROW)
+                    .getOwner();
             final var nominalOwnerId = ownerId != null ? ownerId : Id.DEFAULT;
             // Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
             // translate this approveAllowance into a deleteAllowance
@@ -162,8 +184,10 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
+        store.commit();
+        store.wrap();
         final var accountAccessor = updater.getAccountAccessor();
-        final var senderAddress = frame.getSenderAddress();
+        final var senderAddress = frame.getOriginatorAddress();
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;
@@ -177,8 +201,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         // get bodies only one can be initialized
         final var approveAllowanceBody = transactionBody.getCryptoApproveAllowance();
         final var deleteAllowanceBody = transactionBody.getCryptoDeleteAllowance();
-        final var isNftApprovalRevocation = deleteAllowanceBody.isInitialized();
-        isFungible = approveAllowanceBody.getTokenAllowances(0).isInitialized();
+        final var isNftApprovalRevocation =
+                !deleteAllowanceBody.equals(deleteAllowanceBody.getDefaultInstanceForType());
+        isFungible = !approveAllowanceBody.getTokenAllowancesList().isEmpty();
 
         // extract needed fields from the transactionBody
         if (isNftApprovalRevocation) { // when revoking nft allowance
@@ -197,7 +222,10 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             amount = tokenAllowances.getAmount();
         } else { // when setting allowance for non-fungible token
             final var nftAllowances = approveAllowanceBody.getNftAllowances(0);
-            ownerId = nftAllowances.getDelegatingSpender().isInitialized()
+            ownerId = nftAllowances
+                            .getDelegatingSpender()
+                            .getDefaultInstanceForType()
+                            .equals(nftAllowances.getDelegatingSpender())
                     ? Id.fromGrpcAccount(nftAllowances.getDelegatingSpender())
                     : Id.fromGrpcAccount(nftAllowances.getOwner());
             operatorId = Id.fromGrpcAccount(nftAllowances.getDelegatingSpender());
@@ -214,7 +242,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(operatorId);
         //  Per the ERC-721 spec, "Throws unless `msg.sender` is the current NFT owner, or
         //  an authorized operator of the current owner"
-        if (isFungible) {
+        if (!isFungible) {
             final var isApproved = operatorId.equals(ownerId)
                     || store.hasApprovedForAll(ownerId.asEvmAddress(), operatorId.asGrpcAccount(), tokenId);
             validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
@@ -277,9 +305,10 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getSuccessResultFor(final RunResult runResult) {
         final var approveResult = (ApproveResult) runResult;
-        if (approveResult.tokenId() != null) {
-            return encoder.encodeApprove(true);
-        } else if (approveResult.isFunguble()) {
+        //        if (approveResult.tokenId() != null) {
+        //            return encoder.encodeApprove(true);
+        //        }
+        if (approveResult.isFungible()) {
             return encoder.encodeApprove(SUCCESS.getNumber(), true);
         } else {
             return encoder.encodeApproveNFT(SUCCESS.getNumber());
@@ -288,7 +317,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_APPROVE);
+        return Set.of(ABI_ID_APPROVE, ABI_ID_APPROVE_NFT, ABI_ID_ERC_APPROVE);
     }
 
     public static ApproveWrapper decodeTokenApprove(
@@ -297,7 +326,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final boolean isFungible,
             final UnaryOperator<byte[]> aliasResolver) {
 
-        final var offset = impliedTokenId == null ? 1 : 0;
+        final var offset = impliedTokenId.equals(TokenID.getDefaultInstance()) ? 1 : 0;
         final Tuple decodedArguments;
         final TokenID tokenId;
 
