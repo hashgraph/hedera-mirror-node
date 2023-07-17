@@ -290,6 +290,14 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    GrantKycPrecompile grantKycPrecompile(
+            final GrantKycLogic grantKycLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
+    }
+
+    @Bean
     BurnPrecompile burnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
@@ -354,18 +362,5 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             CreateLogic createLogic) {
         return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
-    }
-
-    @Bean
-    GrantKycLogic grantKycLogic() {
-        return new GrantKycLogic();
-    }
-
-    @Bean
-    GrantKycPrecompile grantKycPrecompile(
-            final GrantKycLogic grantKycLogic,
-            final SyntheticTxnFactory syntheticTxnFactory,
-            final PrecompilePricingUtils pricingUtils) {
-        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
     }
 }
