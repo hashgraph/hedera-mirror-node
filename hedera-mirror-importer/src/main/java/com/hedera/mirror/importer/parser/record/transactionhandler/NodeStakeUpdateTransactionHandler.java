@@ -29,12 +29,14 @@ import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
 
@@ -87,13 +89,12 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
         var nodeStakesProtos = transactionBody.getNodeStakeList();
         if (nodeStakesProtos.isEmpty()) {
+            log.warn("NodeStakeUpdateTransaction has empty node stake list");
             return;
         }
 
-        consensusNodeService.refresh();
-
         for (var nodeStakeProto : nodeStakesProtos) {
-            NodeStake nodeStake = new NodeStake();
+            var nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);
             nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
@@ -106,5 +107,8 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
         }
+
+        applicationEventPublisher.publishEvent(new NodeStakeUpdatedEvent(this));
+        consensusNodeService.refresh();
     }
 }

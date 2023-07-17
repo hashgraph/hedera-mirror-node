@@ -101,7 +101,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .filter(c -> "type".equals(c.getName()))
                 .map(ColumnMetadata::getDefaultValue)
                 .toList();
-        assertThat(typeDefaultValues).containsExactly(null, "'FUNGIBLE_COMMON'");
+        assertThat(typeDefaultValues).containsExactly("'UNKNOWN'", "'FUNGIBLE_COMMON'");
     }
 
     @Test

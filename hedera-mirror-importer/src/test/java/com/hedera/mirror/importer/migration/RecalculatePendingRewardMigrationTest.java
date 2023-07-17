@@ -22,11 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -41,9 +39,8 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.68.3")
-class RecalculatePendingRewardMigrationTest extends IntegrationTest {
+class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest {
 
-    private final EntityStakeRepository entityStakeRepository;
     private final MirrorProperties mirrorProperties;
     private final RecalculatePendingRewardMigration migration;
 
@@ -58,7 +55,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     @Test
     void empty() {
         migrate();
-        assertThat(entityStakeRepository.findAll()).isEmpty();
+        assertThat(findAllEntityStakes()).isEmpty();
     }
 
     @Test
@@ -70,19 +67,18 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay))
                 .persist();
-        var entityStake = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity.getId())
-                        .pendingReward(100L)
-                        .stakedNodeIdStart(0L)
-                        .stakeTotalStart(200 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake = MigrationEntityStake.builder()
+                .id(entity.getId())
+                .pendingReward(100L)
+                .stakeTotalStart(200 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake);
 
         // when
         migrate();
 
         // then
-        assertThat(entityStakeRepository.findAll()).containsExactly(entityStake);
+        assertThat(findAllEntityStakes()).containsExactly(entityStake);
     }
 
     @ParameterizedTest
@@ -95,18 +91,19 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay - 1))
                 .persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
 
         // when
         migrate();
@@ -114,7 +111,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
         // then
         long totalRewardRate = 10L + 20L + 30L + 40L; // rewarded for 1st non-zero reward period to the 4th inclusively
         entityStake1.setPendingReward(entityStake1.getStakeTotalStart() / TINYBARS_IN_ONE_HBAR * totalRewardRate);
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -129,18 +126,19 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
                 .persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
 
         // when
         migrate();
@@ -148,7 +146,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
         // then
         long totalRewardRate = 20L + 30L + 40L; // rewarded for 2nd, 3rd, and 4th non-zero reward period
         entityStake1.setPendingReward(entityStake1.getStakeTotalStart() / TINYBARS_IN_ONE_HBAR * totalRewardRate);
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -163,20 +161,21 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         long rewardPayoutEpochDay = firstNonZeroRewardEpochDay + 1;
         long stakePeriodStart = rewardPayoutEpochDay - 1;
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(stakePeriodStart))
                 .persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(101 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(101 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
         var payoutInstant = TestUtils.asStartOfEpochDay(rewardPayoutEpochDay).plusSeconds(300);
         var payoutTimestamp = DomainUtils.convertToNanosMax(payoutInstant);
         var rewardAmount = 2 * TINYBARS_IN_ONE_HBAR;
@@ -212,7 +211,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
         // account1 earns reward for the 3rd and the 4th non-zero reward periods with a stake total of 101 hbar
         long pendingReward = 100 * 20 + 101 * (30 + 40);
         entityStake1.setPendingReward(pendingReward);
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -227,24 +226,25 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.deleted(true).stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
                 .persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
 
         // when
         migrate();
 
         // then
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -259,24 +259,25 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800L)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.declineReward(true).stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
                 .persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
 
         // when
         migrate();
 
         // then
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -291,21 +292,22 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
                 .persist();
-        var entityStake800 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(800L).endStakePeriod(firstNonZeroRewardEpochDay + 3))
-                .persist();
+        var entityStake800 = MigrationEntityStake.builder()
+                .id(800L)
+                .endStakePeriod(firstNonZeroRewardEpochDay + 3)
+                .build();
         var entity1 = domainBuilder.entity().customize(e -> e.stakedNodeId(-1L)).persist();
-        var entityStake1 = domainBuilder
-                .entityStake()
-                .customize(es -> es.id(entity1.getId()).stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR))
-                .persist();
+        var entityStake1 = MigrationEntityStake.builder()
+                .id(entity1.getId())
+                .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
+                .build();
+        persistEntityStakes(entityStake800, entityStake1);
 
         // when
         migrate();
 
         // then
-        assertThat(entityStakeRepository.findAll())
+        assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward")
                 .containsExactlyInAnyOrder(entityStake800, entityStake1);
     }
@@ -320,7 +322,7 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(entityStakeRepository.findAll()).isEmpty();
+        assertThat(findAllEntityStakes()).isEmpty();
     }
 
     private void migrate() {

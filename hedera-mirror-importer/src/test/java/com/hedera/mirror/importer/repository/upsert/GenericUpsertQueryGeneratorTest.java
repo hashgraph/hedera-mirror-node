@@ -249,7 +249,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                             coalesce(staked_node_id, e_staked_node_id, '-1'),
                             coalesce(submit_key, e_submit_key, null),
                             coalesce(timestamp_range, e_timestamp_range, null),
-                            coalesce(type, e_type, null)
+                            coalesce(type, e_type, 'UNKNOWN')
                           from
                             existing
                           where
@@ -322,7 +322,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                           coalesce(staked_node_id, e_staked_node_id, '-1'),
                           coalesce(submit_key, e_submit_key, null),
                           coalesce(timestamp_range, e_timestamp_range, null),
-                          coalesce(type, e_type, null)
+                          coalesce(type, e_type, 'UNKNOWN')
                         from
                           existing
                         where
