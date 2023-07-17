@@ -18,7 +18,6 @@ package com.hedera.services.txns.crypto.validators;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -35,6 +34,10 @@ import java.util.List;
 /**
  * Semantic check validation for {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
  * transaction
+ *
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. The class is stateless and the arguments are passed into the functions
  */
 public class DeleteAllowanceChecks extends AllowanceChecks {
 
@@ -49,11 +52,6 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
      */
     public ResponseCodeEnum deleteAllowancesValidation(
             final List<NftRemoveAllowance> nftAllowances, final Account payerAccount, final Store store) {
-        // feature flag for allowances
-        if (!isEnabled()) {
-            return NOT_SUPPORTED;
-        }
-
         var validity = validateAllowancesCount(nftAllowances);
         if (validity != OK) {
             return validity;

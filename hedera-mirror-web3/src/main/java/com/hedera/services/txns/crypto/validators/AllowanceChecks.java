@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -39,6 +38,10 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction
  * allowances
+ *
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. The class is stateless and the arguments are passed into the functions
  */
 public class AllowanceChecks {
 
@@ -59,15 +62,6 @@ public class AllowanceChecks {
             }
         }
         return nftAllowancesTotal;
-    }
-
-    /**
-     * Check if the allowance feature is enabled
-     *
-     * @return true if the feature is enabled in {@link EvmProperties}
-     */
-    public boolean isEnabled() {
-        return true;
     }
 
     ResponseCodeEnum validateTotalAllowances(final int totalAllowances) {

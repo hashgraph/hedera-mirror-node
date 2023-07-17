@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -41,6 +40,14 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 
+/**
+ * Semantic check validation for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+ * transaction
+ *
+ * Copied Logic type from hedera-services. Differences with the original:
+ * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. The class is stateless and the arguments are passed into the functions
+ */
 public class ApproveAllowanceChecks extends AllowanceChecks {
     /**
      * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
@@ -59,11 +66,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             final List<NftAllowance> nftAllowances,
             final Account payerAccount,
             final Store store) {
-        // feature flag for allowances
-        if (!isEnabled()) {
-            return NOT_SUPPORTED;
-        }
-
         var validity = validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances);
         if (validity != OK) {
             return validity;
