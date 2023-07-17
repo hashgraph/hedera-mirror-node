@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;

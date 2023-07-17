@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 
@@ -61,7 +62,8 @@ public class AccessorBasedUsages {
             TokenFreezeAccount,
             TokenUnfreezeAccount,
             TokenPause,
-            TokenUnpause);
+            TokenUnpause,
+            TokenRevokeKycFromAccount);
 
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;

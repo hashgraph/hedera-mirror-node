@@ -49,6 +49,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
@@ -344,6 +345,14 @@ public class ServicesConfiguration {
     @Bean
     RevokeKycLogic revokeKycLogic() {
         return new RevokeKycLogic();
+    }
+
+    @Bean
+    RevokeKycPrecompile revokeKycPrecompile(
+            final RevokeKycLogic revokeKycLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils precompilePricingUtils) {
+        return new RevokeKycPrecompile(revokeKycLogic, syntheticTxnFactory, precompilePricingUtils);
     }
 
     @Bean
