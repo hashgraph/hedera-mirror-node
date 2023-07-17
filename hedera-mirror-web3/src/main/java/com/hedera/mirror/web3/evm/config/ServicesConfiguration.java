@@ -59,6 +59,7 @@ import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.RevokeKycLogic;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -338,6 +339,11 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+    }
+
+    @Bean
+    RevokeKycLogic revokeKycLogic() {
+        return new RevokeKycLogic();
     }
 
     @Bean
