@@ -236,7 +236,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
 
                 // Emit allowance amount representing an approved transfer debit
-                if (entityProperties.getPersist().isTrackAllowance() && aa.getIsApproval()) {
+                if (entityProperties.getPersist().isTrackAllowance() && aa.getIsApproval() && aa.getAmount() < 0L) {
                     var cryptoAllowance = CryptoAllowance.builder()
                             .amount(aa.getAmount())
                             .owner(entityId.getId())
@@ -512,7 +512,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             tokenTransfer.getTransfersList().forEach(accountAmount -> {
                 // Emit allowance amount representing approved transfer debit
-                if (accountAmount.getIsApproval()) {
+                if (accountAmount.getIsApproval() && accountAmount.getAmount() < 0L) {
                     var tokenAllowance = TokenAllowance.builder()
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
