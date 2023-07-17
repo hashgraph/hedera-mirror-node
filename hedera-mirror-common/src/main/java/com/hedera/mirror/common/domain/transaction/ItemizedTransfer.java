@@ -16,9 +16,7 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,17 +31,7 @@ public class ItemizedTransfer {
 
     private Long amount;
 
-    @Id
-    private Long consensusTimestamp;
-
     private EntityId entityId;
 
     private Boolean isApproval;
-
-    private EntityId payerAccountId;
-
-    @JsonIgnore
-    public Long getId() {
-        return consensusTimestamp;
-    }
 }

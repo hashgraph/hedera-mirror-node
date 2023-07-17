@@ -139,7 +139,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processItemizedTransfers(consensusTimestamp, recordItem, transaction);
+            processItemizedTransfers(recordItem, transaction);
         }
 
         var status = recordItem.getTransactionRecord().getReceipt().getStatus();
@@ -202,7 +202,7 @@ public class EntityRecordItemListener implements RecordItemListener {
      * an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private void processItemizedTransfers(long consensusTimestamp, RecordItem recordItem, Transaction transaction) {
+    private void processItemizedTransfers(RecordItem recordItem, Transaction transaction) {
 
         if (!entityProperties.getPersist().isItemizedTransfers()) {
             return;
@@ -219,12 +219,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                     continue;
                 }
 
-                ItemizedTransfer itemizedTransfer = new ItemizedTransfer();
+                var itemizedTransfer = new ItemizedTransfer();
                 itemizedTransfer.setAmount(aa.getAmount());
-                itemizedTransfer.setConsensusTimestamp(consensusTimestamp);
                 itemizedTransfer.setEntityId(entityId);
                 itemizedTransfer.setIsApproval(aa.getIsApproval());
-                itemizedTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 transaction.addItemizedTransfer(itemizedTransfer);
             }
         }

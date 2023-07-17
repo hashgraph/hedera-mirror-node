@@ -46,7 +46,6 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.*;
-import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -109,7 +108,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<Nft> nfts;
     private final Collection<NodeStake> nodeStakes;
-    private final Collection<ItemizedTransfer> itemizedTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
@@ -176,7 +174,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nfts = new ArrayList<>();
         networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
-        itemizedTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
@@ -479,7 +476,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowances.clear();
             nftAllowanceState.clear();
             nodeStakes.clear();
-            itemizedTransfers.clear();
             prngs.clear();
             schedules.clear();
             stakingRewardTransfers.clear();
@@ -541,7 +537,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            batchPersister.persist(itemizedTransfers);
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 

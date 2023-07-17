@@ -1208,8 +1208,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                                     .isEqualTo(contract.toEntityId());
                             assertThat(((ItemizedTransfer) transfer).getAmount())
                                     .isEqualTo(transferAmount);
-                            assertThat(((ItemizedTransfer) transfer).getPayerAccountId())
-                                    .isEqualTo(recordItem.getPayerAccountId());
                         }));
     }
 
