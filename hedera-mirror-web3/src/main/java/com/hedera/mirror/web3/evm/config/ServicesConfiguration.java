@@ -31,10 +31,13 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -46,6 +49,7 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -60,6 +64,7 @@ import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -87,11 +92,6 @@ public class ServicesConfiguration {
     @Bean
     BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicFcfsUsagePrices(ratesAndFeesLoader);
-    }
-
-    @Bean
-    AccessorBasedUsages accessorBasedUsages() {
-        return new AccessorBasedUsages();
     }
 
     @Bean
@@ -126,7 +126,6 @@ public class ServicesConfiguration {
             UsagePricesProvider usagePricesProvider,
             PricedUsageCalculator pricedUsageCalculator,
             List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
-        // queryUsageEstimators and txnResourceUsegaEstimator will be implemented in separate PR
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
 
@@ -145,6 +144,11 @@ public class ServicesConfiguration {
                 pricedUsageCalculator,
                 Collections.emptySet(),
                 txnUsageEstimators);
+    }
+
+    @Bean
+    ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor() {
+        return new ExpandHandleSpanMapAccessor();
     }
 
     @Bean
@@ -294,6 +298,29 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    TokenOpsUsage tokenOpsUsage() {
+        return new TokenOpsUsage();
+    }
+
+    @Bean
+    CryptoOpsUsage cryptoOpsUsage() {
+        return new CryptoOpsUsage();
+    }
+
+    @Bean
+    OpUsageCtxHelper opUsageCtxHelper() {
+        return new OpUsageCtxHelper();
+    }
+
+    @Bean
+    AccessorBasedUsages accessorBasedUsages(
+            final TokenOpsUsage tokenOpsUsage,
+            final CryptoOpsUsage cryptoOpsUsage,
+            final OpUsageCtxHelper opUsageCtxHelper) {
+        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper);
+    }
+
+    @Bean
     WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
     }
@@ -317,5 +344,14 @@ public class ServicesConfiguration {
     @Bean
     RevokeKycLogic revokeKycLogic() {
         return new RevokeKycLogic();
+    }
+
+    @Bean
+    TokenCreatePrecompile tokenCreatePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            CreateLogic createLogic) {
+        return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
     }
 }

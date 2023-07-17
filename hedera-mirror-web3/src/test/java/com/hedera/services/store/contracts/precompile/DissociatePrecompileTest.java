@@ -32,6 +32,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.services.fees.FeeCalculator;
@@ -103,6 +104,9 @@ class DissociatePrecompileTest {
 
     @Mock
     private Store store;
+
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
 
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
@@ -201,13 +205,14 @@ class DissociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -226,13 +231,14 @@ class DissociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -250,7 +256,7 @@ class DissociatePrecompileTest {
         final var builder = TokenDissociateTransactionBody.newBuilder();
         builder.setAccount(HTSTestsUtil.multiDissociateOp.accountId());
         builder.addAllTokens(HTSTestsUtil.multiDissociateOp.tokenIds());
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -258,8 +264,8 @@ class DissociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -276,7 +282,7 @@ class DissociatePrecompileTest {
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(HTSTestsUtil.dissociateOp.accountId());
         builder.addAllTokens(HTSTestsUtil.dissociateOp.tokenIds());
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -284,8 +290,8 @@ class DissociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

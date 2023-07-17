@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.grpc.repository;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.grpc.config.CacheConfiguration;
-import com.hedera.mirror.grpc.domain.Entity;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
