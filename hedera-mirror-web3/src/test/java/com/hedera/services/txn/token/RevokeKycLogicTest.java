@@ -54,12 +54,12 @@ public class RevokeKycLogicTest {
     @Mock
     private TokenRelationship tokenRelationship;
 
-    private RevokeKycLogic revokeKycLogic;
+    private RevokeKycLogic subject;
     private TransactionBody tokenRevokeKycBody;
 
     @BeforeEach
     void setUp() {
-        revokeKycLogic = new RevokeKycLogic();
+        subject = new RevokeKycLogic();
     }
 
     @Test
@@ -73,7 +73,7 @@ public class RevokeKycLogicTest {
         given(tokenRelationship.setKycGranted(false)).willReturn(tokenRelationshipResult);
 
         // when:
-        revokeKycLogic.revokeKyc(idOfToken, idOfAccount, store);
+        subject.revokeKyc(idOfToken, idOfAccount, store);
 
         // then:
         verify(tokenRelationship).setKycGranted(false);
@@ -85,7 +85,7 @@ public class RevokeKycLogicTest {
         givenValidTxnCtx();
 
         // expect:
-        assertEquals(OK, revokeKycLogic.validate(tokenRevokeKycBody));
+        assertEquals(OK, subject.validate(tokenRevokeKycBody));
     }
 
     @Test
@@ -93,7 +93,7 @@ public class RevokeKycLogicTest {
         givenMissingTokenTxnCtx();
 
         // expect:
-        assertEquals(INVALID_TOKEN_ID, revokeKycLogic.validate(tokenRevokeKycBody));
+        assertEquals(INVALID_TOKEN_ID, subject.validate(tokenRevokeKycBody));
     }
 
     @Test
@@ -101,7 +101,7 @@ public class RevokeKycLogicTest {
         givenMissingAccountTxnCtx();
 
         // expect:
-        assertEquals(INVALID_ACCOUNT_ID, revokeKycLogic.validate(tokenRevokeKycBody));
+        assertEquals(INVALID_ACCOUNT_ID, subject.validate(tokenRevokeKycBody));
     }
 
     private void givenValidTxnCtx() {
