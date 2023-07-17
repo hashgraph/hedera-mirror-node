@@ -99,7 +99,7 @@
     "rewire": "^6.0.0",
     "sinon": "^15.2.0",
     "supertest": "^6.3.3",
-    "testcontainers": "^9.9.1"
+    "testcontainers": "^9.10.1"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
