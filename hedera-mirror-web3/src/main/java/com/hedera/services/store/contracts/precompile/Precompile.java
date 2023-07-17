@@ -24,6 +24,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
@@ -61,7 +62,11 @@ public interface Precompile {
             EntityAddressSequencer entityAddressSequencer,
             MirrorEvmContractAliases mirrorEvmContractAliases);
 
-    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
+    long getGasRequirement(
+            long blockTimestamp,
+            TransactionBody.Builder transactionBody,
+            Store store,
+            HederaEvmContractAliases mirrorEvmContractAliases);
 
     Set<Integer> getFunctionSelectors();
 

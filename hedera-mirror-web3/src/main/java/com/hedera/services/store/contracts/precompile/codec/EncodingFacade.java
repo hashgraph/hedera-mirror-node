@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_BURN;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.hapiAllowanceOfType;
@@ -101,6 +102,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeBurnSuccess(final long totalSupply) {
+        return functionResultBuilder()
+                .forFunction(HAPI_BURN)
+                .withStatus(SUCCESS.getNumber())
+                .withTotalSupply(totalSupply)
+                .build();
+    }
+
     public Bytes encodeMintFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(HAPI_MINT)
@@ -110,17 +119,9 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeBurnSuccess(final long totalSupply) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
-                .withStatus(SUCCESS.getNumber())
-                .withTotalSupply(totalSupply)
-                .build();
-    }
-
     public Bytes encodeBurnFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
+                .forFunction(HAPI_BURN)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
                 .build();

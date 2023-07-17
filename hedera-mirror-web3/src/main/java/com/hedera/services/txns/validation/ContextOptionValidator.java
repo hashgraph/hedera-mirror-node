@@ -24,6 +24,8 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 
 /**
  * Copied Logic type from hedera-services. Unnecessary methods are deleted.
@@ -61,6 +63,13 @@ public class ContextOptionValidator implements OptionValidator {
     public ResponseCodeEnum nftMetadataCheck(final byte[] metadata) {
         return lengthCheck(
                 metadata.length, mirrorNodeEvmProperties.getMaxNftMetadataBytes(), ResponseCodeEnum.METADATA_TOO_LONG);
+    }
+
+    @Override
+    public boolean isValidExpiry(Timestamp expiry) {
+        final var now = Instant.now();
+        final var then = Instant.ofEpochSecond(expiry.getSeconds(), expiry.getNanos());
+        return then.isAfter(now);
     }
 
     public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {

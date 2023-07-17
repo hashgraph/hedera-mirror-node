@@ -17,11 +17,13 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
+    protected static final String FAILURE_MESSAGE = "Invalid full prefix for %s precompile!";
     protected final PrecompilePricingUtils pricingUtils;
     protected TransactionBody.Builder transactionBody;
 
@@ -31,7 +33,11 @@ public abstract class AbstractWritePrecompile implements Precompile {
 
     @Override
     public long getGasRequirement(
-            long blockTimestamp, final TransactionBody.Builder transactionBody, final Store store) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, store);
+            long blockTimestamp,
+            final TransactionBody.Builder transactionBody,
+            final Store store,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
+        return pricingUtils.computeGasRequirement(
+                blockTimestamp, this, transactionBody, store, mirrorEvmContractAliases);
     }
 }

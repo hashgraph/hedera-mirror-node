@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -69,7 +70,10 @@ public class MockPrecompile implements Precompile {
 
     @Override
     public long getGasRequirement(
-            final long blockTimestamp, final TransactionBody.Builder transactionBody, final Store store) {
+            final long blockTimestamp,
+            final TransactionBody.Builder transactionBody,
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
         return 0;
     }
 

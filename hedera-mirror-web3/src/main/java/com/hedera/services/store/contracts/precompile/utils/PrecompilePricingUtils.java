@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.*;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -105,7 +106,11 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(final TransactionBody.Builder txBody, final Timestamp timestamp, final Store store) {
+    public long gasFeeInTinybars(
+            final TransactionBody.Builder txBody,
+            final Timestamp timestamp,
+            final Store store,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
         final var signedTxn = SignedTransaction.newBuilder()
                 .setBodyBytes(txBody.build().toByteString())
                 .setSigMap(SignatureMap.getDefaultInstance())
@@ -114,7 +119,7 @@ public class PrecompilePricingUtils {
                 .setSignedTransactionBytes(signedTxn.toByteString())
                 .build();
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
-        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp, mirrorEvmContractAliases);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -137,7 +142,8 @@ public class PrecompilePricingUtils {
             final long blockTimestamp,
             final Precompile precompile,
             final TransactionBody.Builder transactionBody,
-            final Store store) {
+            final Store store,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -147,7 +153,8 @@ public class PrecompilePricingUtils {
                         .setTransactionValidStart(timestamp)
                         .build()),
                 timestamp,
-                store);
+                store,
+                mirrorEvmContractAliases);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);

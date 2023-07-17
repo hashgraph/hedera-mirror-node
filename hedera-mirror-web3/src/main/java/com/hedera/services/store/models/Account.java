@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_A
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.EntityNum;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -67,6 +68,7 @@ public class Account extends HederaEvmAccount {
     private final int numTreasuryTitles;
     private final long ethereumNonce;
     private final boolean isSmartContract;
+    private final JKey key;
 
     @Builder(toBuilder = true)
     @SuppressWarnings("java:S107")
@@ -87,7 +89,8 @@ public class Account extends HederaEvmAccount {
             int numPositiveBalances,
             int numTreasuryTitles,
             long ethereumNonce,
-            boolean isSmartContract) {
+            boolean isSmartContract,
+            JKey key) {
         super(id.asEvmAddress());
         this.entityId = entityId;
         this.id = id;
@@ -107,6 +110,7 @@ public class Account extends HederaEvmAccount {
         this.numTreasuryTitles = numTreasuryTitles;
         this.ethereumNonce = ethereumNonce;
         this.isSmartContract = isSmartContract;
+        this.key = key;
     }
 
     /**
@@ -131,7 +135,8 @@ public class Account extends HederaEvmAccount {
                 0,
                 0,
                 0L,
-                false);
+                false,
+                null);
     }
 
     public static Account getEmptyAccount() {
@@ -168,7 +173,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -197,7 +203,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -226,7 +233,8 @@ public class Account extends HederaEvmAccount {
                 newNumPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                key);
     }
 
     /**
@@ -257,7 +265,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                isSmartContract);
+                isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -286,7 +295,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                isSmartContract);
+                isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -315,7 +325,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -344,7 +355,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -374,7 +386,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     /**
@@ -404,7 +417,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                key);
     }
 
     /**
@@ -435,7 +449,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
-                oldAccount.isSmartContract);
+                oldAccount.isSmartContract,
+                oldAccount.key);
     }
 
     public int getMaxAutomaticAssociations() {
@@ -568,6 +583,10 @@ public class Account extends HederaEvmAccount {
 
     public Account setBalance(long balance) {
         return createNewAccountWithNewBalance(this, balance);
+    }
+
+    public JKey getKey() {
+        return this.key;
     }
 
     @Override

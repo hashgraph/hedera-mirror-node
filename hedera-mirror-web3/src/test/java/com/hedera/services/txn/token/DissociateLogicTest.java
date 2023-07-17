@@ -79,7 +79,7 @@ class DissociateLogicTest {
     public void beforeEach() {
         when(accountId.asEvmAddress()).thenReturn(accountAddress);
         account = new Account(0L, accountId, 0L);
-        tokenRelationship = new TokenRelationship(token, account);
+        tokenRelationship = new TokenRelationship(token, account, false);
         dissociateLogic = new DissociateLogic();
         spyAccount = spy(account);
     }
@@ -202,11 +202,11 @@ class DissociateLogicTest {
     @Test
     void verifyDecrementedAutoAssociations() {
         var newAccount = new Account(
-                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false);
+                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false, null);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, 3L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, false, 3L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
@@ -220,11 +220,11 @@ class DissociateLogicTest {
     @Test
     void verifyUpdagtedNumPositiveBalance() {
         var newAccount = new Account(
-                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false);
+                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false, null);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, 0L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, false, 0L);
         setupToken();
         setupTokenRelationship();
         setupAccount();

@@ -63,6 +63,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.commons.codec.DecoderException;
@@ -196,5 +197,13 @@ public final class MiscUtils {
 
     public static boolean isRecoveredEvmAddress(final byte[] address) {
         return address != null && address.length == EVM_ADDRESS_LEN;
+    }
+
+    public static long[] convertArrayToLong(final List<Long> list) {
+        final var result = new long[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            result[i] = list.get(i);
+        }
+        return result;
     }
 }

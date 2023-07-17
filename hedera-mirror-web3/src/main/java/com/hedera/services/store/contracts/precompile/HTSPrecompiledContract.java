@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -78,6 +79,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final EntityAddressSequencer entityAddressSequencer;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private Store store;
+    private HederaEvmContractAliases mirrorNodeEvmProperties;
     private Precompile precompile;
     private long gasRequirement = 0L;
     private TransactionBody.Builder transactionBody;
@@ -156,7 +158,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now, transactionBody, store);
+        gasRequirement = precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -265,6 +267,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
         this.store = updater.getStore();
+        this.mirrorNodeEvmProperties = updater.aliases();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
