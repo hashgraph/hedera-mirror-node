@@ -29,7 +29,18 @@ import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
-import com.hedera.mirror.test.e2e.acceptance.response.*;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.util.ArrayList;
@@ -243,7 +254,7 @@ public class MirrorNodeClient {
         return callRestEndpoint("/transactions/{transactionId}", MirrorTransactionsResponse.class, transactionId);
     }
 
-    public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
+    public MirrorTokenRelationshipResponse getTokenRelationships(AccountId accountId, TokenId tokenId) {
         log.debug(
                 "Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node",
                 accountId,
