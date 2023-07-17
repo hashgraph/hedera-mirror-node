@@ -65,7 +65,7 @@ public class CommonDownloaderProperties {
 
     @Max(1)
     @Min(0)
-    private BigDecimal downloadRatio = null;
+    private BigDecimal downloadRatio = BigDecimal.ONE;
 
     private String endpointOverride;
 
