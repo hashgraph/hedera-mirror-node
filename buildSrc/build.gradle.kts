@@ -38,7 +38,7 @@ dependencies {
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.2")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
     implementation("io.freefair.gradle:lombok-plugin:8.1.0")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.2")
     implementation("org.apache.commons:commons-compress:1.23.0")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.3")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.6.0")
