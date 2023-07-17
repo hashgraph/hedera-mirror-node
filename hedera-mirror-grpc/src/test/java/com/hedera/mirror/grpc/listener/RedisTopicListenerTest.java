@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.grpc.listener;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import jakarta.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
@@ -40,6 +40,6 @@ class RedisTopicListenerTest extends AbstractSharedTopicListenerTest {
     }
 
     private String getTopic(TopicMessage topicMessage) {
-        return "topic." + topicMessage.getTopicId();
+        return "topic." + topicMessage.getTopicId().getId();
     }
 }

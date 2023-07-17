@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -59,6 +60,7 @@ import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.RevokeKycLogic;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -283,6 +285,11 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    GrantKycLogic grantKycLogic() {
+        return new GrantKycLogic();
+    }
+
+    @Bean
     BurnPrecompile burnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
@@ -333,6 +340,20 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+    }
+
+    @Bean
+    RevokeKycLogic revokeKycLogic() {
+        return new RevokeKycLogic();
+    }
+
+    @Bean
+    TokenCreatePrecompile tokenCreatePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            CreateLogic createLogic) {
+        return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
     }
 
     @Bean
