@@ -24,8 +24,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.function.ToDoubleFunction;
@@ -87,18 +85,22 @@ class MetricsConfiguration {
 
     private Collection<String> getTablesNames() {
         Collection<String> tableNames = new LinkedHashSet<>();
+        var types = new String[] {"TABLE"};
 
-        try (Connection connection = dataSource.getConnection();
-                ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
+        try (var connection = dataSource.getConnection();
+                var rs = connection.getMetaData().getTables(null, dbProperties.getSchema(), null, types)) {
 
             while (rs.next()) {
-                tableNames.add(rs.getString("TABLE_NAME"));
+                var tableName = rs.getString("TABLE_NAME");
+                if (!tableName.endsWith("_default") && !tableName.matches(".*\\d+$")) {
+                    tableNames.add(tableName);
+                }
             }
         } catch (Exception e) {
             log.warn("Unable to list table names. No table metrics will be available", e);
         }
 
-        log.info("Collecting table metrics: {}", tableNames);
+        log.info("Collecting {} table metrics: {}", tableNames.size(), tableNames);
         return tableNames;
     }
 }
