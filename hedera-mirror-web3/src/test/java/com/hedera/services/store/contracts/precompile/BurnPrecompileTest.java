@@ -36,6 +36,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -221,6 +222,9 @@ class BurnPrecompileTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
     private ContextOptionValidator contextOptionValidator;
 
     private HTSPrecompiledContract subject;
@@ -245,7 +249,12 @@ class BurnPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
     }
 
     @Test

@@ -41,9 +41,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -178,6 +180,12 @@ class WipeFungiblePrecompileTest {
     @Mock
     private TokenModificationResult tokenModificationResult;
 
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
 
@@ -198,7 +206,12 @@ class WipeFungiblePrecompileTest {
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
 
         wipeFungiblePrecompile = Mockito.mockStatic(WipeFungiblePrecompile.class);
     }

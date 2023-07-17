@@ -248,7 +248,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(HTSTestsUtil.failResult, result);
@@ -271,7 +273,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -295,7 +299,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -320,7 +326,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -344,7 +352,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -368,7 +378,9 @@ class TransferPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+        ;
         final var result = subject.computeInternal(frame);
 
         // then:

@@ -19,7 +19,9 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
@@ -56,7 +58,12 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(
+            final MessageFrame frame,
+            final Store store,
+            final TransactionBody transactionBody,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
         final var wipeBody = transactionBody.getTokenWipe();

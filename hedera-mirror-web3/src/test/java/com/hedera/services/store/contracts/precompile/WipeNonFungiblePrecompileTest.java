@@ -38,8 +38,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -156,6 +158,12 @@ class WipeNonFungiblePrecompileTest {
     private com.hedera.services.store.models.Account updatedAccount;
 
     @Mock
+    private EntityAddressSequencer entityAddressSequencer;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
     private TokenModificationResult tokenModificationResult;
 
     private HTSPrecompiledContract subject;
@@ -174,7 +182,12 @@ class WipeNonFungiblePrecompileTest {
                 new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                entityAddressSequencer,
+                mirrorEvmContractAliases);
 
         wipeNonFungiblePrecompile = Mockito.mockStatic(WipeNonFungiblePrecompile.class);
     }

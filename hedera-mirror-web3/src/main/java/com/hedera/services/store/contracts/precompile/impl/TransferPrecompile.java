@@ -184,11 +184,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(
-            MessageFrame frame,
-            Store store,
-            TransactionBody transactionBody,
-            EntityAddressSequencer entityAddressSequencer,
-            MirrorEvmContractAliases mirrorEvmContractAliases) {
+            final MessageFrame frame,
+            final Store store,
+            final TransactionBody transactionBody,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         initializeHederaTokenStore(store);
         if (impliedValidity == null) {
             extrapolateDetailsFromSyntheticTxn();
