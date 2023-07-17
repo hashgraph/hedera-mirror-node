@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public class RevokeKycLogic {
 
-    public TokenRelationship revokeKyc(final Id targetTokenId, final Id targetAccountId, final Store store) {
+    public void revokeKyc(final Id targetTokenId, final Id targetAccountId, final Store store) {
         /* --- Load the model objects --- */
         final var tokenRelationshipKey =
                 new TokenRelationshipKey(targetTokenId.asEvmAddress(), targetAccountId.asEvmAddress());
@@ -49,7 +49,6 @@ public class RevokeKycLogic {
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(tokenRelationshipResult);
-        return tokenRelationshipResult;
     }
 
     public ResponseCodeEnum validate(final TransactionBody txnBody) {
