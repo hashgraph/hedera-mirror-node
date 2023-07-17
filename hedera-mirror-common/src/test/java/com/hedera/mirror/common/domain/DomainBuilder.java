@@ -325,27 +325,29 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
+        var timestamp = timestamp();
         var builder = CryptoAllowance.builder()
                 .amount(10)
                 .amountGranted(100)
-                .createdTimestamp(timestamp())
+                .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.atLeast(timestamp()));
+                .timestampRange(Range.atLeast(timestamp));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
             cryptoAllowanceHistory() {
+        var timestamp = timestamp();
         var builder = CryptoAllowanceHistory.builder()
                 .amount(10)
                 .amountGranted(100)
-                .createdTimestamp(timestamp())
+                .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -818,28 +820,30 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
+        var timestamp = timestamp();
         var builder = TokenAllowance.builder()
                 .amount(10L)
                 .amountGranted(100L)
-                .createdTimestamp(timestamp())
+                .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.atLeast(timestamp()))
+                .timestampRange(Range.atLeast(timestamp))
                 .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
             tokenAllowanceHistory() {
+        var timestamp = timestamp();
         var builder = TokenAllowanceHistory.builder()
                 .amount(10L)
                 .amountGranted(100L)
-                .createdTimestamp(timestamp())
+                .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
