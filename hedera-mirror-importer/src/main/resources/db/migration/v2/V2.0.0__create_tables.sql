@@ -409,17 +409,6 @@ create table if not exists node_stake
 );
 comment on table node_stake is 'Node staking information';
 
--- non_fee_transfer
-create table if not exists non_fee_transfer
-(
-    amount              bigint  not null,
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    entity_id           bigint  null,
-    payer_account_id    bigint  not null
-) partition by range (consensus_timestamp);
-comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
-
 -- prng
 create table if not exists prng
 (
@@ -637,6 +626,7 @@ create table if not exists transaction
     errata                     errata_type null,
     index                      integer     null,
     initial_balance            bigint               default 0,
+    itemized_transfer          jsonb       null,
     max_fee                    bigint,
     memo                       bytea,
     nft_transfer               jsonb       null,

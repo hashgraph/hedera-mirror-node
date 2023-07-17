@@ -51,8 +51,6 @@ select create_distributed_table('nft_allowance', 'owner', colocate_with => 'enti
 
 select create_distributed_table('nft_allowance_history', 'owner', colocate_with => 'nft_allowance');
 
-select create_distributed_table('non_fee_transfer', 'payer_account_id', colocate_with => 'entity');
-
 select create_distributed_table('prng', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');

@@ -159,10 +159,6 @@ create index if not exists nft_allowance_history__owner_spender_token_lower_time
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
 
--- non_fee_transfer
-create index if not exists non_fee_transfer__consensus_timestamp
-    on non_fee_transfer (consensus_timestamp);
-
 -- prng
 alter table prng
     add constraint prng__pk primary key (consensus_timestamp, payer_account_id);
