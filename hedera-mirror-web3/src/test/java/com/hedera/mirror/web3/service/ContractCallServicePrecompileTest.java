@@ -169,7 +169,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         assertThat(deleted).isFalse();
         assertThat(defaultKycStatus).isFalse();
-        assertThat(pauseStatus).isTrue();
+        assertThat(pauseStatus).isFalse();
         assertThat(fractionalFees).isNotEmpty();
         assertThat(ledgerId).isEqualTo("0x01");
         assertThat(name).isEqualTo("Hbars");
@@ -239,9 +239,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum ContractReadFunctions {
-        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
+        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {false}),
         IS_FROZEN_ETH_ADDRESS(
-                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
+                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {false}),
         IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {false}),
         IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),

@@ -53,6 +53,7 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_UINT = "(address,uint256)";
     private static final String ADDRESS_DUO_UINT = "(address,address,uint256)";
     private static final String TRIPLE_ADDRESS_UINT = "(address,address,address,uint256)";
+    public static final String TRIPLE_ADDRESS_INT64S = "(address,address[],address[],int64[])";
     private static final String ADDRESS_INT64 = "(address,int64)";
     private static final String KEY_VALUE = "((bool,address,bytes,bytes,address))";
     private static final String CUSTOM_FEE = "(bytes,bytes,bytes)";
@@ -160,6 +161,17 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
             case DOUBLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
+            case TRIPLE_ADDRESS_INT64S -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream(((Address[]) parameters[1]))
+                            .map(FunctionEncodeDecoder::convertAddress)
+                            .toList()
+                            .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]),
+                    Arrays.stream(((Address[]) parameters[2]))
+                            .map(FunctionEncodeDecoder::convertAddress)
+                            .toList()
+                            .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[2]).length]),
+                    parameters[3]);
             case ADDRESS_ADDRESS_ADDRESS_INT64 -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     convertAddress((Address) parameters[1]),

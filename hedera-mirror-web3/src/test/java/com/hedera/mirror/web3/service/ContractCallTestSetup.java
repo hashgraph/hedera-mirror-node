@@ -303,6 +303,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
         final var ethAccount2 = ethAccountPersist(359L, ETH_ADDRESS2);
+        tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -500,7 +501,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(key)
                         .pauseKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                         .wipeKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
