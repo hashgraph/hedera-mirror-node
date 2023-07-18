@@ -182,6 +182,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+    protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
     protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
@@ -300,8 +301,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
         final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
-        final var ethAccount = ethAccountPersist();
-        final var ethAccount2 = ethAccountPersist2();
+        final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
+        final var ethAccount2 = ethAccountPersist(359L, ETH_ADDRESS2);
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -427,14 +428,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private long ethAccountPersist() {
-        final var ethAccount = 358L;
+    private long ethAccountPersist(long ethAccount, Address evmAddress) {
 
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ethAccount)
                         .num(ethAccount)
-                        .evmAddress(ETH_ADDRESS.toArrayUnsafe())
+                        .evmAddress(evmAddress.toArrayUnsafe())
                         .balance(2000L))
                 .persist();
         return ethAccount;
