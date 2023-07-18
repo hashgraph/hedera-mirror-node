@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
@@ -300,10 +301,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
         final var nftEntityId = nftPersist(senderEntityId, spenderEntityId, KEY_PROTO);
         final var ethAccount = ethAccountPersist();
-        tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        final var ethAccount2 = ethAccountPersist2();
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, ethAccount2, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
@@ -378,7 +380,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .decimals(12)
                         .wipeKey(key)
                         .freezeKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR"))
@@ -427,6 +429,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     private long ethAccountPersist() {
         final var ethAccount = 358L;
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(ethAccount)
+                        .num(ethAccount)
+                        .evmAddress(ETH_ADDRESS.toArrayUnsafe())
+                        .balance(2000L))
+                .persist();
+        return ethAccount;
+    }
+
+    private long ethAccountPersist2() {
+        final var ethAccount = 359L;
 
         domainBuilder
                 .entity()

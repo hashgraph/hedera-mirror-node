@@ -408,7 +408,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var amount = amounts[i];
 
             var accountID = accountIDs.get(i);
-            if (amount > 0 && !accountID.hasAlias()) {
+            if (amount > 0 && accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
 
