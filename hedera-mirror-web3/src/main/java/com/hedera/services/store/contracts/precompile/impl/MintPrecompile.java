@@ -26,7 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -72,7 +72,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final MintLogic mintLogic;
 
     public MintPrecompile(
@@ -80,9 +79,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final MintLogic mintLogic) {
-        super(pricingUtils);
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.mintLogic = mintLogic;
     }
 
@@ -124,9 +122,10 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var mintBody = transactionBody.getTokenMint();
         final var tokenId = mintBody.getToken();
 

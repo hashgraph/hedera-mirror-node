@@ -41,7 +41,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -192,7 +191,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V3 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V3.selector());
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final CreateLogic createLogic;
     private TokenCreateWrapper tokenCreateOp;
 
@@ -201,9 +199,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final CreateLogic createLogic) {
-        super(pricingUtils);
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.createLogic = createLogic;
     }
 
@@ -241,7 +238,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         return null;
     }
 
