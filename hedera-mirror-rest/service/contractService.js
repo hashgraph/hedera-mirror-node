@@ -31,7 +31,7 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  Transaction,
+  EthereumTransaction,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -228,6 +228,71 @@ class ContractService extends BaseService {
     return [query, params];
   }
 
+  getDetailedContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
+    const params = whereParams;
+    const query = [
+      `with ${ContractService.entityCTE},
+      ${EthereumTransaction.tableName} as (
+        select 
+          ${EthereumTransaction.HASH}, ${EthereumTransaction.ACCESS_LIST}, ${EthereumTransaction.CHAIN_ID}, ${EthereumTransaction.GAS_PRICE},
+          ${EthereumTransaction.MAX_FEE_PER_GAS}, ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, ${EthereumTransaction.NONCE},
+          ${EthereumTransaction.SIGNATURE_R}, ${EthereumTransaction.SIGNATURE_S}, ${EthereumTransaction.TYPE},
+          ${EthereumTransaction.RECOVERY_ID}, ${EthereumTransaction.VALUE}, ${EthereumTransaction.CONSENSUS_TIMESTAMP}
+        from ${EthereumTransaction.tableName}
+      ),
+      ${RecordFile.tableName} as (
+        select
+          ${RecordFile.HASH}, ${RecordFile.INDEX}, ${RecordFile.GAS_USED}, ${RecordFile.CONSENSUS_END}
+        from ${RecordFile.tableName}
+      )`,
+      ` select
+          ${contractResultsFields},
+          coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS},
+          case when ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} is not null
+            then json_build_object(
+              'accessList', encode(${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)}, 'hex'),
+              'chainId', encode(${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)}, 'hex'),
+              'gasPrice', encode(${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)}, 'hex'),
+              'maxFeePerGas', encode(${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)}, 'hex'),
+              'maxPriorityFeePerGas', encode(${EthereumTransaction.getFullName(
+                EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS
+              )}, 'hex'),
+              'nonce', ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
+              'signatureR', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)}, 'hex'),
+              'signatureS', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)}, 'hex'),
+              'type', ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
+              'recoveryId', ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
+              'value', encode(${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}, 'hex')
+            ) 
+            else null
+          end as ${EthereumTransaction.tableName},
+          json_build_object(
+            'hash', ${RecordFile.getFullName(RecordFile.HASH)},
+            'index', ${RecordFile.getFullName(RecordFile.INDEX)},
+            'gasUsed', ${RecordFile.getFullName(RecordFile.GAS_USED)}
+          ) as ${RecordFile.tableName}
+      from ${ContractResult.tableName} ${ContractResult.tableAlias}`,
+      ContractService.joinContractResultWithEvmAddress,
+      `left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias} 
+        on ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = ${ContractResult.getFullName(
+        ContractResult.TRANSACTION_HASH
+      )}`,
+      `left join ${RecordFile.tableName} ${RecordFile.tableAlias}
+        on ${RecordFile.getFullName(RecordFile.CONSENSUS_END)} = (
+          select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} 
+          where ${RecordFile.CONSENSUS_END} >= ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)}
+          order by ${RecordFile.CONSENSUS_END} ${orderFilterValues.ASC} 
+          limit 1
+        )`,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
+      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
+    ].join('\n');
+    params.push(limit);
+
+    return [query, params];
+  }
+
   async getContractResultsByIdAndFilters(
     whereConditions = [],
     whereParams = [],
@@ -236,6 +301,27 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
+    return rows.map((cr) => {
+      return {
+        ...new ContractResult(cr),
+        hash: cr.hash,
+      };
+    });
+  }
+
+  async getDetailedContractResultsByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    order = orderFilterValues.DESC,
+    limit = defaultLimit
+  ) {
+    const [query, params] = this.getDetailedContractResultsByIdAndFiltersQuery(
+      whereConditions,
+      whereParams,
+      order,
+      limit
+    );
+    const rows = await super.getRows(query, params, 'getDetailedContractResultsByIdAndFilters');
     return rows.map((cr) => {
       return {
         ...new ContractResult(cr),

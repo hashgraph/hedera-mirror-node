@@ -112,6 +112,12 @@ create index if not exists entity_history__id_lower_timestamp on entity_history 
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
 
+-- entity_stake_history
+create index if not exists entity_stake_history__id_lower_timestamp
+    on entity_stake_history (id, lower(timestamp_range));
+create index if not exists entity_stake_history__timestamp_range
+    on entity_stake_history using gist (timestamp_range);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
@@ -156,8 +162,10 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 create index if not exists nft_allowance_history__owner_spender_token_lower_timestamp
     on nft_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
+-- node_stake
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
+create index if not exists node_stake__epoch_day on node_stake (epoch_day);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp

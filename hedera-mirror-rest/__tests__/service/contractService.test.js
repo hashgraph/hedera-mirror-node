@@ -687,6 +687,291 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
   });
 });
 
+describe('ContractService.getDetailedContractResultsByIdAndFilters tests', () => {
+  test('No match', async () => {
+    const response = await ContractService.getDetailedContractResultsByIdAndFilters();
+    expect(response).toEqual([]);
+  });
+
+  test('Row match', async () => {
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: '1688790010771950074',
+        function_parameters: '0x0D',
+        amount: 10,
+        transaction_nonce: 1,
+        transaction_hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+      },
+    ]);
+    await integrationDomainOps.loadEthereumTransactions([
+      {
+        hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+        max_fee_per_gas: '0x56',
+        chain_id: [0x1, 0x2a],
+        nonce: 10,
+        value: [0xa0],
+      },
+    ]);
+    await integrationDomainOps.loadRecordFiles([
+      {
+        consensus_end: '1688790010771950074',
+        hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+        index: 5,
+        gas_used: 400000,
+      },
+    ]);
+
+    const expectedContractResult = [
+      {
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: BigInt('1688790010771950074'),
+        gasLimit: 1000,
+        gasUsed: null,
+        transactionNonce: 1,
+        ethereumTransaction: {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '56',
+          maxPriorityFeePerGas: null,
+          nonce: 10,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          recoveryId: 1,
+          value: 'a0',
+        },
+        recordFile: {
+          hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+          index: 5,
+          gasUsed: 400000,
+        },
+      },
+    ];
+
+    const response = await ContractService.getDetailedContractResultsByIdAndFilters();
+    expect(response).toMatchObject(expectedContractResult);
+  });
+
+  test('Id match', async () => {
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 1,
+        consensus_timestamp: 1,
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 123,
+        transaction_nonce: 2,
+      },
+      {
+        contract_id: 2,
+        consensus_timestamp: '1688790010771950074',
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 123,
+        transaction_nonce: 3,
+        transaction_hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+      },
+    ]);
+    await integrationDomainOps.loadEthereumTransactions([
+      {
+        hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+        max_fee_per_gas: '0x56',
+        chain_id: [0x1, 0x2a],
+        nonce: 10,
+        value: [0xa0],
+      },
+    ]);
+    await integrationDomainOps.loadRecordFiles([
+      {
+        consensus_end: '1688790010771950074',
+        hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+        index: 5,
+        gas_used: 400000,
+      },
+    ]);
+
+    const expectedContractResult = [
+      {
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: BigInt('1688790010771950074'),
+        gasLimit: 1000,
+        gasUsed: null,
+        payerAccountId: 123,
+        transactionNonce: 3,
+        ethereumTransaction: {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '56',
+          maxPriorityFeePerGas: null,
+          nonce: 10,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          recoveryId: 1,
+          value: 'a0',
+        },
+        recordFile: {
+          hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+          index: 5,
+          gasUsed: 400000,
+        },
+      },
+    ];
+
+    const response = await ContractService.getDetailedContractResultsByIdAndFilters(
+      ['contract_id = $1'],
+      [2],
+      'asc',
+      1
+    );
+    expect(response).toMatchObject(expectedContractResult);
+  });
+
+  test('All params match', async () => {
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: 1,
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 123,
+        transaction_nonce: 4,
+      },
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 123,
+        transaction_nonce: 5,
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: '1688790010771950074',
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 124,
+        transaction_nonce: 6,
+        transaction_hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: '1688790010771950075',
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 124,
+        transaction_nonce: 7,
+        transaction_hash: '0x86ef8992c976d5c2dd19f185f5ccaf9b393e6123b8f001d504e7d350b5e38370',
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: 5,
+        function_parameters: '0x0D',
+        amount: 10,
+        payer_account_id: 124,
+        transaction_nonce: 8,
+      },
+    ]);
+    await integrationDomainOps.loadEthereumTransactions([
+      {
+        hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+        max_fee_per_gas: '0x56',
+        chain_id: [0x1, 0x2a],
+        nonce: 10,
+        consensus_timestamp: '1688790010771950074',
+        value: [0xa0],
+      },
+      {
+        hash: '0x86ef8992c976d5c2dd19f185f5ccaf9b393e6123b8f001d504e7d350b5e38370',
+        max_fee_per_gas: '0x57',
+        chain_id: [0x1, 0x2a],
+        nonce: 11,
+        consensus_timestamp: '1688790010771950075',
+        value: [0xa0],
+      },
+    ]);
+    await integrationDomainOps.loadRecordFiles([
+      {
+        consensus_end: '1688790010771950074',
+        hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+        index: 5,
+        gas_used: 400000,
+      },
+      {
+        consensus_end: '1688790010771950075',
+        hash: 'bcd83980fb2a4fa193997a8c774f04ddfb2a8d6b559b96344bb8820211e3d772d1f4c4e4fe3a0badac02010503052fcb',
+        index: 6,
+        gas_used: 400000,
+      },
+    ]);
+
+    const expectedContractResult = [
+      {
+        contractId: 3,
+        consensusTimestamp: BigInt('1688790010771950074'),
+        payerAccountId: 124,
+        transactionNonce: 6,
+        ethereumTransaction: {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '56',
+          maxPriorityFeePerGas: null,
+          nonce: 10,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          recoveryId: 1,
+          value: 'a0',
+        },
+        recordFile: {
+          hash: '7a16b67930eb73684e0e2bb9574d61ff86bc0f87b802c4dfdf070286e25011fc5e5b2ab8a23045e4fb02c0246da5ed63',
+          index: 5,
+          gasUsed: 400000,
+        },
+      },
+      {
+        contractId: 3,
+        consensusTimestamp: BigInt('1688790010771950075'),
+        payerAccountId: 124,
+        transactionNonce: 7,
+        ethereumTransaction: {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '57',
+          maxPriorityFeePerGas: null,
+          nonce: 11,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          recoveryId: 1,
+          value: 'a0',
+        },
+        recordFile: {
+          hash: 'bcd83980fb2a4fa193997a8c774f04ddfb2a8d6b559b96344bb8820211e3d772d1f4c4e4fe3a0badac02010503052fcb',
+          index: 6,
+          gasUsed: 400000,
+        },
+      },
+    ];
+
+    const response = await ContractService.getDetailedContractResultsByIdAndFilters(
+      ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'],
+      [3, 1688790010771950070, 124],
+      'asc',
+      2
+    );
+
+    expect(response).toMatchObject(expectedContractResult);
+  });
+});
+
 describe('ContractService.getContractResultsByTimestamps tests', () => {
   const input = [
     {

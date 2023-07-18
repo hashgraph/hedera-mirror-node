@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,15 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import java.util.Optional;
+import com.hedera.mirror.common.domain.entity.EntityStakeHistory;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
-public interface EntityRepository extends CrudRepository<Entity, Long> {
-
-    @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
-    Optional<Long> findByAlias(byte[] alias);
-
-    @Query(value = "select id from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
-    Optional<Long> findByEvmAddress(byte[] evmAddress);
+public interface EntityStakeHistoryRepository extends CrudRepository<EntityStakeHistory, Long>, RetentionRepository {
 
     @Modifying
-    @Query(value = "update entity set type = 'CONTRACT' where id in (:ids) and type <> 'CONTRACT'", nativeQuery = true)
-    int updateContractType(Iterable<Long> ids);
+    @Override
+    @Query(nativeQuery = true, value = "delete from entity_stake_history where timestamp_range << int8range(?1, null)")
+    int prune(long consensusTimestamp);
 }
