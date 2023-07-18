@@ -34,6 +34,7 @@ extra.apply {
     set("protobufVersion", "3.23.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
+    set("spring-security.version", "6.1.2")
     set("testcontainersSpringBootVersion", "3.0.0-RC8")
     set("vertxVersion", "4.4.4")
 }
