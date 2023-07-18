@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -71,6 +70,7 @@ class CryptoDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
                 .obtainerId(obtainerId)
                 .timestampRange(Range.atLeast(timestamp))
                 .build();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
         when(entityIdService.lookup(body.getTransferAccountID())).thenReturn(Optional.of(obtainerId));
 
         // when
@@ -78,7 +78,6 @@ class CryptoDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
 
         // then
         verify(entityListener).onEntity(ArgumentMatchers.assertArg(e -> assertEquals(expectedEntity, e)));
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, obtainerId));
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

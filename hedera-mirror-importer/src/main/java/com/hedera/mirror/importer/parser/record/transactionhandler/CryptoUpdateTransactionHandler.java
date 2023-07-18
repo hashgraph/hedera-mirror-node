@@ -71,7 +71,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         if (transactionBody.hasProxyAccountID()) {
             var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
             entity.setProxyAccountId(proxyAccountId);
-            recordItem.addEntityTransactionFor(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         if (transactionBody.hasReceiverSigRequiredWrapper()) {
@@ -104,7 +104,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
                 var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(accountId.getId());
                 entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
-                recordItem.addEntityTransactionFor(accountId);
+                recordItem.addEntityId(accountId);
                 break;
         }
 

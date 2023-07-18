@@ -103,7 +103,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     recordItem.getConsensusTimestamp());
         }
 
-        recordItem.addEntityTransactionFor(contractId);
+        recordItem.addEntityId(contractId);
 
         processContractResult(
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
@@ -194,9 +194,9 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         entityListener.onContractAction(contractAction);
 
-        recordItem.addEntityTransactionFor(contractAction.getCaller());
-        recordItem.addEntityTransactionFor(contractAction.getRecipientAccount());
-        recordItem.addEntityTransactionFor(contractAction.getRecipientContract());
+        recordItem.addEntityId(contractAction.getCaller());
+        recordItem.addEntityId(contractAction.getRecipientAccount());
+        recordItem.addEntityId(contractAction.getRecipientContract());
     }
 
     private void processContractResult(
@@ -247,7 +247,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             if (functionResult.hasSenderId()) {
                 var senderId = EntityId.of(functionResult.getSenderId());
                 contractResult.setSenderId(senderId);
-                recordItem.addEntityTransactionFor(senderId);
+                recordItem.addEntityId(senderId);
             }
 
             processContractLogs(functionResult, contractResult, recordItem);
@@ -278,7 +278,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractLog.setTransactionIndex(recordItem.getTransactionIndex());
             entityListener.onContractLog(contractLog);
 
-            recordItem.addEntityTransactionFor(contractId);
+            recordItem.addEntityId(contractId);
         }
     }
 
@@ -305,7 +305,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             entityListener.onContractStateChange(contractStateChange);
         }
 
-        recordItem.addEntityTransactionFor(contractId);
+        recordItem.addEntityId(contractId);
     }
 
     @SuppressWarnings("deprecation")
@@ -320,7 +320,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
                 if (persist && !contractId.equals(parentEntityContractId)) {
                     processCreatedContractEntity(recordItem, contractId);
-                    recordItem.addEntityTransactionFor(contractId);
+                    recordItem.addEntityId(contractId);
                 }
             }
         }

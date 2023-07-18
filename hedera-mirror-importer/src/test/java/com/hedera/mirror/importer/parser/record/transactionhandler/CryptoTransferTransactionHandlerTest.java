@@ -47,14 +47,15 @@ class CryptoTransferTransactionHandlerTest extends AbstractTransactionHandlerTes
         long timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(timestamp))
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(null))
                 .get();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

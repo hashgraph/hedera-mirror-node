@@ -36,6 +36,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -44,6 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -55,6 +57,7 @@ import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -82,9 +85,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Value;
@@ -194,8 +197,23 @@ abstract class AbstractTransactionHandlerTest {
     // For testGetEntityId
     protected abstract EntityType getExpectedEntityIdType();
 
+    protected Map<Long, EntityTransaction> getExpectedEntityTransactions(
+            RecordItem recordItem,
+            com.hedera.mirror.common.domain.transaction.Transaction transaction,
+            EntityId... entityIds) {
+        var entityIdList = Lists.newArrayList(entityIds);
+        entityIdList.add(transaction.getEntityId());
+        entityIdList.add(transaction.getNodeAccountId());
+        entityIdList.add(transaction.getPayerAccountId());
+        return toEntityTransactions(recordItem, entityIdList.toArray(EntityId[]::new));
+    }
+
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
         return null;
+    }
+
+    protected boolean isSkipMainEntityTransaction() {
+        return false;
     }
 
     @BeforeEach
@@ -215,9 +233,7 @@ abstract class AbstractTransactionHandlerTest {
             expectedEntityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, entityType);
         }
         testGetEntityIdHelper(
-                getDefaultTransactionBody().build(),
-                getDefaultTransactionRecord().build(),
-                expectedEntityId);
+                getTransactionBody(), getDefaultTransactionRecord().build(), expectedEntityId);
     }
 
     @TestFactory
@@ -276,15 +292,20 @@ abstract class AbstractTransactionHandlerTest {
         // Given
         var transactionRecord = getDefaultTransactionRecord();
         transactionRecord.getReceiptBuilder().setStatus(INSUFFICIENT_PAYER_BALANCE);
-        var recordItem = getRecordItem(getDefaultTransactionBody().build(), transactionRecord.build());
+        var recordItem = getRecordItem(getTransactionBody(), transactionRecord.build());
         var transaction = domainBuilder.transaction().get();
+        var expectedEntityTransactions = toEntityTransactions(
+                recordItem,
+                isSkipMainEntityTransaction() ? EntityId.EMPTY : transaction.getEntityId(),
+                transaction.getNodeAccountId(),
+                transaction.getPayerAccountId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     protected void testGetEntityIdHelper(
@@ -473,11 +494,11 @@ abstract class AbstractTransactionHandlerTest {
     protected AbstractEntity getExpectedUpdatedEntity() {
         Entity entity = getExpectedEntityWithTimestamp();
 
-        TransactionBody defaultBody = getDefaultTransactionBody().build();
+        TransactionBody defaultBody = getTransactionBody();
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
                 .map(FieldDescriptor::getName)
-                .collect(Collectors.toList());
+                .toList();
 
         for (String fieldName : fieldNames) {
             switch (fieldName) {
@@ -509,7 +530,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected TransactionBody getTransactionBodyForUpdateEntityWithoutMemo() {
-        TransactionBody defaultBody = getDefaultTransactionBody().build();
+        TransactionBody defaultBody = getTransactionBody();
         Message innerBody = getInnerBody(defaultBody);
         Message.Builder builder = innerBody.toBuilder().clear();
 
@@ -543,7 +564,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected FieldDescriptor getInnerBodyFieldDescriptorByName(String name) {
-        TransactionBody body = getDefaultTransactionBody().build();
+        TransactionBody body = getTransactionBody();
         return getInnerBody(body).getDescriptorForType().findFieldByName(name);
     }
 
@@ -575,14 +596,25 @@ abstract class AbstractTransactionHandlerTest {
                 .build();
 
         return RecordItem.builder()
+                .entityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction)
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build();
     }
 
+    private TransactionBody getTransactionBody() {
+        return getDefaultTransactionBody().build();
+        //        var transactionId = TransactionID.newBuilder()
+        //                .setAccountID(AccountID.newBuilder().setAccountNum(domainBuilder.id()))
+        //                .setTransactionValidStart(TestUtils.toTimestamp(domainBuilder.timestamp()))
+        //                .build();
+        //        return getDefaultTransactionBody()
+        //                .setTransactionID(transactionId)
+        //                .build();
+    }
+
     private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {
-        return transactionHandler instanceof AbstractEntityCrudTransactionHandler
-                || transactionHandler instanceof ContractCreateTransactionHandler;
+        return transactionHandler instanceof AbstractEntityCrudTransactionHandler;
     }
 
     @Builder

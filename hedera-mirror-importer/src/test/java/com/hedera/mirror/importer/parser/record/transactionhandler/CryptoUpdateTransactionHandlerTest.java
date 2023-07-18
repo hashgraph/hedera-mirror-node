@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.times;
@@ -30,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -119,10 +119,10 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @SuppressWarnings("deprecation")
-    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
         var body = recordItem.getTransactionBody().getCryptoUpdateAccount();
-        return toEntityTransactions(
-                recordItem, EntityId.of(body.getStakedAccountId()), EntityId.of(body.getProxyAccountID()));
+        return getExpectedEntityTransactions(
+                recordItem, transaction, EntityId.of(body.getStakedAccountId()), EntityId.of(body.getProxyAccountID()));
     }
 
     private void setupForCryptoUpdateTransactionTest(RecordItem recordItem, Consumer<Entity> extraAssertions) {
@@ -134,6 +134,6 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         getTransactionHandler().updateTransaction(transaction, recordItem);
         assertCryptoUpdate(timestamp, extraAssertions);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

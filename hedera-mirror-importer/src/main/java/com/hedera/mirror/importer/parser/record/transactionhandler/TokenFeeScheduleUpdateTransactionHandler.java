@@ -34,15 +34,19 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor
-class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
+class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
+
+    TokenFeeScheduleUpdateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(TransactionType.TOKENFEESCHEDULEUPDATE);
+        this.entityListener = entityListener;
+        this.entityProperties = entityProperties;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -51,12 +55,7 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENFEESCHEDULEUPDATE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
@@ -119,8 +118,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
 
             entityListener.onCustomFee(customFee);
 
-            recordItem.addEntityTransactionFor(collector);
-            recordItem.addEntityTransactionFor(customFee.getDenominatingTokenId());
+            recordItem.addEntityId(collector);
+            recordItem.addEntityId(customFee.getDenominatingTokenId());
         }
 
         // For empty custom fees, add a single row with only the timestamp and tokenId.

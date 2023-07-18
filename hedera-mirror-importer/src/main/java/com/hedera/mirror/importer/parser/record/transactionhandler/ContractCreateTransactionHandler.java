@@ -53,11 +53,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 .orElse(EntityId.EMPTY);
     }
 
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CONTRACTCREATEINSTANCE;
-    }
-
     /*
      * Insert contract results even for failed transactions since they could fail during execution, and we want to
      * know how much gas was used and the call result regardless.
@@ -84,7 +79,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                     .orElse(EntityId.EMPTY);
             if (!EntityId.isEmpty(autoRenewAccount)) {
                 entity.setAutoRenewAccountId(autoRenewAccount.getId());
-                recordItem.addEntityTransactionFor(autoRenewAccount);
+                recordItem.addEntityId(autoRenewAccount);
             } else {
                 log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             }
@@ -106,7 +101,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.hasProxyAccountID()) {
             var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
             entity.setProxyAccountId(proxyAccountId);
-            recordItem.addEntityTransactionFor(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         entity.setBalance(0L);
@@ -126,7 +121,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case FILEID:
                 var fileId = EntityId.of(transactionBody.getFileID());
                 contract.setFileId(fileId);
-                recordItem.addEntityTransactionFor(fileId);
+                recordItem.addEntityId(fileId);
                 break;
             case INITCODE:
                 contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
@@ -171,7 +166,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case STAKED_ACCOUNT_ID:
                 var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 contract.setStakedAccountId(accountId.getId());
-                recordItem.addEntityTransactionFor(accountId);
+                recordItem.addEntityId(accountId);
                 break;
         }
 
@@ -217,7 +212,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 if (contract.getFileId() == null) {
                     var fileId = EntityId.of(transactionBody.getFileID());
                     contract.setFileId(fileId);
-                    recordItem.addEntityTransactionFor(fileId);
+                    recordItem.addEntityId(fileId);
                 }
                 break;
             case INITCODE:
@@ -241,7 +236,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (body.hasCallData() && contract.getFileId() == null) {
             var fileId = EntityId.of(body.getCallData());
             contract.setFileId(fileId);
-            recordItem.addEntityTransactionFor(fileId);
+            recordItem.addEntityId(fileId);
             return;
         }
 

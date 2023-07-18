@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -101,7 +100,8 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
                 .returns(timestamp, Entity::getTimestampLower)));
         verify(entityListener, never()).onSchedule(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -141,7 +141,8 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(s -> assertThat(s.getTransactionBody()).isNotEmpty())
                 .returns(true, Schedule::isWaitForExpiry)));
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, schedulePayerAccountId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, schedulePayerAccountId));
     }
 
     @Test
@@ -182,6 +183,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(s -> assertThat(s.getTransactionBody()).isNotEmpty())
                 .returns(false, Schedule::isWaitForExpiry)));
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, payerAccountId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, payerAccountId));
     }
 }

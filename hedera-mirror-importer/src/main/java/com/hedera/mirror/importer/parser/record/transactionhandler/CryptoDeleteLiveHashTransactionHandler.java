@@ -22,16 +22,15 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
 
 @Named
-class CryptoDeleteLiveHashTransactionHandler implements TransactionHandler {
+class CryptoDeleteLiveHashTransactionHandler extends AbstractTransactionHandler {
+
+    CryptoDeleteLiveHashTransactionHandler() {
+        super(TransactionType.CRYPTODELETELIVEHASH);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(
                 recordItem.getTransactionBody().getCryptoDeleteLiveHash().getAccountOfLiveHash());
-    }
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CRYPTODELETELIVEHASH;
     }
 }

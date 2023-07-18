@@ -77,7 +77,8 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transaction.getEntityId(), FileData::getEntityId)
                 .returns(transactionBody.getContents().toByteArray(), FileData::getFileData)
                 .returns(transaction.getType(), FileData::getTransactionType);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -95,7 +96,8 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(transaction.getEntityId());
         verifyNoMoreInteractions(addressBookService);
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -117,7 +119,8 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(systemFileId);
         verifyNoMoreInteractions(addressBookService);
         verify(entityListener).onFileData(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -137,7 +140,8 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(fileId);
         verifyNoMoreInteractions(addressBookService);
         verify(entityListener).onFileData(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -160,6 +164,7 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(addressBookService).isAddressBook(systemFileId);
         verify(addressBookService).update(any());
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

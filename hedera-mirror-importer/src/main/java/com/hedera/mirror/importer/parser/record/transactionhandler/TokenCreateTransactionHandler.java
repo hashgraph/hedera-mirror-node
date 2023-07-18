@@ -77,7 +77,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
                 log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             } else {
                 entity.setAutoRenewAccountId(autoRenewAccountId.getId());
-                recordItem.addEntityTransactionFor(autoRenewAccountId);
+                recordItem.addEntityId(autoRenewAccountId);
             }
         }
 
@@ -175,7 +175,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             tokenAccount.setTokenId(tokenId.getId());
             entityListener.onTokenAccount(tokenAccount);
 
-            recordItem.addEntityTransactionFor(account);
+            recordItem.addEntityId(account);
         });
 
         entityListener.onToken(token);

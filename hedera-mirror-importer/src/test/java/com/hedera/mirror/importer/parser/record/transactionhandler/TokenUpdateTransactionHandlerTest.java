@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -91,7 +90,6 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
         var treasuryId = EntityId.of(body.getTreasury());
-        var expectedEntityTransactions = toEntityTransactions(recordItem, autoRenewAccountId, treasuryId);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -110,7 +108,9 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(EntityId.of(body.getTreasury()), Token::getTreasuryAccountId)
                 .returns(tokenId.getId(), Token::getTokenId)
                 .returns(body.getWipeKey().toByteArray(), Token::getWipeKey)));
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId, treasuryId));
     }
 
     @Test
@@ -153,7 +153,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getTreasuryAccountId)
                 .returns(transaction.getEntityId().getId(), Token::getTokenId)
                 .returns(null, Token::getWipeKey)));
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -168,7 +169,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verify(entityListener, never()).onToken(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -191,7 +193,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(aliasAccountId.getId(), id));
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, aliasAccountId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, aliasAccountId));
     }
 
     @ParameterizedTest
@@ -216,7 +219,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(expectedId, id));
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @SuppressWarnings("java:S6103")

@@ -16,21 +16,13 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
 
 @Named
-class UnknownDataTransactionHandler implements TransactionHandler {
+class UnknownDataTransactionHandler extends AbstractTransactionHandler {
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
-    }
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.UNKNOWN;
+    UnknownDataTransactionHandler() {
+        super(TransactionType.UNKNOWN);
     }
 }

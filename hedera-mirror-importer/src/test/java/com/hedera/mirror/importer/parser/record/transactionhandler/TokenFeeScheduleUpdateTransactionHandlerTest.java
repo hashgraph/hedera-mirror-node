@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FEE_NOT_SET;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
@@ -73,7 +72,6 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
         var fixedFee = customFeeProto.getFixedFee();
         var feeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
         var feeTokenId = EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId());
-        var expectedEntityTransactions = toEntityTransactions(recordItem, feeCollectorId, feeTokenId);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -95,7 +93,9 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(timestamp, c -> c.getId().getCreatedTimestamp())
                 .returns(tokenId, c -> c.getId().getTokenId());
 
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId, feeTokenId));
     }
 
     @Test
@@ -137,7 +137,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(timestamp, c -> c.getId().getCreatedTimestamp())
                 .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, feeCollectorId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId));
     }
 
     @Test
@@ -160,7 +161,6 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
         var fallbackFee = royaltyFee.getFallbackFee();
         var feeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
         var feeTokenId = EntityId.of(fallbackFee.getDenominatingTokenId());
-        var expectedEntityTransactions = toEntityTransactions(recordItem, feeCollectorId, feeTokenId);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -181,7 +181,9 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(royaltyFee.getExchangeValueFraction().getNumerator(), CustomFee::getRoyaltyNumerator)
                 .returns(timestamp, c -> c.getId().getCreatedTimestamp())
                 .returns(tokenId, c -> c.getId().getTokenId());
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId, feeTokenId));
     }
 
     @Test
@@ -213,7 +215,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(null, CustomFee::getRoyaltyNumerator)
                 .returns(transaction.getConsensusTimestamp(), c -> c.getId().getCreatedTimestamp())
                 .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -230,7 +233,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         // Then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -245,6 +249,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         // Then
         verify(entityListener, never()).onCustomFee(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

@@ -69,10 +69,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
+@CustomLog
 @Named
 @ConditionOnEntityRecordParser
 @RequiredArgsConstructor
@@ -90,8 +90,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
-        recordItem.setEntityTransactionExclusion(entityProperties.getPersist().getEntityTransactionExclusion());
-        recordItem.setTrackEntityTransaction(entityProperties.getPersist().isTrackEntityTransaction());
+        recordItem.setEntityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction);
 
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
@@ -156,11 +155,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         contractResultService.process(recordItem, transaction);
 
-        recordItem.addEntityTransactionFor(entityId);
-        recordItem.addEntityTransactionFor(transaction.getNodeAccountId());
-        recordItem.addEntityTransactionFor(transaction.getPayerAccountId());
         recordItem.getEntityTransactions().values().forEach(entityListener::onEntityTransaction);
-
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -234,7 +229,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 nonFeeTransfer.setIsApproval(aa.getIsApproval());
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
-                recordItem.addEntityTransactionFor(entityId);
+                recordItem.addEntityId(entityId);
             }
         }
     }
@@ -252,7 +247,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             stakingRewardTransfer.setPayerAccountId(payerAccountId);
 
             entityListener.onStakingRewardTransfer(stakingRewardTransfer);
-            recordItem.addEntityTransactionFor(accountId);
+            recordItem.addEntityId(accountId);
         }
     }
 
@@ -298,7 +293,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             entityListener.onCryptoTransfer(cryptoTransfer);
-            recordItem.addEntityTransactionFor(account);
+            recordItem.addEntityId(account);
         }
     }
 
@@ -369,8 +364,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             handleNegativeAccountAmounts(tokenId, body, accountAmount, amount, tokenTransfer);
             entityListener.onTokenTransfer(tokenTransfer);
-            recordItem.addEntityTransactionFor(accountId);
-            recordItem.addEntityTransactionFor(tokenId);
+            recordItem.addEntityId(accountId);
+            recordItem.addEntityId(tokenId);
 
             if (isDeletedTokenDissociate) {
                 // for the token transfer of a deleted token in a token dissociate transaction, the amount is negative
@@ -522,9 +517,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             nftTransferDomain.setTokenId(entityTokenId);
             transaction.addNftTransfer(nftTransferDomain);
 
-            recordItem.addEntityTransactionFor(receiverId);
-            recordItem.addEntityTransactionFor(senderId);
-            recordItem.addEntityTransactionFor(entityTokenId);
+            recordItem.addEntityId(receiverId);
+            recordItem.addEntityId(senderId);
+            recordItem.addEntityId(entityTokenId);
 
             transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             syntheticContractLogService.create(
@@ -557,8 +552,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                         tokenAccount.setTimestampRange(Range.atLeast(consensusTimestamp));
                         tokenAccount.setTokenId(tokenId.getId());
                         entityListener.onTokenAccount(tokenAccount);
-                        recordItem.addEntityTransactionFor(accountId);
-                        recordItem.addEntityTransactionFor(tokenId);
+                        recordItem.addEntityId(accountId);
+                        recordItem.addEntityId(tokenId);
                     });
         }
     }
@@ -662,7 +657,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             schedule.setScheduleId(scheduleId);
             schedule.setExecutedTimestamp(consensusTimestamp);
             entityListener.onSchedule(schedule);
-            recordItem.addEntityTransactionFor(scheduleId);
+            recordItem.addEntityId(scheduleId);
         }
     }
 
@@ -685,15 +680,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                     for (var protoAccountId : protoAssessedCustomFee.getEffectivePayerAccountIdList()) {
                         var effectivePayerAccountId = EntityId.of(protoAccountId);
                         effectivePayerEntityIds.add(effectivePayerAccountId.getId());
-                        recordItem.addEntityTransactionFor(effectivePayerAccountId);
+                        recordItem.addEntityId(effectivePayerAccountId);
                     }
                     assessedCustomFee.setEffectivePayerAccountIds(effectivePayerEntityIds);
                 }
 
                 entityListener.onAssessedCustomFee(assessedCustomFee);
 
-                recordItem.addEntityTransactionFor(collectorAccountId);
-                recordItem.addEntityTransactionFor(tokenId);
+                recordItem.addEntityId(collectorAccountId);
+                recordItem.addEntityId(tokenId);
             }
         }
     }

@@ -24,39 +24,30 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import lombok.AccessLevel;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@CustomLog
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
+abstract class AbstractEntityCrudTransactionHandler extends AbstractTransactionHandler {
 
     protected final EntityIdService entityIdService;
-
     protected final EntityListener entityListener;
 
-    @Getter
-    private final TransactionType type;
-
-    @Override
-    public final void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        doUpdateTransaction(transaction, recordItem);
-        EntityId entityId = transaction.getEntityId();
-        EntityOperation entityOperation = type.getEntityOperation();
-
-        if (entityOperation != EntityOperation.NONE && !EntityId.isEmpty(entityId) && recordItem.isSuccessful()) {
-            updateEntity(entityId, recordItem);
-        }
+    AbstractEntityCrudTransactionHandler(
+            EntityIdService entityIdService, EntityListener entityListener, TransactionType type) {
+        super(type);
+        this.entityIdService = entityIdService;
+        this.entityListener = entityListener;
     }
 
-    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {}
+    @Override
+    protected final void updateEntity(Transaction transaction, RecordItem recordItem) {
+        var entityId = transaction.getEntityId();
+        var entityOperation = type.getEntityOperation();
 
-    protected final void updateEntity(EntityId entityId, RecordItem recordItem) {
+        if (entityOperation == EntityOperation.NONE || EntityId.isEmpty(entityId) || !recordItem.isSuccessful()) {
+            return;
+        }
+
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        Entity entity = entityId.toEntity();
-        EntityOperation entityOperation = type.getEntityOperation();
+        var entity = entityId.toEntity();
 
         if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(consensusTimestamp);

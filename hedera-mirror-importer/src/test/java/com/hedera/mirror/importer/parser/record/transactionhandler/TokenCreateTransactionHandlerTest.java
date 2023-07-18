@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -91,8 +90,12 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var customFeeCollector = EntityId.of(customFeeProto.getFeeCollectorAccountId());
         var customFeeTokenId = EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId());
         var autoAssociation = recordItem.getTransactionRecord().getAutomaticTokenAssociations(0);
-        var expectedEntityTransactions = toEntityTransactions(
-                recordItem, customFeeCollector, customFeeTokenId, EntityId.of(autoAssociation.getAccountId()));
+        var expectedEntityTransactions = getExpectedEntityTransactions(
+                recordItem,
+                transaction,
+                customFeeCollector,
+                customFeeTokenId,
+                EntityId.of(autoAssociation.getAccountId()));
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -146,7 +149,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), TokenAccount::getTokenId);
 
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -207,7 +210,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(TokenKycStatusEnum.NOT_APPLICABLE, TokenAccount::getKycStatus);
 
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, treasuryId));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, treasuryId));
     }
 
     @Test
@@ -235,8 +238,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var customFeeProto = transactionBody.getCustomFees(0);
         var customFeeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
         transaction.setType(TransactionType.TOKENCREATION.getProtoId());
-        var expectedEntityTransactions = toEntityTransactions(
-                recordItem, customFeeCollectorId, tokenId, EntityId.of(transactionBody.getTreasury()));
+        var expectedEntityTransactions = getExpectedEntityTransactions(
+                recordItem, transaction, customFeeCollectorId, EntityId.of(transactionBody.getTreasury()));
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -253,7 +256,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         EntityId.of(customFeeProto.getFeeCollectorAccountId()).getId(),
                         EntityId.of(transactionBody.getTreasury()).getId());
 
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -270,6 +273,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener, never()).onToken(any());
         verify(entityListener, never()).onTokenAccount(any());
         verify(entityListener, never()).onCustomFee(any());
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

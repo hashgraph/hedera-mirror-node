@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -75,7 +74,7 @@ class TokenDissociateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
                 .returns(tokenId.getId(), TokenAccount::getTokenId);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, tokenId));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, tokenId));
     }
 
     @Test
@@ -90,6 +89,7 @@ class TokenDissociateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // Then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

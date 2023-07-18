@@ -44,33 +44,30 @@ import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor
-class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
+class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityIdService entityIdService;
-
     private final EntityListener entityListener;
-
     private final SyntheticContractLogService syntheticContractLogService;
-
     private final SyntheticContractResultService syntheticContractResultService;
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
+    CryptoApproveAllowanceTransactionHandler(
+            EntityIdService entityIdService,
+            EntityListener entityListener,
+            SyntheticContractLogService syntheticContractLogService,
+            SyntheticContractResultService syntheticContractResultService) {
+        super(TransactionType.CRYPTOAPPROVEALLOWANCE);
+        this.entityIdService = entityIdService;
+        this.entityListener = entityListener;
+        this.syntheticContractLogService = syntheticContractLogService;
+        this.syntheticContractResultService = syntheticContractResultService;
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.CRYPTOAPPROVEALLOWANCE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!recordItem.isSuccessful()) {
             return;
         }
@@ -113,8 +110,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
             if (cryptoAllowanceState.putIfAbsent(cryptoAllowance.getId(), cryptoAllowance) == null) {
                 entityListener.onCryptoAllowance(cryptoAllowance);
-                recordItem.addEntityTransactionFor(ownerAccountId);
-                recordItem.addEntityTransactionFor(spender);
+                recordItem.addEntityId(ownerAccountId);
+                recordItem.addEntityId(spender);
             }
         }
     }
@@ -163,10 +160,10 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                                 recordItem, tokenId, ownerAccountId, spender, serialNumber));
                     }
 
-                    recordItem.addEntityTransactionFor(delegatingSpender);
-                    recordItem.addEntityTransactionFor(ownerAccountId);
-                    recordItem.addEntityTransactionFor(spender);
-                    recordItem.addEntityTransactionFor(tokenId);
+                    recordItem.addEntityId(delegatingSpender);
+                    recordItem.addEntityId(ownerAccountId);
+                    recordItem.addEntityId(spender);
+                    recordItem.addEntityId(tokenId);
                 }
             }
         }
@@ -201,9 +198,9 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             syntheticContractLogService.create(new ApproveForAllAllowanceContractLog(
                     recordItem, tokenId, ownerAccountId, spender, approvedForAll));
 
-            recordItem.addEntityTransactionFor(ownerAccountId);
-            recordItem.addEntityTransactionFor(spender);
-            recordItem.addEntityTransactionFor(tokenId);
+            recordItem.addEntityId(ownerAccountId);
+            recordItem.addEntityId(spender);
+            recordItem.addEntityId(tokenId);
         }
     }
 
@@ -238,9 +235,9 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 syntheticContractLogService.create(new ApproveAllowanceContractLog(
                         recordItem, tokenId, ownerAccountId, spenderId, tokenApproval.getAmount()));
 
-                recordItem.addEntityTransactionFor(ownerAccountId);
-                recordItem.addEntityTransactionFor(spenderId);
-                recordItem.addEntityTransactionFor(tokenId);
+                recordItem.addEntityId(ownerAccountId);
+                recordItem.addEntityId(spenderId);
+                recordItem.addEntityId(tokenId);
             }
         }
     }

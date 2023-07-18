@@ -75,7 +75,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                     .ifPresentOrElse(
                             accountId -> {
                                 entity.setAutoRenewAccountId(accountId.getId());
-                                recordItem.addEntityTransactionFor(accountId);
+                                recordItem.addEntityId(accountId);
                             },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
@@ -111,7 +111,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.hasProxyAccountID()) {
             var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
             entity.setProxyAccountId(proxyAccountId);
-            recordItem.addEntityTransactionFor(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         updateStakingInfo(recordItem, entity);
@@ -135,7 +135,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                 var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(accountId.getId());
                 entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
-                recordItem.addEntityTransactionFor(accountId);
+                recordItem.addEntityId(accountId);
                 break;
         }
 

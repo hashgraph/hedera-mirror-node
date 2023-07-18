@@ -23,7 +23,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -41,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -77,10 +77,12 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private final long consensusTimestamp = DomainUtils.timestampInNanosMax(transactionRecord.getConsensusTimestamp());
 
-    @Builder.Default
+    @Getter(lazy = true, value = PRIVATE)
+    private final EntityTransaction.EntityTransactionBuilder entityTransactionBuilder = entityTransactionBuilder();
+
     @NonFinal
     @Setter
-    private Set<EntityId> entityTransactionExclusion = Collections.emptySet();
+    private Predicate<EntityId> entityTransactionPredicate;
 
     @Builder.Default
     private final Map<Long, EntityTransaction> entityTransactions = new HashMap<>();
@@ -94,10 +96,6 @@ public class RecordItem implements StreamItem {
 
     @Getter(lazy = true)
     private boolean successful = checkSuccess();
-
-    @NonFinal
-    @Setter
-    private boolean trackEntityTransaction;
 
     @Getter(lazy = true)
     private final int transactionType = getTransactionType(getTransactionBody());
@@ -150,25 +148,14 @@ public class RecordItem implements StreamItem {
         }
     }
 
-    public void addEntityTransactionFor(EntityId entityId) {
-        if (!trackEntityTransaction) {
+    public void addEntityId(EntityId entityId) {
+        if (!entityTransactionPredicate.test(entityId)) {
             return;
         }
 
-        if (EntityId.isEmpty(entityId)
-                || entityId.getType() == EntityType.TOPIC
-                || entityTransactionExclusion.contains(entityId)) {
-            // Skip topics due to the amount of the data and the information already in topic_message table
-            return;
-        }
-
-        entityTransactions.computeIfAbsent(entityId.getId(), id -> EntityTransaction.builder()
-                .consensusTimestamp(getConsensusTimestamp())
-                .entityId(id)
-                .payerAccountId(getPayerAccountId())
-                .result(getTransactionStatus())
-                .type(getTransactionType())
-                .build());
+        entityTransactions.computeIfAbsent(
+                entityId.getId(),
+                id -> getEntityTransactionBuilder().entityId(id).build());
     }
 
     public int getAndIncrementLogIndex() {
@@ -198,6 +185,14 @@ public class RecordItem implements StreamItem {
         return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
                 || status == ResponseCodeEnum.SUCCESS
                 || status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+    }
+
+    private EntityTransaction.EntityTransactionBuilder entityTransactionBuilder() {
+        return EntityTransaction.builder()
+                .consensusTimestamp(getConsensusTimestamp())
+                .payerAccountId(getPayerAccountId())
+                .result(getTransactionStatus())
+                .type(getTransactionType());
     }
 
     /**

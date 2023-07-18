@@ -25,14 +25,18 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class TokenUnpauseTransactionHandler implements TransactionHandler {
+class TokenUnpauseTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
+
+    TokenUnpauseTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(TransactionType.TOKENUNPAUSE);
+        this.entityListener = entityListener;
+        this.entityProperties = entityProperties;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -40,12 +44,7 @@ class TokenUnpauseTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENUNPAUSE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }

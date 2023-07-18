@@ -81,6 +81,6 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         schedule.setWaitForExpiry(body.getWaitForExpiry());
         entityListener.onSchedule(schedule);
 
-        recordItem.addEntityTransactionFor(payerAccount);
+        recordItem.addEntityId(payerAccount);
     }
 }

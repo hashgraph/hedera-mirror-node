@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
+
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -26,8 +28,6 @@ import jakarta.inject.Named;
 
 @Named
 class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
-
-    private static final byte[] EMPTY = new byte[0];
 
     ConsensusCreateTopicTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityIdService, entityListener, TransactionType.CONSENSUSCREATETOPIC);
@@ -45,7 +45,7 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
         if (transactionBody.hasAutoRenewAccount()) {
             var autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
             entity.setAutoRenewAccountId(autoRenewAccountId.getId());
-            recordItem.addEntityTransactionFor(autoRenewAccountId);
+            recordItem.addEntityId(autoRenewAccountId);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -55,9 +55,9 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
         // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
         // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
         var adminKey =
-                transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : EMPTY;
+                transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : EMPTY_BYTE_ARRAY;
         var submitKey =
-                transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : EMPTY;
+                transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : EMPTY_BYTE_ARRAY;
         entity.setMemo(transactionBody.getMemo());
         entity.setKey(adminKey);
         entity.setSubmitKey(submitKey);

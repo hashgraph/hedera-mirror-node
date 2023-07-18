@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -62,6 +61,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
 
     @Test
     void updateTransactionSuccessful() {
+        // given
         var recordItem = recordItemBuilder.consensusUpdateTopic().build();
         var topicId = EntityId.of(
                 recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
@@ -71,15 +71,20 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
         var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId);
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertConsensusTopicUpdate(timestamp, topicId, autoRenewAccountId.getId());
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, autoRenewAccountId));
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
         var recordItem = recordItemBuilder
@@ -94,11 +99,15 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
         var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId);
         when(entityIdService.lookup(aliasAccountId)).thenReturn(Optional.of(autoRenewAccountId));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertConsensusTopicUpdate(timestamp, topicId, autoRenewAccountId.getId());
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(toEntityTransactions(recordItem, autoRenewAccountId));
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @ParameterizedTest
@@ -120,17 +129,19 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .get();
         when(entityIdService.lookup(aliasAccountId)).thenReturn(Optional.ofNullable(entityId));
         var expectedId = entityId == null ? null : entityId.getId();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         assertConsensusTopicUpdate(timestamp, topicId, expectedId);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
     void updateTransactionSuccessfulClearAutoRenewAccountId() {
+        // given
         var recordItem = recordItemBuilder
                 .consensusUpdateTopic()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAccountNum(0))
@@ -142,9 +153,14 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertConsensusTopicUpdate(timestamp, topicId, 0L);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Long expectedAutoRenewAccountId) {

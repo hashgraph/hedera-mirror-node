@@ -26,28 +26,22 @@ import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedCont
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
+class CryptoDeleteAllowanceTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
-
     private final SyntheticContractLogService syntheticContractLogService;
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
+    CryptoDeleteAllowanceTransactionHandler(
+            EntityListener entityListener, SyntheticContractLogService syntheticContractLogService) {
+        super(TransactionType.CRYPTODELETEALLOWANCE);
+        this.entityListener = entityListener;
+        this.syntheticContractLogService = syntheticContractLogService;
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.CRYPTODELETEALLOWANCE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!recordItem.isSuccessful()) {
             return;
         }
@@ -70,8 +64,8 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
                         recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
             }
 
-            recordItem.addEntityTransactionFor(ownerId);
-            recordItem.addEntityTransactionFor(tokenId);
+            recordItem.addEntityId(ownerId);
+            recordItem.addEntityId(tokenId);
         }
     }
 }

@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -220,7 +221,7 @@ public class TestUtils {
     }
 
     public static Map<Long, EntityTransaction> toEntityTransactions(RecordItem recordItem, EntityId... entityIds) {
-        return toEntityTransactions(recordItem, List.of(entityIds), Collections.emptySet());
+        return toEntityTransactions(recordItem, Arrays.asList(entityIds), Collections.emptySet());
     }
 
     public static Map<Long, EntityTransaction> toEntityTransactions(

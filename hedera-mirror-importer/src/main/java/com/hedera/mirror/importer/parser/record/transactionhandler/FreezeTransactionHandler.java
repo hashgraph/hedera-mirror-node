@@ -20,19 +20,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class FreezeTransactionHandler implements TransactionHandler {
+class FreezeTransactionHandler extends AbstractTransactionHandler {
+
+    FreezeTransactionHandler() {
+        super(TransactionType.FREEZE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getFreeze().getUpdateFile());
-    }
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.FREEZE;
     }
 }

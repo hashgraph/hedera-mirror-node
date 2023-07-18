@@ -27,18 +27,17 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
+class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CONSENSUSSUBMITMESSAGE;
+    ConsensusSubmitMessageTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(TransactionType.CONSENSUSSUBMITMESSAGE);
+        this.entityListener = entityListener;
+        this.entityProperties = entityProperties;
     }
 
     @Override
@@ -48,7 +47,13 @@ class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
+        recordItem.addEntityId(transaction.getNodeAccountId());
+        recordItem.addEntityId(transaction.getPayerAccountId());
+    }
+
+    @Override
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTopics() || !recordItem.isSuccessful()) {
             return;
         }

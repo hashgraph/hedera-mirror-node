@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -60,12 +60,12 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(timestamp))
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(null))
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(timestamp);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -77,12 +77,12 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(timestamp))
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(null))
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(timestamp);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private void assertAllowances(long timestamp) {
@@ -99,7 +99,7 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .satisfies(n -> assertThat(n.getTokenId()).isPositive())));
     }
 
-    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
         var body = recordItem.getTransactionBody().getCryptoDeleteAllowance();
         var payerAccountId = recordItem.getPayerAccountId();
         var entityIds = body.getNftAllowancesList().stream().flatMap(allowance -> {
@@ -108,6 +108,6 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
                     : EntityId.of(allowance.getOwner());
             return Stream.of(owner, EntityId.of(allowance.getTokenId()));
         });
-        return toEntityTransactions(recordItem, entityIds.toArray(EntityId[]::new));
+        return getExpectedEntityTransactions(recordItem, transaction, entityIds.toArray(EntityId[]::new));
     }
 }

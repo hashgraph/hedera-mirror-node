@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.util.Utility;
@@ -104,6 +104,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var aliasAccount =
                 recordItem.getTransactionBody().getContractUpdateInstance().getAutoRenewAccountId();
         var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var expectedEntityTransactions = getExpectedEntityTransactions(aliasAccountId, recordItem, transaction);
         when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
 
         // when
@@ -119,15 +120,15 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
-    void updateTransactionSuccessfulWhenTrackEntityTransactionDisabled() {
-        // given
-        var recordItem =
-                recordItemBuilder.contractUpdate().trackEntityTransaction(false).build();
+    void updateTransactionSuccessfulWhenEntityTransactionDisabled() {
+        var recordItem = recordItemBuilder
+                .contractUpdate()
+                .entityTransactionPredicate(e -> false)
+                .build();
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
@@ -242,7 +243,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(aliasAccountId, recordItem, transaction));
     }
 
     @ParameterizedTest
@@ -279,7 +281,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive()));
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, null));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(null, recordItem, transaction));
     }
 
     @Test
@@ -354,13 +356,15 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @SuppressWarnings("deprecation")
     private Map<Long, EntityTransaction> getExpectedEntityTransactions(
-            RecordItem recordItem, EntityId autoRenewAccountId) {
+            EntityId autoRenewAccountId, RecordItem recordItem, Transaction transaction) {
         var body = recordItem.getTransactionBody().getContractUpdateInstance();
         if (EntityId.isEmpty(autoRenewAccountId)) {
             autoRenewAccountId = EntityId.of(body.getAutoRenewAccountId());
         }
-        return toEntityTransactions(
+
+        return getExpectedEntityTransactions(
                 recordItem,
+                transaction,
                 autoRenewAccountId,
                 EntityId.of(body.getStakedAccountId()),
                 EntityId.of(body.getProxyAccountID()));
@@ -379,6 +383,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContractUpdate(timestamp, contractId, extraAssertions);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem, aliasAccountId));
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(aliasAccountId, recordItem, transaction));
     }
 }

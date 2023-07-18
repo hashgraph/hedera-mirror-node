@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -28,28 +27,22 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor
-class NodeStakeUpdateTransactionHandler implements TransactionHandler {
+class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
 
     private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
+    NodeStakeUpdateTransactionHandler(ConsensusNodeService consensusNodeService, EntityListener entityListener) {
+        super(TransactionType.NODESTAKEUPDATE);
+        this.entityListener = entityListener;
+        this.consensusNodeService = consensusNodeService;
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.NODESTAKEUPDATE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         if (!recordItem.isSuccessful()) {
             var status = recordItem.getTransactionRecord().getReceipt().getStatus();

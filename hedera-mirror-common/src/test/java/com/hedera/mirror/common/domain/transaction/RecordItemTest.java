@@ -597,8 +597,7 @@ class RecordItemTest {
                 .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var recordItem = RecordItem.builder()
-                .entityTransactionExclusion(excluded)
-                .trackEntityTransaction(trackEntityTransaction)
+                .entityTransactionPredicate(null)
                 .transaction(transaction)
                 .transactionRecord(transactionRecord)
                 .build();
@@ -619,16 +618,16 @@ class RecordItemTest {
                 .collect(Collectors.toMap(EntityTransaction::getEntityId, Function.identity()));
 
         // when
-        recordItem.addEntityTransactionFor(null);
-        recordItem.addEntityTransactionFor(EntityId.EMPTY);
-        recordItem.addEntityTransactionFor(payer);
-        recordItem.addEntityTransactionFor(contract);
-        recordItem.addEntityTransactionFor(contract); // duplicate
-        recordItem.addEntityTransactionFor(file);
-        recordItem.addEntityTransactionFor(token);
-        recordItem.addEntityTransactionFor(topic);
-        recordItem.addEntityTransactionFor(schedule);
-        excluded.forEach(recordItem::addEntityTransactionFor);
+        recordItem.addEntityId(null);
+        recordItem.addEntityId(EntityId.EMPTY);
+        recordItem.addEntityId(payer);
+        recordItem.addEntityId(contract);
+        recordItem.addEntityId(contract); // duplicate
+        recordItem.addEntityId(file);
+        recordItem.addEntityId(token);
+        recordItem.addEntityId(topic);
+        recordItem.addEntityId(schedule);
+        excluded.forEach(recordItem::addEntityId);
 
         return new EntityTransactionTestSpec(recordItem.getEntityTransactions(), expected);
     }

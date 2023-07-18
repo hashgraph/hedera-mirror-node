@@ -29,10 +29,12 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties.PersistProperties;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -140,6 +142,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -172,6 +175,8 @@ public class RecordItemBuilder {
     private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
+
+    private final PersistProperties persistProperties = new PersistProperties();
 
     private Instant now = Instant.now();
 
@@ -542,8 +547,9 @@ public class RecordItemBuilder {
     }
 
     public Builder<FileDeleteTransactionBody.Builder> fileDelete() {
-        var builder = FileDeleteTransactionBody.newBuilder().setFileID(fileId());
-        return new Builder<>(TransactionType.FILEDELETE, builder).receipt(b -> b.setFileID(fileId()));
+        var fileId = fileId();
+        var builder = FileDeleteTransactionBody.newBuilder().setFileID(fileId);
+        return new Builder<>(TransactionType.FILEDELETE, builder).receipt(b -> b.setFileID(fileId));
     }
 
     public Builder<FileUpdateTransactionBody.Builder> fileUpdate() {
@@ -956,7 +962,7 @@ public class RecordItemBuilder {
         private final AccountID payerAccountId;
         private final RecordItem.RecordItemBuilder recordItemBuilder;
 
-        private boolean trackEntityTransaction;
+        private Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
@@ -964,7 +970,6 @@ public class RecordItemBuilder {
             this.sidecarRecords = new ArrayList<>();
             this.signatureMap = defaultSignatureMap();
             this.type = type;
-            this.trackEntityTransaction = true;
             this.transactionBody = transactionBody;
             this.transactionBodyWrapper = defaultTransactionBody();
             this.transactionRecord = defaultTransactionRecord();
@@ -989,11 +994,16 @@ public class RecordItemBuilder {
                     .collect(Collectors.toList());
 
             return recordItemBuilder
-                    .trackEntityTransaction(trackEntityTransaction)
+                    .entityTransactionPredicate(entityTransactionPredicate)
                     .transactionRecordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
                     .build();
+        }
+
+        public Builder<T> entityTransactionPredicate(Predicate<EntityId> entityTransactionPredicate) {
+            this.entityTransactionPredicate = entityTransactionPredicate;
+            return this;
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {
@@ -1023,11 +1033,6 @@ public class RecordItemBuilder {
 
         public Builder<T> signatureMap(Consumer<SignatureMap.Builder> consumer) {
             consumer.accept(signatureMap);
-            return this;
-        }
-
-        public Builder<T> trackEntityTransaction(boolean trackEntityTransaction) {
-            this.trackEntityTransaction = trackEntityTransaction;
             return this;
         }
 

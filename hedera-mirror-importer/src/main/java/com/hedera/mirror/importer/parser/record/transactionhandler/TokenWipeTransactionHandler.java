@@ -26,14 +26,18 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class TokenWipeTransactionHandler implements TransactionHandler {
+class TokenWipeTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
+
+    TokenWipeTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(TransactionType.TOKENWIPE);
+        this.entityListener = entityListener;
+        this.entityProperties = entityProperties;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -41,12 +45,7 @@ class TokenWipeTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENWIPE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
@@ -72,6 +71,6 @@ class TokenWipeTransactionHandler implements TransactionHandler {
             entityListener.onNft(nft);
         });
 
-        recordItem.addEntityTransactionFor(EntityId.of(transactionBody.getAccount()));
+        recordItem.addEntityId(EntityId.of(transactionBody.getAccount()));
     }
 }

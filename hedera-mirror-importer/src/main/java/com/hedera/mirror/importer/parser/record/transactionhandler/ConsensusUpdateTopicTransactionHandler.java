@@ -54,7 +54,7 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
                     .ifPresentOrElse(
                             entityId -> {
                                 entity.setAutoRenewAccountId(entityId.getId());
-                                recordItem.addEntityTransactionFor(entityId);
+                                recordItem.addEntityId(entityId);
                             },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",

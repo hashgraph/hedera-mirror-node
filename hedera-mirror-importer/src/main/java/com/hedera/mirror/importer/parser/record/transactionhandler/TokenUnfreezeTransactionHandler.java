@@ -25,14 +25,18 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class TokenUnfreezeTransactionHandler implements TransactionHandler {
+class TokenUnfreezeTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
+
+    TokenUnfreezeTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(TransactionType.TOKENUNFREEZE);
+        this.entityListener = entityListener;
+        this.entityProperties = entityProperties;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -40,12 +44,7 @@ class TokenUnfreezeTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENUNFREEZE;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
@@ -60,6 +59,6 @@ class TokenUnfreezeTransactionHandler implements TransactionHandler {
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());
         entityListener.onTokenAccount(tokenAccount);
-        recordItem.addEntityTransactionFor(tokenId);
+        recordItem.addEntityId(tokenId);
     }
 }

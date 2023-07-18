@@ -121,7 +121,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @AfterEach
     void after() {
-        entityProperties.getPersist().setTrackEntityTransaction(true);
+        entityProperties.getPersist().setEntityTransaction(true);
     }
 
     @Test
@@ -1040,7 +1040,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoTransferWithEntityTransactionDisabled() {
-        entityProperties.getPersist().setTrackEntityTransaction(false);
+        entityProperties.getPersist().setEntityTransaction(false);
         // make the transfers
         var transaction = cryptoTransferTransaction();
         var transactionBody = getTransactionBody(transaction);

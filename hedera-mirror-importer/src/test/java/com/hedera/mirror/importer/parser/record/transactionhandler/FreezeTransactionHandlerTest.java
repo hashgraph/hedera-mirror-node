@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new FreezeTransactionHandler();
@@ -57,6 +58,7 @@ class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

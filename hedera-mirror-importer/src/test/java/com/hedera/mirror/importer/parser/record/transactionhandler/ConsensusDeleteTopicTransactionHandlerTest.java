@@ -65,12 +65,13 @@ class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndelet
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
                 .build();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onEntity(ArgumentMatchers.assertArg(e -> assertEquals(expectedEntity, e)));
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

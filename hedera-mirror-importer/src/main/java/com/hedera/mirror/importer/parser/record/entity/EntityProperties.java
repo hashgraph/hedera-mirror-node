@@ -48,6 +48,8 @@ public class EntityProperties {
 
         private boolean cryptoTransferAmounts = true;
 
+        private boolean entityTransaction = true;
+
         /**
          * A set of entity ids to exclude from entity_transaction table
          */
@@ -79,8 +81,6 @@ public class EntityProperties {
 
         private boolean trackBalance = true;
 
-        private boolean trackEntityTransaction = true;
-
         private boolean transactionHash = false;
 
         /**
@@ -97,6 +97,10 @@ public class EntityProperties {
 
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
+
+        public boolean shouldPersistEntityTransaction(EntityId entityId) {
+            return entityTransaction && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
+        }
 
         public boolean shouldPersistTransactionHash(TransactionType transactionType) {
             return transactionHash

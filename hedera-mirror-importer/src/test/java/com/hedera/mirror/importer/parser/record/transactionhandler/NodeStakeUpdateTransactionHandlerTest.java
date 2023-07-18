@@ -30,6 +30,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -96,9 +97,14 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         var expectedNodeStakes = List.of(
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakingPeriod),
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod));
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onNetworkStake(networkStakes.capture());
@@ -123,7 +129,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
                 .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -131,17 +138,23 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         // given
         var recordItem = recordItemBuilder
                 .nodeStakeUpdate()
-                .transactionBody(b -> b.clearNodeStake())
+                .transactionBody(Builder::clearNodeStake)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, never()).onNodeStake(nodeStakes.capture());
         verify(consensusNodeService, never()).refresh();
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

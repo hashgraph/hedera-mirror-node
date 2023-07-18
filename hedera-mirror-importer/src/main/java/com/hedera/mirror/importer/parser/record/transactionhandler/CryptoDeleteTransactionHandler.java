@@ -54,6 +54,6 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         entityListener.onEntity(entity);
-        recordItem.addEntityTransactionFor(obtainerId);
+        recordItem.addEntityId(obtainerId);
     }
 }

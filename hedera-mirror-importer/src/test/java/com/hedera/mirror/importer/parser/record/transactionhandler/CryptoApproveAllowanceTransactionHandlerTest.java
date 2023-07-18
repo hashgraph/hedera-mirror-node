@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
@@ -35,6 +34,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
@@ -146,7 +146,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(null);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -170,7 +170,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(effectiveOwner);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -199,12 +199,13 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var effectiveOwner = recordItem.getPayerAccountId().getId();
         assertAllowances(effectiveOwner);
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @ParameterizedTest
     @MethodSource("provideEntities")
     void updateTransactionWithEmptyOwner(EntityId entityId) {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder
                 .cryptoApproveAllowance()
@@ -223,10 +224,14 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var transaction = domainBuilder.transaction().get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.ofNullable(entityId));
+        var expectedEntityTransactions = super.getExpectedEntityTransactions(recordItem, transaction);
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
+        // then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -257,7 +262,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(ownerEntityId.getId());
         assertThat(recordItem.getEntityTransactions())
-                .containsExactlyEntriesOf(getExpectedEntityTransactions(recordItem));
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private void assertAllowances(Long effectiveOwner) {
@@ -329,7 +334,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId())));
     }
 
-    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
         var entityIds = Stream.concat(
                 Stream.of(
                         expectedNft.getAccountId(),
@@ -346,7 +351,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                                 expectedNftAllowance.getTokenId())
                         .filter(negate(Objects::isNull))
                         .map(id -> EntityId.of(id, EntityType.ACCOUNT)));
-        return toEntityTransactions(recordItem, entityIds.toArray(EntityId[]::new));
+        return getExpectedEntityTransactions(recordItem, transaction, entityIds.toArray(EntityId[]::new));
     }
 
     private void setTransactionPayer(TransactionBody.Builder builder) {

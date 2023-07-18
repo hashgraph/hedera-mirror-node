@@ -62,7 +62,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
                     .ifPresentOrElse(
                             accountId -> {
                                 entity.setAutoRenewAccountId(accountId.getId());
-                                recordItem.addEntityTransactionFor(accountId);
+                                recordItem.addEntityId(accountId);
                             },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
@@ -126,7 +126,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         if (transactionBody.hasTreasury()) {
             var treasury = EntityId.of(transactionBody.getTreasury());
             token.setTreasuryAccountId(treasury);
-            recordItem.addEntityTransactionFor(treasury);
+            recordItem.addEntityId(treasury);
         }
 
         if (transactionBody.hasWipeKey()) {

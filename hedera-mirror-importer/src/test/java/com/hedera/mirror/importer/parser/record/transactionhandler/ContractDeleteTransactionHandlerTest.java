@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -163,13 +162,13 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
                 .permanentRemoval(body.getPermanentRemoval())
                 .timestampRange(Range.atLeast(timestamp))
                 .build();
-        var expectedEntityTransactions = toEntityTransactions(recordItem, obtainerId);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onEntity(ArgumentMatchers.assertArg(e -> assertEquals(expectedEntity, e)));
-        assertThat(recordItem.getEntityTransactions()).containsExactlyEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

@@ -64,7 +64,8 @@ class TokenUnpauseTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(TokenPauseStatusEnum.UNPAUSED, Token::getPauseStatus)
                 .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
                 .returns(transaction.getEntityId().getId(), Token::getTokenId);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -79,6 +80,7 @@ class TokenUnpauseTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         // Then
         verifyNoInteractions(entityListener);
-        assertThat(recordItem.getEntityTransactions()).isEmpty();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }
