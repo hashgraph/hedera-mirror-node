@@ -65,6 +65,8 @@ import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -304,6 +306,16 @@ public class ServicesConfiguration {
             final SyntheticTxnFactory syntheticTxnFactory,
             final BurnLogic burnLogic) {
         return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
+    }
+
+    @Bean
+    ApproveAllowanceChecks approveAllowanceChecks() {
+        return new ApproveAllowanceChecks();
+    }
+
+    @Bean
+    DeleteAllowanceChecks deleteAllowanceChecks() {
+        return new DeleteAllowanceChecks();
     }
 
     @Bean
