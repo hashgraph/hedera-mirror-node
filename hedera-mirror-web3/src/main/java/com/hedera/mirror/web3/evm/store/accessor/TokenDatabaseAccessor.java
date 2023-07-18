@@ -36,6 +36,7 @@ import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -91,7 +92,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
-                entity.getEffectiveExpiration(),
+                TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
                 entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
                 false,
                 entity.getMemo(),
