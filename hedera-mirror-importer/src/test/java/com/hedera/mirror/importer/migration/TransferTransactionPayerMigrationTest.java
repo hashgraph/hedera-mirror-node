@@ -40,16 +40,13 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.Id;
 import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -258,6 +255,65 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 nodeCryptoTransferBuilder.consensusTimestamp(t5c).build(),
                 treasuryCryptoTransferBuilder.consensusTimestamp(t5c).build()));
 
+        var nonFeeTransfers = List.of(
+                // assessed custom fee only transfer
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer1.getConsensusTimestamp())
+                        .amount(senderPaymentAmount)
+                        .entityId(senderId)
+                        .build(),
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer1.getConsensusTimestamp())
+                        .amount(receivedAmount)
+                        .entityId(receiverId)
+                        .build(),
+                // crypto only transfer
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer2.getConsensusTimestamp())
+                        .amount(senderPaymentAmount)
+                        .entityId(senderId)
+                        .build(),
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer2.getConsensusTimestamp())
+                        .amount(receivedAmount)
+                        .entityId(receiverId)
+                        .build(),
+                // nft transfer
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer3.getConsensusTimestamp())
+                        .amount(senderPaymentAmount)
+                        .entityId(senderId)
+                        .build(),
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer3.getConsensusTimestamp())
+                        .amount(receivedAmount)
+                        .entityId(receiverId)
+                        .build(),
+                // token transfer
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer4.getConsensusTimestamp())
+                        .amount(senderPaymentAmount)
+                        .entityId(senderId)
+                        .build(),
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer4.getConsensusTimestamp())
+                        .amount(receivedAmount)
+                        .entityId(receiverId)
+                        .build(),
+                // all transfers
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer5.getConsensusTimestamp())
+                        .amount(senderPaymentAmount)
+                        .entityId(senderId)
+                        .build(),
+                NonFeeTransfer.builder()
+                        .consensusTimestamp(transfer5.getConsensusTimestamp())
+                        .amount(receivedAmount)
+                        .entityId(receiverId)
+                        .build());
+
+        persistNonFeeTransfers(nonFeeTransfers);
+
         persistNftTransfers(List.of(
                 // nft transfer
                 nftTransfer(transfer3.getConsensusTimestamp(), receiverId, senderId, 1L, tokenId),
@@ -317,6 +373,23 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 new SharedTransfer(1L, transfer3.getConsensusTimestamp(), PAYER_ID, receiverId, senderId),
                 new SharedTransfer(2L, transfer5.getConsensusTimestamp(), PAYER_ID, receiverId, senderId));
 
+        List<SharedTransfer> expectedNonFeeTransfers = List.of(
+                // assessed custom fee only transfer
+                new SharedTransfer(senderPaymentAmount, transfer1.getConsensusTimestamp(), PAYER_ID, null, senderId),
+                new SharedTransfer(receivedAmount, transfer1.getConsensusTimestamp(), PAYER_ID, receiverId, null),
+                // crypto only transfer
+                new SharedTransfer(senderPaymentAmount, transfer2.getConsensusTimestamp(), PAYER_ID, null, senderId),
+                new SharedTransfer(receivedAmount, transfer2.getConsensusTimestamp(), PAYER_ID, receiverId, null),
+                // nft transfer
+                new SharedTransfer(senderPaymentAmount, transfer3.getConsensusTimestamp(), PAYER_ID, null, senderId),
+                new SharedTransfer(receivedAmount, transfer3.getConsensusTimestamp(), PAYER_ID, receiverId, null),
+                // token transfer
+                new SharedTransfer(senderPaymentAmount, transfer4.getConsensusTimestamp(), PAYER_ID, null, senderId),
+                new SharedTransfer(receivedAmount, transfer4.getConsensusTimestamp(), PAYER_ID, receiverId, null),
+                // token transfer
+                new SharedTransfer(senderPaymentAmount, transfer5.getConsensusTimestamp(), PAYER_ID, null, senderId),
+                new SharedTransfer(receivedAmount, transfer5.getConsensusTimestamp(), PAYER_ID, receiverId, null));
+
         List<SharedTransfer> expectedTokenTransfers = List.of(
                 // token transfer
                 new SharedTransfer(-receivedAmount, transfer4.getConsensusTimestamp(), PAYER_ID, null, senderId),
@@ -331,6 +404,8 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(findCryptoTransfers()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
 
         assertThat(findNftTransfers()).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
+
+        assertThat(findNonFeeTransfersAsSharedTransfers()).containsExactlyInAnyOrderElementsOf(expectedNonFeeTransfers);
 
         assertThat(findTokenTransfers()).containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
     }
@@ -406,6 +481,16 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         }
     }
 
+    private void persistNonFeeTransfers(List<NonFeeTransfer> nonFeeTransfers) {
+        for (NonFeeTransfer nonFeeTransfer : nonFeeTransfers) {
+            jdbcOperations.update(
+                    "insert into non_fee_transfer (amount, entity_id, consensus_timestamp)" + " values (?,?,?)",
+                    nonFeeTransfer.getAmount(),
+                    nonFeeTransfer.getEntityId().getId(),
+                    nonFeeTransfer.getConsensusTimestamp());
+        }
+    }
+
     private void persistTokenTransfers(List<TokenTransfer> tokenTransfers) {
         for (TokenTransfer tokenTransfer : tokenTransfers) {
             var id = tokenTransfer.getId();
@@ -460,6 +545,21 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     EntityId.of(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                     EntityId.of(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
                     EntityId.of(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
+            return sharedTransfer;
+        });
+    }
+
+    private List<SharedTransfer> findNonFeeTransfersAsSharedTransfers() {
+        return jdbcOperations.query("select * from non_fee_transfer", (rs, rowNum) -> {
+            Long amount = rs.getLong("amount");
+            EntityId sender = amount < 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
+            EntityId receiver = amount > 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
+            SharedTransfer sharedTransfer = new SharedTransfer(
+                    amount,
+                    rs.getLong("consensus_timestamp"),
+                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    receiver,
+                    sender);
             return sharedTransfer;
         });
     }
@@ -570,5 +670,23 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         private EntityId payerAccountId;
         private EntityId receiver;
         private EntityId sender;
+    }
+
+    @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+    @Builder
+    @Data
+    @NoArgsConstructor
+    public static class NonFeeTransfer {
+
+        private Long amount;
+
+        @Id
+        private Long consensusTimestamp;
+
+        private EntityId entityId;
+
+        private Boolean isApproval;
+
+        private EntityId payerAccountId;
     }
 }
