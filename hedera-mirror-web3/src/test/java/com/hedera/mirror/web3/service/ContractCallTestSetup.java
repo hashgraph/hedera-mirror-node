@@ -440,19 +440,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ethAccount;
     }
 
-    private long ethAccountPersist2() {
-        final var ethAccount = 359L;
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(ethAccount)
-                        .num(ethAccount)
-                        .evmAddress(ETH_ADDRESS.toArrayUnsafe())
-                        .balance(2000L))
-                .persist();
-        return ethAccount;
-    }
-
     @Nullable
     private EntityId senderEntityPersist() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
