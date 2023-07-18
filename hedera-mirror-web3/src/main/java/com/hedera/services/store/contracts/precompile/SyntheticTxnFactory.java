@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -124,6 +125,15 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
+    public TransactionBody.Builder createRevokeKyc(final GrantRevokeKycWrapper<TokenID, AccountID> wrapper) {
+        final var builder = TokenRevokeKycTransactionBody.newBuilder();
+
+        builder.setToken(wrapper.token());
+        builder.setAccount(wrapper.account());
+
+        return TransactionBody.newBuilder().setTokenRevokeKyc(builder);
     }
 
     public TransactionBody.Builder createGrantKyc(
