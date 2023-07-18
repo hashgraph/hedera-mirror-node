@@ -31,8 +31,8 @@ data:
     apt-get install google-cloud-cli jq -y
 
     echo "Getting node metadata"
-    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')"
-    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $4}')"
+    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/hostname -H 'Metadata-Flavor: Google' | awk -F'.' '{print $1}')"
+    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $NF}')"
     
     # Point to the internal API server hostname
     APISERVER=https://kubernetes.default.svc
