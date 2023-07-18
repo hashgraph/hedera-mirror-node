@@ -30,17 +30,18 @@ import org.springframework.context.annotation.Import;
 @Import(IntegrationTestConfiguration.class)
 class PrecompileMapperTest {
 
-    @Autowired
-    private MockPrecompile mockPrecompile;
+    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @Autowired
     private PrecompileMapper precompileMapper;
 
     @Test
-    void nonExistingAbiReturnsEmpty() {
+    void nonExistingAbiThrows() {
         int functionSelector = 0x11111111;
-        final var result = precompileMapper.lookup(functionSelector);
-        assertThat(result).isEmpty();
+
+        assertThatThrownBy(() -> precompileMapper.lookup(functionSelector))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @Test

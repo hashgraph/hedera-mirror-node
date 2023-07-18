@@ -85,9 +85,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @RequiredArgsConstructor
