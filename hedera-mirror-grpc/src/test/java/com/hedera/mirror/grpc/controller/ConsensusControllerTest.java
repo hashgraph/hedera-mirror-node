@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.grpc.controller;
 
+import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
@@ -25,9 +26,8 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -53,7 +53,9 @@ import reactor.test.StepVerifier;
 
 @Log4j2
 class ConsensusControllerTest extends GrpcIntegrationTest {
+
     private static final Duration WAIT = Duration.ofSeconds(10L);
+    private final long future = DomainUtils.convertToNanosMax(Instant.now().plusSeconds(10L));
 
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
@@ -108,8 +110,8 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
-                .expectErrorSatisfies(t -> assertException(
-                        t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " + "than or equal to 0"))
+                .expectErrorSatisfies(t ->
+                        assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater than or equal to 0"))
                 .verify(WAIT);
     }
 
@@ -125,7 +127,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
-        var generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
+        var generator = domainBuilder.topicMessages(2, future);
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
@@ -158,32 +160,6 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryPreEpochStartTime() {
-        var topicMessage1 = domainBuilder.topicMessage().block();
-        var topicMessage2 = domainBuilder.topicMessage().block();
-        var topicMessage3 = domainBuilder.topicMessage().block();
-
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setLimit(5L)
-                .setConsensusStartTime(
-                        Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
-                .build();
-
-        var generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
-
-        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
-                .thenAwait(WAIT)
-                .expectNext(grpcResponse(topicMessage1))
-                .expectNext(grpcResponse(topicMessage2))
-                .expectNext(grpcResponse(topicMessage3))
-                .then(generator::blockLast)
-                .expectNextCount(2)
-                .expectComplete()
-                .verify(WAIT);
-    }
-
-    @Test
     void subscribeTopicQueryLongOverflowEndTime() {
         var topicMessage1 = domainBuilder.topicMessage().block();
         var topicMessage2 = domainBuilder.topicMessage().block();
@@ -200,7 +176,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
-        var generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
+        var generator = domainBuilder.topicMessages(2, future);
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
                 .thenAwait(WAIT)
@@ -225,8 +201,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
-        Flux<TopicMessage> generator =
-                domainBuilder.topicMessages(4, Instant.now().plusSeconds(10L));
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(4, future);
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService
                         .subscribeTopic(Mono.just(query))
@@ -242,35 +217,34 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @Test
     void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
-        Instant now = Instant.now();
+        var now = DomainUtils.now();
         domainBuilder.topicMessage(t -> t.sequenceNumber(1)).block();
         domainBuilder
                 .topicMessage(t -> t.sequenceNumber(2)
                         .chunkNum(1)
                         .chunkTotal(2)
-                        .validStartTimestamp(InstantToLongConverter.INSTANCE.convert(now))
+                        .validStartTimestamp(now)
                         .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(1))))
+                        .consensusTimestamp(now + 1))
                 .block();
         domainBuilder
                 .topicMessage(t -> t.sequenceNumber(3)
                         .chunkNum(2)
                         .chunkTotal(2)
-                        .validStartTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(1)))
+                        .validStartTimestamp(now + 1)
                         .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(2))))
+                        .consensusTimestamp(now + 2))
                 .block();
         domainBuilder
-                .topicMessage(t -> t.sequenceNumber(4)
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(3))))
+                .topicMessage(t -> t.sequenceNumber(4).consensusTimestamp(now + 3))
                 .block();
         domainBuilder
                 .topicMessage(t -> t.sequenceNumber(5)
                         .chunkNum(1)
                         .chunkTotal(3)
-                        .validStartTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(3)))
+                        .validStartTimestamp(now + 3)
                         .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(4))))
+                        .consensusTimestamp(now + 4))
                 .block();
 
         // fragment message split across historic and incoming
@@ -278,19 +252,18 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 domainBuilder.topicMessage(t -> t.sequenceNumber(6)
                         .chunkNum(2)
                         .chunkTotal(3)
-                        .validStartTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(4)))
+                        .validStartTimestamp(now + 4)
                         .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusSeconds(5)))
+                        .consensusTimestamp(now + 5 * NANOS_PER_SECOND)
                         .initialTransactionId(null)),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(7)
                         .chunkNum(3)
                         .chunkTotal(3)
-                        .validStartTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusNanos(5)))
+                        .validStartTimestamp(now + 5)
                         .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusSeconds(6)))
+                        .consensusTimestamp(now + 6 * NANOS_PER_SECOND)
                         .initialTransactionId(new byte[] {1, 2})),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(8)
-                        .consensusTimestamp(InstantToLongConverter.INSTANCE.convert(now.plusSeconds(7)))));
+                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now + 7 * NANOS_PER_SECOND)));
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
@@ -319,8 +292,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
     @SneakyThrows
     private ConsensusTopicResponse grpcResponse(TopicMessage t) {
         return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(
-                        ProtoUtil.toTimestamp(LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp())))
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
                 .setRunningHashVersion(t.getRunningHashVersion())

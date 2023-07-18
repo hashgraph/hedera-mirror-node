@@ -78,6 +78,17 @@ class ProtoUtilTest {
                 .isEqualTo(status.getCode());
     }
 
+    @DisplayName("Convert Long to Timestamp")
+    @ParameterizedTest(name = "with input {2} will return {0}s and {1}ns")
+    @CsvSource({"0, 0, 0", "1574880387, 0, 1574880387000000000", "1574880387, 999999999, 1574880387999999999"})
+    void toTimestamp(long timestampSeconds, int timestampNanos, long input) {
+        var timestamp = Timestamp.newBuilder()
+                .setSeconds(timestampSeconds)
+                .setNanos(timestampNanos)
+                .build();
+        assertThat(ProtoUtil.toTimestamp(input)).isEqualTo(timestamp);
+    }
+
     @DisplayName("Convert Instant to Timestamp")
     @ParameterizedTest(name = "with {0}s and {1}ns")
     @CsvSource({"0, 0", "0, 999999999", "10, 0", "31556889864403199, 999999999", "-31557014167219200, 0"})
