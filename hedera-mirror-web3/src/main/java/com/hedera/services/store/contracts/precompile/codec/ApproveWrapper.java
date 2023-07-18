@@ -21,4 +21,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 
 public record ApproveWrapper(
-        TokenID tokenId, AccountID spender, BigInteger amount, BigInteger serialNumber, boolean isFungible) {}
+        TokenID tokenId,
+        AccountID spender,
+        BigInteger amount,
+        BigInteger serialNumber,
+        boolean isFungible,
+        boolean isErcApprove) {}

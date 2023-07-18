@@ -133,8 +133,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
         This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
         After the Precompile classes are implemented, this workaround won't be needed. */
-        if (isTokenProxyRedirect(input) || isViewFunction(input)) {
+        if (isTokenProxyRedirect(input) && isViewFunction(input)) {
             return handleReadsFromDynamicContext(input, frame);
+        }
+        if (isViewFunction(input)) {
+            return handleReadsForViewFunction(input, frame);
         }
 
         if (unqualifiedDelegateDetected(frame)) {
@@ -220,23 +223,34 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 } catch (final Exception e) {
                     throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
                 }
+
                 var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
                 }
                 var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
 
+                final var isFungibleToken =
+                        /* For implicit redirect call scenarios, at this point in the logic it has already been
+                         * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
+                         *
+                         * Explicit redirect calls, however, verify the existence of the token in RedirectPrecompile.run(), so only
+                         * call ledgers.typeOf() if the token exists.
+                         *  */
+                        (!isExplicitRedirectCall
+                                        || !store.getToken(target.token(), OnMissing.DONT_THROW)
+                                                .isEmptyToken())
+                                && store.getToken(target.token(), OnMissing.THROW)
+                                        .isFungibleCommon();
                 var nestedFunctionSelector = target.descriptor();
                 switch (nestedFunctionSelector) {
                     case AbiConstants.ABI_ID_ERC_APPROVE:
-                        final var isFungible =
-                                store.getToken(target.token(), OnMissing.THROW).isFungibleCommon();
                         this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         this.transactionBody = precompile.body(
                                 input,
                                 aliasResolver,
-                                new ApproveParams(target.token(), senderAddress, store, isFungible));
+                                new ApproveParams(target.token(), senderAddress, store, isFungibleToken));
                         break;
                     default:
                         this.precompile =
@@ -277,20 +291,23 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
             final Bytes input, @NonNull final MessageFrame frame) {
-        Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
-        if (isTokenProxyRedirect(input)) {
-            final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
-            resultFromExecutor = executor.computeCosted();
+        Pair<Long, Bytes> resultFromExecutor;
+        final var executor = infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        resultFromExecutor = executor.computeCosted();
 
-            if (resultFromExecutor.getRight() == null) {
-                throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-            }
-
-        } else if (isViewFunction(input)) {
-            final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
-            resultFromExecutor = executor.computeCosted();
+        if (resultFromExecutor.getRight() == null) {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
         }
+        return resultFromExecutor == null
+                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
+                : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
+    }
+
+    private PrecompiledContract.PrecompileContractResult handleReadsForViewFunction(
+            final Bytes input, @NonNull final MessageFrame frame) {
+        Pair<Long, Bytes> resultFromExecutor;
+        final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        resultFromExecutor = executor.computeCosted();
         return resultFromExecutor == null
                 ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());

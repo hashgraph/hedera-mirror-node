@@ -121,12 +121,7 @@ public class PrecompileMapper {
         if (precompile != null) {
             return Optional.of(precompile);
         }
-        // TODO If the function selector is not mapped but is from the list of HTS precompiles, throw an exception until
-        // the given precompile is supported
-        else if (precompileSelectors.contains(functionSelector)) {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-        } else {
-            return Optional.empty();
-        }
+
+        throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
     }
 }

@@ -243,6 +243,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
+    protected CallServiceParameters test(
+            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        persistEntities();
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .value(value)
+                .receiver(contractAddress)
+                .callData(callData)
+                .gas(15_000_000L)
+                .isStatic(true)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .build();
+    }
+
     protected long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
         return processor
                 .execute(
@@ -275,7 +292,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         stateContractPersist();
         precompileContractPersist();
         final var modificationContarct = modificationContractPersist();
-        ercContractPersist();
+        final var ercContract = ercContractPersist();
         fileDataPersist();
 
         final var senderEntityId = senderEntityPersist();
@@ -290,6 +307,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ethAccount = ethAccountPersist();
         tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(modificationContarct, ethAccount + 1, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, ethAccount + 2, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(
                 spenderEntityId, ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -689,7 +707,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return modificationContractEntityId;
     }
 
-    private void ercContractPersist() {
+    private EntityId ercContractPersist() {
         final var ercContractBytes = functionEncodeDecoder.getContractBytes(ERC_CONTRACT_BYTES_PATH);
         final var ercContractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
         final var ercContractEvmAddress = toEvmAddress(ercContractEntityId);
@@ -718,6 +736,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
 
         domainBuilder.recordFile().customize(f -> f.bytes(ercContractBytes)).persist();
+        return ercContractEntityId;
     }
 
     protected void customFeesPersist(final FeeCase feeCase) {

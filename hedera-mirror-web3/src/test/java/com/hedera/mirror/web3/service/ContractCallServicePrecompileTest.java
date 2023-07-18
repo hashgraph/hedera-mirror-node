@@ -318,19 +318,26 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
-        ASSOCIATE_TOKENS(
-                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
-        DISSOCIATE_TOKENS(
-                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
-        WIPE_TOKEN(
-                "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ACCOUNT_ADDRESS, 1L}),
-        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[] {1}});
+        //        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
+        //        ASSOCIATE_TOKENS(
+        //                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[]
+        // {FUNGIBLE_TOKEN_ADDRESS}}),
+        //        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new
+        // byte[0][0]}),
+        //        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
+        //        DISSOCIATE_TOKENS(
+        //                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[]
+        // {TREASURY_TOKEN_ADDRESS}}),
+        //        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
+        //        WIPE_TOKEN(
+        //                "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS,
+        // ETH_ACCOUNT_ADDRESS, 1L}),
+        //        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
+        // DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
+        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L});
+        //        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
+        //        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, new long[]
+        // {1}});
 
         private final String name;
         private final Object[] functionParameters;

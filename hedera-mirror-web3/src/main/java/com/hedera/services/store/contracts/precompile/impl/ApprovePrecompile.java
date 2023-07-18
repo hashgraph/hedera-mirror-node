@@ -26,6 +26,7 @@ import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT_BOOL
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
@@ -184,10 +185,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
-        store.commit();
-        store.wrap();
         final var accountAccessor = updater.getAccountAccessor();
-        final var senderAddress = frame.getOriginatorAddress();
+        final var senderAddress = frame.getSenderAddress();
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;
@@ -198,7 +197,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         long amount = 0;
         long serialNumber = 0;
 
-        // get bodies only one can be initialized
+        // get bodies
         final var approveAllowanceBody = transactionBody.getCryptoApproveAllowance();
         final var deleteAllowanceBody = transactionBody.getCryptoDeleteAllowance();
         final var isNftApprovalRevocation =
@@ -288,7 +287,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         } else {
             frame.addLog(getLogForNftAllowanceRevocation(tokenAddress, senderAddress, serialNumber, accountAccessor));
         }
-        return new ApproveResult(tokenId, isFungible);
+        final int functionId = frame.getInputData().getInt(0);
+        return new ApproveResult(tokenId, isFungible, functionId == ABI_ID_REDIRECT_FOR_TOKEN);
     }
 
     @Override
@@ -305,9 +305,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getSuccessResultFor(final RunResult runResult) {
         final var approveResult = (ApproveResult) runResult;
-        //        if (approveResult.tokenId() != null) {
-        //            return encoder.encodeApprove(true);
-        //        }
+        if (approveResult.isErcOperaion()) {
+            return encoder.encodeApprove(true);
+        }
         if (approveResult.isFungible()) {
             return encoder.encodeApprove(SUCCESS.getNumber(), true);
         } else {
@@ -345,11 +345,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (isFungible) {
             final var amount = (BigInteger) decodedArguments.get(offset + 1);
 
-            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, true);
+            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, true, offset == 0);
         } else {
             final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
 
-            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, false);
+            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, false, offset == 0);
         }
     }
 
