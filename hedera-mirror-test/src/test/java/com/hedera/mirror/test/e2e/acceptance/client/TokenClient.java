@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -505,16 +504,6 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(expandedAccountId.getPrivateKey()));
         log.info("Updated custom fees schedule for token {} via {}", tokenId, response.getTransactionId());
         return response;
-    }
-
-    @SuppressWarnings("deprecation")
-    public long getTokenBalance(AccountId accountId, TokenId tokenId) {
-        // AccountBalanceQuery is free
-        var query = new AccountBalanceQuery().setAccountId(accountId);
-        var accountBalance = executeQuery(() -> query);
-        long balance = accountBalance.tokens.get(tokenId);
-        log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
-        return balance;
     }
 
     private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}

@@ -46,9 +46,11 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -58,10 +60,13 @@ import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.RevokeKycLogic;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -287,12 +292,30 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    GrantKycPrecompile grantKycPrecompile(
+            final GrantKycLogic grantKycLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GrantKycPrecompile(grantKycLogic, syntheticTxnFactory, pricingUtils);
+    }
+
+    @Bean
     BurnPrecompile burnPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final BurnLogic burnLogic) {
         return new BurnPrecompile(pricingUtils, encoder, syntheticTxnFactory, burnLogic);
+    }
+
+    @Bean
+    ApproveAllowanceChecks approveAllowanceChecks() {
+        return new ApproveAllowanceChecks();
+    }
+
+    @Bean
+    DeleteAllowanceChecks deleteAllowanceChecks() {
+        return new DeleteAllowanceChecks();
     }
 
     @Bean
@@ -337,5 +360,19 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+    }
+
+    @Bean
+    RevokeKycLogic revokeKycLogic() {
+        return new RevokeKycLogic();
+    }
+
+    @Bean
+    TokenCreatePrecompile tokenCreatePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            EncodingFacade encodingFacade,
+            SyntheticTxnFactory syntheticTxnFactory,
+            CreateLogic createLogic) {
+        return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
     }
 }

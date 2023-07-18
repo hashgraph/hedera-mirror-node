@@ -16,35 +16,15 @@
 
 package com.hedera.mirror.common.domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.domain.Persistable;
+import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
-public class EntityStake implements Persistable<Long> {
-    @Id
-    private Long id;
-
-    private boolean declineRewardStart;
-    private long endStakePeriod; // The epoch day of the period for which the pending reward has included so far
-    private long pendingReward;
-    private long stakedNodeIdStart;
-    private long stakedToMe;
-    private long stakeTotalStart;
-
-    @JsonIgnore
-    @Override
-    public boolean isNew() {
-        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
+@SuperBuilder(toBuilder = true)
+public class EntityStake extends AbstractEntityStake {
+    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

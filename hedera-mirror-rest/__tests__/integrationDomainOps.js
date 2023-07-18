@@ -519,6 +519,8 @@ const addEntity = async (defaults, custom) => {
   return entity;
 };
 
+const SECONDS_PER_DAY = 86400;
+
 const defaultEntityStake = {
   decline_reward_start: true,
   end_stake_period: 1,
@@ -527,7 +529,9 @@ const defaultEntityStake = {
   staked_node_id_start: 1,
   staked_to_me: 0,
   stake_total_start: 0,
+  timestamp_range: null,
 };
+
 const entityStakeFields = Object.keys(defaultEntityStake);
 
 const addEntityStake = async (entityStake) => {
@@ -536,7 +540,13 @@ const addEntityStake = async (entityStake) => {
     ...entityStake,
   };
 
-  await insertDomainObject('entity_stake', entityStakeFields, entityStake);
+  if (entityStake.timestamp_range === null) {
+    const seconds = SECONDS_PER_DAY * (Number(entityStake.end_stake_period) + 1);
+    const timestamp = BigInt(seconds) * BigInt(1_000_000_000) + BigInt(1);
+    entityStake.timestamp_range = `[${timestamp},)`;
+  }
+
+  await insertDomainObject(getTableName('entity_stake', entityStake), entityStakeFields, entityStake);
 };
 
 const ethereumTransactionDefaults = {

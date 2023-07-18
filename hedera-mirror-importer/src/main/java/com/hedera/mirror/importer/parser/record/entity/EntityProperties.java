@@ -65,7 +65,7 @@ public class EntityProperties {
 
         private boolean topics = true;
 
-        private boolean topicMessageLookups = true;
+        private boolean topicMessageLookups = false;
 
         private boolean trackBalance = true;
 
