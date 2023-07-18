@@ -23,6 +23,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.WipeResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -51,8 +52,9 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
 
     final WipeLogic wipeLogic;
 
-    protected AbstractWipePrecompile(PrecompilePricingUtils pricingUtils, WipeLogic wipeLogic) {
-        super(pricingUtils, null);
+    protected AbstractWipePrecompile(
+            PrecompilePricingUtils pricingUtils, WipeLogic wipeLogic, SyntheticTxnFactory syntheticTxnFactory) {
+        super(pricingUtils, syntheticTxnFactory);
         this.wipeLogic = wipeLogic;
     }
 

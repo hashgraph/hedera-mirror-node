@@ -51,7 +51,7 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
 
     public WipeNonFungiblePrecompile(
             PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory, WipeLogic wipeLogic) {
-        super(pricingUtils, wipeLogic);
+        super(pricingUtils, wipeLogic, syntheticTxnFactory);
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
