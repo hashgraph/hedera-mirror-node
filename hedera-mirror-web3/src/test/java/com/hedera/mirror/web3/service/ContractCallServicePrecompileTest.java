@@ -307,7 +307,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
@@ -336,7 +335,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
         REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
         GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS});
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;
