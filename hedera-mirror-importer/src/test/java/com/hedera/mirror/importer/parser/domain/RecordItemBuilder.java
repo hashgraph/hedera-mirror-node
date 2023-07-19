@@ -625,7 +625,7 @@ public class RecordItemBuilder {
                 .setPayerAccountID(accountId())
                 .setExpirationTime(timestamp())
                 .setWaitForExpiry(true);
-        return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+        return new Builder<>(TransactionType.SCHEDULECREATE, builder).receipt(r -> r.setScheduleID(scheduleId()));
     }
 
     public Builder<ScheduleDeleteTransactionBody.Builder> scheduleDelete() {

@@ -233,7 +233,9 @@ abstract class AbstractTransactionHandlerTest {
             expectedEntityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, entityType);
         }
         testGetEntityIdHelper(
-                getTransactionBody(), getDefaultTransactionRecord().build(), expectedEntityId);
+                getDefaultTransactionBody().build(),
+                getDefaultTransactionRecord().build(),
+                expectedEntityId);
     }
 
     @TestFactory
@@ -292,7 +294,7 @@ abstract class AbstractTransactionHandlerTest {
         // Given
         var transactionRecord = getDefaultTransactionRecord();
         transactionRecord.getReceiptBuilder().setStatus(INSUFFICIENT_PAYER_BALANCE);
-        var recordItem = getRecordItem(getTransactionBody(), transactionRecord.build());
+        var recordItem = getRecordItem(getDefaultTransactionBody().build(), transactionRecord.build());
         var transaction = domainBuilder.transaction().get();
         var expectedEntityTransactions = toEntityTransactions(
                 recordItem,
@@ -494,7 +496,7 @@ abstract class AbstractTransactionHandlerTest {
     protected AbstractEntity getExpectedUpdatedEntity() {
         Entity entity = getExpectedEntityWithTimestamp();
 
-        TransactionBody defaultBody = getTransactionBody();
+        TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
                 .map(FieldDescriptor::getName)
@@ -530,7 +532,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected TransactionBody getTransactionBodyForUpdateEntityWithoutMemo() {
-        TransactionBody defaultBody = getTransactionBody();
+        TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         Message.Builder builder = innerBody.toBuilder().clear();
 
@@ -564,7 +566,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected FieldDescriptor getInnerBodyFieldDescriptorByName(String name) {
-        TransactionBody body = getTransactionBody();
+        TransactionBody body = getDefaultTransactionBody().build();
         return getInnerBody(body).getDescriptorForType().findFieldByName(name);
     }
 
@@ -600,17 +602,6 @@ abstract class AbstractTransactionHandlerTest {
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build();
-    }
-
-    private TransactionBody getTransactionBody() {
-        return getDefaultTransactionBody().build();
-        //        var transactionId = TransactionID.newBuilder()
-        //                .setAccountID(AccountID.newBuilder().setAccountNum(domainBuilder.id()))
-        //                .setTransactionValidStart(TestUtils.toTimestamp(domainBuilder.timestamp()))
-        //                .build();
-        //        return getDefaultTransactionBody()
-        //                .setTransactionID(transactionId)
-        //                .build();
     }
 
     private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {
