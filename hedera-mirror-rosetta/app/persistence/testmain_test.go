@@ -68,13 +68,14 @@ func addTransaction(
 	transactionType int16,
 	validStartNs int64,
 	cryptoTransfers []domain.CryptoTransfer,
-	nonFeeTransfers []domain.NonFeeTransfer,
+	itemizedTransfers JSONB,
 	memo []byte,
 ) {
 	tx := &domain.Transaction{
 		ConsensusTimestamp:   consensusTimestamp,
 		ChargedTxFee:         17,
 		EntityId:             entityId,
+		ItemizedTransfer:     itemizedTransfers,
 		Memo:                 memo,
 		NodeAccountId:        nodeAccountId,
 		Nonce:                0,
@@ -89,10 +90,6 @@ func addTransaction(
 
 	if len(cryptoTransfers) != 0 {
 		tdb.CreateDbRecords(dbClient, cryptoTransfers)
-	}
-
-	if len(nonFeeTransfers) != 0 {
-		tdb.CreateDbRecords(dbClient, nonFeeTransfers)
 	}
 }
 
