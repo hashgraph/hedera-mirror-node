@@ -131,11 +131,19 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
         This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
         After the Precompile classes are implemented, this workaround won't be needed. */
-        if (isTokenProxyRedirect(input) && isNestedFunctionSelectorForViewFunction(input)) {
-            return handleReadsFromDynamicContext(input, frame);
+
+        // redirect operations
+        if (isTokenProxyRedirect(input)) {
+            if (isNestedFunctionSelectorForViewFunction(input)) {
+                // redirect for read operations
+                return handleReadsFromDynamicContext(input, frame);
+            } else {
+                // redirect for write operations
+                return handleWritesFromDynamicContext(input, frame);
+            }
         }
         if (isViewFunction(input)) {
-            return handleReadsForViewFunction(input, frame);
+            return handleReadsFromDynamicContext(input, frame);
         }
 
         if (unqualifiedDelegateDetected(frame)) {
@@ -262,24 +270,23 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private PrecompileContractResult handleReadsFromDynamicContext(
             final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor;
-        final var executor = infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
         resultFromExecutor = executor.computeCosted();
 
-        if (resultFromExecutor.getRight() == null) {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-        }
-        return resultFromExecutor == null
+        return resultFromExecutor.getRight() == null
                 ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompileContractResult.success(resultFromExecutor.getRight());
     }
 
-    private PrecompileContractResult handleReadsForViewFunction(final Bytes input, @NonNull final MessageFrame frame) {
+    private PrecompileContractResult handleWritesFromDynamicContext(
+            final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor;
-        final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        final var executor = infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
         resultFromExecutor = executor.computeCosted();
-        return resultFromExecutor == null
-                ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompileContractResult.success(resultFromExecutor.getRight());
+        if (resultFromExecutor.getRight() == null) {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+        }
+        return PrecompileContractResult.success(resultFromExecutor.getRight());
     }
 
     private boolean isNestedFunctionSelectorForViewFunction(Bytes input) {
