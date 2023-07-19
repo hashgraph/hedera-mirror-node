@@ -126,6 +126,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
 
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var mintBody = transactionBody.getTokenMint();
         final var tokenId = mintBody.getToken();
 

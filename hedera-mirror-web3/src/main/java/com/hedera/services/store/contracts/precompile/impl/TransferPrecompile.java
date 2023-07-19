@@ -97,9 +97,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     public TransferPrecompile(
             PrecompilePricingUtils pricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
             int functionId,
-            boolean isLazyCreationEnabled) {
+            boolean isLazyCreationEnabled,
+            final SyntheticTxnFactory syntheticTxnFactory) {
         super(pricingUtils, syntheticTxnFactory);
         this.functionId = functionId;
         this.isLazyCreationEnabled = isLazyCreationEnabled;

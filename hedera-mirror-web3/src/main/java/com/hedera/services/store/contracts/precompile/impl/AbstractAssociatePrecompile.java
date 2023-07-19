@@ -67,9 +67,9 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
     @Override
     public RunResult run(MessageFrame frame, final TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
 
         // --- Execute the transaction and capture its results ---
 

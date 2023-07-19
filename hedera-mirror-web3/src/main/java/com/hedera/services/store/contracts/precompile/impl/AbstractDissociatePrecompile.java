@@ -52,10 +52,10 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenDissociate().getAccount());
 
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var validity = dissociateLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
 

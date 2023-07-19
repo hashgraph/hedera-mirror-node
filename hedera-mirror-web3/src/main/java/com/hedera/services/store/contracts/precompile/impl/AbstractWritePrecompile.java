@@ -28,7 +28,8 @@ public abstract class AbstractWritePrecompile implements Precompile {
     protected final PrecompilePricingUtils pricingUtils;
     protected final SyntheticTxnFactory syntheticTxnFactory;
 
-    protected AbstractWritePrecompile(PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory) {
+    protected AbstractWritePrecompile(
+            final PrecompilePricingUtils pricingUtils, final SyntheticTxnFactory syntheticTxnFactory) {
         this.pricingUtils = pricingUtils;
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
