@@ -38,6 +38,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.PauseLogic;
@@ -48,6 +49,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -110,6 +112,15 @@ class PausePrecompileTest {
     @Mock
     private Store store;
 
+    @Mock
+    private MirrorEvmContractAliases contractAliases;
+
+    @Mock
+    private BodyParams bodyParams;
+
+    @Mock
+    private UnaryOperator<byte[]> aliasResolver;
+
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -122,14 +133,12 @@ class PausePrecompileTest {
     private static final Bytes NON_FUNGIBLE_PAUSE_INPUT =
             Bytes.fromHexString("0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
 
-    private final TransactionBody.Builder transactionBody =
-            TransactionBody.newBuilder().setTokenPause(TokenPauseTransactionBody.newBuilder());
+    private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+            .setTokenPause(TokenPauseTransactionBody.newBuilder().setToken(fungible));
 
     private HTSPrecompiledContract subject;
     private MockedStatic<PausePrecompile> staticPausePrecompile;
-
-    @Mock
-    private MirrorEvmContractAliases contractAliases;
+    private PausePrecompile pausePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -139,8 +148,7 @@ class PausePrecompileTest {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
-        syntheticTxnFactory = new SyntheticTxnFactory();
-        PausePrecompile pausePrecompile = new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
+        pausePrecompile = new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(pausePrecompile));
         staticPausePrecompile = Mockito.mockStatic(PausePrecompile.class);
 
@@ -164,6 +172,7 @@ class PausePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(pauseLogic.validateSyntax(any())).willReturn(OK);
+        given(pausePrecompile.body(pretendArguments, aliasResolver, bodyParams)).willReturn(transactionBody);
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
