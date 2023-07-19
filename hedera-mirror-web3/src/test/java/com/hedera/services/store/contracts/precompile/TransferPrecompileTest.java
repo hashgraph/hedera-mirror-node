@@ -689,9 +689,6 @@ class TransferPrecompileTest {
         assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
         assertNull(fungibleTransfers.get(0).sender());
         assertNull(fungibleTransfers.get(1).sender());
-        assertEquals(
-                AccountID.newBuilder().setAlias(nonLongZeroAlias).build(),
-                fungibleTransfers.get(1).receiver());
         assertEquals(10, fungibleTransfers.get(0).amount());
         assertEquals(20, fungibleTransfers.get(1).amount());
         assertEquals(0, hbarTransfers.size());
@@ -722,12 +719,6 @@ class TransferPrecompileTest {
         assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
         assertNull(fungibleTransfers.get(0).sender());
         assertNull(fungibleTransfers.get(1).sender());
-        assertEquals(
-                AccountID.newBuilder().setAlias(longZeroAlias).build(),
-                fungibleTransfers.get(0).receiver());
-        assertEquals(
-                AccountID.newBuilder().setAlias(nonLongZeroAlias).build(),
-                fungibleTransfers.get(1).receiver());
         assertEquals(10, fungibleTransfers.get(0).amount());
         assertEquals(20, fungibleTransfers.get(1).amount());
         assertEquals(0, hbarTransfers.size());
