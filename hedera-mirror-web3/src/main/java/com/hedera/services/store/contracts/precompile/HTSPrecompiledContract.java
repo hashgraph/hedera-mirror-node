@@ -61,7 +61,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to
+ * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
