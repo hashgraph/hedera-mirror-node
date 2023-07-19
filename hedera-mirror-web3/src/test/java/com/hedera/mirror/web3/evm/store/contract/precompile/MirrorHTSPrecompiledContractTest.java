@@ -64,6 +64,8 @@ class MirrorHTSPrecompiledContractTest {
     private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
     private static final Pair<Long, Bytes> FAILURE_RESULT = Pair.of(0L, null);
 
+    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
+
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
 
@@ -191,7 +193,7 @@ class MirrorHTSPrecompiledContractTest {
 
         assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
                 .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @Test
@@ -270,7 +272,7 @@ class MirrorHTSPrecompiledContractTest {
     }
 
     @Test
-    void callingNonExistingPrecompileFailsWithNullOutput() {
+    void callingNonExistingPrecompileFails() {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x11111111");
 
@@ -285,9 +287,9 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
-
-        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
+        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @Test
