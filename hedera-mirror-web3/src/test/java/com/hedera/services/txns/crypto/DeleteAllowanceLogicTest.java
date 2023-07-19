@@ -103,9 +103,9 @@ class DeleteAllowanceLogicTest {
         given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
 
         token2Model = token2Model.setTreasury(ownerAccount);
-        given(store.getToken(asTypedEvmAddress(token2), OnMissing.DONT_THROW)).willReturn(token2Model);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
+        given(store.loadPossiblyPausedToken(token2Model.getId().asEvmAddress())).willReturn(token2Model);
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
 
@@ -124,9 +124,9 @@ class DeleteAllowanceLogicTest {
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
         given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
         token2Model = token2Model.setTreasury(ownerAccount);
-        given(store.getToken(asTypedEvmAddress(token2), OnMissing.DONT_THROW)).willReturn(token2Model);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
+        given(store.loadPossiblyPausedToken(token2Model.getId().asEvmAddress())).willReturn(token2Model);
 
         assertEquals(1, ownerAccount.getApproveForAllNfts().size());
 
@@ -145,9 +145,9 @@ class DeleteAllowanceLogicTest {
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
         given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
         token2Model = token2Model.setTreasury(payerAccount);
-        given(store.getToken(asTypedEvmAddress(token2), OnMissing.DONT_THROW)).willReturn(token2Model);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
+        given(store.loadPossiblyPausedToken(token2Model.getId().asEvmAddress())).willReturn(token2Model);
 
         Executable deleteAllowance =
                 () -> subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
@@ -170,7 +170,6 @@ class DeleteAllowanceLogicTest {
 
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
         given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
-        given(store.getToken(any(), any())).willReturn(token1Model);
 
         subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
@@ -188,7 +187,6 @@ class DeleteAllowanceLogicTest {
                 .willReturn(payerAccount);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
-        given(store.getToken(asTypedEvmAddress(token2), OnMissing.DONT_THROW)).willReturn(token2Model);
 
         assertEquals(1, payerAccount.getApproveForAllNfts().size());
 

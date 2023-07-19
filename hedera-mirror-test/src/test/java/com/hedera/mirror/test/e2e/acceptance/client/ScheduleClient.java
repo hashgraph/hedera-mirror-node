@@ -21,8 +21,6 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
 import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
-import com.hedera.hashgraph.sdk.ScheduleInfo;
-import com.hedera.hashgraph.sdk.ScheduleInfoQuery;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -85,9 +83,5 @@ public class ScheduleClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
         log.info("Deleted schedule {} via {}", scheduleId, response.getTransactionId());
         return response;
-    }
-
-    public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
-        return executeQuery(() -> new ScheduleInfoQuery().setScheduleId(scheduleId));
     }
 }

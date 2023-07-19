@@ -53,7 +53,7 @@ public interface Precompile {
     long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
 
     // Change the world state through the given frame
-    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
+    RunResult run(MessageFrame frame, TransactionBody transactionBody);
 
     long getGasRequirement(
             long blockTimestamp,

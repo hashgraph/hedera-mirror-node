@@ -189,7 +189,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
+            final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
         } catch (final InvalidTransactionException e) {

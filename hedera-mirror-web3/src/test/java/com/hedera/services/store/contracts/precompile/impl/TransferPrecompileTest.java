@@ -58,6 +58,7 @@ import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -129,6 +130,9 @@ class TransferPrecompileTest {
     @Mock
     private MessageFrame frame;
 
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
     private MockedStatic<TransferPrecompile> staticTransferPrecompile;
 
     private TransferPrecompile transferPrecompile;
@@ -157,7 +161,7 @@ class TransferPrecompileTest {
 
     @Test
     void gasRequirementReturnsCorrectValueForTransferSingleToken() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKEN, false);
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKEN, false, syntheticTxnFactory);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
@@ -178,7 +182,7 @@ class TransferPrecompileTest {
 
     @Test
     void testBody() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKENS, false);
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_TOKENS, false, syntheticTxnFactory);
         final Bytes transferTokensInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         staticTransferPrecompile
                 .when(() -> decodeTransferTokens(eq(transferTokensInput), any()))
@@ -186,7 +190,7 @@ class TransferPrecompileTest {
         transferPrecompile.body(transferTokensInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER, transferPrecompile.transferOp);
 
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER, false);
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER, false, syntheticTxnFactory);
         final Bytes cryptoTransferInput = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransfer(eq(cryptoTransferInput), any()))
@@ -194,7 +198,7 @@ class TransferPrecompileTest {
         transferPrecompile.body(cryptoTransferInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER, transferPrecompile.transferOp);
 
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFTS, false);
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFTS, false, syntheticTxnFactory);
         final Bytes transferNftsInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         staticTransferPrecompile
                 .when(() -> decodeTransferNFTs(eq(transferNftsInput), any()))
@@ -202,7 +206,7 @@ class TransferPrecompileTest {
         transferPrecompile.body(transferNftsInput, a -> a, null);
         assertEquals(CRYPTO_TRANSFER_NFTS_WRAPPER, transferPrecompile.transferOp);
 
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFT, false);
+        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_TRANSFER_NFT, false, syntheticTxnFactory);
         final Bytes transferNftInput = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         staticTransferPrecompile
                 .when(() -> decodeTransferNFT(eq(transferNftInput), any()))
@@ -213,7 +217,8 @@ class TransferPrecompileTest {
 
     @Test
     void minimumFeeInTinybarsHbarOnlyCryptoTransfer() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false);
+        transferPrecompile =
+                new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false, syntheticTxnFactory);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile
@@ -231,7 +236,8 @@ class TransferPrecompileTest {
 
     @Test
     void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false);
+        transferPrecompile =
+                new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false, syntheticTxnFactory);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -252,7 +258,8 @@ class TransferPrecompileTest {
 
     @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false);
+        transferPrecompile =
+                new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false, syntheticTxnFactory);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -273,7 +280,8 @@ class TransferPrecompileTest {
 
     @Test
     void minimumFeeInTinybarsHbarNftCryptoTransfer() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false);
+        transferPrecompile =
+                new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false, syntheticTxnFactory);
 
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -293,7 +301,8 @@ class TransferPrecompileTest {
 
     @Test
     void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
-        transferPrecompile = new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false);
+        transferPrecompile =
+                new TransferPrecompile(pricingUtils, ABI_ID_CRYPTO_TRANSFER_V2, false, syntheticTxnFactory);
 
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         staticTransferPrecompile

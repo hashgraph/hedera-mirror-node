@@ -16,15 +16,15 @@
 
 package com.hedera.services.txn.token;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Copied Logic type from hedera-services.
@@ -41,10 +41,10 @@ public class DeleteLogic {
         final var token = store.getToken(targetTokenId, Store.OnMissing.THROW);
 
         // --- Do the business logic ---
-        final var updatedToken = token.delete();
+        final var deletedToken = token.delete();
 
         // --- Persist the updated model ---
-        store.updateToken(updatedToken);
+        store.updateToken(deletedToken);
     }
 
     public ResponseCodeEnum validate(final TransactionBody txnBody) {

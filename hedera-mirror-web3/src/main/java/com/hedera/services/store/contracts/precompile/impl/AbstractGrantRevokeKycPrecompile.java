@@ -33,11 +33,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
  */
 public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrecompile {
 
-    protected final SyntheticTxnFactory syntheticTxnFactory;
-
     protected AbstractGrantRevokeKycPrecompile(
             SyntheticTxnFactory syntheticTxnFactory, PrecompilePricingUtils pricingUtils) {
-        super(pricingUtils);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(pricingUtils, syntheticTxnFactory);
     }
 }

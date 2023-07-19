@@ -18,6 +18,8 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -52,6 +54,10 @@ public class FcTokenAllowanceId implements Comparable<FcTokenAllowanceId> {
 
     public static FcTokenAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
         return new FcTokenAllowanceId(tokenNum, spenderNum);
+    }
+
+    public static FcTokenAllowanceId from(final TokenID tokenId, final AccountID accountId) {
+        return new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
     }
 
     @Override
