@@ -29,6 +29,7 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
@@ -45,6 +46,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
@@ -58,6 +60,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
+import com.hedera.services.txn.token.DeleteLogic;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
@@ -120,6 +123,11 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    TokenDeleteResourceUsage tokenDeleteResourceUsage(final EstimatorFactory estimatorFactory) {
+        return new TokenDeleteResourceUsage(estimatorFactory);
+    }
+
+    @Bean
     TokenDissociateResourceUsage tokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
         return new TokenDissociateResourceUsage(estimatorFactory);
     }
@@ -139,6 +147,9 @@ public class ServicesConfiguration {
             }
             if (estimator.toString().contains("TokenDissociate")) {
                 txnUsageEstimators.put(HederaFunctionality.TokenDissociateFromAccount, List.of(estimator));
+            }
+            if (estimator.toString().contains("TokenDelete")) {
+                txnUsageEstimators.put(HederaFunctionality.TokenDelete, List.of(estimator));
             }
         }
 
@@ -383,5 +394,18 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             CreateLogic createLogic) {
         return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
+    }
+
+    @Bean
+    DeleteLogic deleteLogic() {
+        return new DeleteLogic();
+    }
+
+    @Bean
+    DeleteTokenPrecompile deleteTokenPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            DeleteLogic deleteLogic) {
+        return new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
     }
 }
