@@ -28,7 +28,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -59,15 +59,13 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
     private static final Function DELETE_TOKEN_FUNCTION = new Function("deleteToken(address)", INT);
     private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(BYTES32);
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final DeleteLogic deleteLogic;
 
     public DeleteTokenPrecompile(
             PrecompilePricingUtils precompilePricingUtils,
             SyntheticTxnFactory syntheticTxnFactory,
             DeleteLogic deleteLogic) {
-        super(precompilePricingUtils);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(precompilePricingUtils, syntheticTxnFactory);
         this.deleteLogic = deleteLogic;
     }
 
@@ -91,8 +89,9 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody);
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var tokenId = transactionBody.getTokenDeletion().getToken();
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
