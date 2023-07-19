@@ -367,9 +367,9 @@ class MirrorHTSPrecompiledContractTest {
         final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME, ALTBN128_ADD);
 
         given(messageFrame.isStatic()).willReturn(false);
-        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any()))
-                .willReturn(viewExecutor);
-        given(viewExecutor.computeCosted()).willReturn(Pair.of(0L, SUCCESS_RESULT));
+        given(evmInfrastructureFactory.newRedirectExecutor(any(), any(), any(), any()))
+                .willReturn(redirectViewExecutor);
+        given(redirectViewExecutor.computeCosted()).willReturn(Pair.of(0L, SUCCESS_RESULT));
 
         final var precompileResult = subject.computeCosted(input, messageFrame, gasCalculator, tokenAccessor);
 
