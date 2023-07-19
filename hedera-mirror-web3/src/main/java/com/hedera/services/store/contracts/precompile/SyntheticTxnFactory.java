@@ -21,11 +21,14 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -33,9 +36,12 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList.Builder;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -117,6 +123,12 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenBurn(builder);
     }
 
+    public TransactionBody.Builder createDelete(final DeleteWrapper deleteWrapper) {
+        final var builder = TokenDeleteTransactionBody.newBuilder();
+        builder.setToken(deleteWrapper.tokenID());
+        return TransactionBody.newBuilder().setTokenDeletion(builder);
+    }
+
     public TransactionBody.Builder createWipe(final WipeWrapper wipeWrapper) {
         final var builder = TokenWipeAccountTransactionBody.newBuilder();
 
@@ -129,6 +141,25 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
+    public TransactionBody.Builder createRevokeKyc(final GrantRevokeKycWrapper<TokenID, AccountID> wrapper) {
+        final var builder = TokenRevokeKycTransactionBody.newBuilder();
+
+        builder.setToken(wrapper.token());
+        builder.setAccount(wrapper.account());
+
+        return TransactionBody.newBuilder().setTokenRevokeKyc(builder);
+    }
+
+    public TransactionBody.Builder createGrantKyc(
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
+        final var builder = TokenGrantKycTransactionBody.newBuilder();
+
+        builder.setToken(grantRevokeKycWrapper.token());
+        builder.setAccount(grantRevokeKycWrapper.account());
+
+        return TransactionBody.newBuilder().setTokenGrantKyc(builder);
     }
 
     /**

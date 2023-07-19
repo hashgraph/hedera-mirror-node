@@ -24,9 +24,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
@@ -70,7 +68,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final BurnLogic burnLogic;
 
     public BurnPrecompile(
@@ -78,9 +75,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final BurnLogic burnLogic) {
-        super(pricingUtils);
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.burnLogic = burnLogic;
     }
 
@@ -105,14 +101,10 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(
-            final MessageFrame frame,
-            final Store store,
-            final TransactionBody transactionBody,
-            final EntityAddressSequencer entityAddressSequencer,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var burnBody = transactionBody.getTokenBurn();
         final var tokenId = burnBody.getToken();
 

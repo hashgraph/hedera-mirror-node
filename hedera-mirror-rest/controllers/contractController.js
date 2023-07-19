@@ -533,10 +533,10 @@ class ContractController extends BaseController {
     this.updateQueryFiltersWithInValues(params, conditions, transactionIndexInValues, transactionIndexFullName);
 
     return {
-      conditions: conditions,
-      params: params,
-      order: order,
-      limit: limit,
+      conditions,
+      params,
+      order,
+      limit,
     };
   };
 
@@ -1002,9 +1002,9 @@ class ContractController extends BaseController {
 
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
-    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+    const rows = await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultViewModel(row)),
+      results: rows.map((row) => new ContractResultDetailsViewModel(row, row.recordFile, row.ethereumTransaction)),
       links: {
         next: null,
       },

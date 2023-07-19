@@ -2,154 +2,85 @@
 
 ## Purpose
 
-This document outlines the steps needed to run citus in GKE using a ZFS filesystem
+This document outlines the steps needed to run [Citus](https://www.citusdata.com/)
+in [GKE](https://cloud.google.com/kubernetes-engine) using the [ZFS](https://en.wikipedia.org/wiki/ZFS) filesystem with
+[Zstandard](https://github.com/facebook/zstd) compression enabled. This is made possible by installing a custom CSI (
+Container Storage Interface) driver called [OpenEBS ZFS LocalPV](https://openebs.github.io/zfs-localpv/).
 
 ## Pre-Requisites
 
 All listed commands with relative paths are assumed to be run from the repository root.
 
-1. kubectl installed
-2. Helm installed
+1. [kubectl](https://kubernetes.io/docs/reference/kubectl)
+2. [Helm](https://helm.sh/)
 3. Access to create clusters in GKE
-
-### GKE Requirements
-
-1. all the nodes must have ZFS utils installed (handled by installing the common helm chart with ZFS enabled)
-2. The zpool has been set up for provisioning the volume (handled by installing the common helm chart with ZFS enabled)
-3. !Important! Node pools that have ZFS volumes need to have a service account configured that allows them permission to
-   create and attach disks. The daemonset included in the helm chart performs this process.
-    1. This can be done using the default service account for testing and just enabling the following
-       scope `--scopes "https://www.googleapis.com/auth/cloud-platform"`
-    2. additional details for configuring the service account can be
-       found [here](https://cloud.google.com/solutions/automatically-bootstrapping-gke-nodes-with-daemonsets#provision_a_service_account_to_manage_gke_clusters)
-4. Auto upgrade is disabled for the cluster. Special steps need to be taken to ensure the volumes are created
-   appropriately
-
-## Security
-
-This guide instructs you to create a service account to initialize nodes running ZFS pools. Ensure that this service
-account is limited to only components it needs (query instance metadata, create/list disks)
 
 ## Setup
 
 ### Infrastructure
 
-1. Create your Kubernetes cluster
-   <br>
-    1. Create a node pool specific for the coordinator node(s)
-        1. Use Ubuntu with containerd
-        2. add a label and taint to node to match
-       ```yaml
-       tolerations:
-       - key: zfs
-         operator: Equal
-         value: "true"
-         effect: NoSchedule
-       nodeSelector:
-         citus-role: coordinator
-         csi-type: zfs
-          ```
-    2. Create a node pool specific for the worker node(s)
-        1. Use Ubuntu with containerd
-        2. add a label and taint to match
-         ```yaml
-       tolerations:
-       - key: zfs
-         operator: Equal
-         value: "true"
-         effect: NoSchedule
-       node-selector:
-         citus-role: worker
-         csi-type: zfs
-         ```
+1. Create a Kubernetes cluster with the standard application node pool and auto-upgrade disabled.
+2. Create two node pools specific for the Citus coordinator and worker nodes. For each:
+    1. Use Ubuntu with containerd.
+    2. Set node security access scopes to `Allow full access to all Cloud APIs`.
+    3. Add a label and taint to node to match (change `citus-role` appropriately):
+    ```yaml
+    nodeSelector:
+      citus-role: worker
+      csi-type: zfs
+    tolerations:
+    - key: zfs
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+    ```
+
+On GKE, the following gcloud commands can be used to easily create the cluster and node pools:
+
+```shell
+NETWORK="default"
+PROJECT="myproject"
+VERSION="1.26.5-gke.2100"
+gcloud beta container --project "${PROJECT}" clusters create "citus" --region "us-central1" --no-enable-basic-auth --cluster-version "${VERSION}" --release-channel "None" --machine-type "e2-custom-6-16384" --image-type "COS_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --logging=SYSTEM,WORKLOAD --monitoring=SYSTEM --enable-ip-alias --network "${NETWORK}" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --security-posture=standard --workload-vulnerability-scanning=disabled --enable-network-policy --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,NodeLocalDNS,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --no-enable-managed-prometheus --enable-shielded-nodes --node-locations "us-central1-a","us-central1-b"
+gcloud beta container --project "${PROJECT}" node-pools create "coordinator" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "e2-custom-6-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=coordinator --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/cloud-platform" --num-nodes "1" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b"
+gcloud beta container --project "${PROJECT}" node-pools create "worker" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "e2-custom-6-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=worker --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/cloud-platform" --num-nodes "2" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b","us-central1-c"
+```
 
 ## Install
 
 ### Install the ZFS Driver
 
-Before performing these steps, ensure that your kubectl is pointing to the correct cluster `kubectl config get-contexts`
+Before performing these steps, ensure that your kubectl is pointing to the correct cluster by examining the output of
+`kubectl config get-contexts`.
 
-1. `cd charts`
-2. `helm dependency build hedera-mirror-common/`
-3. `helm upgrade --install  mirror ./hedera-mirror-common -f <valuesFile> --create-namespace --namespace common`
-4. Update the openEBS CRDs (You can skip this step if you plan to not use zstd compression)
-    1. edit the compression regex to include zstd compression `zstd|zstd-[1-9]|zstd-1[0-9]`
-        1. `kubectl edit crd zfsvolumes.zfs.openebs.io`
-        2. `kubectl edit crd zfsrestores.zfs.openebs.io`
-        3. `kubectl edit crd zfssnapshots.zfs.openebs.io`
-
-#### values.yaml
-
-```yaml
-zfs:
-  enabled: true
-```
+1. `helm repo add zfs https://openebs.github.io/zfs-localpv`
+2. `helm dependency build charts/hedera-mirror-common`
+3. `helm upgrade -i mirror charts/hedera-mirror-common --create-namespace -n common --set zfs.enabled=true,stackgres.enabled=true`
+4. Update the OpenEBS CRDs to edit the compression regex to include Zstandard compression `zstd|zstd-[1-9]|zstd-1[0-9]`.
+   This step can be skipped if a different compression algorithm is used.
+    1. `kubectl edit crd zfsvolumes.zfs.openebs.io`
+    2. `kubectl edit crd zfsrestores.zfs.openebs.io`
+    3. `kubectl edit crd zfssnapshots.zfs.openebs.io`
 
 ### Install Citus
 
-1. `cd charts`
-2. `helm dependency build hedera-mirror/`
-3. `helm upgrade --install  mirror ./hedera-mirror -f <valuesFile> --create-namespace --namespace citus`
+Install the `hedera-mirror` chart using the prod and v2 values files:
 
-#### values.yaml
-
-```yaml
-citus:
-  enabled: true
-  primary:
-    nodeSelector:
-      citus-role: coordinator
-    tolerations:
-      - key: zfs
-        operator: Equal
-        value: "true"
-        effect: NoSchedule
-    persistence:
-      storageClass: zfs
-      size: 128Gi
-    resources:
-      requests:
-        cpu: 2
-        memory: 8Gi
-  readReplicas:
-    tolerations:
-      - key: zfs
-        operator: Equal
-        value: "true"
-        effect: NoSchedule
-    nodeSelector:
-      citus-role: worker
-    resources:
-      requests:
-        cpu: 4
-        memory: 16Gi
-    persistence:
-      storageClass: zfs
-      size: 1124Gi
-    replicaCount: 3
-
-importer:
-  env:
-    SPRING_PROFILES_ACTIVE: v2
-    SPRING_FLYWAY_PLACEHOLDERS_SHARDCOUNT: "16"
-```
+1. `helm dependency build charts/hedera-mirror`
+2. `helm upgrade --install  mirror charts/hedera-mirror -f charts/hedera-mirror/values-prod.yml -f charts/hedera-mirror/values-v2.yml --create-namespace --namespace citus`
 
 ## Maintenance
 
 ### Expanding a disk
 
-1. Expand the disk using gcloud command or UI
-2. ssh into each effected node
-    1. confirm current disk stats `zfs list`
-    2. `sudo partprobe`
-    3. confirm additional disk space added to pool `zfs list`
-3. `kubectl edit pvc -n <namespace> <pvcName>`
-    1. update `spec.resources.requests.storage` to new preferred size
+1. Increase the size of the `zfs.(coordinator|worker).diskSize` properties and re-deploy the common chart.
+2. Increase the size of the `stackgres.(coordinator|worker).persistentVolume.size` properties and re-deploy the mirror
+   chart. Ensure this size is slightly smaller than the corresponding size set in #1 to account for the ZFS overhead.
 
 ### Recompressing
 
-1. Changing ZFS compression settings only effects writes going forward.
-   In order to recompress, you must copy the data to a new folder.
+1. Changing ZFS compression settings only effects writes going forward. In order to recompress, you must copy the data
+   to a new folder.
 
 ### Updating ZFS parameters
 
@@ -163,10 +94,10 @@ guide [here](https://github.com/openebs/zfs-localpv#4-zfs-property-change)
 
 ### Deleting a pool on a node
 
-To delete a zpool on the node for a pvc, you must identify the pvc in question `kubectl get pvc --all-namespaces` and
+To delete a zpool on the node for a PVC, you must identify the PVC in question `kubectl get pvc --all-namespaces` and
 find the corresponding zvolume `kubectl get zv --all-namespaces` then you may delete the volume
 using `kubectl delete zv -n <namespace> <zVolumeName>`. This will do the cleanup on the node itself and make the space
-available in the zpool again
+available in the zpool again.
 
 ### GKE Cluster Upgrade
 
@@ -189,7 +120,3 @@ available in the zpool again
     6. rename the imported pool to match the name of the one previously
        destroyed `sudo zfs rename <poolName>/<pvcId> to <poolName>/<idShownInStep2>`
 10. Ready to deploy all charts
-
-## Used dependencies
-
-[OpenEBS Helm](https://openebs.github.io/zfs-localpv/)

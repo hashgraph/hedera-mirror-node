@@ -40,6 +40,14 @@ public interface Store {
      */
     Token getToken(Address address, OnMissing throwIfMissing);
 
+    /**
+     *
+     * This is only to be used when pausing/unpausing token as this method ignores the pause status
+     * of the token.
+     *
+     */
+    Token loadPossiblyPausedToken(final Address tokenAddress);
+
     TokenRelationship getTokenRelationship(TokenRelationshipKey tokenRelationshipKey, OnMissing throwIfMissing);
 
     /**

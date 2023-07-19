@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class TokenDatabaseAccessorTest {
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final Address ADDRESS_ZERO = Address.ZERO;
+    com.hedera.mirror.common.domain.token.Token databaseToken;
 
     @InjectMocks
     private TokenDatabaseAccessor tokenDatabaseAccessor;
@@ -73,8 +75,6 @@ class TokenDatabaseAccessorTest {
 
     private DomainBuilder domainBuilder;
 
-    com.hedera.mirror.common.domain.token.Token databaseToken;
-
     @Mock
     private Entity defaultEntity;
 
@@ -90,7 +90,7 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
-    void getTokenMappeddValues() {
+    void getTokenMappedValues() {
         setupToken();
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
@@ -102,7 +102,9 @@ class TokenDatabaseAccessorTest {
                 .returns(databaseToken.getFreezeDefault(), Token::isFrozenByDefault)
                 .returns(false, Token::isDeleted)
                 .returns(false, Token::isPaused)
-                .returns(entity.getExpirationTimestamp(), Token::getExpiry)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Token::getExpiry)
                 .returns(entity.getMemo(), Token::getMemo)
                 .returns(databaseToken.getName(), Token::getName)
                 .returns(databaseToken.getSymbol(), Token::getSymbol)

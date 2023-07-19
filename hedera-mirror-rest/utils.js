@@ -977,6 +977,10 @@ const toUint256 = (val) => {
  * @return {String} Converted hex string
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
+  if (typeof byteArray !== 'object') {
+    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
+  }
+
   if (_.isEmpty(byteArray)) {
     return hexPrefix;
   }

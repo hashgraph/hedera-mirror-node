@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import java.io.Serial;
 import org.springframework.context.ApplicationEvent;
 
-public class AccountBalanceFileParsedEvent extends ApplicationEvent {
+public class NodeStakeUpdatedEvent extends ApplicationEvent {
 
     @Serial
-    private static final long serialVersionUID = -948181990490563242L;
+    private static final long serialVersionUID = 7947202040212120506L;
 
     /**
      * Create a new {@code AccountBalanceFileParsedEvent}.
@@ -30,7 +30,7 @@ public class AccountBalanceFileParsedEvent extends ApplicationEvent {
      * @param source the object on which the event initially occurred or with which the event is associated (never
      *               {@code null})
      */
-    public AccountBalanceFileParsedEvent(Object source) {
+    public NodeStakeUpdatedEvent(Object source) {
         super(source);
     }
 }

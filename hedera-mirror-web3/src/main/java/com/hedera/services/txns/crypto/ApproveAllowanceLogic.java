@@ -54,8 +54,6 @@ public class ApproveAllowanceLogic {
             final List<TokenAllowance> tokenAllowances,
             final List<NftAllowance> nftAllowances,
             final AccountID payer) {
-        accountsChanged.clear();
-        nftsTouched.clear();
 
         /* --- Use models --- */
         final Id payerId = Id.fromGrpcAccount(payer);
