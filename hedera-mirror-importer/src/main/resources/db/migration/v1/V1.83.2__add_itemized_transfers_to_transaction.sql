@@ -16,5 +16,3 @@ set itemized_transfer = transfer
 from nested_itemized_transfer
 where nested_itemized_transfer.consensus_timestamp = transaction.consensus_timestamp;
 
-
-

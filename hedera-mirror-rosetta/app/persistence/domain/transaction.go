@@ -20,6 +20,12 @@
 
 package domain
 
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+)
+
 const (
 	TransactionTypeCryptoCreateAccount int16 = 11
 	TransactionTypeCryptoTransfer      int16 = 14
@@ -32,12 +38,15 @@ const (
 	transactionTableName = "transaction"
 )
 
+type JSONB map[string]interface{}
+
 type Transaction struct {
 	ConsensusTimestamp       int64 `gorm:"primaryKey"`
 	ChargedTxFee             int64
 	EntityId                 *EntityId
 	Errata                   *string
 	InitialBalance           int64
+	ItemizedTransfer         JSONB `gorm:"type:jsonb"`
 	MaxFee                   int64
 	Memo                     []byte
 	NodeAccountId            *EntityId
@@ -55,4 +64,16 @@ type Transaction struct {
 
 func (Transaction) TableName() string {
 	return transactionTableName
+}
+
+func (itemizedTransfer JSONB) Value() (driver.Value, error) {
+	return json.Marshal(itemizedTransfer)
+}
+
+func (itemizedTransfer *JSONB) Scan(value interface{}) error {
+	data, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(data, &itemizedTransfer)
 }
