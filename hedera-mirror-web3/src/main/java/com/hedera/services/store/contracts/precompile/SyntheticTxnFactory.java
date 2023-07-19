@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -27,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -216,5 +218,20 @@ public class SyntheticTxnFactory {
         builder.setAccount(grantRevokeKycWrapper.account());
 
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
+    }
+
+    public TransactionBody.Builder createApproveAllowanceForAllNFT(
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull Id ownerId) {
+
+        final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+
+        builder.addNftAllowances(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
+                .setTokenId(setApprovalForAllWrapper.tokenId())
+                .setOwner(Objects.requireNonNull(ownerId).asGrpcAccount())
+                .setSpender(setApprovalForAllWrapper.to())
+                .build());
+
+        return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
     }
 }
