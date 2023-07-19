@@ -21,31 +21,48 @@ import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAsso
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.exceptions.MissingEntityException;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
@@ -53,10 +70,18 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -72,9 +97,9 @@ import java.util.function.Function;
  * </ol>
  */
 public class HederaTokenStore {
-
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
-    static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+    public static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+    private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
     private final ContextOptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final Store store;
@@ -88,8 +113,21 @@ public class HederaTokenStore {
         this.store = store;
     }
 
-    private static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
+    public static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
         return new TokenRelationshipKey(asTypedEvmAddress(accountID), asTypedEvmAddress(tokenID));
+    }
+
+    protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
+        var account = store.getAccount(asTypedEvmAddress(aId), OnMissing.DONT_THROW);
+
+        if (account.isEmptyAccount()) {
+            return INVALID_ACCOUNT_ID;
+        }
+
+        if (account.isDeleted()) {
+            return ACCOUNT_DELETED;
+        }
+        return validator.expiryStatusGiven(store, aId);
     }
 
     private ResponseCodeEnum usabilityOf(final AccountID id) {
@@ -151,6 +189,12 @@ public class HederaTokenStore {
         });
     }
 
+    public boolean associationExists(final AccountID aId, final TokenID tId) {
+        return checkExistence(aId, tId) == OK
+                && !store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.DONT_THROW)
+                        .isEmptyTokenRelationship();
+    }
+
     public boolean exists(final TokenID id) {
         final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
         return !token.getId().equals(Id.DEFAULT);
@@ -159,12 +203,56 @@ public class HederaTokenStore {
     public Token get(final TokenID id) {
         final var token = store.getToken(asTypedEvmAddress(id), OnMissing.DONT_THROW);
 
-        if (token.getId().equals(Id.DEFAULT)) {
+        if (token.isEmptyToken()) {
             throw new IllegalArgumentException(
                     String.format("Argument 'id=%s' does not refer to a known token!", readableId(id)));
         }
 
         return token;
+    }
+
+    public void apply(final TokenID id, final Consumer<Token> change) {
+        final var token = store.getToken(asTypedEvmAddress(id), OnMissing.THROW);
+        try {
+            change.accept(token);
+            //            backingTokens.put(id, token); TODO: update token?
+        } catch (Exception internal) {
+            throw new IllegalArgumentException("Token change failed unexpectedly", internal);
+        }
+    }
+
+    public ResponseCodeEnum grantKyc(final AccountID aId, final TokenID tId) {
+        return setHasKyc(aId, tId, true);
+    }
+
+    public ResponseCodeEnum unfreeze(final AccountID aId, final TokenID tId) {
+        return setIsFrozen(aId, tId, false);
+    }
+
+    private ResponseCodeEnum setHasKyc(final AccountID aId, final TokenID tId, final boolean value) {
+        return sanityChecked(false, aId, null, tId, token -> {
+            if (!token.hasKycKey()) {
+                return TOKEN_HAS_NO_KYC_KEY;
+            }
+
+            final var tokenRelationship = store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.THROW);
+            final var newTokenRelationship = tokenRelationship.setKycGranted(value);
+            store.updateTokenRelationship(newTokenRelationship);
+            return OK;
+        });
+    }
+
+    private ResponseCodeEnum setIsFrozen(final AccountID aId, final TokenID tId, final boolean value) {
+        final var tokenRelationship =
+                store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.DONT_THROW);
+
+        if (tokenRelationship.isEmptyTokenRelationship()) {
+            return TOKEN_HAS_NO_FREEZE_KEY;
+        }
+
+        final var newTokenRelationship = tokenRelationship.setFrozen(value);
+        store.updateTokenRelationship(newTokenRelationship);
+        return OK;
     }
 
     public ResponseCodeEnum adjustBalance(final AccountID aId, final TokenID tId, final long adjustment) {
@@ -253,6 +341,46 @@ public class HederaTokenStore {
         store.updateTokenRelationship(newToRelation);
     }
 
+    public ResponseCodeEnum changeOwnerWildCard(final NftId nftId, final AccountID from, final AccountID to) {
+        final var tId = nftId.tokenId();
+        return sanityChecked(false, from, to, tId, token -> {
+            final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
+            if (fromFreezeAndKycValidity != OK) {
+                return fromFreezeAndKycValidity;
+            }
+            final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
+            if (toFreezeAndKycValidity != OK) {
+                return toFreezeAndKycValidity;
+            }
+
+            final var nftType = nftId.tokenId();
+            final var fromRel = asTokenRelationshipKey(from, nftType);
+            final var toRel = asTokenRelationshipKey(to, nftType);
+
+            final var fromAccount = store.getAccount(asTypedEvmAddress(from), OnMissing.THROW);
+            final var toAccount = store.getAccount(asTypedEvmAddress(to), OnMissing.THROW);
+            final var fromRelation = store.getTokenRelationship(fromRel, OnMissing.THROW);
+            final var toRelation = store.getTokenRelationship(toRel, OnMissing.THROW);
+
+            final var fromNftsOwned = fromAccount.getOwnedNfts();
+            final var fromThisNftsOwned = fromRelation.getBalance();
+            final var toNftsOwned = toAccount.getOwnedNfts();
+            final var toThisNftsOwned = toRelation.getBalance();
+
+            final var newFromAccount = fromAccount.setOwnedNfts(fromNftsOwned - fromThisNftsOwned);
+            final var newToAccount = toAccount.setOwnedNfts(toNftsOwned + fromThisNftsOwned);
+            final var newFromRelation = fromRelation.setBalance(0);
+            final var newToRelation = toRelation.setBalance(toThisNftsOwned + fromThisNftsOwned);
+
+            store.updateAccount(newFromAccount);
+            store.updateAccount(newToAccount);
+            store.updateTokenRelationship(newFromRelation);
+            store.updateTokenRelationship(newToRelation);
+
+            return OK;
+        });
+    }
+
     public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
         return get(tId).getDecimals() == expectedDecimals;
     }
@@ -307,6 +435,254 @@ public class HederaTokenStore {
         return OK;
     }
 
+    private boolean isValidAutoRenewPeriod(final long secs) {
+        return validator.isValidAutoRenewPeriod(
+                Duration.newBuilder().setSeconds(secs).build());
+    }
+
+    public ResponseCodeEnum update(final TokenUpdateTransactionBody changes, final long now) {
+        final var tId = resolve(changes.getToken());
+        if (tId == MISSING_TOKEN) {
+            return INVALID_TOKEN_ID;
+        }
+        ResponseCodeEnum validity;
+        final var isExpiryOnly = affectsExpiryAtMost(changes);
+
+        validity = checkAutoRenewAccount(changes);
+        if (validity != OK) {
+            return validity;
+        }
+
+        final var newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
+        final var newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
+        final var newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
+        final var newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+        final var newFeeScheduleKey =
+                changes.hasFeeScheduleKey() ? asUsableFcKey(changes.getFeeScheduleKey()) : Optional.empty();
+        final var newPauseKey = changes.hasPauseKey() ? asUsableFcKey(changes.getPauseKey()) : Optional.empty();
+
+        var appliedValidity = new AtomicReference<>(OK);
+        apply(tId, token -> {
+            processExpiry(appliedValidity, changes, token);
+            processAutoRenewAccount(appliedValidity, changes, token);
+
+            checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
+            checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
+            checkKeyOfType(appliedValidity, token.hasPauseKey(), newPauseKey.isPresent(), TOKEN_HAS_NO_PAUSE_KEY);
+            checkKeyOfType(
+                    appliedValidity, !token.getWipeKey().isEmpty(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
+            checkKeyOfType(
+                    appliedValidity,
+                    !token.getSupplyKey().isEmpty(),
+                    newSupplyKey.isPresent(),
+                    TOKEN_HAS_NO_SUPPLY_KEY);
+            checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
+            checkKeyOfType(
+                    appliedValidity,
+                    token.hasFeeScheduleKey(),
+                    newFeeScheduleKey.isPresent(),
+                    TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+            if (OK != appliedValidity.get()) {
+                return;
+            }
+
+            final var ret = checkNftBalances(token, tId, changes);
+            if (ret != OK) {
+                appliedValidity.set(ret);
+                return;
+            }
+
+            updateAdminKeyIfAppropriate(token, changes);
+            updateAutoRenewAccountIfAppropriate(token, changes);
+            updateAutoRenewPeriodIfAppropriate(token, changes);
+
+            updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
+            updateKeyOfTypeIfAppropriate(changes.hasKycKey(), token::setKycKey, changes::getKycKey);
+            updateKeyOfTypeIfAppropriate(changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey);
+            updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
+            updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
+            updateKeyOfTypeIfAppropriate(
+                    changes.hasFeeScheduleKey(), token::setFeeScheduleKey, changes::getFeeScheduleKey);
+
+            updateTokenSymbolIfAppropriate(token, changes);
+            updateTokenNameIfAppropriate(token, changes);
+            updateTreasuryIfAppropriate(token, changes);
+            updateMemoIfAppropriate(token, changes);
+            updateExpiryIfAppropriate(token, changes);
+        });
+        return appliedValidity.get();
+    }
+
+    public ResponseCodeEnum updateExpiryInfo(final TokenUpdateTransactionBody changes) {
+        final var tId = resolve(changes.getToken());
+        if (tId == MISSING_TOKEN) {
+            return INVALID_TOKEN_ID;
+        }
+        ResponseCodeEnum validity;
+
+        validity = checkAutoRenewAccount(changes);
+        if (validity != OK) {
+            return validity;
+        }
+
+        var appliedValidity = new AtomicReference<>(OK);
+        apply(tId, token -> {
+            processExpiry(appliedValidity, changes, token);
+            processAutoRenewAccount(appliedValidity, changes, token);
+
+            if (OK != appliedValidity.get()) {
+                return;
+            }
+
+            updateAutoRenewAccountIfAppropriate(token, changes);
+            updateAutoRenewPeriodIfAppropriate(token, changes);
+            updateExpiryIfAppropriate(token, changes);
+        });
+        return appliedValidity.get();
+    }
+
+    private ResponseCodeEnum checkAutoRenewAccount(final TokenUpdateTransactionBody changes) {
+        ResponseCodeEnum validity = OK;
+        if (changes.hasAutoRenewAccount()) {
+            validity = usableOrElse(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+            if (validity != OK) {
+                return validity;
+            }
+        }
+        return validity;
+    }
+
+    private void processExpiry(
+            final AtomicReference<ResponseCodeEnum> appliedValidity,
+            final TokenUpdateTransactionBody changes,
+            final Token token) {
+        final var candidateExpiry = changes.getExpiry().getSeconds();
+        if (candidateExpiry != 0 && candidateExpiry < token.getExpiry()) {
+            appliedValidity.set(INVALID_EXPIRATION_TIME);
+        }
+    }
+
+    private void checkKeyOfType(
+            final AtomicReference<ResponseCodeEnum> appliedValidity,
+            final boolean hasKey,
+            final boolean keyPresentOrExpiryOnly,
+            final ResponseCodeEnum code) {
+        if (!hasKey && keyPresentOrExpiryOnly) {
+            appliedValidity.set(code);
+        }
+    }
+
+    private void processAutoRenewAccount(
+            final AtomicReference<ResponseCodeEnum> appliedValidity,
+            final TokenUpdateTransactionBody changes,
+            final Token token) {
+        if (changes.hasAutoRenewAccount() || !token.getAutoRenewAccount().isEmptyAccount()) {
+            final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+            if ((changedAutoRenewPeriod != 0 || token.getAutoRenewAccount().isEmptyAccount())
+                    && !isValidAutoRenewPeriod(changedAutoRenewPeriod)) {
+                appliedValidity.set(INVALID_RENEWAL_PERIOD);
+            }
+        }
+    }
+
+    private ResponseCodeEnum checkNftBalances(
+            final Token token, final TokenID tId, final TokenUpdateTransactionBody changes) {
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE) && changes.hasTreasury()) {
+            /* This relationship is verified to exist in the TokenUpdateTransitionLogic */
+            final var newTreasuryRel = asTokenRelationshipKey(changes.getTreasury(), tId);
+            final var relation = store.getTokenRelationship(newTreasuryRel, OnMissing.THROW);
+            final var balance = relation.getBalance();
+            if (balance != 0) {
+                return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+            }
+        }
+        return OK;
+    }
+
+    private void updateAdminKeyIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.hasAdminKey()) {
+            final var newAdminKey = changes.getAdminKey();
+            if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
+                token.setAdminKey(null);
+            } else {
+                token.setAdminKey(asFcKeyUnchecked(newAdminKey));
+            }
+        }
+    }
+
+    private void updateAutoRenewAccountIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.hasAutoRenewAccount()) {
+            final var account = store.getAccount(asTypedEvmAddress(changes.getAutoRenewAccount()), OnMissing.THROW);
+            token.setAutoRenewAccount(account);
+        }
+    }
+
+    private void updateAutoRenewPeriodIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (!token.getAutoRenewAccount().isEmptyAccount()) {
+            final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
+            if (changedAutoRenewPeriod > 0) {
+                token.setAutoRenewPeriod(changedAutoRenewPeriod);
+            }
+        }
+    }
+
+    private void updateTokenSymbolIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.getSymbol().length() > 0) {
+            token.setSymbol(changes.getSymbol());
+        }
+    }
+
+    private void updateTokenNameIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.getName().length() > 0) {
+            token.setName(changes.getName());
+        }
+    }
+
+    private void updateMemoIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.hasMemo()) {
+            token.setMemo(changes.getMemo().getValue());
+        }
+    }
+
+    private void updateExpiryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        final var expiry = changes.getExpiry().getSeconds();
+        if (expiry != 0) {
+            token.setExpiry(expiry);
+        }
+    }
+
+    private void updateTreasuryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        if (changes.hasTreasury()
+                && !changes.getTreasury().equals(token.getTreasury().getId().asGrpcAccount())) {
+            final var treasuryId = changes.getTreasury();
+            final var treasury = store.getAccount(asTypedEvmAddress(treasuryId), OnMissing.THROW);
+            token.setTreasury(treasury);
+        }
+    }
+
+    private void updateKeyOfTypeIfAppropriate(
+            final boolean check, final Consumer<JKey> consumer, Supplier<Key> supplier) {
+        if (check) {
+            consumer.accept(asFcKeyUnchecked(supplier.get()));
+        }
+    }
+
+    public static boolean affectsExpiryAtMost(final TokenUpdateTransactionBody op) {
+        return !op.hasAdminKey()
+                && !op.hasKycKey()
+                && !op.hasWipeKey()
+                && !op.hasFreezeKey()
+                && !op.hasSupplyKey()
+                && !op.hasFeeScheduleKey()
+                && !op.hasTreasury()
+                && !op.hasPauseKey()
+                && !op.hasAutoRenewAccount()
+                && op.getSymbol().length() == 0
+                && op.getName().length() == 0
+                && op.getAutoRenewPeriod().getSeconds() == 0
+                && !op.hasMemo();
+    }
+
     private ResponseCodeEnum fullySanityChecked(
             final AccountID aId, final TokenID tId, final BiFunction<AccountID, TokenID, ResponseCodeEnum> action) {
         final var validity = usabilityOf(aId);
@@ -336,12 +712,12 @@ public class HederaTokenStore {
             final AccountID aCounterPartyId,
             final TokenID tId,
             final Function<Token, ResponseCodeEnum> action) {
-        var validity = usabilityOf(aId);
+        var validity = checkAccountUsability(aId);
         if (validity != OK) {
             return validity;
         }
         if (aCounterPartyId != null) {
-            validity = usabilityOf(aCounterPartyId);
+            validity = checkAccountUsability(aCounterPartyId);
             if (validity != OK) {
                 return validity;
             }
@@ -403,7 +779,7 @@ public class HederaTokenStore {
         return exists(tId) ? OK : INVALID_TOKEN_ID;
     }
 
-    TokenID resolve(TokenID id) {
+    public TokenID resolve(TokenID id) {
         return exists(id) ? id : MISSING_TOKEN;
     }
 
@@ -427,5 +803,19 @@ public class HederaTokenStore {
             }
         }
         return validity;
+    }
+
+    protected ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
+        final var validity = checkAccountUsability(aId);
+
+        return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
+    }
+
+    private ResponseCodeEnum checkExistence(final AccountID aId, final TokenID tId) {
+        final var validity = checkAccountUsability(aId);
+        if (validity != OK) {
+            return validity;
+        }
+        return exists(tId) ? OK : INVALID_TOKEN_ID;
     }
 }

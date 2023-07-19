@@ -21,7 +21,11 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -105,6 +109,21 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     private boolean limitTokenAssociations = false;
+
+    @Getter
+    private int maxMemoUtf8Bytes = 100;
+
+    @Getter
+    private int maxTokenSymbolUtf8Bytes = 10;
+
+    @Getter
+    private int maxTokenNameUtf8Bytes = 10;
+
+    @Getter
+    private long minAutoRenewDuration = 1000L;
+
+    @Getter
+    private long maxAutoRenewDuration = 10000L;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
