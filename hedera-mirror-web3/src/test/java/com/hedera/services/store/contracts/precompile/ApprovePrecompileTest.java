@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,32 +63,26 @@ class ApprovePrecompileTest {
         assertEquals(BigInteger.TEN, decodedInput.amount());
     }
 
-    //    @Test
-    //    void decodeApproveForNFTHAPI() {
-    //        UnaryOperator<byte[]> identity = identity();
-    //        final var decodedInput = decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, false, identity);
-    //
-    //        assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
-    //        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
-    //        assertEquals(BigInteger.ONE, decodedInput.serialNumber());
-    //
-    //        assertThrows(
-    //                IllegalArgumentException.class,
-    //                () -> decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, false, identity));
-    //    }
-    //
-    //    @Test
-    //    void decodeApproveForTokenAHPI() {
-    //        UnaryOperator<byte[]> identity = identity();
-    //
-    //        final var decodedInput = decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, null, true, identity);
-    //
-    //        assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
-    //        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
-    //        assertEquals(BigInteger.TEN, decodedInput.amount());
-    //
-    //        assertThrows(
-    //                IllegalArgumentException.class,
-    //                () -> decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, null, true, identity));
-    //    }
+    @Test
+    void decodeApproveForNFTHAPI() {
+        UnaryOperator<byte[]> identity = identity();
+        final var decodedInput =
+                decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, TokenID.getDefaultInstance(), false, identity);
+
+        assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
+        assertEquals(BigInteger.ONE, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeApproveForTokenAHPI() {
+        UnaryOperator<byte[]> identity = identity();
+
+        final var decodedInput =
+                decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, TokenID.getDefaultInstance(), true, identity);
+
+        assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
+        assertEquals(BigInteger.TEN, decodedInput.amount());
+    }
 }

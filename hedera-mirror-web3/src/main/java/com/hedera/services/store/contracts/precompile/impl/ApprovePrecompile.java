@@ -91,6 +91,7 @@ import org.hyperledger.besu.evm.log.Log;
  *  5. All the necessary fields used in run method are extracted from the txn body
  *  6. Added getLogForNftAllowanceRevocation because we are not
  *     setting the spender address in the txn body when revoking nft allowance
+ *  7. All the necessary fields used in body method are extracted from ApproveParams
  */
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private static final Function ERC_TOKEN_APPROVE_FUNCTION = new Function("approve(address,uint256)", BOOL);
