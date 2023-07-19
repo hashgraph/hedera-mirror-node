@@ -46,7 +46,6 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
@@ -185,14 +184,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
-        final var accountAccessor = updater.getAccountAccessor();
         final var senderAddress = frame.getSenderAddress();
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;
         Id ownerId;
-        Id operatorId;
-        AccountID spenderAddress = AccountID.getDefaultInstance();
+        Id operatorId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+        Address spender = Address.ZERO;
         TokenID tokenId;
         long amount = 0;
         long serialNumber = 0;
@@ -208,15 +206,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (isNftApprovalRevocation) { // when revoking nft allowance
             final var deleteNftAllowanceBody = deleteAllowanceBody.getNftAllowances(0);
             ownerId = Id.fromGrpcAccount(deleteNftAllowanceBody.getOwner());
-            operatorId = Id.fromGrpcAccount(deleteNftAllowanceBody.getOwner());
             tokenId = deleteNftAllowanceBody.getTokenId();
             serialNumber = deleteNftAllowanceBody.getSerialNumbers(0);
 
         } else if (isFungible) { // when setting allowance for fungible token
             final var tokenAllowances = approveAllowanceBody.getTokenAllowances(0);
             ownerId = Id.fromGrpcAccount(tokenAllowances.getOwner());
-            operatorId = Id.fromGrpcAccount(tokenAllowances.getOwner());
-            spenderAddress = tokenAllowances.getSpender();
+            spender = EntityIdUtils.asTypedEvmAddress(tokenAllowances.getSpender());
             tokenId = tokenAllowances.getTokenId();
             amount = tokenAllowances.getAmount();
         } else { // when setting allowance for non-fungible token
@@ -227,8 +223,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                             .equals(nftAllowances.getDelegatingSpender())
                     ? Id.fromGrpcAccount(nftAllowances.getDelegatingSpender())
                     : Id.fromGrpcAccount(nftAllowances.getOwner());
-            operatorId = Id.fromGrpcAccount(nftAllowances.getDelegatingSpender());
-            spenderAddress = nftAllowances.getSpender();
+            spender = EntityIdUtils.asTypedEvmAddress(nftAllowances.getSpender());
             tokenId = nftAllowances.getTokenId();
             serialNumber = nftAllowances.getSerialNumbers(0);
         }
@@ -279,13 +274,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
         final var tokenAddress = asTypedEvmAddress(tokenId);
         if (isFungible) {
-            frame.addLog(getLogForFungibleAdjustAllowance(
-                    tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), amount, accountAccessor));
+            frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress, senderAddress, spender, amount, updater));
         } else if (!isNftApprovalRevocation) {
-            frame.addLog(getLogForNftAdjustAllowance(
-                    tokenAddress, senderAddress, asTypedEvmAddress(spenderAddress), serialNumber, accountAccessor));
+            frame.addLog(getLogForNftAdjustAllowance(tokenAddress, senderAddress, spender, serialNumber, updater));
         } else {
-            frame.addLog(getLogForNftAllowanceRevocation(tokenAddress, senderAddress, serialNumber, accountAccessor));
+            frame.addLog(getLogForNftAllowanceRevocation(tokenAddress, senderAddress, serialNumber, updater));
         }
         final int functionId = frame.getInputData().getInt(0);
         return new ApproveResult(tokenId, isFungible, functionId == ABI_ID_REDIRECT_FOR_TOKEN);
@@ -365,12 +358,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final Address senderAddress,
             final Address spenderAddress,
             final long amount,
-            final AccountAccessor accountAccessor) {
+            final HederaEvmStackedWorldStateUpdater updater) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
-                .forIndexedArgument(accountAccessor.canonicalAddress(spenderAddress))
+                .forIndexedArgument(updater.priorityAddress(senderAddress))
+                .forIndexedArgument(updater.priorityAddress(spenderAddress))
                 .forDataItem(amount)
                 .build();
     }
@@ -380,12 +373,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final Address senderAddress,
             final Address spenderAddress,
             final long serialNumber,
-            final AccountAccessor accountAccessor) {
+            final HederaEvmStackedWorldStateUpdater updater) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
-                .forIndexedArgument(accountAccessor.canonicalAddress(spenderAddress))
+                .forIndexedArgument(updater.priorityAddress(senderAddress))
+                .forIndexedArgument(updater.priorityAddress(spenderAddress))
                 .forIndexedArgument(serialNumber)
                 .build();
     }
@@ -394,11 +387,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final Address logger,
             final Address senderAddress,
             final long serialNumber,
-            final AccountAccessor accountAccessor) {
+            final HederaEvmStackedWorldStateUpdater updater) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
-                .forIndexedArgument(accountAccessor.canonicalAddress(senderAddress))
+                .forIndexedArgument(updater.priorityAddress(senderAddress))
                 .forIndexedArgument(AccountID.getDefaultInstance())
                 .forIndexedArgument(serialNumber)
                 .build();
