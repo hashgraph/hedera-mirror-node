@@ -209,7 +209,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void nftInfoForInvalidSerialNo() {
         final var functionHash =
-                functionEncodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 12L);
+                functionEncodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))

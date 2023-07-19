@@ -117,6 +117,7 @@ public class PrecompileMapper {
 
     public Optional<Precompile> lookup(final int functionSelector) {
         final var precompile = abiConstantToPrecompile.get(functionSelector);
+
         if (precompile != null) {
             return Optional.of(precompile);
         }
