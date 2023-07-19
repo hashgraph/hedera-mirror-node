@@ -82,7 +82,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
     }
 
     @SuppressWarnings("deprecation")
-    private static Set<EntityId> getEntities(RecordItem recordItem) {
+    private Set<EntityId> getEntities(RecordItem recordItem) {
         var entities = getEntities(recordItem.getTransactionBody(), true);
         entities.addAll(getEntities(recordItem.getTransactionRecord(), false));
         for (var sidecar : recordItem.getSidecarRecords()) {
@@ -117,7 +117,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
         return entities;
     }
 
-    private static Set<EntityId> getEntities(GeneratedMessageV3 message, boolean excludeTransfers) {
+    private Set<EntityId> getEntities(GeneratedMessageV3 message, boolean excludeTransfers) {
         var entities = new HashSet<EntityId>();
         for (var value : message.getAllFields().values()) {
             entities.addAll(getEntitiesInner(value, excludeTransfers));
@@ -126,7 +126,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
         return entities;
     }
 
-    private static Set<EntityId> getEntitiesInner(Object value, boolean excludeTransfers) {
+    private Set<EntityId> getEntitiesInner(Object value, boolean excludeTransfers) {
         var entities = new HashSet<EntityId>();
         if (value instanceof AccountID accountId) {
             entities.add(EntityId.of(accountId));
@@ -169,7 +169,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
             var recordItem = ((RecordItemBuilder.Builder<?>) method.invoke(recordItemBuilder)).build();
             argumentsList.add(Arguments.of(method.getName(), recordItem));
 
-            if (method.getName().equals("contractCall")) {
+            if (recordItem.getTransactionBody().hasContractCall()) {
                 // Test contractCall before and after HAPI 0.23.0. Since HAPI 0.23.0,
                 // ContractFunctionResult.createdContractIDs is marked as deprecated and each new child contract should
                 // have its own child contractCreate transaction & record. As a result, mirrornode should not generate
