@@ -25,13 +25,13 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied model from hedera-services.
- *
+ * <p>
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
- *
+ * <p>
  * Differences from the original:
  *  1. Added address field for convenience
  *  2. Added factory method that returns empty instance
@@ -40,7 +40,6 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class UniqueToken {
     private final Id tokenId;
-
     private final Address address;
     private final long serialNumber;
     private final RichInstant creationTime;
@@ -62,6 +61,34 @@ public class UniqueToken {
 
     public static UniqueToken getEmptyUniqueToken() {
         return new UniqueToken(Id.DEFAULT, 0L, RichInstant.MISSING_INSTANT, Id.DEFAULT, Id.DEFAULT, new byte[0]);
+    }
+
+    private UniqueToken createNewUniqueTokenWithNewOwner(UniqueToken oldUniqueToken, Id newOwner) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                newOwner,
+                oldUniqueToken.spender,
+                oldUniqueToken.metadata);
+    }
+
+    /**
+     * Creates new instance of {@link UniqueToken} with updated spender in order to keep the object's immutability and
+     * avoid entry points for changing the state.
+     *
+     * @param oldUniqueToken
+     * @param newSpender
+     * @return the new instance of {@link UniqueToken} with updated {@link #spender} property
+     */
+    private UniqueToken createNewUniqueTokenWithNewSpender(UniqueToken oldUniqueToken, Id newSpender) {
+        return new UniqueToken(
+                oldUniqueToken.tokenId,
+                oldUniqueToken.serialNumber,
+                oldUniqueToken.creationTime,
+                oldUniqueToken.owner,
+                newSpender,
+                oldUniqueToken.metadata);
     }
 
     public boolean isEmptyUniqueToken() {
@@ -92,8 +119,16 @@ public class UniqueToken {
         return owner;
     }
 
+    public UniqueToken setOwner(Id newOwner) {
+        return createNewUniqueTokenWithNewOwner(this, newOwner);
+    }
+
     public Id getSpender() {
         return spender;
+    }
+
+    public UniqueToken setSpender(Id spender) {
+        return createNewUniqueTokenWithNewSpender(this, spender);
     }
 
     public byte[] getMetadata() {

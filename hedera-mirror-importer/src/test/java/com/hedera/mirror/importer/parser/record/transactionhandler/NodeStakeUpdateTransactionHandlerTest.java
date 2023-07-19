@@ -18,9 +18,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -37,8 +39,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Captor
     private ArgumentCaptor<NetworkStake> networkStakes;
@@ -51,7 +57,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(consensusNodeService, entityListener);
+        return new NodeStakeUpdateTransactionHandler(applicationEventPublisher, consensusNodeService, entityListener);
     }
 
     @Override
@@ -107,6 +113,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
+        verify(applicationEventPublisher).publishEvent(any(NodeStakeUpdatedEvent.class));
         verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, times(2)).onNodeStake(nodeStakes.capture());
         assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
@@ -150,8 +157,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        verify(entityListener).onNetworkStake(networkStakes.capture());
-        verify(entityListener, never()).onNodeStake(nodeStakes.capture());
+        verifyNoInteractions(applicationEventPublisher);
+        verify(entityListener).onNetworkStake(any());
+        verify(entityListener, never()).onNodeStake(any());
         verify(consensusNodeService, never()).refresh();
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));

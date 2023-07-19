@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.parser.record.entity.staking;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -37,14 +36,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionOperations;
 
 @ExtendWith(MockitoExtension.class)
 class EntityStakeCalculatorImplTest {
 
     private EntityProperties entityProperties;
-
-    @Mock
-    private EntityRepository entityRepository;
 
     @Mock(strictness = LENIENT)
     private EntityStakeRepository entityStakeRepository;
@@ -54,18 +51,20 @@ class EntityStakeCalculatorImplTest {
     @BeforeEach
     void setup() {
         entityProperties = new EntityProperties();
-        entityStakeCalculator =
-                new EntityStakeCalculatorImpl(entityProperties, entityRepository, entityStakeRepository);
-        when(entityStakeRepository.updated()).thenReturn(false);
+        entityStakeCalculator = new EntityStakeCalculatorImpl(
+                entityProperties, entityStakeRepository, TransactionOperations.withoutTransaction());
+        when(entityStakeRepository.updated()).thenReturn(false, true);
     }
 
     @Test
     void calculate() {
-        var inorder = inOrder(entityRepository, entityStakeRepository);
+        var inorder = inOrder(entityStakeRepository);
         entityStakeCalculator.calculate();
         inorder.verify(entityStakeRepository).updated();
-        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
+        inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verify(entityStakeRepository).updated();
         inorder.verifyNoMoreInteractions();
     }
 
@@ -73,7 +72,7 @@ class EntityStakeCalculatorImplTest {
     void calculateWhenPendingRewardDisabled() {
         entityProperties.getPersist().setPendingReward(false);
         entityStakeCalculator.calculate();
-        verifyNoInteractions(entityRepository, entityStakeRepository);
+        verifyNoInteractions(entityStakeRepository);
     }
 
     @Test
@@ -81,7 +80,8 @@ class EntityStakeCalculatorImplTest {
         when(entityStakeRepository.updated()).thenReturn(true);
         entityStakeCalculator.calculate();
         verify(entityStakeRepository).updated();
-        verify(entityRepository, never()).refreshEntityStateStart();
+        verify(entityStakeRepository, never()).lockFromConcurrentUpdates();
+        verify(entityStakeRepository, never()).createEntityStateStart();
         verify(entityStakeRepository, never()).updateEntityStake();
     }
 
@@ -90,17 +90,19 @@ class EntityStakeCalculatorImplTest {
         when(entityStakeRepository.updated()).thenThrow(new RuntimeException());
         assertThrows(RuntimeException.class, () -> entityStakeCalculator.calculate());
         verify(entityStakeRepository).updated();
-        verify(entityRepository, never()).refreshEntityStateStart();
+        verify(entityStakeRepository, never()).createEntityStateStart();
         verify(entityStakeRepository, never()).updateEntityStake();
 
         // calculate again
         reset(entityStakeRepository);
-        var inorder = inOrder(entityRepository, entityStakeRepository);
-        when(entityStakeRepository.updated()).thenReturn(false);
+        var inorder = inOrder(entityStakeRepository);
+        when(entityStakeRepository.updated()).thenReturn(false, true);
         entityStakeCalculator.calculate();
         inorder.verify(entityStakeRepository).updated();
-        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
+        inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verify(entityStakeRepository).updated();
         inorder.verifyNoMoreInteractions();
     }
 
@@ -109,10 +111,13 @@ class EntityStakeCalculatorImplTest {
         // given
         var pool = Executors.newFixedThreadPool(2);
         var semaphore = new Semaphore(0);
-        when(entityStakeRepository.updated()).thenAnswer(invocation -> {
-            semaphore.acquire();
-            return false;
-        });
+        when(entityStakeRepository.updated())
+                // block until the other task has completed
+                .thenAnswer(invocation -> {
+                    semaphore.acquire();
+                    return false;
+                })
+                .thenReturn(true);
 
         // when
         var task1 = pool.submit(() -> entityStakeCalculator.calculate());
@@ -130,10 +135,12 @@ class EntityStakeCalculatorImplTest {
         await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.TWO_SECONDS)
                 .until(() -> task1.isDone() && task2.isDone());
-        var inorder = inOrder(entityRepository, entityStakeRepository);
+        var inorder = inOrder(entityStakeRepository);
         inorder.verify(entityStakeRepository).updated();
-        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).lockFromConcurrentUpdates();
+        inorder.verify(entityStakeRepository).createEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verify(entityStakeRepository).updated();
         inorder.verifyNoMoreInteractions();
         pool.shutdown();
     }

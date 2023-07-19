@@ -30,7 +30,8 @@ const NODE_FEE = 2n;
 const SERVICE_FEE = 4n;
 const DEFAULT_FEE_COLLECTOR_ID = 98;
 const DEFAULT_NODE_ID = 3;
-const DEFAULT_PAYER_ACCOUNT_ID = 101;
+const DEFAULT_PAYER_ACCOUNT_ID = 102;
+const DEFAULT_SENDER_ID = 101;
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
@@ -518,6 +519,8 @@ const addEntity = async (defaults, custom) => {
   return entity;
 };
 
+const SECONDS_PER_DAY = 86400;
+
 const defaultEntityStake = {
   decline_reward_start: true,
   end_stake_period: 1,
@@ -526,7 +529,9 @@ const defaultEntityStake = {
   staked_node_id_start: 1,
   staked_to_me: 0,
   stake_total_start: 0,
+  timestamp_range: null,
 };
+
 const entityStakeFields = Object.keys(defaultEntityStake);
 
 const addEntityStake = async (entityStake) => {
@@ -535,7 +540,13 @@ const addEntityStake = async (entityStake) => {
     ...entityStake,
   };
 
-  await insertDomainObject('entity_stake', entityStakeFields, entityStake);
+  if (entityStake.timestamp_range === null) {
+    const seconds = SECONDS_PER_DAY * (Number(entityStake.end_stake_period) + 1);
+    const timestamp = BigInt(seconds) * BigInt(1_000_000_000) + BigInt(1);
+    entityStake.timestamp_range = `[${timestamp},)`;
+  }
+
+  await insertDomainObject(getTableName('entity_stake', entityStake), entityStakeFields, entityStake);
 };
 
 const ethereumTransactionDefaults = {
@@ -1000,6 +1011,7 @@ const contractResultDefaults = {
   gas_limit: 1000,
   gas_used: null,
   payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
+  sender_id: DEFAULT_SENDER_ID,
   transaction_hash: Buffer.from([...Array(32).keys()]),
   transaction_index: 1,
   transaction_nonce: 0,

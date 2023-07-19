@@ -17,7 +17,11 @@
 package com.hedera.mirror.grpc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.hedera.mirror.common.converter.EntityIdDeserializer;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
@@ -41,7 +45,13 @@ class RedisConfiguration {
 
     @Bean
     RedisSerializer<TopicMessage> redisSerializer() {
-        return new Jackson2JsonRedisSerializer<>(new ObjectMapper(new MessagePackFactory()), TopicMessage.class);
+        var module = new SimpleModule();
+        module.addDeserializer(EntityId.class, EntityIdDeserializer.INSTANCE);
+        module.addSerializer(EntityIdSerializer.INSTANCE);
+
+        var objectMapper = new ObjectMapper(new MessagePackFactory());
+        objectMapper.registerModule(module);
+        return new Jackson2JsonRedisSerializer<>(objectMapper, TopicMessage.class);
     }
 
     @Bean

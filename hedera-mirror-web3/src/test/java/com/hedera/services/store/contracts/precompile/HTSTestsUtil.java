@@ -17,9 +17,9 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asContract;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
 
 import com.google.protobuf.ByteString;
@@ -31,9 +31,13 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfA
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -70,6 +74,10 @@ public class HTSTestsUtil {
     public static final ContractID precompiledContract = asContract(asAccount("0.0.359"));
     public static final TokenID nonFungible = asToken("0.0.777");
     public static final TokenID tokenMerkleId = asToken("0.0.777");
+    public static final Id accountId = Id.fromGrpcAccount(account);
+    public static final Association multiAssociateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation multiDissociateOp =
+            Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddr = Address.ALTBN128_ADD;
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
@@ -92,9 +100,13 @@ public class HTSTestsUtil {
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Long serialNumber = 1L;
+    public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation dissociateOp = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
+    public static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
+    public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
     public static final GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper =
@@ -111,6 +123,8 @@ public class HTSTestsUtil {
 
     public static final Address contractAddress = Address.ALTBN128_MUL;
 
+    public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    public static final BurnWrapper nonFungibleBurn = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
     public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
     public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
@@ -119,7 +133,8 @@ public class HTSTestsUtil {
     public static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
-
+    public static final WipeWrapper fungibleWipe = WipeWrapper.forFungible(fungible, account, AMOUNT);
+    public static final WipeWrapper nonFungibleWipe = WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
     public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
@@ -130,6 +145,7 @@ public class HTSTestsUtil {
     public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
     public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
+    public static final WipeWrapper fungibleWipeMaxAmount = WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);

@@ -20,8 +20,6 @@ import com.hedera.hashgraph.sdk.FileAppendTransaction;
 import com.hedera.hashgraph.sdk.FileCreateTransaction;
 import com.hedera.hashgraph.sdk.FileDeleteTransaction;
 import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.FileInfo;
-import com.hedera.hashgraph.sdk.FileInfoQuery;
 import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -87,9 +85,5 @@ public class FileClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
         log.info("Deleted file {} with memo '{}' via {}", fileId, memo, response.getTransactionId());
         return response;
-    }
-
-    public FileInfo getFileInfo(FileId fileId) {
-        return executeQuery(() -> new FileInfoQuery().setFileId(fileId));
     }
 }

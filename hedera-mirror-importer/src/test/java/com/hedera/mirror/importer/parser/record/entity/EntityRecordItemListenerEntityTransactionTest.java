@@ -55,7 +55,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
 
     @AfterEach
     void teardown() {
-        entityProperties.getPersist().setEntityTransaction(true);
+        entityProperties.getPersist().setEntityTransactions(true);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -69,7 +69,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideRecordItems")
     void testEntityTransactionsWhenDisabled(String name, RecordItem recordItem) {
-        entityProperties.getPersist().setEntityTransaction(false);
+        entityProperties.getPersist().setEntityTransactions(false);
         parseRecordItemAndCommit(recordItem);
         assertThat(entityTransactionRepository.findAll()).isEmpty();
     }

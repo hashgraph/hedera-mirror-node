@@ -114,7 +114,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 : transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
 
-        if (!EntityId.isEmpty(senderId)) {
+        if (!EntityId.isEmpty(senderId) && entityProperties.getPersist().isTrackNonce()) {
             Entity entity = senderId.toEntity();
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             entity.setTimestampRange(null); // Don't trigger a history row

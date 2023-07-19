@@ -19,8 +19,8 @@ package com.hedera.services.fees.calculation;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -33,8 +33,11 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
+import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -163,6 +166,9 @@ class UsageBasedFeeCalculatorTest {
     @Mock
     private Store store;
 
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     private UsageBasedFeeCalculator subject;
 
     @BeforeEach
@@ -174,7 +180,6 @@ class UsageBasedFeeCalculatorTest {
         signedTxn = signableTxn(0).build();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
-        //       given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
         incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
         correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
@@ -194,7 +199,6 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void estimatesFutureGasPriceInTinybars() {
         given(exchange.rate(at)).willReturn(currentRate);
-        // given(usagePrices.pricesGiven(ContractCreate, at, feeSchedules)).willReturn(currentPrices);
         given(usagePrices.defaultPricesGiven(CryptoCreate, at)).willReturn(defaultCurrentPrices);
         // and:
         final long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
@@ -215,7 +219,9 @@ class UsageBasedFeeCalculatorTest {
 
         // when:
 
-        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, store, at));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases));
     }
 
     @Test
@@ -252,12 +258,27 @@ class UsageBasedFeeCalculatorTest {
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
 
         // when:
-        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at);
+        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
         assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+    }
+
+    @Test
+    void defaultFeeIfAccountMissing() throws Exception {
+        // setup:
+        correctOpEstimator = new TokenDissociateResourceUsage(mock(EstimatorFactory.class));
+        final FeeData expectedFeeData = FeeData.getDefaultInstance();
+        given(store.getAccount(any(), any())).willReturn(null);
+
+        // when:
+        final var feeData =
+                correctOpEstimator.usageGiven(accessor.getTxn(), subject.getSigUsage(accessor, payerKey), store);
+
+        // then:
+        assertEquals(expectedFeeData, feeData);
     }
 
     @SuppressWarnings("deprecation")

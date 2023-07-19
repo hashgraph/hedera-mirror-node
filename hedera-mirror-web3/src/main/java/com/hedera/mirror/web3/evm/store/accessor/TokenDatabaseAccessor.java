@@ -36,6 +36,7 @@ import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -91,8 +92,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
-                entity.getEffectiveExpiration(),
-                entity.getCreatedTimestamp(),
+                TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),
@@ -113,7 +114,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private Account getAutoRenewAccount(Entity entity) {
         return new Account(
-                entity.getId(), new Id(entity.getShard(), entity.getRealm(), entity.getNum()), entity.getBalance());
+                entity.getId(),
+                new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
+                entity.getBalance() != null ? entity.getBalance() : 0L);
     }
 
     private Account getTreasury(EntityId treasuryId) {
@@ -125,7 +128,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                        entity.getBalance()))
+                        entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 

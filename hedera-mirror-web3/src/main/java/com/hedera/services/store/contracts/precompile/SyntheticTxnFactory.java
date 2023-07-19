@@ -16,13 +16,38 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class SyntheticTxnFactory {
+
+    public static final String AUTO_MEMO = "auto-created account";
+    private static final String LAZY_MEMO = "lazy-created account";
+    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public TransactionBody.Builder createMint(final MintWrapper mintWrapper) {
         final var builder = TokenMintTransactionBody.newBuilder();
@@ -35,5 +60,97 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenMint(builder);
+    }
+
+    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    public TransactionBody.Builder createAccount(
+            final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
+
+        if (maxAutoAssociations > 0) {
+            baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
+        }
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
+    }
+
+    public TransactionBody.Builder createAssociate(final Association association) {
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+
+        builder.setAccount(association.accountId());
+        builder.addAllTokens(association.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenAssociate(builder);
+    }
+
+    public TransactionBody.Builder createDissociate(final Dissociation dissociation) {
+        final var builder = TokenDissociateTransactionBody.newBuilder();
+
+        builder.setAccount(dissociation.accountId());
+        builder.addAllTokens(dissociation.tokenIds());
+
+        return TransactionBody.newBuilder().setTokenDissociate(builder);
+    }
+
+    public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
+        final var builder = TokenBurnTransactionBody.newBuilder();
+
+        builder.setToken(burnWrapper.tokenType());
+        if (burnWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(burnWrapper.serialNos());
+        } else {
+            builder.setAmount(burnWrapper.amount());
+        }
+        return TransactionBody.newBuilder().setTokenBurn(builder);
+    }
+
+    public TransactionBody.Builder createDelete(final DeleteWrapper deleteWrapper) {
+        final var builder = TokenDeleteTransactionBody.newBuilder();
+        builder.setToken(deleteWrapper.tokenID());
+        return TransactionBody.newBuilder().setTokenDeletion(builder);
+    }
+
+    public TransactionBody.Builder createWipe(final WipeWrapper wipeWrapper) {
+        final var builder = TokenWipeAccountTransactionBody.newBuilder();
+
+        builder.setToken(wipeWrapper.token());
+        builder.setAccount(wipeWrapper.account());
+        if (wipeWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(wipeWrapper.serialNumbers());
+        } else {
+            builder.setAmount(wipeWrapper.amount());
+        }
+
+        return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
+    public TransactionBody.Builder createRevokeKyc(final GrantRevokeKycWrapper<TokenID, AccountID> wrapper) {
+        final var builder = TokenRevokeKycTransactionBody.newBuilder();
+
+        builder.setToken(wrapper.token());
+        builder.setAccount(wrapper.account());
+
+        return TransactionBody.newBuilder().setTokenRevokeKyc(builder);
+    }
+
+    public TransactionBody.Builder createGrantKyc(
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
+        final var builder = TokenGrantKycTransactionBody.newBuilder();
+
+        builder.setToken(grantRevokeKycWrapper.token());
+        builder.setAccount(grantRevokeKycWrapper.account());
+
+        return TransactionBody.newBuilder().setTokenGrantKyc(builder);
     }
 }

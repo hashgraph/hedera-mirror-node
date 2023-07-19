@@ -16,10 +16,16 @@
 
 package com.hedera.services.txns.validation;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 
 /**
  * Copied Logic type from hedera-services. Unnecessary methods are deleted.
@@ -57,5 +63,48 @@ public class ContextOptionValidator implements OptionValidator {
     public ResponseCodeEnum nftMetadataCheck(final byte[] metadata) {
         return lengthCheck(
                 metadata.length, mirrorNodeEvmProperties.getMaxNftMetadataBytes(), ResponseCodeEnum.METADATA_TOO_LONG);
+    }
+
+    @Override
+    public boolean isValidExpiry(Timestamp expiry) {
+        final var now = Instant.now();
+        final var then = Instant.ofEpochSecond(expiry.getSeconds(), expiry.getNanos());
+        return then.isAfter(now);
+    }
+
+    public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
+        var account = store.getAccount(asTypedEvmAddress(id), OnMissing.THROW);
+        if (!mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()) {
+            return OK;
+        }
+        final var balance = account.getBalance();
+        if (balance > 0) {
+            return OK;
+        }
+        final var isDetached = (account.getExpiry() < System.currentTimeMillis() / 1000);
+        if (!isDetached) {
+            return OK;
+        }
+        final var isContract = account.isSmartContract();
+        return expiryStatusForNominallyDetached(isContract);
+    }
+
+    public ResponseCodeEnum expiryStatusGiven(final long balance, final boolean isDetached, final boolean isContract) {
+        if (balance > 0 || !isDetached) {
+            return OK;
+        }
+        return expiryStatusForNominallyDetached(isContract);
+    }
+
+    private ResponseCodeEnum expiryStatusForNominallyDetached(final boolean isContract) {
+        if (isExpiryDisabled(isContract)) {
+            return OK;
+        }
+        return isContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+    }
+
+    private boolean isExpiryDisabled(final boolean isContract) {
+        return (isContract && !mirrorNodeEvmProperties.shouldAutoRenewContracts())
+                || (!isContract && !mirrorNodeEvmProperties.shouldAutoRenewAccounts());
     }
 }

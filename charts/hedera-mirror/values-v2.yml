@@ -1,0 +1,20 @@
+importer:
+  config:
+    hedera:
+      mirror:
+        importer:
+          db:
+            loadBalance: false
+          downloader:
+          parser:
+            record:
+              entity:
+                persist:
+                  transactionHash: true
+  env:
+    SPRING_PROFILES_ACTIVE: v2
+postgresql:
+  enabled: false
+stackgres:
+  enabled: true
+

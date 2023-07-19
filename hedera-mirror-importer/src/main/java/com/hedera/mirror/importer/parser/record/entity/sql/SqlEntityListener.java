@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -390,26 +391,25 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
         stakingRewardTransfers.add(stakingRewardTransfer);
 
+        var current = entityState.get(stakingRewardTransfer.getConsensusTimestamp());
         long consensusTimestamp = stakingRewardTransfer.getConsensusTimestamp();
-        var current = entityState.get(stakingRewardTransfer.getAccountId());
+        // The new stake period start is set to today - 1, so that when today ends, the account / contract will earn
+        // staking reward for today
+        long stakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         if (current == null
-                || (current.getTimestampLower() != null && current.getTimestampLower() != consensusTimestamp)
-                || current.getStakePeriodStart() == null) {
-            // Set the stake period start when the entity is not in the state, or the current lower timestamp is
-            // different from the staking reward transfer's consensus timestamp, or the current stake period start is
-            // not set. Note the stake period start in all the cases is set to today - 1, so that when today ends, the
-            // account / contract will earn staking reward for today
-            long stakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
-            if (current != null) {
-                current.setStakePeriodStart(stakePeriodStart);
-                return;
-            }
-
-            // Create a non-history entity update when there's no such entity in state
-            var entity = Entity.builder()
-                    .id(stakingRewardTransfer.getAccountId())
-                    .stakePeriodStart(stakePeriodStart)
-                    .build();
+                || current.getStakePeriodStart() == null
+                || current.getStakePeriodStart() < stakePeriodStart) {
+            // Set the stake period start when any of the following is true
+            // 1. The entity is not in the state
+            // 2. The current stake period start is not set
+            // 3. The current stake period start is before the new stake period start as result of the reward payout
+            // Note condition 3 handles the edge case that the staking reward transfer is triggered by an entity update
+            // transaction with entity staking changes so the stake period start should be today, not today - 1
+            var entity = EntityId.of(stakingRewardTransfer.getAccountId(), EntityType.ACCOUNT)
+                    .toEntity();
+            entity.setStakePeriodStart(stakePeriodStart);
+            entity.setTimestampLower(consensusTimestamp);
+            entity.setType(null); // Clear the type since it's uncertain if the entity is ACCOUNT or CONTRACT
             onEntity(entity);
         }
     }
@@ -635,10 +635,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         var src = previous.isHistory() ? previous : current;
         var dest = previous.isHistory() ? current : previous;
 
-        // Copy non-updatable fields from src
-        dest.setAlias(src.getAlias());
+        boolean isSameTimestampLower = Objects.equals(current.getTimestampLower(), previous.getTimestampLower());
+        if (current.isHistory() && isSameTimestampLower) {
+            // Copy from current to previous if the updates have the same lower timestamp (thus from same transaction)
+            src = current;
+            dest = previous;
+        }
+
         dest.setCreatedTimestamp(src.getCreatedTimestamp());
-        dest.setEvmAddress(src.getEvmAddress());
+
+        if (dest.getAlias() == null) {
+            dest.setAlias(src.getAlias());
+        }
 
         if (dest.getAutoRenewPeriod() == null) {
             dest.setAutoRenewPeriod(src.getAutoRenewPeriod());
@@ -662,6 +670,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setEthereumNonce(src.getEthereumNonce());
         }
 
+        if (dest.getEvmAddress() == null) {
+            dest.setEvmAddress(src.getEvmAddress());
+        }
+
         if (dest.getExpirationTimestamp() == null) {
             dest.setExpirationTimestamp(src.getExpirationTimestamp());
         }
@@ -676,6 +688,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (dest.getMemo() == null) {
             dest.setMemo(src.getMemo());
+        }
+
+        if (dest.getNum() == null) {
+            dest.setNum(src.getNum());
         }
 
         if (dest.getObtainerId() == null) {
@@ -694,6 +710,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setReceiverSigRequired(src.getReceiverSigRequired());
         }
 
+        if (dest.getRealm() == null) {
+            dest.setRealm(src.getRealm());
+        }
+
+        if (dest.getShard() == null) {
+            dest.setShard(src.getShard());
+        }
+
         if (dest.getStakedAccountId() == null) {
             dest.setStakedAccountId(src.getStakedAccountId());
         }
@@ -710,13 +734,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setSubmitKey(src.getSubmitKey());
         }
 
+        if (dest.getType() == null) {
+            dest.setType(src.getType());
+        }
+
         // There is at least one entity with history. If there is one without history, it must be dest and copy non-null
         // fields and timestamp range from src to dest. Otherwise, both have history, and it's a normal merge from
         // previous to current, so close the src entity's timestamp range
         if (!dest.isHistory()) {
-            dest.setNum(src.getNum());
-            dest.setRealm(src.getRealm());
-            dest.setShard(src.getShard());
             dest.setTimestampRange(src.getTimestampRange());
             // It's important to set the type since some non-history updates may have incorrect entity type.
             // For example, when a contract is created in a child transaction, the initial transfer to the contract may
@@ -724,7 +749,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // entity is created from the crypto transfer then an entity with correct type is created from the contract
             // create child transaction
             dest.setType(src.getType());
-        } else {
+        } else if (!isSameTimestampLower) {
             src.setTimestampUpper(dest.getTimestampLower());
         }
 

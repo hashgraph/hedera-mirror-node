@@ -27,16 +27,22 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import org.springframework.context.ApplicationEventPublisher;
 
 @CustomLog
 @Named
 class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
 
-    NodeStakeUpdateTransactionHandler(ConsensusNodeService consensusNodeService, EntityListener entityListener) {
+    NodeStakeUpdateTransactionHandler(
+            ApplicationEventPublisher applicationEventPublisher,
+            ConsensusNodeService consensusNodeService,
+            EntityListener entityListener) {
         super(TransactionType.NODESTAKEUPDATE);
+        this.applicationEventPublisher = applicationEventPublisher;
         this.entityListener = entityListener;
         this.consensusNodeService = consensusNodeService;
     }
@@ -80,13 +86,12 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
 
         var nodeStakesProtos = transactionBody.getNodeStakeList();
         if (nodeStakesProtos.isEmpty()) {
+            log.warn("NodeStakeUpdateTransaction has empty node stake list");
             return;
         }
 
-        consensusNodeService.refresh();
-
         for (var nodeStakeProto : nodeStakesProtos) {
-            NodeStake nodeStake = new NodeStake();
+            var nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);
             nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
@@ -99,5 +104,8 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
         }
+
+        applicationEventPublisher.publishEvent(new NodeStakeUpdatedEvent(this));
+        consensusNodeService.refresh();
     }
 }

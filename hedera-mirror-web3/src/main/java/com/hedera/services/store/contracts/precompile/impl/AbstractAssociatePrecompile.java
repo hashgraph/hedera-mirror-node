@@ -20,10 +20,10 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -31,7 +31,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -49,12 +48,16 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public abstract class AbstractAssociatePrecompile implements Precompile {
 
     protected final PrecompilePricingUtils pricingUtils;
-    protected final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final AssociateLogic associateLogic;
 
     protected AbstractAssociatePrecompile(
-            final PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final PrecompilePricingUtils pricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
         this.pricingUtils = pricingUtils;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.associateLogic = associateLogic;
     }
 
     @Override
@@ -63,12 +66,12 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, final TransactionBody transactionBody) {
         final var accountId = Id.fromGrpcAccount(
                 Objects.requireNonNull(transactionBody).getTokenAssociate().getAccount());
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
 
         // --- Execute the transaction and capture its results ---
-        final var associateLogic = new AssociateLogic(mirrorNodeEvmProperties);
 
         final var validity = associateLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
@@ -81,14 +84,5 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
                 store);
 
         return new EmptyRunResult();
-    }
-
-    protected TransactionBody.Builder createAssociate(final Association association) {
-        final var builder = TokenAssociateTransactionBody.newBuilder();
-
-        builder.setAccount(association.accountId());
-        builder.addAllTokens(association.tokenIds());
-
-        return TransactionBody.newBuilder().setTokenAssociate(builder);
     }
 }

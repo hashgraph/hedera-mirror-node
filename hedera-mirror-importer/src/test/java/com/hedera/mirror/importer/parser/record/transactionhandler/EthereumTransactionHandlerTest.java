@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import java.util.Map;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,6 +60,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Mock(strictness = LENIENT)
     protected EthereumTransactionParser ethereumTransactionParser;
+
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setTrackNonce(true);
+    }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -257,6 +263,24 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+    }
+
+    @Test
+    void updateTransactionEntityNonceNotUpdated() {
+        boolean create = true;
+        entityProperties.getPersist().setTrackNonce(false);
+        var fileId = EntityId.of(999L, EntityType.FILE);
+
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
+                .record(x -> x.setEthereumHash(ETHEREUM_HASH))
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
+                .build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener, never()).onEntity(any());
     }
 
     @Test

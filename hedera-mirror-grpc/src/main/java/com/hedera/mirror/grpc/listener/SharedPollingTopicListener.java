@@ -17,8 +17,8 @@
 package com.hedera.mirror.grpc.listener;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import io.micrometer.observation.ObservationRegistry;

@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.grpc.repository;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;

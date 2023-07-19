@@ -21,11 +21,12 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hedera.services.utils.MiscUtils.convertArrayToLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -42,7 +43,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.MintLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -72,18 +72,16 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
-    private final OptionValidator optionValidator;
+    private final MintLogic mintLogic;
 
     public MintPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final OptionValidator optionValidator) {
-        super(pricingUtils);
+            final MintLogic mintLogic) {
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
-        this.optionValidator = optionValidator;
+        this.mintLogic = mintLogic;
     }
 
     public static MintWrapper getMintWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
@@ -124,14 +122,12 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var mintBody = transactionBody.getTokenMint();
         final var tokenId = mintBody.getToken();
-
-        /* --- Build the necessary infrastructure to execute the transaction --- */
-        final var mintLogic = new MintLogic(optionValidator);
 
         final var validity = mintLogic.validateSyntax(transactionBody);
         validateTrue(validity == OK, validity);
@@ -170,13 +166,5 @@ public class MintPrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         return encoder.encodeMintFailure(status);
-    }
-
-    private long[] convertArrayToLong(final List<Long> list) {
-        final var result = new long[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            result[i] = list.get(i);
-        }
-        return result;
     }
 }

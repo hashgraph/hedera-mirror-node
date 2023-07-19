@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.balance;
+package com.hedera.services.fees.usage.token.meta;
 
-import java.io.Serial;
-import org.springframework.context.ApplicationEvent;
+import com.hederahashgraph.api.proto.java.SubType;
 
-public class AccountBalanceFileParsedEvent extends ApplicationEvent {
-
-    @Serial
-    private static final long serialVersionUID = -948181990490563242L;
-
-    /**
-     * Create a new {@code AccountBalanceFileParsedEvent}.
-     *
-     * @param source the object on which the event initially occurred or with which the event is associated (never
-     *               {@code null})
-     */
-    public AccountBalanceFileParsedEvent(Object source) {
-        super(source);
+/**
+ *  Exact copy from hedera-services
+ */
+public class TokenBurnMeta extends TokenBurnWipeMeta {
+    public TokenBurnMeta(final int bpt, final SubType subType, final long transferRecordRb, final int serialNumsCount) {
+        super(bpt, subType, transferRecordRb, serialNumsCount);
     }
 }

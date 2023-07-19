@@ -48,14 +48,14 @@ public class EntityProperties {
 
         private boolean cryptoTransferAmounts = true;
 
-        private boolean entityTransaction = true;
-
         /**
          * A set of entity ids to exclude from entity_transaction table
          */
         @NotNull
         private Set<EntityId> entityTransactionExclusion =
                 Set.copyOf(List.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT)));
+
+        private boolean entityTransactions = true;
 
         private boolean ethereumTransactions = true;
 
@@ -69,7 +69,7 @@ public class EntityProperties {
 
         private boolean syntheticContractLogs = true;
 
-        private boolean syntheticContractResults = true;
+        private boolean syntheticContractResults = false;
 
         private boolean systemFiles = true;
 
@@ -77,9 +77,11 @@ public class EntityProperties {
 
         private boolean topics = true;
 
-        private boolean topicMessageLookups = true;
+        private boolean topicMessageLookups = false;
 
         private boolean trackBalance = true;
+
+        private boolean trackNonce = true;
 
         private boolean transactionHash = false;
 
@@ -99,7 +101,7 @@ public class EntityProperties {
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
 
         public boolean shouldPersistEntityTransaction(EntityId entityId) {
-            return entityTransaction && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
+            return entityTransactions && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
         }
 
         public boolean shouldPersistTransactionHash(TransactionType transactionType) {

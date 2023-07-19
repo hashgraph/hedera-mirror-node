@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
+import com.hedera.mirror.common.domain.entity.EntityStakeHistory;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
@@ -444,7 +445,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> entityStake() {
+    public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder<?, ?>> entityStake() {
         var builder = EntityStake.builder()
                 .declineRewardStart(false)
                 .endStakePeriod(0L)
@@ -452,7 +453,21 @@ public class DomainBuilder {
                 .pendingReward(0L)
                 .stakedNodeIdStart(-1L)
                 .stakedToMe(0L)
-                .stakeTotalStart(0L);
+                .stakeTotalStart(0L)
+                .timestampRange(Range.atLeast(timestamp()));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityStakeHistory, EntityStakeHistory.EntityStakeHistoryBuilder<?, ?>> entityStakeHistory() {
+        var builder = EntityStakeHistory.builder()
+                .declineRewardStart(false)
+                .endStakePeriod(0L)
+                .id(id())
+                .pendingReward(0L)
+                .stakedNodeIdStart(-1L)
+                .stakedToMe(0L)
+                .stakeTotalStart(0L)
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -26,11 +26,13 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txn.token.AssociateLogic;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -43,8 +45,19 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
     public MultiAssociatePrecompile(
-            final PrecompilePricingUtils pricingUtils, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        super(pricingUtils, mirrorNodeEvmProperties);
+            final PrecompilePricingUtils pricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final AssociateLogic associateLogic) {
+        super(pricingUtils, syntheticTxnFactory, associateLogic);
+    }
+
+    public static Association decodeMultipleAssociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
+
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
+
+        return Association.multiAssociation(accountID, tokenIDs);
     }
 
     @Override
@@ -57,13 +70,17 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 
         final var associateOp = Association.multiAssociation(accountID, tokenIDs);
 
-        return createAssociate(associateOp);
+        return syntheticTxnFactory.createAssociate(associateOp);
     }
 
     @Override
     public long getGasRequirement(
-            final long blockTimestamp, final TransactionBody.Builder transactionBody, final Store store) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, store);
+            final long blockTimestamp,
+            final TransactionBody.Builder transactionBody,
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
+        return pricingUtils.computeGasRequirement(
+                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
     }
 
     @Override

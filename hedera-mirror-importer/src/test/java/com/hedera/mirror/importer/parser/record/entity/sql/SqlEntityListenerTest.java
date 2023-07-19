@@ -561,11 +561,47 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(sidecarFileRepository.count()).isZero();
     }
 
-    @Test
-    void onEntity() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onEntityWhenTypeIsAccount(boolean hasNonce) {
         // given
-        Entity entity1 = domainBuilder.entity().get();
-        Entity entity2 = domainBuilder.entity().get();
+        Entity entity1 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 1L : null))
+                .get();
+        Entity entity2 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 2L : null))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entity1);
+        sqlEntityListener.onEntity(entity2);
+        completeFileAndCommit();
+
+        // then
+        if (!hasNonce) {
+            // the default nonce is 0 for ACCOUNT
+            entity1.setEthereumNonce(0L);
+            entity2.setEthereumNonce(0L);
+        }
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
+        assertThat(findHistory(Entity.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onEntityTypeIsContract(boolean hasNonce) {
+        // given
+        Entity entity1 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 1L : null).type(CONTRACT))
+                .get();
+        Entity entity2 = domainBuilder
+                .entity()
+                .customize(e -> e.ethereumNonce(hasNonce ? 2L : null).type(CONTRACT))
+                .get();
 
         // when
         sqlEntityListener.onEntity(entity1);
@@ -574,6 +610,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractRepository.count()).isZero();
+        // for contract, there shouldn't be a default nonce value
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
@@ -768,7 +805,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         var expectedEntity = TestUtils.clone(historyUpdate);
         expectedEntity.setBalance(0L);
         expectedEntity.setDeclineReward(false);
-        expectedEntity.setEthereumNonce(0L);
         expectedEntity.setStakedNodeId(-1L);
         expectedEntity.setStakePeriodStart(120L);
 
@@ -1438,6 +1474,15 @@ class SqlEntityListenerTest extends IntegrationTest {
         var transfer1 = domainBuilder.stakingRewardTransfer().get();
         var transfer2 = domainBuilder.stakingRewardTransfer().get();
         var transfer3 = domainBuilder.stakingRewardTransfer().get();
+        var expectedEntities = Stream.of(transfer1, transfer2, transfer3)
+                .map(transfer -> {
+                    var entity = EntityId.of(transfer.getAccountId(), ACCOUNT).toEntity();
+                    entity.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
+                    entity.setTimestampLower(transfer.getConsensusTimestamp());
+                    entity.setType(EntityType.UNKNOWN);
+                    return entity;
+                })
+                .toList();
 
         // when
         sqlEntityListener.onStakingRewardTransfer(transfer1);
@@ -1446,7 +1491,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(entityRepository.findAll()).isEmpty();
+        assertThat(entityRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "stakePeriodStart", "timestampRange", "type")
+                .containsExactlyInAnyOrderElementsOf(expectedEntities);
         assertThat(stakingRewardTransferRepository.findAll())
                 .containsExactlyInAnyOrder(transfer1, transfer2, transfer3);
     }
@@ -1477,9 +1524,18 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        var accountHistory = account.toBuilder()
+                .timestampRange(Range.closedOpen(account.getTimestampLower(), transfer1.getConsensusTimestamp()))
+                .build();
+        var contractHistory = contract.toBuilder()
+                .timestampRange(Range.closedOpen(contract.getTimestampLower(), transfer2.getConsensusTimestamp()))
+                .build();
         account.setStakePeriodStart(Utility.getEpochDay(transfer1.getConsensusTimestamp()) - 1);
+        account.setTimestampLower(transfer1.getConsensusTimestamp());
         contract.setStakePeriodStart(Utility.getEpochDay(transfer2.getConsensusTimestamp()) - 1);
+        contract.setTimestampLower(transfer2.getConsensusTimestamp());
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, contract);
+        assertThat(findHistory(Entity.class)).containsExactlyInAnyOrder(accountHistory, contractHistory);
         assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2);
     }
 
@@ -1512,7 +1568,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         entity.setMemo(entityMemoUpdate.getMemo());
         entity.setStakePeriodStart(Utility.getEpochDay(stakingRewardTransferTimestamp) - 1);
-        entity.setTimestampRange(Range.atLeast(updateTimestamp));
+        entity.setTimestampRange(Range.atLeast(stakingRewardTransferTimestamp));
         assertThat(entityRepository.findAll()).containsExactly(entity);
         assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
     }
@@ -1602,9 +1658,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        entity.setBalance(entity.getBalance() + entityBalanceUpdate.getBalance());
-        entity.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
-        assertThat(entityRepository.findAll()).containsExactly(entity);
+        var current = TestUtils.clone(entity);
+        current.setBalance(entity.getBalance() + entityBalanceUpdate.getBalance());
+        current.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
+        current.setTimestampLower(transfer.getConsensusTimestamp());
+        entity.setTimestampUpper(transfer.getConsensusTimestamp());
+        assertThat(entityRepository.findAll()).containsExactly(current);
+        assertThat(findHistory(Entity.class)).containsExactly(entity);
         assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
     }
 

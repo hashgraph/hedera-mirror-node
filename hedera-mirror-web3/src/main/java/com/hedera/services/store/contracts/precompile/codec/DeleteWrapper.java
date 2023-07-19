@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.grpc.domain;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
-@JsonSubTypes({@JsonSubTypes.Type(value = TopicMessage.class, name = "TopicMessage")})
-public interface StreamMessage {}
+public record DeleteWrapper(TokenID tokenID) {}

@@ -352,6 +352,9 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
       break;
+    case constants.filterKeys.TRANSACTIONS:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
@@ -974,6 +977,10 @@ const toUint256 = (val) => {
  * @return {String} Converted hex string
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
+  if (typeof byteArray !== 'object') {
+    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
+  }
+
   if (_.isEmpty(byteArray)) {
     return hexPrefix;
   }
@@ -1271,10 +1278,13 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value, {
-          evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
-          paramName: comparator.key,
-        }).getEncodedId();
+        if (!EntityId.isValidEvmAddress(comparator.value)) {
+          // Only parse non-evm addresses.
+          comparator.value = EntityId.parse(comparator.value, {
+            evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
+            paramName: comparator.key,
+          }).getEncodedId();
+        }
         break;
       case constants.filterKeys.INTERNAL:
         comparator.value = parseBooleanValue(comparator.value);
@@ -1307,6 +1317,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
+        break;
+      case constants.filterKeys.TRANSACTIONS:
+        comparator.value = parseBooleanValue(comparator.value);
         break;
       // case 'type':
       //   // Acceptable words: credit or debit

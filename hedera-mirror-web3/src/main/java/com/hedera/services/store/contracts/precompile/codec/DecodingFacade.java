@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.IdUtils.asContract;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
@@ -32,7 +33,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,12 +41,12 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Singleton
 public class DecodingFacade {
     public static final List<NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
     public static final List<FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
+    public static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
     public static final String HEDERA_TOKEN_STRUCT =
             "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
@@ -78,12 +78,11 @@ public class DecodingFacade {
             final var keyType = (int) tokenKeyTuple.get(0);
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
+            final var contractId = asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
+                    asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
                     new KeyValueWrapper(

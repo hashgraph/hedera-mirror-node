@@ -19,13 +19,12 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -70,6 +69,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int maxBatchSizeMint = 10;
 
+    @Getter
+    @Min(1)
+    private int maxBatchSizeWipe = 10;
+
+    private int maxCustomFeesAllowed = 10;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
@@ -94,6 +99,24 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
+
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
+
+    @Getter
+    private boolean limitTokenAssociations = false;
+
+    public boolean shouldAutoRenewAccounts() {
+        return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
+    }
+
+    public boolean shouldAutoRenewContracts() {
+        return autoRenewTargetTypes.contains(EntityType.CONTRACT);
+    }
+
+    public boolean shouldAutoRenewSomeEntityType() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
@@ -133,6 +156,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
+    }
+
+    public int maxCustomFeesAllowed() {
+        return maxCustomFeesAllowed;
     }
 
     @Getter

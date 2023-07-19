@@ -71,6 +71,12 @@ public abstract class AbstractEntity implements History {
 
     private Boolean deleted;
 
+    @UpsertColumn(
+            coalesce =
+                    """
+            case when coalesce(e_type, type) = ''ACCOUNT'' then coalesce({0}, e_{0}, {1})
+                 else coalesce({0}, e_{0})
+            end""")
     private Long ethereumNonce;
 
     @Column(updatable = false)

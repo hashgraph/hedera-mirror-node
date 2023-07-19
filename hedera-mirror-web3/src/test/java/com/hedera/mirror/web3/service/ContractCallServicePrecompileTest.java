@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
@@ -174,7 +175,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThat(ledgerId).isEqualTo("0x01");
         assertThat(name).isEqualTo("Hbars");
         assertThat(symbol).isEqualTo("HBAR");
-        assertThat(treasury).isEqualTo(convertAddress(SENDER_ADDRESS));
+        assertThat(treasury).isEqualTo(convertAddress(OWNER_ADDRESS));
         assertThat(memo).isEqualTo("TestMemo");
         assertThat(freezeStatus).isTrue();
         assertThat(autoRenewPeriod).isEqualTo(1800L);
@@ -187,11 +188,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
 
             assertThat(serialNum).isEqualTo(1L);
-            assertThat(owner).isEqualTo(convertAddress(SENDER_ADDRESS));
+            assertThat(owner).isEqualTo(convertAddress(OWNER_ADDRESS));
             assertThat(creationTime).isEqualTo(1475067194L);
             assertThat(metadata).isNotEmpty();
             assertThat(spender).isEqualTo(convertAddress(SPENDER_ADDRESS));
-            assertThat(maxSupply).isEqualTo(1L);
+            assertThat(maxSupply).isEqualTo(2000000000L);
             assertThat(supplyType).isTrue();
             assertThat(autoRenewAccount).isEqualTo(convertAddress(NFT_ADDRESS));
         } else {
@@ -243,7 +244,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         IS_FROZEN_ETH_ADDRESS(
                 "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
         IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {false}),
+        IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
         IS_TOKEN_PRECOMPILE_NFT("isTokenAddress", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
         GET_TOKEN_DEFAULT_KYC("getTokenDefaultKyc", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
@@ -286,9 +287,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
             new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
         }),
-        BURN_TOKEN("burnTokenExternal", new Object[] {EMPTY_ADDRESS, 0L, new long[0]}),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        DISSOCIATE_TOKENS("dissociateTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0]}),
         CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {new Object[] {}, 0L, 0}),
         CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createFungibleTokenWithCustomFeesExternal",
@@ -302,8 +300,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
-        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
         TRANSFER_NFT_TOKENS(
@@ -312,9 +308,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        WIPE_NFT_TOKEN("wipeTokenAccountNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, new long[0]}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
@@ -328,7 +321,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKENS(
                 "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]});
+        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
+        MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
+            NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+        }),
+        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
+        DISSOCIATE_TOKENS(
+                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
+        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
+        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS, 1L}),
+        WIPE_NFT_TOKEN(
+                "wipeTokenAccountNFTExternal",
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ADDRESS, new long[] {1}}),
+        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
+        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;

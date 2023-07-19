@@ -49,7 +49,7 @@ class PersistPropertiesTest {
     @Test
     void shouldPersistEntityTransactionWhenDisabled() {
         var persistProperties = new EntityProperties.PersistProperties();
-        persistProperties.setEntityTransaction(false);
+        persistProperties.setEntityTransactions(false);
         assertThat(persistProperties.shouldPersistEntityTransaction(null)).isFalse();
         assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.EMPTY))
                 .isFalse();

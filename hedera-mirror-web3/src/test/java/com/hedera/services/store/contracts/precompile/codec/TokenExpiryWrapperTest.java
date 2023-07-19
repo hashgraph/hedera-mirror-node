@@ -16,8 +16,8 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+import static com.hedera.services.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;

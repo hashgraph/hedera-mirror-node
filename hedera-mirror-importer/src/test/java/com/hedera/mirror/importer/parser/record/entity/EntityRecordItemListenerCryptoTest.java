@@ -121,7 +121,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @AfterEach
     void after() {
-        entityProperties.getPersist().setEntityTransaction(true);
+        entityProperties.getPersist().setEntityTransactions(true);
     }
 
     @Test
@@ -504,8 +504,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         sender.setBalance(285L);
         sender.setStakePeriodStart(expectedStakePeriodStart);
+        sender.setTimestampLower(consensusTimestamp);
         receiver1.setBalance(109L);
         receiver1.setStakePeriodStart(expectedStakePeriodStart);
+        receiver1.setTimestampLower(consensusTimestamp);
         receiver2.setBalance(215L);
 
         var payerAccountId = recordItem.getPayerAccountId();
@@ -566,6 +568,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         payer.setBalance(2200L);
         payer.setStakePeriodStart(expectedStakePeriodStart);
+        payer.setTimestampLower(consensusTimestamp);
 
         var expectedStakingRewardTransfer = new StakingRewardTransfer();
         expectedStakingRewardTransfer.setAccountId(payer.getId());
@@ -1040,7 +1043,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoTransferWithEntityTransactionDisabled() {
-        entityProperties.getPersist().setEntityTransaction(false);
+        entityProperties.getPersist().setEntityTransactions(false);
         // make the transfers
         var transaction = cryptoTransferTransaction();
         var transactionBody = getTransactionBody(transaction);

@@ -18,12 +18,13 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import jakarta.inject.Named;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.support.TransactionOperations;
 
 @CustomLog
 @Named
@@ -31,9 +32,9 @@ import lombok.RequiredArgsConstructor;
 public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
 
     private final EntityProperties entityProperties;
-    private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final TransactionOperations transactionOperations;
 
     @Override
     public void calculate() {
@@ -47,16 +48,28 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
         }
 
         try {
-            if (entityStakeRepository.updated()) {
-                log.info("Skipping since the entity stake is up-to-date");
-                return;
-            }
+            while (true) {
+                if (entityStakeRepository.updated()) {
+                    log.info("Skipping since the entity stake is up-to-date");
+                    return;
+                }
 
-            var stopwatch = Stopwatch.createStarted();
-            entityRepository.refreshEntityStateStart();
-            log.info("Refreshed entity_state_start in {}", stopwatch);
-            int count = entityStakeRepository.updateEntityStake();
-            log.info("Completed pending reward calculation for {} entities in {}", count, stopwatch);
+                transactionOperations.executeWithoutResult(s -> {
+                    var stopwatch = Stopwatch.createStarted();
+                    entityStakeRepository.lockFromConcurrentUpdates();
+                    entityStakeRepository.createEntityStateStart();
+                    log.info("Created entity_state_start in {}", stopwatch);
+                    entityStakeRepository.updateEntityStake();
+                    Optional<Long> endStakePeriod = entityStakeRepository.getEndStakePeriod();
+                    log.info(
+                            "Completed pending reward calculation of end stake period {} in {}",
+                            endStakePeriod.orElse(null),
+                            stopwatch);
+                });
+            }
+        } catch (Exception e) {
+            log.error("Failed to update entity stake", e);
+            throw e;
         } finally {
             running.set(false);
         }

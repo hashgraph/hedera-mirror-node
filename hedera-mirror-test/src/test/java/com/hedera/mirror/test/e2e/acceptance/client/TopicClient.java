@@ -22,8 +22,6 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.hashgraph.sdk.TopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.TopicId;
-import com.hedera.hashgraph.sdk.TopicInfo;
-import com.hedera.hashgraph.sdk.TopicInfoQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -171,9 +169,5 @@ public class TopicClient extends AbstractNetworkClient {
 
     public Instant getInstantOfFirstPublishedMessage() {
         return recordPublishInstants.get(0L);
-    }
-
-    public TopicInfo getTopicInfo(TopicId topicId) {
-        return executeQuery(() -> new TopicInfoQuery().setTopicId(topicId));
     }
 }

@@ -120,7 +120,9 @@ public class HederaEvmStackedWorldStateUpdater
                 0,
                 0,
                 0,
-                nonce);
+                nonce,
+                false,
+                null);
         store.updateAccount(accountModel);
     }
 
