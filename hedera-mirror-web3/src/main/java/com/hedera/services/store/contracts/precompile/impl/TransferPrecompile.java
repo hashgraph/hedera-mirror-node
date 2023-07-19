@@ -52,6 +52,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransferLogic;
@@ -135,21 +136,22 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private int numLazyCreates;
     private ResponseCodeEnum impliedValidity;
 
-    protected final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final TransferLogic transferLogic;
 
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
+    private TransactionBody.Builder transactionBody;
 
     public TransferPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final TransferLogic transferLogic,
             final ContextOptionValidator contextOptionValidator,
-            final AutoCreationLogic autoCreationLogic) {
-        super(pricingUtils);
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory) {
+        super(pricingUtils, syntheticTxnFactory);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.transferLogic = transferLogic;
         this.contextOptionValidator = contextOptionValidator;
@@ -183,12 +185,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(
-            final MessageFrame frame,
-            final Store store,
-            final TransactionBody transactionBody,
-            final EntityAddressSequencer entityAddressSequencer,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var entityAddressSequencer =
+                ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getEntityAddressSequencer();
+        final var mirrorEvmContractAliases =
+                (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         initializeHederaTokenStore(store);
         if (impliedValidity == null) {
             extrapolateDetailsFromSyntheticTxn();

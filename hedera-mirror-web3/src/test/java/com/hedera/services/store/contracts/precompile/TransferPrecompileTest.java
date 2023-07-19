@@ -195,6 +195,8 @@ class TransferPrecompileTest {
     @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
 
+    private SyntheticTxnFactory syntheticTxnFactory;
+
     private HTSPrecompiledContract subject;
 
     private final TransactionBody.Builder transactionBody =
@@ -210,17 +212,18 @@ class TransferPrecompileTest {
 
     @BeforeEach
     void setup() {
+        syntheticTxnFactory = new SyntheticTxnFactory();
 
         transferPrecompile = new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                mirrorNodeEvmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                entityAddressSequencer,
-                mirrorEvmContractAliases);
+                infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
         staticTransferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }
 
@@ -275,7 +278,7 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
+
         final var result = subject.computeInternal(frame);
 
         // then:

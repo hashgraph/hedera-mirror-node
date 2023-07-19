@@ -307,13 +307,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 KEY_PROTO);
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
         final var ethAccount2 = ethAccountPersist(359L, ETH_ADDRESS2);
-        tokenAccountPersist(senderEntityId, ethAccount, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        //        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, ethAccount2, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        //        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -383,8 +384,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(t -> t.tokenId(tokenEntityId.getId())
                         .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .kycKey(key)
-                        .freezeDefault(true)
+                        .kycKey(new byte[0])
+                        .freezeDefault(false)
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)
@@ -526,7 +527,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .kycKey(key)
-                        .freezeDefault(true)
+                        .freezeDefault(false)
                         .feeScheduleKey(key)
                         .maxSupply(2000000000L)
                         .name("Hbars")

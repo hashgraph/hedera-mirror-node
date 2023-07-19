@@ -132,9 +132,7 @@ class MirrorHTSPrecompiledContractTest {
                         evmInfrastructureFactory,
                         mirrorNodeEvmProperties,
                         precompileMapper,
-                        new EvmHTSPrecompiledContract(evmInfrastructureFactory),
-                        entityAddressSequencer,
-                        mirrorEvmContractAliases));
+                        new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
     }
 
     @Test

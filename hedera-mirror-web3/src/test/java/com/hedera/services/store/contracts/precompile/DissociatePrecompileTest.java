@@ -184,12 +184,7 @@ class DissociatePrecompileTest {
         multiDissociatePrecompile = new MultiDissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
         precompileMapper = new PrecompileMapper(Set.of(dissociatePrecompile, multiDissociatePrecompile));
         subject = new HTSPrecompiledContract(
-                evmInfrastructureFactory,
-                mirrorNodeEvmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                entityAddressSequencer,
-                mirrorEvmContractAliases);
+                evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test

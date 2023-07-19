@@ -284,9 +284,15 @@ public class ServicesConfiguration {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final TransferLogic transferLogic,
             final ContextOptionValidator contextOptionValidator,
-            final AutoCreationLogic autoCreationLogic) {
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory) {
         return new TransferPrecompile(
-                pricingUtils, mirrorNodeEvmProperties, transferLogic, contextOptionValidator, autoCreationLogic);
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory);
     }
 
     @Bean
