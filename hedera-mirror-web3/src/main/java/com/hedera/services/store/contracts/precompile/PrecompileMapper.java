@@ -25,7 +25,6 @@ public class PrecompileMapper {
 
     public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private static final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
-
     private static final Set<Integer> precompileSelectors = Set.of(
             AbiConstants.ABI_ID_CRYPTO_TRANSFER,
             AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2,
@@ -121,12 +120,7 @@ public class PrecompileMapper {
         if (precompile != null) {
             return Optional.of(precompile);
         }
-        // TODO If the function selector is not mapped but is from the list of HTS precompiles, throw an exception until
-        // the given precompile is supported
-        else if (precompileSelectors.contains(functionSelector)) {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
-        } else {
-            return Optional.empty();
-        }
+
+        throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
     }
 }

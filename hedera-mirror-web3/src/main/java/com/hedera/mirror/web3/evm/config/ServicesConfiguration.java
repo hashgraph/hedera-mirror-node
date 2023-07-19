@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
@@ -317,6 +318,25 @@ public class ServicesConfiguration {
     @Bean
     DeleteAllowanceChecks deleteAllowanceChecks() {
         return new DeleteAllowanceChecks();
+    }
+
+    @Bean
+    ApprovePrecompile approvePrecompile(
+            final EncodingFacade encoder,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final ApproveAllowanceLogic approveAllowanceLogic,
+            final DeleteAllowanceLogic deleteAllowanceLogic,
+            final ApproveAllowanceChecks approveAllowanceChecks,
+            final DeleteAllowanceChecks deleteAllowanceChecks) {
+        return new ApprovePrecompile(
+                encoder,
+                syntheticTxnFactory,
+                pricingUtils,
+                approveAllowanceLogic,
+                deleteAllowanceLogic,
+                approveAllowanceChecks,
+                deleteAllowanceChecks);
     }
 
     @Bean

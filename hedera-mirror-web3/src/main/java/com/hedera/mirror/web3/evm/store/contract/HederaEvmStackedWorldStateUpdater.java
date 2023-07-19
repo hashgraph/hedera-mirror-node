@@ -185,6 +185,10 @@ public class HederaEvmStackedWorldStateUpdater
         return store;
     }
 
+    public AccountAccessor getAccountAccessor() {
+        return accountAccessor;
+    }
+
     private boolean isMissingTarget(final Address alias) {
         final var target = mirrorEvmContractAliases.resolveForEvm(alias);
         return Id.DEFAULT.equals(store.getAccount(target, OnMissing.DONT_THROW).getId());
