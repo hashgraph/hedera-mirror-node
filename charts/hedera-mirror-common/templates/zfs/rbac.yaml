@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  namespace: common
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
   name: label-reader
 rules:
   - apiGroups: [""] # "" indicates the core API group
@@ -13,12 +13,11 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: label-reader
-  namespace: common
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
 subjects:
-  #TODO parameterize
   - kind: ServiceAccount
     name: {{ .Values.zfs.init.serviceAccount.name }}
-    namespace: common
+    namespace: {{ include "hedera-mirror-common.namespace" . }}
 roleRef:
   kind: ClusterRole
   name: label-reader
