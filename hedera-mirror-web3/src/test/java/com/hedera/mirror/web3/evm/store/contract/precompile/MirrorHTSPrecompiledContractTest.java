@@ -272,7 +272,7 @@ class MirrorHTSPrecompiledContractTest {
     }
 
     @Test
-    void callingNonExistingPrecompileFails() {
+    void callingNonExistingPrecompileHalts() {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x11111111");
 
@@ -286,10 +286,9 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
-        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage(ERROR_MESSAGE);
+        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
     }
 
     @Test
@@ -368,9 +367,9 @@ class MirrorHTSPrecompiledContractTest {
         final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME, ALTBN128_ADD);
 
         given(messageFrame.isStatic()).willReturn(false);
-        given(evmInfrastructureFactory.newRedirectExecutor(any(), any(), any(), any()))
-                .willReturn(redirectViewExecutor);
-        given(redirectViewExecutor.computeCosted()).willReturn(Pair.of(0L, SUCCESS_RESULT));
+        given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                .willReturn(viewExecutor);
+        given(viewExecutor.computeCosted()).willReturn(Pair.of(0L, SUCCESS_RESULT));
 
         final var precompileResult = subject.computeCosted(input, messageFrame, gasCalculator, tokenAccessor);
 

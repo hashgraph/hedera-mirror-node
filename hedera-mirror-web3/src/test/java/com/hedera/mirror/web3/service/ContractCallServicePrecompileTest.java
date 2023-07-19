@@ -232,7 +232,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
-
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
