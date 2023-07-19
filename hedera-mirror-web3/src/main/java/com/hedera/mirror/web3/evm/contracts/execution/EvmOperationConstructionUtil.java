@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
+import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -116,7 +116,7 @@ public class EvmOperationConstructionUtil {
         var operationRegistry = new OperationRegistry();
         BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
-        registerParisOperations(
+        registerShanghaiOperations(
                 operationRegistry,
                 gasCalculator,
                 mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
@@ -133,7 +133,7 @@ public class EvmOperationConstructionUtil {
                         new HederaExtCodeSizeOperation(gasCalculator, validator))
                 .forEach(operationRegistry::put);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
     }
 
     private static CreateOperationExternalizer getDefaultCreateOperationExternalizer() {
