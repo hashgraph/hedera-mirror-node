@@ -32,7 +32,7 @@ springBoot {
 
 // Temporary for backwards compatibility with tgz
 tasks.bootJar {
-    archiveFileName.set("${projectDir.name}-v${project.version}.jar")
+    archiveFileName = "${projectDir.name}-v${project.version}.jar"
 }
 
 tasks.named("dockerBuild") {
@@ -43,7 +43,7 @@ tasks.named("dockerBuild") {
 tasks.register<Tar>("package") {
     val name = "${projectDir.name}-v${project.version}"
     dependsOn(tasks.bootJar)
-    archiveFileName.set("${name}.tgz")
+    archiveFileName = "${name}.tgz"
     compression = Compression.GZIP
     into("/${name}") {
         from("${buildDir}/libs")

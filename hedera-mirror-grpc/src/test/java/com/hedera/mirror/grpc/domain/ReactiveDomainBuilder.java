@@ -21,13 +21,11 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -45,7 +43,7 @@ import reactor.core.publisher.Mono;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ReactiveDomainBuilder {
 
-    private final Instant now = Instant.now();
+    private final long now = DomainUtils.now();
     private final EntityRepository entityRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final DomainBuilder domainBuilder;
@@ -82,10 +80,9 @@ public class ReactiveDomainBuilder {
      * @return the inserted TopicMessage
      */
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
-        long consensusTimestamp = InstantToLongConverter.INSTANCE.convert(now.plus(sequenceNumber, ChronoUnit.NANOS));
         TopicMessage topicMessage = domainBuilder
                 .topicMessage()
-                .customize(e -> e.consensusTimestamp(consensusTimestamp)
+                .customize(e -> e.consensusTimestamp(now + sequenceNumber)
                         .sequenceNumber(++sequenceNumber)
                         .topicId(EntityId.of(100L, EntityType.TOPIC)))
                 .customize(customizer)
@@ -93,10 +90,10 @@ public class ReactiveDomainBuilder {
         return insert(topicMessage).thenReturn(topicMessage);
     }
 
-    public Flux<TopicMessage> topicMessages(long count, Instant startTime) {
+    public Flux<TopicMessage> topicMessages(long count, long startTime) {
         List<Publisher<TopicMessage>> publishers = new ArrayList<>();
         for (int i = 0; i < count; ++i) {
-            long consensusTimestamp = InstantToLongConverter.INSTANCE.convert(startTime.plusNanos(i));
+            long consensusTimestamp = startTime + i;
             publishers.add(topicMessage(t -> t.consensusTimestamp(consensusTimestamp)));
         }
         return Flux.concat(publishers);

@@ -23,4 +23,4 @@ plugins {
 
 project.extra.set("dockerImageName", "hedera-mirror-rest-monitor")
 
-node { nodeProjectDir.set(projectDir.resolve("monitor_apis")) }
+node { nodeProjectDir = projectDir.resolve("monitor_apis") }
