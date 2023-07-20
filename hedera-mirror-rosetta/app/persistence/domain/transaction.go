@@ -67,8 +67,6 @@ func (i ItemizedTransferSlice) Value() (driver.Value, error) {
 	return json.Marshal(i)
 }
 
-type JSONB map[string]interface{}
-
 type Transaction struct {
 	ConsensusTimestamp       int64 `gorm:"primaryKey"`
 	ChargedTxFee             int64
@@ -93,16 +91,4 @@ type Transaction struct {
 
 func (Transaction) TableName() string {
 	return transactionTableName
-}
-
-func (itemizedTransfer JSONB) Value() (driver.Value, error) {
-	return json.Marshal(itemizedTransfer)
-}
-
-func (itemizedTransfer *JSONB) Scan(value interface{}) error {
-	data, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-	return json.Unmarshal(data, &itemizedTransfer)
 }
