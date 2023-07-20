@@ -16,15 +16,24 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import jakarta.persistence.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // for Builder
+@Builder
 @Data
-@Entity
 @NoArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class CustomFee extends AbstractCustomFee {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
+public class FixedFee {
+
+    private Boolean allCollectorsAreExempt;
+
+    private Long amount;
+
+    private EntityId collectorAccountId;
+
+    private EntityId denominatingTokenId;
 }

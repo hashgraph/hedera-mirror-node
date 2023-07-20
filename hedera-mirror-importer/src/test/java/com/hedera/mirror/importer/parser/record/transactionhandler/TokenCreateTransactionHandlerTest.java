@@ -22,6 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Token;
@@ -32,11 +33,13 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.FixedFee;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -111,19 +114,25 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getWipeKey().toByteArray(), Token::getWipeKey);
 
         assertThat(customFee.getValue())
-                .returns(customFeeProto.getAllCollectorsAreExempt(), CustomFee::isAllCollectorsAreExempt)
-                .returns(customFeeProto.getFixedFee().getAmount(), CustomFee::getAmount)
-                .returns(EntityId.of(customFeeProto.getFeeCollectorAccountId()), CustomFee::getCollectorAccountId)
-                .returns(
-                        EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId()),
-                        CustomFee::getDenominatingTokenId)
-                .returns(null, CustomFee::getMaximumAmount)
-                .returns(0L, CustomFee::getMinimumAmount)
-                .returns(null, CustomFee::getNetOfTransfers)
-                .returns(null, CustomFee::getRoyaltyDenominator)
-                .returns(null, CustomFee::getRoyaltyNumerator)
-                .returns(consensusTimestamp, c -> c.getId().getCreatedTimestamp())
-                .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+                .returns(consensusTimestamp, CustomFee::getCreatedTimestamp)
+                .returns(Range.atLeast(consensusTimestamp), CustomFee::getTimestampRange)
+                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
+                .returns(null, CustomFee::getFractionalFees)
+                .returns(null, CustomFee::getRoyaltyFees);
+        var listAssert =
+                Assertions.assertThat(customFee.getValue().getFixedFees()).hasSize(1);
+        listAssert
+                .extracting(FixedFee::getAmount)
+                .containsOnly(customFeeProto.getFixedFee().getAmount());
+        listAssert
+                .extracting(FixedFee::getCollectorAccountId)
+                .containsOnly(EntityId.of(customFeeProto.getFeeCollectorAccountId()));
+        listAssert
+                .extracting(FixedFee::getAllCollectorsAreExempt)
+                .containsOnly(customFeeProto.getAllCollectorsAreExempt());
+        listAssert
+                .extracting(FixedFee::getDenominatingTokenId)
+                .containsOnly(EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId()));
 
         assertThat(tokenAccount.getValue())
                 .returns(EntityId.of(autoAssociation.getAccountId()).getId(), TokenAccount::getAccountId)

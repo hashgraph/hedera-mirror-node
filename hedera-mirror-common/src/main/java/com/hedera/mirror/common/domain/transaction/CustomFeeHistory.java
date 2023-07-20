@@ -25,6 +25,6 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class CustomFee extends AbstractCustomFee {
+public class CustomFeeHistory extends AbstractCustomFee {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

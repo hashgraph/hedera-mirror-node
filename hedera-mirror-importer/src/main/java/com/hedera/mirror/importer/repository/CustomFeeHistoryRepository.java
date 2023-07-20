@@ -16,15 +16,15 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.CustomFeeHistory;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long>, RetentionRepository {
+public interface CustomFeeHistoryRepository extends CrudRepository<CustomFeeHistory, Long>, RetentionRepository {
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from custom_fee where created_timestamp <= ?1")
+    @Query(nativeQuery = true, value = "delete from custom_fee_history where timestamp_range << int8range(?1, null)")
     int prune(long consensusTimestamp);
 }

@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.TOKENCREATION;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -26,9 +27,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.HashSet;
@@ -77,31 +75,45 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
         var autoAssociatedAccounts = new HashSet<EntityId>();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
-        var id = new CustomFee.Id(consensusTimestamp, tokenId);
+
+        var customFee = new CustomFee();
+        customFee.setTokenId(tokenId.getId());
+        customFee.setCreatedTimestamp(consensusTimestamp);
+        customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
 
         for (var protoCustomFee : customFeeList) {
             var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
-            var customFee = new CustomFee();
-            customFee.setId(id);
-            customFee.setCollectorAccountId(collector);
-            customFee.setAllCollectorsAreExempt(protoCustomFee.getAllCollectorsAreExempt());
 
             var feeCase = protoCustomFee.getFeeCase();
             boolean chargedInAttachedToken;
 
             switch (feeCase) {
                 case FIXED_FEE:
-                    chargedInAttachedToken = parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
+                    chargedInAttachedToken = parseFixedFee(
+                            protoCustomFee.getAllCollectorsAreExempt(),
+                            collector,
+                            customFee,
+                            protoCustomFee.getFixedFee(),
+                            tokenId);
                     break;
                 case FRACTIONAL_FEE:
                     // Only FT can have fractional fee
-                    parseFractionalFee(customFee, protoCustomFee.getFractionalFee());
+                    parseFractionalFee(
+                            protoCustomFee.getAllCollectorsAreExempt(),
+                            collector,
+                            customFee,
+                            protoCustomFee.getFractionalFee());
                     chargedInAttachedToken = true;
                     break;
                 case ROYALTY_FEE:
                     // Only NFT can have royalty fee, and fee can't be paid in NFT. Thus, though royalty fee has a
                     // fixed fee fallback, the denominating token of the fixed fee can't be the NFT itself.
-                    parseRoyaltyFee(customFee, protoCustomFee.getRoyaltyFee(), tokenId);
+                    parseRoyaltyFee(
+                            protoCustomFee.getAllCollectorsAreExempt(),
+                            collector,
+                            customFee,
+                            protoCustomFee.getRoyaltyFee(),
+                            tokenId);
                     chargedInAttachedToken = false;
                     break;
                 default:
@@ -114,60 +126,105 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             if (transaction.getType() == TOKENCREATION.getProtoId() && chargedInAttachedToken) {
                 autoAssociatedAccounts.add(collector);
             }
-
-            entityListener.onCustomFee(customFee);
         }
 
-        // For empty custom fees, add a single row with only the timestamp and tokenId.
-        if (customFeeList.isEmpty()) {
-            var customFee = new CustomFee();
-            customFee.setId(id);
-            entityListener.onCustomFee(customFee);
-        }
+        // Always add a custom fee. For empty custom fees, add a single row with only the timestamp and tokenId.
+        entityListener.onCustomFee(customFee);
 
         return autoAssociatedAccounts;
     }
 
     /**
-     * Parse protobuf FixedFee object to domain CustomFee object.
+     * Parse protobuf FixedFee object to domain FixedFee object.
      *
      * @param customFee the domain CustomFee object
-     * @param fixedFee  the protobuf FixedFee object
+     * @param protoFixedFee  the protobuf FixedFee object
      * @param tokenId   the attached token id
      * @return whether the fee is paid in the attached token
      */
-    private boolean parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
-        customFee.setAmount(fixedFee.getAmount());
-
-        if (fixedFee.hasDenominatingTokenId()) {
-            EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
+    private boolean parseFixedFee(
+            boolean allCollectorsAreExempt,
+            EntityId collector,
+            CustomFee customFee,
+            com.hederahashgraph.api.proto.java.FixedFee protoFixedFee,
+            EntityId tokenId) {
+        var fixedFee = new com.hedera.mirror.common.domain.transaction.FixedFee();
+        customFee.addFixedFee(fixedFee);
+        fixedFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
+        fixedFee.setCollectorAccountId(collector);
+        fixedFee.setAmount(protoFixedFee.getAmount());
+        if (protoFixedFee.hasDenominatingTokenId()) {
+            var denominatingTokenId = EntityId.of(protoFixedFee.getDenominatingTokenId());
             denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
-            customFee.setDenominatingTokenId(denominatingTokenId);
+            fixedFee.setDenominatingTokenId(denominatingTokenId);
             return denominatingTokenId.equals(tokenId);
         }
 
         return false;
     }
 
-    private void parseFractionalFee(CustomFee customFee, FractionalFee fractionalFee) {
-        customFee.setAmount(fractionalFee.getFractionalAmount().getNumerator());
-        customFee.setAmountDenominator(fractionalFee.getFractionalAmount().getDenominator());
+    /**
+     * Parse protobuf FractionalFee object to domain FractionalFee object.
+     *
+     * @param customFee the domain CustomFee object
+     * @param protoFractionalFee  the protobuf FractionalFee object
+     */
+    private void parseFractionalFee(
+            boolean allCollectorsAreExempt,
+            EntityId collector,
+            CustomFee customFee,
+            com.hederahashgraph.api.proto.java.FractionalFee protoFractionalFee) {
+        var fractionalFee = new com.hedera.mirror.common.domain.transaction.FractionalFee();
+        fractionalFee.setAmount(protoFractionalFee.getFractionalAmount().getNumerator());
+        fractionalFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
+        fractionalFee.setCollectorAccountId(collector);
+        fractionalFee.setAmountDenominator(
+                protoFractionalFee.getFractionalAmount().getDenominator());
 
-        long maximumAmount = fractionalFee.getMaximumAmount();
+        long maximumAmount = protoFractionalFee.getMaximumAmount();
         if (maximumAmount != 0) {
-            customFee.setMaximumAmount(maximumAmount);
+            fractionalFee.setMaximumAmount(maximumAmount);
         }
 
-        customFee.setMinimumAmount(fractionalFee.getMinimumAmount());
-        customFee.setNetOfTransfers(fractionalFee.getNetOfTransfers());
+        fractionalFee.setMinimumAmount(protoFractionalFee.getMinimumAmount());
+        fractionalFee.setNetOfTransfers(protoFractionalFee.getNetOfTransfers());
+        customFee.addFractionalFee(fractionalFee);
     }
 
-    private void parseRoyaltyFee(CustomFee customFee, RoyaltyFee royaltyFee, EntityId tokenId) {
-        customFee.setRoyaltyNumerator(royaltyFee.getExchangeValueFraction().getNumerator());
-        customFee.setRoyaltyDenominator(royaltyFee.getExchangeValueFraction().getDenominator());
+    /**
+     * Parse protobuf RoyaltyFee object to domain RoyaltyFee object.
+     *
+     * @param customFee the domain CustomFee object
+     * @param protoRoyaltyFee  the protobuf RoyaltyFee object
+     */
+    private void parseRoyaltyFee(
+            boolean allCollectorsAreExempt,
+            EntityId collector,
+            CustomFee customFee,
+            com.hederahashgraph.api.proto.java.RoyaltyFee protoRoyaltyFee,
+            EntityId tokenId) {
+        var royaltyFee = new com.hedera.mirror.common.domain.transaction.RoyaltyFee();
+        royaltyFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
+        royaltyFee.setCollectorAccountId(collector);
+        royaltyFee.setRoyaltyNumerator(
+                protoRoyaltyFee.getExchangeValueFraction().getNumerator());
+        royaltyFee.setRoyaltyDenominator(
+                protoRoyaltyFee.getExchangeValueFraction().getDenominator());
 
-        if (royaltyFee.hasFallbackFee()) {
-            parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
+        if (protoRoyaltyFee.hasFallbackFee()) {
+            var fixedFee = new com.hedera.mirror.common.domain.transaction.FixedFee();
+            fixedFee.setCollectorAccountId(collector);
+            fixedFee.setAmount(protoRoyaltyFee.getFallbackFee().getAmount());
+            if (protoRoyaltyFee.getFallbackFee().hasDenominatingTokenId()) {
+                var denominatingTokenId =
+                        EntityId.of(protoRoyaltyFee.getFallbackFee().getDenominatingTokenId());
+                denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
+                fixedFee.setDenominatingTokenId(denominatingTokenId);
+            }
+
+            royaltyFee.setFallbackFee(fixedFee);
         }
+
+        customFee.addRoyaltyFee(royaltyFee);
     }
 }

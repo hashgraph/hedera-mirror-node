@@ -18,15 +18,18 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class CustomFeeRepositoryTest extends IntegrationTest {
+class CustomFeeRepositoryTest extends AbstractRepositoryTest {
 
     private final CustomFeeRepository customFeeRepository;
+    private static final RowMapper<CustomFee> ROW_MAPPER = rowMapper(CustomFee.class);
 
     @Test
     void prune() {
@@ -34,7 +37,7 @@ class CustomFeeRepositoryTest extends IntegrationTest {
         var customFee2 = domainBuilder.customFee().persist();
         var customFee3 = domainBuilder.customFee().persist();
 
-        customFeeRepository.prune(customFee2.getId().getCreatedTimestamp());
+        customFeeRepository.prune(customFee2.getCreatedTimestamp());
 
         assertThat(customFeeRepository.findAll()).containsExactly(customFee3);
     }
@@ -43,6 +46,20 @@ class CustomFeeRepositoryTest extends IntegrationTest {
     void save() {
         var customFee = domainBuilder.customFee().get();
         customFeeRepository.save(customFee);
-        assertThat(customFeeRepository.findById(customFee.getId())).get().isEqualTo(customFee);
+        assertThat(customFeeRepository.findById(customFee.getTokenId())).get().isEqualTo(customFee);
+    }
+
+    /**
+     * This test verifies that the domain object and table definition are in sync with the history table.
+     */
+    @Test
+    void history() {
+        var customFee = domainBuilder.customFee().persist();
+
+        jdbcOperations.update("insert into custom_fee_history select * from custom_fee");
+        List<CustomFee> customFeeHistory = jdbcOperations.query("select * from custom_fee_history", ROW_MAPPER);
+
+        assertThat(customFeeRepository.findAll()).containsExactly(customFee);
+        assertThat(customFeeHistory).containsExactly(customFee);
     }
 }

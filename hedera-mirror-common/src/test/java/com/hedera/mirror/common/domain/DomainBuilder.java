@@ -75,6 +75,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.CustomFeeHistory;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
@@ -354,22 +355,21 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder> customFee() {
-        var id = new CustomFee.Id();
-        id.setCreatedTimestamp(timestamp());
-        id.setTokenId(entityId(TOKEN));
+    public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder<?, ?>> customFee() {
+        var timestamp = timestamp();
         var builder = CustomFee.builder()
-                .allCollectorsAreExempt(false)
-                .amount(100L)
-                .amountDenominator(10L)
-                .id(id)
-                .collectorAccountId(entityId(ACCOUNT))
-                .denominatingTokenId(entityId(TOKEN))
-                .maximumAmount(1000L)
-                .minimumAmount(1L)
-                .netOfTransfers(true)
-                .royaltyDenominator(10L)
-                .royaltyNumerator(20L);
+                .createdTimestamp(timestamp)
+                .tokenId(entityId(TOKEN).getId())
+                .timestampRange(Range.atLeast(timestamp));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
+        long timestamp = timestamp();
+        var builder = CustomFeeHistory.builder()
+                .createdTimestamp(timestamp)
+                .tokenId(id())
+                .timestampRange(Range.closedOpen(timestamp, timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
