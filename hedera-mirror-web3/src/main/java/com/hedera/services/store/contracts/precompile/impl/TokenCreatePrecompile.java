@@ -46,6 +46,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -256,12 +257,12 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var tokenCreateOp = transactionBody.getTokenCreation();
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
 
         /* --- Execute the transaction and capture its results --- */
-        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, tokenCreateOp);
+        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, store, tokenCreateOp);
         return new TokenCreateResult(tokenIdFromEvmAddress(frame.getSenderAddress()));
     }
 
