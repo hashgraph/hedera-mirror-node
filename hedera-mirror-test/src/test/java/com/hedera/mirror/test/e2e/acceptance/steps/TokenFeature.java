@@ -18,7 +18,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.hashgraph.sdk.Status.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
@@ -551,24 +553,32 @@ public class TokenFeature {
 
     private void transferTokens(
             TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver, int fractionalFee) {
-        long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
+        long startingBalance = getTokenBalance(receiver, tokenId);
         long expectedBalance = startingBalance + amount - fractionalFee;
 
         networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, amount);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(expectedBalance);
+        assertThat(getTokenBalance(receiver, tokenId)).isEqualTo(expectedBalance);
+    }
+
+    private long getTokenBalance(AccountId accountId, TokenId tokenId) {
+        verifyTransactions(null);
+        var tokenRelationships =
+                mirrorClient.getTokenRelationships(accountId, tokenId).getTokens();
+        assertThat(tokenRelationships).isNotNull().hasSize(1);
+        return tokenRelationships.get(0).getBalance();
     }
 
     private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
-        long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
+        long startingBalance = getTokenBalance(receiver, tokenId);
         networkTransactionResponse =
                 tokenClient.transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
+        assertThat(getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
     }
 
     private MirrorTransaction verifyTransactions() {
@@ -586,8 +596,12 @@ public class TokenFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
-        assertThat(mirrorTransaction.getAssessedCustomFees()).containsExactlyInAnyOrderElementsOf(assessedCustomFees);
         assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+
+        if (assessedCustomFees != null) {
+            assertThat(mirrorTransaction.getAssessedCustomFees())
+                    .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
+        }
 
         return mirrorTransaction;
     }
@@ -740,7 +754,7 @@ public class TokenFeature {
 
     private MirrorTokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
         AccountId accountId = getRecipientAccountId(0);
-        return mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
+        return mirrorClient.getTokenRelationships(accountId, tokenId);
     }
 
     private void assertTokenRelationship(MirrorTokenRelationshipResponse mirrorTokenRelationship) {

@@ -48,14 +48,12 @@ import org.apache.tuweni.bytes.Bytes;
  * 4. getMinimumFeeInTinybars method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
  */
 public class WipeFungiblePrecompile extends AbstractWipePrecompile {
-    protected final SyntheticTxnFactory syntheticTxnFactory;
 
     public WipeFungiblePrecompile(
             final PrecompilePricingUtils pricingUtils,
             final SyntheticTxnFactory syntheticTxnFactory,
             final WipeLogic wipeLogic) {
-        super(pricingUtils, wipeLogic);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(pricingUtils, wipeLogic, syntheticTxnFactory);
     }
 
     public static WipeWrapper getWipeWrapper(

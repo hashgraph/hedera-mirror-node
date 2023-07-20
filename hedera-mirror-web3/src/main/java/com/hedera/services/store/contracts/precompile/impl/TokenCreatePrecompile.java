@@ -46,7 +46,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -201,7 +200,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V3 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V3.selector());
     private final EncodingFacade encoder;
-    private final SyntheticTxnFactory syntheticTxnFactory;
     private final OptionValidator validator;
     private final CreateLogic createLogic;
 
@@ -211,9 +209,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final OptionValidator validator,
             final CreateLogic createLogic) {
-        super(pricingUtils);
+        super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
-        this.syntheticTxnFactory = syntheticTxnFactory;
         this.createLogic = createLogic;
         this.validator = validator;
     }
@@ -258,13 +255,13 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
 
         final var tokenCreateOp = transactionBody.getTokenCreation();
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
 
         /* --- Execute the transaction and capture its results --- */
-        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, store, tokenCreateOp);
+        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, tokenCreateOp);
         return new TokenCreateResult(tokenIdFromEvmAddress(frame.getSenderAddress()));
     }
 

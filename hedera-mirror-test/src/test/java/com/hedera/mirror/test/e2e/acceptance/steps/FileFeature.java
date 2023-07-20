@@ -17,7 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.FileInfo;
@@ -84,65 +84,6 @@ public class FileFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Then("the network confirms file presence")
-    public void verifyNetworkFileCreateResponse() {
-        fileInfo = fileClient.getFileInfo(fileId);
-
-        verifyFileInfo(fileInfo, originalFileContents);
-    }
-
-    @Then("the network confirms file update")
-    public void verifyNetworkFileUpdateResponse() {
-        verifyNetworkUpdateResponse(false);
-    }
-
-    @Then("the network confirms partial file contents")
-    public void verifyNoNetworkFileUpdateResponse() {
-        var newFileInfo = fileClient.getFileInfo(fileId);
-
-        verifyFileInfo(newFileInfo, updateBaseFileContents);
-
-        assertThat(fileInfo.fileMemo).isNotEqualTo(newFileInfo.fileMemo);
-        assertThat(fileInfo.size).isNotEqualTo(newFileInfo.size);
-
-        fileInfo = newFileInfo;
-    }
-
-    @Then("the network confirms an append update")
-    public void verifyNetworkFileAppendResponse() {
-        verifyNetworkUpdateResponse(true);
-    }
-
-    private void verifyNetworkUpdateResponse(boolean append) {
-        var newFileInfo = fileClient.getFileInfo(fileId);
-
-        verifyFileInfo(newFileInfo, updatedFileContents);
-
-        if (append) {
-            assertThat(fileInfo.fileMemo).isEqualTo(newFileInfo.fileMemo);
-        } else {
-            assertThat(fileInfo.fileMemo).isNotEqualTo(newFileInfo.fileMemo);
-        }
-
-        assertThat(fileInfo.size).isNotEqualTo(newFileInfo.size);
-
-        fileInfo = newFileInfo;
-    }
-
-    private void verifyFileInfo(FileInfo newFileInfo, String contents) {
-        assertThat(newFileInfo.fileMemo).isNotEmpty();
-        assertThat(newFileInfo.expirationTime).isNotNull();
-        assertThat(newFileInfo.size).isEqualTo(contents.getBytes(StandardCharsets.UTF_8).length);
-        assertThat(newFileInfo.keys).isNotEmpty();
-    }
-
-    @Then("the network confirms file absence")
-    public void verifyNetworkFileDeleteResponse() {
-        var fileInfo = fileClient.getFileInfo(fileId);
-
-        assertThat(fileInfo.isDeleted).isTrue();
     }
 
     @Then("the mirror node REST API should return status {int} for the file transaction")

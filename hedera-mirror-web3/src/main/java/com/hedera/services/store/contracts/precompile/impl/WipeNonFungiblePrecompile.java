@@ -47,12 +47,9 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
             TypeFactory.create("(bytes32,bytes32,int64[])");
 
-    protected final SyntheticTxnFactory syntheticTxnFactory;
-
     public WipeNonFungiblePrecompile(
             PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory, WipeLogic wipeLogic) {
-        super(pricingUtils, wipeLogic);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(pricingUtils, wipeLogic, syntheticTxnFactory);
     }
 
     public static WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
