@@ -35,7 +35,6 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -63,9 +62,6 @@ class MirrorEvmContractAliasesTest {
 
     @Mock
     private Store store;
-
-    @Mock
-    private Token token;
 
     @Mock
     private Account account;
@@ -105,19 +101,7 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmWhenAliasIsPresentAndIsPendingRemovalShouldReturnEntityEvmAddress() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
-        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
-
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getId()).thenReturn(id);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
     void resolveForEvmForAccountWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         when(store.getAccount(ALIAS, OnMissing.THROW)).thenReturn(account);
         when(account.getAccountAddress()).thenReturn(Address.wrap(Bytes.wrap(toEvmAddress(entityId))));
 
@@ -125,16 +109,7 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmForTokenWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getId()).thenReturn(id);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
     void resolveForEvmWhenInvalidAddressShouldFail() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         when(store.getAccount(ALIAS, OnMissing.THROW))
                 .thenThrow(new InvalidTransactionException(FAIL_INVALID, "Entity is missing", ""));
 

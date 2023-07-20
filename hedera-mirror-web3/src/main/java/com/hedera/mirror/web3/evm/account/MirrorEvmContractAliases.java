@@ -74,7 +74,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromEntityAccess(addressOrAlias));
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromStore(addressOrAlias));
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
@@ -87,18 +87,10 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         return Optional.empty();
     }
 
-    private Address resolveFromEntityAccess(Address addressOrAlias) {
-        final Address resolvedAddress;
-        final var token = store.getToken(addressOrAlias, OnMissing.DONT_THROW);
-        // if token is missing - check for account
-        if (token.isEmptyToken()) {
-            // if token and account are missing - throw
-            final var account = store.getAccount(addressOrAlias, OnMissing.THROW);
-            resolvedAddress = account.getAccountAddress();
-        } else {
-            // if token is present - get id
-            resolvedAddress = token.getId().asEvmAddress();
-        }
+    private Address resolveFromStore(Address addressOrAlias) {
+        final var account = store.getAccount(addressOrAlias, OnMissing.THROW);
+        final var resolvedAddress = account.getAccountAddress();
+
         link(addressOrAlias, resolvedAddress);
 
         return resolvedAddress;
