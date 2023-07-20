@@ -132,7 +132,7 @@ class UnfreezeTokenPrecompileTest {
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         UnfreezeTokenPrecompile unfreezeTokenPrecompile =
-                new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic, false);
+                new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unfreezeTokenPrecompile));
         staticUnfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
 
