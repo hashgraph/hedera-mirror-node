@@ -48,6 +48,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -293,6 +294,25 @@ public class ServicesConfiguration {
                 contextOptionValidator,
                 autoCreationLogic,
                 syntheticTxnFactory);
+    }
+
+    @Bean
+    ERCTransferPrecompile ercTransferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder) {
+        return new ERCTransferPrecompile(
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory,
+                encoder);
     }
 
     @Bean

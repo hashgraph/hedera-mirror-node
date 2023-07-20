@@ -142,7 +142,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
-    private TransactionBody.Builder transactionBody;
+    protected TransactionBody.Builder transactionBody;
 
     public TransferPrecompile(
             final PrecompilePricingUtils pricingUtils,
@@ -225,7 +225,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ABI_ID_TRANSFER_NFT);
     }
 
-    private void initializeHederaTokenStore(Store store) {
+    protected void initializeHederaTokenStore(Store store) {
         hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 

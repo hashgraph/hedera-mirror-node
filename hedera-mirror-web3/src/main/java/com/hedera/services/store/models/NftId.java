@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.models;
 
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
@@ -46,5 +47,13 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
     @Override
     public int compareTo(final @NonNull NftId that) {
         return NATURAL_ORDER.compare(this, that);
+    }
+
+    public static NftId fromGrpc(final NftID nftId) {
+        return fromGrpc(nftId.getTokenID(), nftId.getSerialNumber());
+    }
+
+    public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
+        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
     }
 }

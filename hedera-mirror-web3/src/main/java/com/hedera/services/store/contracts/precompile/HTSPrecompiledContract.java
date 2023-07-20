@@ -38,6 +38,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
@@ -241,6 +242,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                             this.transactionBody =
                                     precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                         }
+                        if (AbiConstants.ABI_ID_ERC_TRANSFER == nestedFunctionSelector
+                                || AbiConstants.ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+                            this.transactionBody = precompile.body(
+                                    input.slice(24),
+                                    aliasResolver,
+                                    new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
+                        }
                 }
                 break;
             default:
@@ -253,6 +261,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         || AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 == functionId) {
                     this.transactionBody =
                             precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+                } else if (AbiConstants.ABI_ID_TRANSFER_FROM == functionId
+                        || AbiConstants.ABI_ID_TRANSFER_FROM_NFT == functionId) {
+                    this.transactionBody = precompile.body(
+                            input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
                 } else {
                     this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
                 }
