@@ -336,7 +336,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             case AbiConstants.ABI_ID_ERC_APPROVE,
                     AbiConstants.ABI_ID_ERC_TRANSFER,
                     AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
-                    AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> true;
+                    AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
             default -> false;
         };
     }
