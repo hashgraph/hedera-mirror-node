@@ -39,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FreezeLogicTest {
+class FreezeLogicTest {
 
     private final Id idOfToken = new Id(1, 2, 3);
     private final Id idOfAccount = new Id(1, 2, 4);
