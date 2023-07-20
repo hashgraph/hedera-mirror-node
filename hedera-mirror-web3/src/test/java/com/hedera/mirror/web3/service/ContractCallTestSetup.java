@@ -94,6 +94,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY =
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
+    protected static final Address NOT_PAUSED_NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -298,13 +299,22 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var notFrozenFungibleTokenEntityId =
                 fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
         final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
-        final var nftEntityId = nftPersist(NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO);
+        final var nftEntityId = nftPersist(
+                NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
                 senderEntityId,
                 spenderEntityId,
                 ownerEntityId,
-                KEY_PROTO);
+                KEY_PROTO,
+                TokenPauseStatusEnum.PAUSED);
+        final var notPausedNftEntityId = nftPersist(
+                NOT_PAUSED_NFT_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                senderEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED);
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
@@ -318,9 +328,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
-
+        tokenAccountPersist(spenderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ethAccount, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
+        nftCustomFeePersist(senderEntityId, notPausedNftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
+        contractAllowancesPersist(
+                senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, notPausedNftEntityId);
+        contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, notPausedNftEntityId);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }
@@ -426,6 +443,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
+    private void ercContractTokenPersist(
+            final Address contractAddress, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatusEnum) {
+        final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
+        domainBuilder
+                .tokenAccount()
+                .customize(e -> e.freezeStatus(freezeStatusEnum)
+                        .accountId(contractEntityId.getEntityNum())
+                        .tokenId(tokenEntityId.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .balance(10L))
+                .persist();
+    }
+
     @Nullable
     private EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
@@ -501,7 +531,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final EntityId treasuryId,
-            final byte[] key) {
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus) {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
         final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId(), ACCOUNT);
@@ -532,7 +563,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(key)
                         .pauseKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
+                        .pauseStatus(pauseStatus)
                         .wipeKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
@@ -572,6 +603,31 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(a -> a.tokenId(nftEntityId.getId())
                         .spender(spenderEntityId.getEntityNum())
                         .owner(senderEntityId.getEntityNum())
+                        .approvedForAll(true)
+                        .payerAccountId(senderEntityId))
+                .persist();
+    }
+
+    private void contractAllowancesPersist(
+            final EntityId senderEntityId,
+            final Address contractAddress,
+            final EntityId tokenEntityId,
+            final EntityId nftEntityId) {
+        final var contractId = fromEvmAddress(contractAddress.toArrayUnsafe());
+        domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .payerAccountId(senderEntityId)
+                        .owner(senderEntityId.getEntityNum())
+                        .spender(contractId.getEntityNum())
+                        .amount(20))
+                .persist();
+
+        domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(nftEntityId.getId())
+                        .owner(senderEntityId.getEntityNum())
+                        .spender(contractId.getEntityNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();

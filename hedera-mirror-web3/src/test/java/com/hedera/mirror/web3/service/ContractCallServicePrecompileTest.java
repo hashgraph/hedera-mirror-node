@@ -292,8 +292,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {new Object[] {}, new Object[] {}, new Object[] {}}),
         APPROVE("approveExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
@@ -336,7 +334,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
             NFT_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ADDRESS}, new long[] {1}
         }),
-        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {NFT_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L});
+        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {NFT_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM(
+                "transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM_NFT(
+                "transferFromNFTExternal", new Object[] {NOT_PAUSED_NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 1L});
 
         private final String name;
         private final Object[] functionParameters;
