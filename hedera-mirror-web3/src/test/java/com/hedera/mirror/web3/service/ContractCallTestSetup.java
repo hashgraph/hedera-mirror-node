@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -41,6 +42,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.EthSigsUtils;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
@@ -59,6 +61,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,8 +86,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
+    protected static final ByteString SENDER_PUBLIC_KEY =
+            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+    protected static final Address SENDER_ALIAS = Address.wrap(Bytes.wrap(
+            EthSigsUtils.recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 750, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
+    protected static final ByteString SPENDER_PUBLIC_KEY =
+            ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
+    protected static final Address SPENDER_ALIAS = Address.wrap(Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
+            SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
@@ -295,6 +306,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -417,7 +429,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
                         .num(spenderEntityId.getEntityNum())
-                        .evmAddress(spenderEvmAddress))
+                        .evmAddress(SPENDER_ALIAS.toArray())
+                        .alias(SPENDER_PUBLIC_KEY.toByteArray())
+                        .deleted(false))
                 .persist();
         return spenderEntityId;
     }
@@ -430,7 +444,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(ethAccount)
                         .num(ethAccount)
                         .evmAddress(ETH_ADDRESS.toArrayUnsafe())
-                        .balance(2000L))
+                        .balance(2000L)
+                        .deleted(false))
                 .persist();
         return ethAccount;
     }
@@ -443,8 +458,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
                         .num(senderEntityId.getEntityNum())
-                        .evmAddress(null)
-                        .alias(toEvmAddress(senderEntityId))
+                        .evmAddress(SENDER_ALIAS.toArray())
+                        .deleted(false)
+                        .alias(SENDER_PUBLIC_KEY.toByteArray())
                         .balance(20000L))
                 .persist();
         return senderEntityId;

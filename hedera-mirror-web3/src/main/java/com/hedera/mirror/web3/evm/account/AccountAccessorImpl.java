@@ -16,6 +16,11 @@
 
 package com.hedera.mirror.web3.evm.account;
 
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.utils.EntityIdUtils.isOfEcdsaAddressSize;
+import static com.hedera.services.utils.EntityIdUtils.isOfEvmAddressSize;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -29,13 +34,13 @@ import org.hyperledger.besu.datatypes.Address;
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
 
-    private final HederaEvmEntityAccess mirrorEntityAccess;
     private final Store store;
+    private final HederaEvmEntityAccess mirrorEntityAccess;
+    private final MirrorEvmContractAliases aliases;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
-        if (!account.isEmptyAccount()) {
+        if (aliases.isInUse(addressOrAlias)) {
             return addressOrAlias;
         }
 
@@ -48,14 +53,29 @@ public class AccountAccessorImpl implements AccountAccessor {
     }
 
     public Address getAddressOrAlias(final Address address) {
-        final ByteString alias;
-        if (!mirrorEntityAccess.isExtant(address)) {
+        // An EIP-1014 address is always canonical
+        if (!aliases.isMirror(address)) {
             return address;
         }
-        alias = mirrorEntityAccess.alias(address);
 
-        if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
-            return Address.wrap(Bytes.wrap(alias.toByteArray()));
+        final var account = store.getAccount(address, OnMissing.DONT_THROW);
+        final ByteString alias;
+
+        if (account == null) {
+            return address;
+        } else {
+            alias = account.getAlias();
+        }
+
+        if (!alias.isEmpty()) {
+            if (isOfEvmAddressSize(alias)) {
+                return Address.wrap(Bytes.wrap(alias.toByteArray()));
+            } else if (isOfEcdsaAddressSize(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+                final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                if (value.length > 0) {
+                    return Address.wrap(Bytes.wrap(value));
+                }
+            }
         }
         return address;
     }

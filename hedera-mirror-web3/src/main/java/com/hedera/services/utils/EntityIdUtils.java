@@ -17,6 +17,7 @@
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static java.lang.System.arraycopy;
 
@@ -128,6 +129,14 @@ public final class EntityIdUtils {
 
     public static TokenID tokenIdFromEvmAddress(final Address address) {
         return tokenIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static boolean isOfEvmAddressSize(final ByteString alias) {
+        return alias.size() == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isOfEcdsaAddressSize(final ByteString alias) {
+        return alias.size() == ECDSA_SECP256K1_ALIAS_SIZE;
     }
 
     public static long[] asDotDelimitedLongArray(String s) {
