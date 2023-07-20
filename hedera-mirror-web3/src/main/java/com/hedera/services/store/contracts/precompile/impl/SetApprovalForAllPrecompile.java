@@ -37,10 +37,10 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdat
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -100,11 +100,12 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         TokenID tokenId = null;
         Address senderAddress = Address.ZERO;
 
-        if (bodyParams instanceof HrcParams hrcParams) {
-            tokenId = hrcParams.token();
-            senderAddress = hrcParams.senderAddress();
+        if (bodyParams instanceof ApproveForAllParams approveForAllParams) {
+            tokenId = approveForAllParams.tokenId();
+            senderAddress = approveForAllParams.senderAddress();
         }
         final var nestedInput = tokenId == null ? input : input.slice(24);
+        // TODO assigning ownerId to sender might lead to security issues
         final var ownerId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
         final var setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         return syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, ownerId);

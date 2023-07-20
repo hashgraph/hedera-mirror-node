@@ -39,6 +39,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -254,6 +255,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 aliasResolver,
                                 new ApproveParams(target.token(), senderAddress, store, isFungibleToken));
                         break;
+                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL:
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody =
+                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
+                        break;
                     default:
                         this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
@@ -273,6 +280,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, store, false));
+                break;
+            case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL:
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
                 break;
             default:
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();

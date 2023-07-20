@@ -47,6 +47,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class FunctionEncodeDecoder {
     private static final String ADDRESS_DUO = "(address,address)";
+    private static final String ADDRESS_DUO_BOOL = "(address,address,bool)";
     private static final String INT = "(int256)";
     private static final String INT64 = "(int64)";
     private static final String TRIPLE_ADDRESS = "(address,address,address)";
@@ -123,6 +124,8 @@ public class FunctionEncodeDecoder {
             case UINT256, INT -> Tuple.of(BigInteger.valueOf((long) parameters[0]));
             case ADDRESS_DUO -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]));
+            case ADDRESS_DUO_BOOL -> Tuple.of(
+                    convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
             case TRIPLE_ADDRESS -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     convertAddress((Address) parameters[1]),
