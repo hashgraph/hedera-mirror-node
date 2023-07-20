@@ -30,9 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EntityAddressSequencerTest {
     private static final long contractNum = 1_000_000_000L;
-    private static final long shardNum = 1L;
-    private static final long realmNum = 2L;
-    private static final Address sponsor = new Id(shardNum, realmNum, contractNum).asEvmAddress();
+    private static final Address sponsor = new Id(0, 0, contractNum).asEvmAddress();
 
     @InjectMocks
     private EntityAddressSequencer entityAddressSequencer;
@@ -40,8 +38,8 @@ class EntityAddressSequencerTest {
     @Test
     void getNewContractId() {
         assertThat(entityAddressSequencer.getNewContractId(sponsor))
-                .returns(shardNum, ContractID::getShardNum)
-                .returns(realmNum, ContractID::getRealmNum)
+                .returns(0L, ContractID::getShardNum)
+                .returns(0L, ContractID::getRealmNum)
                 .returns(contractNum, ContractID::getContractNum);
     }
 

@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.utils.EntityIdUtils.isOfEcdsaAddressSize;
+import static com.hedera.services.utils.EntityIdUtils.isOfEcdsaPublicAddressSize;
 import static com.hedera.services.utils.EntityIdUtils.isOfEvmAddressSize;
 
 import com.google.protobuf.ByteString;
@@ -70,7 +70,7 @@ public class AccountAccessorImpl implements AccountAccessor {
         if (!alias.isEmpty()) {
             if (isOfEvmAddressSize(alias)) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (isOfEcdsaAddressSize(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+            } else if (isOfEcdsaPublicAddressSize(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 if (value.length > 0) {
                     return Address.wrap(Bytes.wrap(value));
