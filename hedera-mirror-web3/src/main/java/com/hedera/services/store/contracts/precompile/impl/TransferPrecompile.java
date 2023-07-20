@@ -393,7 +393,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final TokenID tokenID) {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
-            if (!receiver.hasAlias()) {
+            if (receiver.hasAlias()) {
                 receiver = generateAccountIDWithAliasCalculatedFrom(receiver);
             }
             final var nftExchange = new NftExchange(serialNumbers[i], tokenID, senders.get(i), receiver);
@@ -422,7 +422,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
-        // TODO: Add AssessedCustomFee logic. For now use pricing for transfer with customFees
         final boolean customFees = impliedTransfers != null;
         // For fungible there are always at least two operations, so only charge half for each
         // operation

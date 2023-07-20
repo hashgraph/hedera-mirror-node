@@ -32,12 +32,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -199,12 +197,6 @@ class MintPrecompileTest {
 
     @Mock
     private OptionValidator optionValidator;
-
-    @Mock
-    private EntityAddressSequencer entityAddressSequencer;
-
-    @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MintLogic mintLogic;
     private HTSPrecompiledContract subject;

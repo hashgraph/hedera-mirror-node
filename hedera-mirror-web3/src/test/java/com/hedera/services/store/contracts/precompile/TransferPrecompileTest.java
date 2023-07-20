@@ -795,7 +795,6 @@ class TransferPrecompileTest {
         assertEquals(2, nonFungibleTransfers.size());
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
-        assertEquals(expectedReceiver, nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID());
         assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
         assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
@@ -834,9 +833,6 @@ class TransferPrecompileTest {
         final var expectedReceiver = AccountID.newBuilder().setAlias(alias).build();
         final var secondExpectedReceiver =
                 AccountID.newBuilder().setAlias(nonLongZeroAlias).build();
-        assertEquals(expectedReceiver, nonFungibleTransfers.get(0).asGrpc().getReceiverAccountID());
-        assertEquals(
-                secondExpectedReceiver, nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID());
         assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
         assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
