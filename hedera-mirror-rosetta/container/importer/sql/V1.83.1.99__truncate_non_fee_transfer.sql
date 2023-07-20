@@ -1,1 +1,1 @@
-trucate non_fee_transfer;
+truncate non_fee_transfer;
