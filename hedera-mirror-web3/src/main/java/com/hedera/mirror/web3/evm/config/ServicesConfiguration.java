@@ -423,7 +423,7 @@ public class ServicesConfiguration {
             PrecompilePricingUtils precompilePricingUtils,
             SyntheticTxnFactory syntheticTxnFactory,
             FreezeLogic freezeLogic) {
-        return new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic, true);
+        return new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
     }
 
     @Bean
@@ -436,6 +436,6 @@ public class ServicesConfiguration {
             PrecompilePricingUtils precompilePricingUtils,
             SyntheticTxnFactory syntheticTxnFactory,
             UnfreezeLogic unfreezeLogic) {
-        return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic, false);
+        return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
     }
 }

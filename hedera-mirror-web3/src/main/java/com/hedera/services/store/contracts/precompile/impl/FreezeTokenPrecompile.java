@@ -60,9 +60,8 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
     public FreezeTokenPrecompile(
             final PrecompilePricingUtils pricingUtils,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final FreezeLogic freezeLogic,
-            boolean isFreeze) {
-        super(pricingUtils, syntheticTxnFactory, isFreeze);
+            final FreezeLogic freezeLogic) {
+        super(pricingUtils, syntheticTxnFactory);
         this.freezeLogic = freezeLogic;
     }
 
@@ -100,8 +99,7 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
     }
 
     @Override
-    public void executeFreezeUnfreezeLogic(
-            final TransactionBody transactionBody, final Store store, final boolean hasFreezeLogic) {
+    public void executeFreezeUnfreezeLogic(final TransactionBody transactionBody, final Store store) {
         final var tokenId = transactionBody.getTokenFreeze().getToken();
         final var accountId = transactionBody.getTokenFreeze().getAccount();
         freezeLogic.freeze(Id.fromGrpcToken(tokenId), Id.fromGrpcAccount(accountId), store);

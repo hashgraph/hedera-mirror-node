@@ -43,14 +43,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrecompile {
 
-    private final boolean hasFreezeLogic;
-
     protected AbstractFreezeUnfreezePrecompile(
-            final PrecompilePricingUtils pricingUtils,
-            final SyntheticTxnFactory syntheticTxnFactory,
-            boolean hasFreezeLogic) {
+            final PrecompilePricingUtils pricingUtils, final SyntheticTxnFactory syntheticTxnFactory) {
         super(pricingUtils, syntheticTxnFactory);
-        this.hasFreezeLogic = hasFreezeLogic;
     }
 
     @Override
@@ -62,13 +57,12 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
 
         /* --- Execute the transaction and capture its results --- */
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        executeFreezeUnfreezeLogic(transactionBody, store, hasFreezeLogic);
+        executeFreezeUnfreezeLogic(transactionBody, store);
 
         return new EmptyRunResult();
     }
 
     public abstract ResponseCodeEnum validateSyntax(final TransactionBody transactionBody);
 
-    public abstract void executeFreezeUnfreezeLogic(
-            final TransactionBody transactionBody, final Store store, final boolean hasFreezeLogic);
+    public abstract void executeFreezeUnfreezeLogic(final TransactionBody transactionBody, final Store store);
 }
