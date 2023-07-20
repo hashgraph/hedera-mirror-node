@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
@@ -36,10 +37,12 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -152,5 +155,20 @@ public class SyntheticTxnFactory {
         builder.setAccount(grantRevokeKycWrapper.account());
 
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
+    }
+
+    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
+        final var builder = TokenFreezeAccountTransactionBody.newBuilder();
+        builder.setToken(freezeWrapper.token());
+        builder.setAccount(freezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenFreeze(builder);
+    }
+
+    public TransactionBody.Builder createUnfreeze(
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> unFreezeWrapper) {
+        final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
+        builder.setToken(unFreezeWrapper.token());
+        builder.setAccount(unFreezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
 }
