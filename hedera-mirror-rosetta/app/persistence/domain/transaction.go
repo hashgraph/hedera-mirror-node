@@ -24,6 +24,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 const (
@@ -38,6 +39,34 @@ const (
 	transactionTableName = "transaction"
 )
 
+type ItemizedTransfer struct {
+	Amount     int64    `json:"amount"`
+	EntityId   EntityId `json:"entity_id"`
+	IsApproval bool     `json:"is_approval"`
+}
+
+type ItemizedTransferSlice []ItemizedTransfer
+
+func (i *ItemizedTransferSlice) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value", value))
+	}
+
+	result := ItemizedTransferSlice{}
+	err := json.Unmarshal(bytes, &result)
+	*i = result
+	return err
+}
+
+func (i ItemizedTransferSlice) Value() (driver.Value, error) {
+	if len(i) == 0 {
+		return nil, nil
+	}
+
+	return json.Marshal(i)
+}
+
 type JSONB map[string]interface{}
 
 type Transaction struct {
@@ -46,7 +75,7 @@ type Transaction struct {
 	EntityId                 *EntityId
 	Errata                   *string
 	InitialBalance           int64
-	ItemizedTransfer         JSONB `gorm:"type:jsonb"`
+	ItemizedTransfer         ItemizedTransferSlice `gorm:"type:jsonb"`
 	MaxFee                   int64
 	Memo                     []byte
 	NodeAccountId            *EntityId

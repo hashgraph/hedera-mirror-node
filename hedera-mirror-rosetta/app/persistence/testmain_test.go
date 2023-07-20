@@ -68,14 +68,14 @@ func addTransaction(
 	transactionType int16,
 	validStartNs int64,
 	cryptoTransfers []domain.CryptoTransfer,
-	itemizedTransfers JSONB,
+	itemizedTransfer domain.ItemizedTransferSlice,
 	memo []byte,
 ) {
 	tx := &domain.Transaction{
 		ConsensusTimestamp:   consensusTimestamp,
 		ChargedTxFee:         17,
 		EntityId:             entityId,
-		ItemizedTransfer:     itemizedTransfers,
+		ItemizedTransfer:     itemizedTransfer,
 		Memo:                 memo,
 		NodeAccountId:        nodeAccountId,
 		Nonce:                0,
