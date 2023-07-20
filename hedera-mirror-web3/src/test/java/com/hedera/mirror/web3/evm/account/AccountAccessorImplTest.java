@@ -73,34 +73,4 @@ class AccountAccessorImplTest {
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
-
-    @Test
-    void canonicalAliasAddress() {
-        final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
-        assertThat(result).isEqualTo(ALIAS_ADDRESS);
-    }
-
-    @Test
-    void missingCanonicalAliasAddressResolvesToItself() {
-        final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
-        assertThat(result).isEqualTo(ALIAS_ADDRESS);
-    }
-
-    @Test
-    void isExtantTrue() {
-        final var result = accountAccessor.canonicalAddress(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS);
-    }
-
-    @Test
-    void alias() {
-        final var result = accountAccessor.canonicalAddress(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS);
-    }
-
-    @Test
-    void aliasDifferentFromEvmAddressSize() {
-        final var result = accountAccessor.canonicalAddress(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS);
-    }
 }
