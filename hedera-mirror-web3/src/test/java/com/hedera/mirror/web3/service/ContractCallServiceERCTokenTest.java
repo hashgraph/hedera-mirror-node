@@ -84,7 +84,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
-
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
@@ -120,7 +119,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     public enum SupportedErcContractModificationFunctions {
-        // APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
         SET_APPROVAL_FOR_ALL("setApprovalForAll", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true});
 
         private final String name;
