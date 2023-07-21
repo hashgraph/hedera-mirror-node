@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -246,6 +247,26 @@ class SyntheticTxnFactoryTest {
         assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
         assertEquals(a, txnBody.getTokenWipe().getAccount());
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
+    }
+
+    @Test
+    void createsExpectedFreeze() {
+        final var freezeWrapper = TokenFreezeUnfreezeWrapper.forFreeze(fungible, a);
+        final var result = subject.createFreeze(freezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenFreeze().getToken());
+        assertEquals(a, txnBody.getTokenFreeze().getAccount());
+    }
+
+    @Test
+    void createsExpectedUnfreeze() {
+        final var unfreezeWrapper = TokenFreezeUnfreezeWrapper.forUnfreeze(fungible, a);
+        final var result = subject.createUnfreeze(unfreezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnfreeze().getToken());
+        assertEquals(a, txnBody.getTokenUnfreeze().getAccount());
     }
 
     @Test
