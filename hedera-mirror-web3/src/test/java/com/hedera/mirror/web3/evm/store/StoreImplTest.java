@@ -164,7 +164,7 @@ class StoreImplTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        subject = new StoreImpl(accessors, mirrorEvmContractAliases);
+        subject = new StoreImpl(accessors);
     }
 
     @Test
@@ -175,14 +175,12 @@ class StoreImplTest {
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         final var account = subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW);
         assertThat(account.getId()).isEqualTo(new Id(0, 0, 12));
     }
 
     @Test
     void getAccountThrowIfMissing() {
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         assertThatThrownBy(() -> subject.getAccount(ACCOUNT_ADDRESS, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
@@ -192,7 +190,6 @@ class StoreImplTest {
         final var account = new Account(1L, ACCOUNT_ID, 1L);
         subject.wrap();
         subject.updateAccount(account);
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         assertEquals(account, subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW));
     }
 
@@ -232,7 +229,6 @@ class StoreImplTest {
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         final var tokenRelationship = subject.getTokenRelationship(
                 new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
         assertThat(tokenRelationship.getAccount().getId()).isEqualTo(new Id(0, 0, 12));
@@ -242,7 +238,6 @@ class StoreImplTest {
     @Test
     void getTokenRelationshipThrowIfMissing() {
         final var tokenRelationshipKey = new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS);
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         assertThatThrownBy(() -> subject.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW))
                 .isInstanceOf(InvalidTransactionException.class);
     }
@@ -253,7 +248,6 @@ class StoreImplTest {
                 new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
-        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT_ADDRESS)).thenReturn(ACCOUNT_ADDRESS);
         assertEquals(
                 tokenRel,
                 subject.getTokenRelationship(

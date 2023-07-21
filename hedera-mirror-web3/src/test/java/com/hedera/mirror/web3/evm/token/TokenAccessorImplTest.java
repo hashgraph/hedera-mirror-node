@@ -145,7 +145,7 @@ class TokenAccessorImplTest {
                 new TokenRelationshipDatabaseAccessor(
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
-        store = new StoreImpl(accessors, mirrorEvmContractAliases);
+        store = new StoreImpl(accessors);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 
@@ -211,7 +211,6 @@ class TokenAccessorImplTest {
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
-        when(mirrorEvmContractAliases.resolveForEvm(any())).thenReturn(ACCOUNT);
         assertTrue(tokenAccessor.isFrozen(ACCOUNT, TOKEN));
     }
 
@@ -225,7 +224,6 @@ class TokenAccessorImplTest {
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
-        when(mirrorEvmContractAliases.resolveForEvm(any())).thenReturn(ACCOUNT);
         assertTrue(tokenAccessor.isKyc(ACCOUNT, TOKEN));
     }
 

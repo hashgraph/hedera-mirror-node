@@ -24,15 +24,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -58,16 +58,16 @@ class MirrorEvmContractAliasesTest {
     private static final Id id = new Id(0L, 0L, 3L);
 
     @Mock
-    private EntityRepository entityRepository;
+    private Store store;
 
     @Mock
-    private Entity entity;
+    private Account account;
 
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @BeforeEach
     void setup() {
-        mirrorEvmContractAliases = new MirrorEvmContractAliases(entityRepository);
+        mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
     }
 
     @Test
@@ -99,21 +99,10 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void resolveForEvmForAccountWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS.toArray()))
-                .thenReturn(Optional.of(entity));
-        when(entity.getShard()).thenReturn(entityId.getShardNum());
-        when(entity.getRealm()).thenReturn(entityId.getRealmNum());
-        when(entity.getNum()).thenReturn(entityId.getEntityNum());
+        when(store.getAccount(ALIAS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getId()).thenReturn(id);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
-    void resolveForEvmWhenInvalidAddressShouldFail() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS.toArray()))
-                .thenReturn(Optional.empty());
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Address.ZERO);
     }
 
     @Test

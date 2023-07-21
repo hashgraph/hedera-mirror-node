@@ -92,7 +92,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void setUp() {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        store = new StoreImpl(accessors, mirrorEvmContractAliases);
+        store = new StoreImpl(accessors);
         store.wrap();
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
@@ -109,7 +109,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
-        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(address);
     }
@@ -145,7 +144,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
-        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
@@ -162,7 +160,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();
         assertThat(subject.getDeletedAccountAddresses()).isEmpty();
-        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertNotEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
         subject.commit();
@@ -235,9 +232,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertNotNull(lazyAccount);
         assertEquals(Wei.ZERO, lazyAccount.getBalance());
         assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
-        when(mirrorEvmContractAliases.resolveForEvm(Address.ALTBN128_MUL)).thenReturn(Address.ALTBN128_MUL);
-        final var accountFromTopFrame = store.getAccount(Address.ALTBN128_MUL, OnMissing.DONT_THROW);
-        assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(Address.ALTBN128_MUL);
     }
 
     @Test

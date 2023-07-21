@@ -16,18 +16,11 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.utils.EntityIdUtils.isOfEcdsaPublicAddressSize;
-import static com.hedera.services.utils.EntityIdUtils.isOfEvmAddressSize;
-
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
@@ -59,24 +52,6 @@ public class AccountAccessorImpl implements AccountAccessor {
         }
 
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
-        final ByteString alias;
-
-        if (account.isEmptyAccount()) {
-            return address;
-        } else {
-            alias = account.getAlias();
-        }
-
-        if (!alias.isEmpty()) {
-            if (isOfEvmAddressSize(alias)) {
-                return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (isOfEcdsaPublicAddressSize(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                if (value.length > 0) {
-                    return Address.wrap(Bytes.wrap(value));
-                }
-            }
-        }
-        return address;
+        return account.canonicalAddress();
     }
 }

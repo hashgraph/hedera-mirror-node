@@ -84,9 +84,7 @@ class AccountAccessorImplTest {
     void canonicalAddressForEvmAddress() {
         when(mirrorEvmContractAliases.isMirror(ADDRESS)).thenReturn(true);
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getAlias())
-                .thenReturn(ByteString.copyFrom(
-                        Hex.decode(ALIAS_ADDRESS.toHexString().substring(2))));
+        when(account.canonicalAddress()).thenReturn(ALIAS_ADDRESS);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }
@@ -101,7 +99,7 @@ class AccountAccessorImplTest {
     void canonicalAddressForRecoveredEcdsaKey() {
         when(mirrorEvmContractAliases.isMirror(ADDRESS)).thenReturn(true);
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getAlias()).thenReturn(ECDSA_KEY);
+        when(account.canonicalAddress()).thenReturn(ECDSA_KEY_ALIAS_ADDRESS);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ECDSA_KEY_ALIAS_ADDRESS);
     }

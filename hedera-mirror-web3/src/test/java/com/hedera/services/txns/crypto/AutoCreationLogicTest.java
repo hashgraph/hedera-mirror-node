@@ -105,7 +105,7 @@ class AutoCreationLogicTest {
     void setUp() {
         List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        store = new StoreImpl(accessors, aliasManager);
+        store = new StoreImpl(accessors);
         store.wrap();
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }

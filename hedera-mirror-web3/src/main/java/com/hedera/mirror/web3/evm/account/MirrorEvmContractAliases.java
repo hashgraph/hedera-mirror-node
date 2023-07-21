@@ -18,12 +18,12 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
-import com.hedera.services.store.models.Id;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,12 +41,12 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> pendingAliases = new HashMap<>();
     final Set<Address> pendingRemovals = new HashSet<>();
 
-    final EntityRepository entityRepository;
+    final Store store;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
         if (isRecoveredEvmAddress(evmAddress)) {
-            link(Address.wrap(Bytes.wrap(evmAddress)), address); // NOSONAR we have a null check
+            link(Address.wrap(Bytes.wrap(evmAddress)), address);
             return true;
         } else {
             return false;
@@ -74,7 +74,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromDb(addressOrAlias));
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromStore(addressOrAlias));
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
@@ -87,17 +87,13 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         return Optional.empty();
     }
 
-    private Address resolveFromDb(Address addressOrAlias) {
-        final var entity = entityRepository.findByEvmAddressAndDeletedIsFalse(addressOrAlias.toArray());
+    private Address resolveFromStore(Address addressOrAlias) {
+        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
 
-        if (entity.isEmpty()) {
+        if (account.isEmptyAccount()) {
             return Address.ZERO;
         } else {
-            final var resolvedAddress = new Id(
-                            entity.get().getShard(),
-                            entity.get().getRealm(),
-                            entity.get().getNum())
-                    .asEvmAddress();
+            final var resolvedAddress = account.getId().asEvmAddress();
 
             link(addressOrAlias, resolvedAddress);
             return resolvedAddress;

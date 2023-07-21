@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -117,7 +118,7 @@ class HederaEvmWorldStateTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        store = new StoreImpl(accessors, mirrorEvmContractAliases);
+        store = new StoreImpl(accessors);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
@@ -192,6 +193,7 @@ class HederaEvmWorldStateTest {
         final var actualSubject = subject.updater();
 
         final var accountModel = new com.hedera.services.store.models.Account(
+                ByteString.EMPTY,
                 0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
@@ -210,7 +212,6 @@ class HederaEvmWorldStateTest {
                 0L,
                 false,
                 null);
-        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.updateAccount(accountModel);
         actualSubject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
