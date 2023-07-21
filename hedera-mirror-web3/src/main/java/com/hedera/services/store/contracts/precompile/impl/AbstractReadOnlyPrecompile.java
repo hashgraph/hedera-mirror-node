@@ -22,6 +22,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -65,7 +66,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        return null;
+        return new EmptyRunResult();
     }
 
     @Override
