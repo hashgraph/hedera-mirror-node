@@ -16,12 +16,18 @@
 
 package com.hedera.services.txn.token;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UnpauseLogicTest {
     private final Id id = new Id(1, 2, 3);
+    private final TokenID tokenID = IdUtils.asToken("1.2.3");
 
     @Mock
     private Token token;
@@ -61,5 +68,24 @@ class UnpauseLogicTest {
         // then:
         verify(token).setPaused(false);
         verify(store).updateToken(unpausedToken);
+    }
+
+    @Test
+    void validateSyntaxWithCorrectBody() {
+        final var builder = TokenUnpauseTransactionBody.newBuilder();
+        builder.setToken(tokenID);
+        final var txnBody =
+                TransactionBody.newBuilder().setTokenUnpause(builder).build();
+
+        assertEquals(ResponseCodeEnum.OK, subject.validateSyntax(txnBody));
+    }
+
+    @Test
+    void validateSyntaxWithWrongBody() {
+        final var builder = TokenUnpauseTransactionBody.newBuilder();
+        final var txnBody =
+                TransactionBody.newBuilder().setTokenUnpause(builder).build();
+
+        assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, subject.validateSyntax(txnBody));
     }
 }
