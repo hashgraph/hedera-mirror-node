@@ -69,5 +69,5 @@ export {
   TransactionIdViewModel,
   BlockViewModel,
   FeeScheduleViewModel,
-  ContractStateViewModel
+  ContractStateViewModel,
 };
