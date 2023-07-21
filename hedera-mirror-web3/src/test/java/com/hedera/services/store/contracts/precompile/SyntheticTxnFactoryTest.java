@@ -32,6 +32,7 @@ import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
@@ -245,6 +246,15 @@ class SyntheticTxnFactoryTest {
         assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
         assertEquals(a, txnBody.getTokenWipe().getAccount());
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
+    }
+
+    @Test
+    void createsExpectedPause() {
+        final var pauseWrapper = new PauseWrapper(fungible);
+        final var result = subject.createPause(pauseWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenPause().getToken());
     }
 
     private static final long serialNo = 100;
