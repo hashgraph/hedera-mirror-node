@@ -351,17 +351,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
-    @Test
-    void precompileCallRevertsForEstimateGas() {
-        final var freezeTokenCall = "0x7c93c87e00000000000000000000000000000000000000000000000000000000000003e4";
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(freezeTokenCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
-    }
-
     private double getGasUsedBeforeExecution(final CallType callType) {
         final var callCounter = meterRegistry.find(GAS_METRICS).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))

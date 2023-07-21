@@ -83,7 +83,7 @@ tasks.test {
     minHeapSize = "1024m"
     if (System.getenv().containsKey("CI")) {
         retry {
-            maxRetries.set(3)
+            maxRetries = 3
         }
     }
     useJUnitPlatform {
@@ -102,8 +102,8 @@ tasks.register<Test>("performanceTest") {
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
-        html.required.set(true)
-        xml.required.set(true)
+        html.required = true
+        xml.required = true
     }
 }
 
