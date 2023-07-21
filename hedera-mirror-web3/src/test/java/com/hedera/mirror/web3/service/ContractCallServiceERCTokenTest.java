@@ -119,8 +119,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @RequiredArgsConstructor
     public enum ErcContractModificationSupportedFunctions {
         TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L});
-        //        TRANSFER_FROM_NFT("transferFrom", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 1L});
+        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
+        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NOT_PAUSED_NFT_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L});
 
         private final String name;
         private final Object[] functionParameters;

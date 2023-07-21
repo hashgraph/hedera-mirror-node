@@ -38,7 +38,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
@@ -330,6 +329,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
