@@ -2,13 +2,13 @@ alter table if exists transaction
     add column if not exists itemized_transfer jsonb null;
 
 with nested_itemized_transfer as (
-    select nt.consensus_timestamp, jsonb_agg(jsonb_build_object(
-      'entity_id', nt.entity_id,
-      'amount', nt.amount,
-      'is_approval', nt.is_approval
+    select consensus_timestamp, jsonb_agg(jsonb_build_object(
+      'entity_id', entity_id,
+      'amount', amount,
+      'is_approval', is_approval
       )) as transfer
-    from non_fee_transfer nt
-    group by nt.consensus_timestamp
+    from non_fee_transfer
+    group by consensus_timestamp
 )
 
 update transaction
