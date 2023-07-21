@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +27,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
@@ -115,8 +113,7 @@ class MirrorEvmContractAliasesTest {
         when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS.toArray()))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ALIAS))
-                .isInstanceOf(InvalidTransactionException.class);
+        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Address.ZERO);
     }
 
     @Test

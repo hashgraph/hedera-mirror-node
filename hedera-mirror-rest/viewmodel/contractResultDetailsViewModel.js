@@ -42,7 +42,14 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {ContractStateChange[]} contractStateChanges
    * @param {FileData} fileData
    */
-  constructor(contractResult, recordFile, ethTransaction, contractLogs = null, contractStateChanges = null, fileData = null) {
+  constructor(
+    contractResult,
+    recordFile,
+    ethTransaction,
+    contractLogs = null,
+    contractStateChanges = null,
+    fileData = null
+  ) {
     super(contractResult);
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
@@ -88,7 +95,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (!_.isNil(ethTransaction)) {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
-      this.amount = typeof ethTransaction.value === 'string' ? BigInt(utils.addHexPrefix(ethTransaction.value)) : toBigIntBE(Buffer.from(ethTransaction.value));
+      this.amount =
+        typeof ethTransaction.value === 'string'
+          ? BigInt(utils.addHexPrefix(ethTransaction.value))
+          : toBigIntBE(Buffer.from(ethTransaction.value));
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
 
       if (!isTransactionSuccessful && _.isEmpty(contractResult.errorMessage)) {

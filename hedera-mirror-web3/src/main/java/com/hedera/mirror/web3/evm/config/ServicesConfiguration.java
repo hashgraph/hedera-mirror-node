@@ -48,12 +48,15 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -62,9 +65,12 @@ import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txn.token.DeleteLogic;
 import com.hedera.services.txn.token.DissociateLogic;
+import com.hedera.services.txn.token.FreezeLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.PauseLogic;
 import com.hedera.services.txn.token.RevokeKycLogic;
+import com.hedera.services.txn.token.UnfreezeLogic;
 import com.hedera.services.txn.token.WipeLogic;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -407,5 +413,44 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             DeleteLogic deleteLogic) {
         return new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
+    }
+
+    @Bean
+    FreezeLogic freezeLogic() {
+        return new FreezeLogic();
+    }
+
+    @Bean
+    FreezeTokenPrecompile freezeTokenPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            FreezeLogic freezeLogic) {
+        return new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
+    }
+
+    @Bean
+    UnfreezeLogic unfreezeLogic() {
+        return new UnfreezeLogic();
+    }
+
+    @Bean
+    UnfreezeTokenPrecompile unfreezeTokenPrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            UnfreezeLogic unfreezeLogic) {
+        return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
+    }
+
+    @Bean
+    PauseLogic pauseLogic() {
+        return new PauseLogic();
+    }
+
+    @Bean
+    PausePrecompile pausePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            PauseLogic pauseLogic) {
+        return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
 }
