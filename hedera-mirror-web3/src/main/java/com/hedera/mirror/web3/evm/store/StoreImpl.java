@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -39,15 +40,19 @@ import org.hyperledger.besu.datatypes.Address;
 public class StoreImpl implements Store {
 
     private final StackedStateFrames<Object> stackedStateFrames;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
-    public StoreImpl(final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
+    public StoreImpl(
+            final List<DatabaseAccessor<Object, ?>> databaseAccessors,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         this.stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     @Override
     public Account getAccount(final Address address, final OnMissing throwIfMissing) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        final var account = accountAccessor.get(address);
+        final var account = accountAccessor.get(mirrorEvmContractAliases.resolveForEvm(address));
 
         if (OnMissing.THROW.equals(throwIfMissing)) {
             return account.orElseThrow(() -> missingEntityException(Account.class, address));
@@ -82,11 +87,15 @@ public class StoreImpl implements Store {
     public TokenRelationship getTokenRelationship(
             final TokenRelationshipKey tokenRelationshipKey, final OnMissing throwIfMissing) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
+
+        final var resolvedTokenRelationShipKey = new TokenRelationshipKey(
+                tokenRelationshipKey.tokenAddress(),
+                mirrorEvmContractAliases.resolveForEvm(tokenRelationshipKey.accountAddress()));
+        final var tokenRelationship = tokenRelationshipAccessor.get(resolvedTokenRelationShipKey);
 
         if (OnMissing.THROW.equals(throwIfMissing)) {
             return tokenRelationship.orElseThrow(
-                    () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
+                    () -> missingEntityException(TokenRelationship.class, resolvedTokenRelationShipKey));
         } else {
             return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
         }
@@ -115,7 +124,7 @@ public class StoreImpl implements Store {
         final var topFrame = stackedStateFrames.top();
         final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
         try {
-            accountAccessor.delete(accountAddress);
+            accountAccessor.delete(mirrorEvmContractAliases.resolveForEvm(accountAddress));
         } catch (UpdatableCacheUsageException ex) {
             // ignore, value has been deleted
         }

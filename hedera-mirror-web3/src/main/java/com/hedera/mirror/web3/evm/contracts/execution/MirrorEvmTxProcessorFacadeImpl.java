@@ -59,6 +59,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final EntityAddressSequencer entityAddressSequencer;
     private final List<DatabaseAccessor<Object, ?>> databaseAccessors;
     private final ContractRepository contractRepository;
+    private final EntityRepository entityRepository;
     private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
 
@@ -87,6 +88,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
+        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -100,9 +102,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final boolean isStatic) {
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
-        final var store = new StoreImpl(databaseAccessors);
+        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(entityRepository);
+        final var store = new StoreImpl(databaseAccessors, mirrorEvmContractAliases);
         final var mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
-        final var mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
         final var tokenAccessor = new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
         final var accountAccessor = new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);

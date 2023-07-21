@@ -145,7 +145,7 @@ class TokenAccessorImplTest {
                 new TokenRelationshipDatabaseAccessor(
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
-        store = new StoreImpl(accessors);
+        store = new StoreImpl(accessors, mirrorEvmContractAliases);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 

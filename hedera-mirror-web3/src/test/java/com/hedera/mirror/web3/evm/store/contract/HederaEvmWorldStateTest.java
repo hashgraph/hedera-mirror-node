@@ -117,7 +117,7 @@ class HederaEvmWorldStateTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        store = new StoreImpl(accessors);
+        store = new StoreImpl(accessors, mirrorEvmContractAliases);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
@@ -210,6 +210,7 @@ class HederaEvmWorldStateTest {
                 0L,
                 false,
                 null);
+        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.updateAccount(accountModel);
         actualSubject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);

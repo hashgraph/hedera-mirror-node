@@ -61,7 +61,7 @@ public class AccountAccessorImpl implements AccountAccessor {
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
         final ByteString alias;
 
-        if (account == null) {
+        if (account.isEmptyAccount()) {
             return address;
         } else {
             alias = account.getAlias();

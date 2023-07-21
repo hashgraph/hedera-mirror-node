@@ -69,6 +69,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
 
+    public static final AccountID payer = asAccount("0.0.12345");
+    public static final TokenID token = asToken("0.0.23456");
+    private static final long initialTransfer = 16L;
+    private static final AccountID created = asAccount("0.0.1234");
+    private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
+    private static final long totalFee = 6L;
+    private static final byte[] ECDSA_PUBLIC_KEY =
+            Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+    private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
@@ -95,7 +105,7 @@ class AutoCreationLogicTest {
     void setUp() {
         List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        store = new StoreImpl(accessors);
+        store = new StoreImpl(accessors, aliasManager);
         store.wrap();
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
@@ -199,15 +209,4 @@ class AutoCreationLogicTest {
                         .build(),
                 payer);
     }
-
-    private static final long initialTransfer = 16L;
-    private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
-    private static final AccountID created = asAccount("0.0.1234");
-    public static final AccountID payer = asAccount("0.0.12345");
-    private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
-    private static final long totalFee = 6L;
-
-    public static final TokenID token = asToken("0.0.23456");
-    private static final byte[] ECDSA_PUBLIC_KEY =
-            Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
 }

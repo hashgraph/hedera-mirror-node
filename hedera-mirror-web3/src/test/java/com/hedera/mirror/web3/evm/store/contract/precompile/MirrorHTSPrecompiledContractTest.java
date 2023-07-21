@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -96,6 +97,9 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private HederaEvmWorldStateTokenAccount account;
 
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
@@ -113,7 +117,7 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        store = new StoreImpl(accessors);
+        store = new StoreImpl(accessors, mirrorEvmContractAliases);
         store.wrap(); // Create top-level RWCachingStateFrame
 
         messageFrameStack = new ArrayDeque<>();

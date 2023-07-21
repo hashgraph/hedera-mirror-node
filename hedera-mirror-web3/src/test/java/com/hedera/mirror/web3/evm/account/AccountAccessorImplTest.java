@@ -16,12 +16,17 @@
 
 package com.hedera.mirror.web3.evm.account;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.services.store.models.Account;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +39,10 @@ class AccountAccessorImplTest {
 
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
+    private static final ByteString ECDSA_KEY =
+            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+    protected static final Address ECDSA_KEY_ALIAS_ADDRESS = Address.wrap(
+            Bytes.wrap(recoverAddressFromPubKey(ECDSA_KEY.substring(2).toByteArray())));
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
@@ -45,6 +54,9 @@ class AccountAccessorImplTest {
 
     @Mock
     private Store store;
+
+    @Mock
+    private Account account;
 
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
@@ -69,8 +81,28 @@ class AccountAccessorImplTest {
     }
 
     @Test
-    void canonicalAddress() {
+    void canonicalAddressForEvmAddress() {
+        when(mirrorEvmContractAliases.isMirror(ADDRESS)).thenReturn(true);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getAlias())
+                .thenReturn(ByteString.copyFrom(
+                        Hex.decode(ALIAS_ADDRESS.toHexString().substring(2))));
         final var result = accountAccessor.canonicalAddress(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS);
+        assertThat(result).isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void canonicalAddressIsAlreadyResolved() {
+        final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
+        assertThat(result).isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void canonicalAddressForRecoveredEcdsaKey() {
+        when(mirrorEvmContractAliases.isMirror(ADDRESS)).thenReturn(true);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getAlias()).thenReturn(ECDSA_KEY);
+        final var result = accountAccessor.canonicalAddress(ADDRESS);
+        assertThat(result).isEqualTo(ECDSA_KEY_ALIAS_ADDRESS);
     }
 }

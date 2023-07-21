@@ -18,12 +18,12 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.models.Id;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +41,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> pendingAliases = new HashMap<>();
     final Set<Address> pendingRemovals = new HashSet<>();
 
-    private final Store store;
+    final EntityRepository entityRepository;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
@@ -88,12 +88,20 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Address resolveFromStore(Address addressOrAlias) {
-        final var account = store.getAccount(addressOrAlias, OnMissing.THROW);
-        final var resolvedAddress = account.getAccountAddress();
+        final var entity = entityRepository.findByEvmAddressAndDeletedIsFalse(addressOrAlias.toArray());
 
-        link(addressOrAlias, resolvedAddress);
+        if (entity.isEmpty()) {
+            return Address.ZERO;
+        } else {
+            final var resolvedAddress = new Id(
+                            entity.get().getShard(),
+                            entity.get().getRealm(),
+                            entity.get().getNum())
+                    .asEvmAddress();
 
-        return resolvedAddress;
+            link(addressOrAlias, resolvedAddress);
+            return resolvedAddress;
+        }
     }
 
     public boolean isInUse(final Address address) {

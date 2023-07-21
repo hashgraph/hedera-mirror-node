@@ -82,27 +82,25 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isFrozen(final Address address, final Address token) {
-        final var tokenRelationship = store.getTokenRelationship(
-                new TokenRelationshipKey(token, aliases.resolveForEvm(address)), OnMissing.DONT_THROW);
+        final var tokenRelationship =
+                store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
         return !tokenRelationship.isEmptyTokenRelationship() && tokenRelationship.isFrozen();
     }
 
     @Override
     public boolean defaultFreezeStatus(final Address address) {
-        return store.getToken(aliases.resolveForEvm(address), OnMissing.DONT_THROW)
-                .isFrozenByDefault();
+        return store.getToken(address, OnMissing.DONT_THROW).isFrozenByDefault();
     }
 
     @Override
     public boolean defaultKycStatus(final Address address) {
-        return store.getToken(aliases.resolveForEvm(address), OnMissing.DONT_THROW)
-                .hasKycKey();
+        return store.getToken(address, OnMissing.DONT_THROW).hasKycKey();
     }
 
     @Override
     public boolean isKyc(final Address address, final Address token) {
-        final var tokenRelationship = store.getTokenRelationship(
-                new TokenRelationshipKey(token, aliases.resolveForEvm(address)), OnMissing.DONT_THROW);
+        final var tokenRelationship =
+                store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
         return !tokenRelationship.isEmptyTokenRelationship() && tokenRelationship.isKycGranted();
     }
 
@@ -155,7 +153,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long balanceOf(Address address, Address token) {
-        final var tokenRelKey = new TokenRelationshipKey(token, aliases.resolveForEvm(address));
+        final var tokenRelKey = new TokenRelationshipKey(token, address);
         return store.getTokenRelationship(tokenRelKey, OnMissing.DONT_THROW).getBalance();
     }
 
@@ -168,7 +166,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
 
-        final var account = store.getAccount(aliases.resolveForEvm(owner), OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
         return account.getFungibleTokenAllowances().getOrDefault(fcTokenAllowanceId, 0L);
     }
 
@@ -194,15 +192,14 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, operatorNum);
 
-        final var account = store.getAccount(aliases.resolveForEvm(owner), OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
         if (account.isEmptyAccount()) return false;
         return account.getApproveForAllNfts().contains(fcTokenAllowanceId);
     }
 
     @Override
     public Address ownerOf(final Address address, long serialNo) {
-        final var resolvedAddress = aliases.resolveForEvm(address);
-        final var entityId = entityIdFromEvmAddress(resolvedAddress);
+        final var entityId = entityIdFromEvmAddress(address);
         final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
         if (nft.isEmptyUniqueToken()) {
             return Address.ZERO;
@@ -222,8 +219,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String metadataOf(final Address address, long serialNo) {
-        final var resolvedAddress = aliases.resolveForEvm(address);
-        final var entityId = entityIdFromEvmAddress(resolvedAddress);
+        final var entityId = entityIdFromEvmAddress(address);
         final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
         if (nft.isEmptyUniqueToken()) {
             return "";
