@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.annotation.Resource;
@@ -43,7 +43,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findByFilterEmpty() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
+                .startTime(0)
                 .topicId(EntityId.of(100L, EntityType.TOPIC))
                 .build();
 
@@ -57,7 +57,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.now().plusSeconds(10))
+                .startTime(DomainUtils.convertToNanosMax(Instant.now().plusSeconds(10)))
                 .topicId(topicMessage1.getTopicId())
                 .build();
 
@@ -78,7 +78,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicId(EntityId.of(2L, EntityType.TOPIC))
-                .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage1.getConsensusTimestamp()))
+                .startTime(topicMessage1.getConsensusTimestamp())
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2);
@@ -91,7 +91,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage2.getConsensusTimestamp()))
+                .startTime(topicMessage2.getConsensusTimestamp())
                 .topicId(topicMessage1.getTopicId())
                 .build();
 
@@ -105,8 +105,8 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage1.getConsensusTimestamp()))
-                .endTime(LongToInstantConverter.INSTANCE.convert(topicMessage3.getConsensusTimestamp()))
+                .startTime(topicMessage1.getConsensusTimestamp())
+                .endTime(topicMessage3.getConsensusTimestamp())
                 .topicId(topicMessage1.getTopicId())
                 .build();
 
@@ -121,7 +121,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(1)
-                .startTime(LongToInstantConverter.INSTANCE.convert(topicMessage1.getConsensusTimestamp()))
+                .startTime(topicMessage1.getConsensusTimestamp())
                 .topicId(topicMessage1.getTopicId())
                 .build();
 
