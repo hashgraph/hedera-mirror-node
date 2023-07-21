@@ -252,7 +252,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         this.transactionBody = precompile.body(
                                 input,
                                 aliasResolver,
-                                new ApproveParams(target.token(), senderAddress, store, isFungibleToken));
+                                new ApproveParams(
+                                        target.token(),
+                                        senderAddress,
+                                        isFungibleToken ? null : store,
+                                        isFungibleToken));
                         break;
                     default:
                         this.precompile =
@@ -267,7 +271,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             case AbiConstants.ABI_ID_APPROVE:
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
-                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, store, true));
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
                 break;
             case AbiConstants.ABI_ID_APPROVE_NFT:
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
