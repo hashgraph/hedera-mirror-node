@@ -35,7 +35,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
-    private static final long minimumGasCost = 100L;
+    private static final long MINIMUM_GAS_COST = 100L;
 
     protected TokenID tokenId;
     protected final SyntheticTxnFactory syntheticTxnFactory;
@@ -61,7 +61,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
-        return minimumGasCost;
+        return MINIMUM_GAS_COST;
     }
 
     @Override
@@ -76,6 +76,6 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
             Store store,
             HederaEvmContractAliases mirrorEvmContractAliases) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        return pricingUtils.computeViewFunctionGas(now, minimumGasCost, store);
+        return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST, store);
     }
 }
