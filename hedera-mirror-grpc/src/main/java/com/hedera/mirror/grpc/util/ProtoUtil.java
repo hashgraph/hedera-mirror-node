@@ -93,6 +93,13 @@ public final class ProtoUtil {
         return status.augmentDescription(message).asRuntimeException();
     }
 
+    public static Timestamp toTimestamp(Long secondsNanos) {
+        if (secondsNanos == null) {
+            return null;
+        }
+        return toTimestamp(Instant.ofEpochSecond(0, secondsNanos));
+    }
+
     public static Timestamp toTimestamp(Instant instant) {
         if (instant == null) {
             return null;

@@ -52,8 +52,8 @@ val dockerBuild = tasks.register<DockerBuildImage>("dockerBuild") {
     }
     buildArgs.put("VERSION", project.version.toString())
     images.addAll(dockerImages())
-    inputDir.set(file(projectDir))
-    pull.set(true)
+    inputDir = file(projectDir)
+    pull = true
 }
 
 tasks.register<DockerPushImage>("dockerPush") {

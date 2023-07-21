@@ -22,15 +22,12 @@ import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.converter.LongToInstantConverter;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -66,18 +63,13 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         }
 
         if (query.hasConsensusStartTime()) {
-            Timestamp startTimeStamp = query.getConsensusStartTime();
-            Instant startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
-            filter.startTime(startInstant.isBefore(Instant.EPOCH) ? Instant.EPOCH : startInstant);
+            long startTime = DomainUtils.timestampInNanosMax(query.getConsensusStartTime());
+            filter.startTime(startTime);
         }
 
         if (query.hasConsensusEndTime()) {
-            Timestamp endTimeStamp = query.getConsensusEndTime();
-            Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-            filter.endTime(
-                    endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT)
-                            ? InstantToLongConverter.LONG_MAX_INSTANT
-                            : endInstant);
+            long endTime = DomainUtils.timestampInNanosMax(query.getConsensusEndTime());
+            filter.endTime(endTime);
         }
 
         return filter.build();
@@ -86,8 +78,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
     private ConsensusTopicResponse toResponse(TopicMessage t) {
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(
-                        ProtoUtil.toTimestamp(LongToInstantConverter.INSTANCE.convert(t.getConsensusTimestamp())))
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
                 .setRunningHashVersion(t.getRunningHashVersion())
@@ -101,14 +92,14 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             TransactionID transactionID = parseTransactionID(
                     t.getInitialTransactionId(), t.getTopicId().getEntityNum(), t.getSequenceNumber());
             EntityId payerAccountEntity = t.getPayerAccountId();
-            Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(t.getValidStartTimestamp());
+            var validStartInstant = ProtoUtil.toTimestamp(t.getValidStartTimestamp());
 
             if (transactionID != null) {
                 chunkBuilder.setInitialTransactionID(transactionID);
             } else if (payerAccountEntity != null && validStartInstant != null) {
                 chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
                         .setAccountID(ProtoUtil.toAccountID(payerAccountEntity))
-                        .setTransactionValidStart(ProtoUtil.toTimestamp(validStartInstant))
+                        .setTransactionValidStart(validStartInstant)
                         .build());
             }
 

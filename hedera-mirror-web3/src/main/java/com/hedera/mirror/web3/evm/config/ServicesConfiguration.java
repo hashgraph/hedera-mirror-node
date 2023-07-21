@@ -53,6 +53,7 @@ import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
@@ -67,6 +68,7 @@ import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.txn.token.FreezeLogic;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.txn.token.MintLogic;
+import com.hedera.services.txn.token.PauseLogic;
 import com.hedera.services.txn.token.RevokeKycLogic;
 import com.hedera.services.txn.token.UnfreezeLogic;
 import com.hedera.services.txn.token.WipeLogic;
@@ -437,5 +439,18 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             UnfreezeLogic unfreezeLogic) {
         return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
+    }
+
+    @Bean
+    PauseLogic pauseLogic() {
+        return new PauseLogic();
+    }
+
+    @Bean
+    PausePrecompile pausePrecompile(
+            PrecompilePricingUtils precompilePricingUtils,
+            SyntheticTxnFactory syntheticTxnFactory,
+            PauseLogic pauseLogic) {
+        return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
 }
