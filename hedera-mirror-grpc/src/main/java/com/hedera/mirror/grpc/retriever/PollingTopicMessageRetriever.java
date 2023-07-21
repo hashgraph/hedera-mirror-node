@@ -18,13 +18,11 @@ package com.hedera.mirror.grpc.retriever;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.inject.Named;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,15 +85,10 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 ? (int) (filter.getLimit() - context.getTotal().get())
                 : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, context.getMaxPageSize());
-        Instant startTime = last != null
-                ? LongToInstantConverter.INSTANCE
-                        .convert(last.getConsensusTimestamp())
-                        .plusNanos(1)
-                : filter.getStartTime();
+        var startTime = last != null ? last.getConsensusTimestamp() + 1 : filter.getStartTime();
         context.getPageSize().set(0L);
 
-        TopicMessageFilter newFilter =
-                filter.toBuilder().limit(pageSize).startTime(startTime).build();
+        var newFilter = filter.toBuilder().limit(pageSize).startTime(startTime).build();
 
         log.debug("Executing query: {}", newFilter);
         return Flux.fromStream(topicMessageRepository.findByFilter(newFilter));

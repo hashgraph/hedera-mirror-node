@@ -21,7 +21,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +94,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .build();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
+                .startTime(0)
                 .topicId(EntityId.of(1001L, EntityType.TOPIC))
                 .build();
 
@@ -110,8 +109,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Test
     void jsonError() {
-        TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(Instant.EPOCH).build();
+        TopicMessageFilter filter = TopicMessageFilter.builder().startTime(0).build();
 
         // Parsing errors will be logged and ignored and the message will be lost
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))

@@ -17,41 +17,32 @@
 package com.hedera.mirror.grpc.domain;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.validation.EndTime;
-import com.hedera.mirror.grpc.validation.StartTime;
+import com.hedera.mirror.common.util.DomainUtils;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.security.SecureRandom;
-import java.time.Instant;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
 import lombok.Value;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.validation.annotation.Validated;
 
 @Builder(toBuilder = true)
-@EndTime
-@StartTime
 @Validated
 @Value
 public class TopicMessageFilter {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private Instant endTime;
+    private Long endTime;
 
     @Min(0)
     private long limit;
 
+    @Min(0)
     @NotNull
     @Builder.Default
-    private Instant startTime = Instant.now();
-
-    @Getter(lazy = true)
-    @ToString.Exclude
-    private Long startTimeLong = InstantToLongConverter.INSTANCE.convert(startTime);
+    private long startTime = DomainUtils.now();
 
     @Builder.Default
     private String subscriberId = RandomStringUtils.random(8, 0, 0, true, true, null, RANDOM);
@@ -61,5 +52,15 @@ public class TopicMessageFilter {
 
     public boolean hasLimit() {
         return limit > 0;
+    }
+
+    @AssertTrue(message = "End time must be after start time")
+    public boolean isValidEndTime() {
+        return endTime == null || endTime > startTime;
+    }
+
+    @AssertTrue(message = "Start time must be before the current time")
+    public boolean isValidStartTime() {
+        return startTime <= DomainUtils.now();
     }
 }
