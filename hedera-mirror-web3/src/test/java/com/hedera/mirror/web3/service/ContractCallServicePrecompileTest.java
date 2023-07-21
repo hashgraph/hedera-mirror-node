@@ -297,7 +297,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         APPROVE_NFT("approveNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         FREEZE_TOKEN("freezeTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS}),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
-        PAUSE_TOKEN("pauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
