@@ -74,7 +74,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromStore(addressOrAlias));
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromDb(addressOrAlias));
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
@@ -87,7 +87,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         return Optional.empty();
     }
 
-    private Address resolveFromStore(Address addressOrAlias) {
+    private Address resolveFromDb(Address addressOrAlias) {
         final var entity = entityRepository.findByEvmAddressAndDeletedIsFalse(addressOrAlias.toArray());
 
         if (entity.isEmpty()) {
