@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -41,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -156,6 +158,12 @@ public class SyntheticTxnFactory {
         builder.setAccount(grantRevokeKycWrapper.account());
 
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
+    }
+
+    public TransactionBody.Builder createPause(final PauseWrapper pauseWrapper) {
+        final var builder = TokenPauseTransactionBody.newBuilder();
+        builder.setToken(pauseWrapper.token());
+        return TransactionBody.newBuilder().setTokenPause(builder);
     }
 
     public TransactionBody.Builder createTokenCreate(TokenCreateWrapper tokenCreateWrapper) {

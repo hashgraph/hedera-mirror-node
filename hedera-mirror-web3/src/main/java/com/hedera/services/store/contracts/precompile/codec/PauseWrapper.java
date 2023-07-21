@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.grpc.converter;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import jakarta.inject.Named;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.convert.WritingConverter;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-@Named
-@WritingConverter
-public class EnumToIntegerConverter<T extends Enum<?>> implements Converter<T, Integer> {
-
-    @Override
-    public Integer convert(T enumeration) {
-        return enumeration != null ? enumeration.ordinal() : null;
-    }
-}
+public record PauseWrapper(TokenID token) {}
