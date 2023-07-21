@@ -43,7 +43,7 @@ import {
   ContractResultDetailsViewModel,
   ContractResultViewModel,
   ContractStateViewModel,
-  ContractViewModel
+  ContractViewModel,
 } from '../viewmodel';
 
 const contractSelectFields = [
@@ -536,7 +536,7 @@ class ContractController extends BaseController {
       conditions,
       params,
       order,
-      limit
+      limit,
     };
   };
 
