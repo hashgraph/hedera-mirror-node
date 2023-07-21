@@ -54,8 +54,8 @@ dependencies {
 openApiGenerate {
     val openApiPackage = "com.hedera.mirror.rest"
 
-    apiPackage.set("${openApiPackage}.api")
-    configOptions.set(
+    apiPackage = "${openApiPackage}.api"
+    configOptions =
         mapOf(
             "developerEmail" to "mirrornode@hedera.com",
             "developerName" to "Hedera Mirror Node Team",
@@ -68,21 +68,21 @@ openApiGenerate {
             "performBeanValidation" to "true",
             "useBeanValidation" to "true",
             "useJakartaEe" to "true",
-        ))
-    generateApiTests.set(false)
-    generateModelTests.set(false)
-    generatorName.set("java")
-    inputSpec.set(
+        )
+    generateApiTests = false
+    generateModelTests = false
+    generatorName = "java"
+    inputSpec =
         rootDir
             .resolve("hedera-mirror-rest")
             .resolve("api")
             .resolve("v1")
             .resolve("openapi.yml")
-            .absolutePath)
-    invokerPackage.set("${openApiPackage}.handler")
-    library.set("webclient")
-    modelPackage.set("${openApiPackage}.model")
-    typeMappings.set(mapOf("Timestamp" to "String"))
+            .absolutePath
+    invokerPackage = "${openApiPackage}.handler"
+    library = "webclient"
+    modelPackage = "${openApiPackage}.model"
+    typeMappings = mapOf("Timestamp" to "String")
 }
 
 tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
