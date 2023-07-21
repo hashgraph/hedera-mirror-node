@@ -17,15 +17,16 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
-public class CustomFeesMigration extends RepeatableMigration {
+@RequiredArgsConstructor(onConstructor_ = {@Lazy})
+public class CustomFeesMigration extends MirrorBaseJavaMigration {
 
     private static final String MIGRATION_SQL =
             """
@@ -97,14 +98,6 @@ public class CustomFeesMigration extends RepeatableMigration {
             ) insert into custom_fee_temp (created_timestamp, token_id, timestamp_range, fixed_fees, fractional_fees, royalty_fees)
             select * from aggregated;
 
-            with update_create_timestamp as (
-              select min(created_timestamp) as created_timestamp,
-              token_id
-              from custom_fee_temp group by token_id
-            ) update custom_fee_temp set created_timestamp = u.created_timestamp
-            from update_create_timestamp u
-            where custom_fee_temp.token_id = u.token_id;
-
             drop index if exists custom_fee__token_timestamp;
             alter table custom_fee
               drop column if exists all_collectors_are_exempt,
@@ -127,6 +120,8 @@ public class CustomFeesMigration extends RepeatableMigration {
             (
               like custom_fee including constraints including defaults
             );
+            alter table custom_fee_history
+              add primary key (token_id, created_timestamp);
 
             insert into custom_fee_history (created_timestamp, fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id)
             select * from custom_fee_temp where upper(timestamp_range) is not null;
@@ -137,22 +132,18 @@ public class CustomFeesMigration extends RepeatableMigration {
             commit;
             """;
 
-    private final JdbcTemplate jdbcTemplate;
+    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.66.2");
 
-    @Lazy
-    public CustomFeesMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
-        this.jdbcTemplate = jdbcTemplate;
+    private final @Owner JdbcTemplate jdbcTemplate;
+
+    @Override
+    public MigrationVersion getVersion() {
+        return VERSION;
     }
 
     @Override
     public String getDescription() {
         return "Update the custom fee table to use aggregated fees";
-    }
-
-    @Override
-    protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.66.0");
     }
 
     @Override

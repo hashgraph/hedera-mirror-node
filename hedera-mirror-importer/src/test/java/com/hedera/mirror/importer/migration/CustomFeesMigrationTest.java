@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.FixedFee;
 import com.hedera.mirror.common.domain.transaction.FractionalFee;
 import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
@@ -49,9 +50,12 @@ import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@EnabledIfV1
 @Tag("migration")
+@TestPropertySource(properties = {"spring.flyway.target=1.66.2"})
 class CustomFeesMigrationTest extends IntegrationTest {
 
     private final CustomFeesMigration migration;
@@ -84,11 +88,6 @@ class CustomFeesMigrationTest extends IntegrationTest {
     void setup() {
         jdbcTemplate.execute(REVERT_DDL);
         assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
-    }
-
-    @Test
-    void checksum() {
-        assertThat(migration.getChecksum()).isEqualTo(1);
     }
 
     @Test
@@ -284,13 +283,13 @@ class CustomFeesMigrationTest extends IntegrationTest {
                     List.of(currentMigrationCustomFee, migrationCustomFeeUpdate1, migrationCustomFeeUpdate2);
 
             // build aggregate fees
-            var updatedCurrent = builder.id(new Id(createdTimestamp, builder.id.tokenId))
+            var updatedCurrent = builder.id(new Id(rangeUpdate2.upperEndpoint(), builder.id.tokenId))
                     .collectorAccountId(currentMigrationCustomFee.collectorAccountId)
                     .build();
             var updatedHistory = builder.id(new Id(createdTimestamp, builder.id.tokenId))
                     .collectorAccountId(updateCollectorAccountId1)
                     .build();
-            var updatedHistory2 = builder.id(new MigrationCustomFee.Id(createdTimestamp, builder.id.tokenId))
+            var updatedHistory2 = builder.id(new Id(rangeUpdate1.upperEndpoint(), builder.id.tokenId))
                     .collectorAccountId(updateCollectorAccountId2)
                     .build();
             aggregateFee = toAggregateCustomFees(List.of(updatedCurrent)).get(0);

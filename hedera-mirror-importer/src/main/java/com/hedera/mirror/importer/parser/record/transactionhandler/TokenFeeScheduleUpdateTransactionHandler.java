@@ -76,13 +76,12 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
 
-        var customFee = new CustomFee();
-        customFee.setTokenId(tokenId.getId());
-        customFee.setCreatedTimestamp(consensusTimestamp);
-        customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
-
         for (var protoCustomFee : customFeeList) {
             var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
+            var customFee = new CustomFee();
+            customFee.setTokenId(tokenId.getId());
+            customFee.setCreatedTimestamp(consensusTimestamp);
+            customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
 
             var feeCase = protoCustomFee.getFeeCase();
             boolean chargedInAttachedToken;
@@ -126,11 +125,18 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             if (transaction.getType() == TOKENCREATION.getProtoId() && chargedInAttachedToken) {
                 autoAssociatedAccounts.add(collector);
             }
+
+            entityListener.onCustomFee(customFee);
         }
 
-        // Always add a custom fee. For empty custom fees, add a single row with only the timestamp and tokenId.
-        entityListener.onCustomFee(customFee);
-
+        // For empty custom fees, add a single row with only the timestamp and tokenId.
+        if (customFeeList.isEmpty()) {
+            var customFee = new CustomFee();
+            customFee.setTokenId(tokenId.getId());
+            customFee.setCreatedTimestamp(consensusTimestamp);
+            customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
+            entityListener.onCustomFee(customFee);
+        }
         return autoAssociatedAccounts;
     }
 
