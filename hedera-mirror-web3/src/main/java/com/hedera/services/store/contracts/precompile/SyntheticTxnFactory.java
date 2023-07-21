@@ -29,7 +29,10 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -44,8 +47,13 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class SyntheticTxnFactory {
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final ContractID HTS_PRECOMPILE_MIRROR_ID = EntityIdUtils.contractIdFromEvmAddress(
+            Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
     public static final String AUTO_MEMO = "auto-created account";
     private static final String LAZY_MEMO = "lazy-created account";
@@ -160,5 +168,15 @@ public class SyntheticTxnFactory {
         final var builder = TokenPauseTransactionBody.newBuilder();
         builder.setToken(pauseWrapper.token());
         return TransactionBody.newBuilder().setTokenPause(builder);
+    }
+
+    public TransactionBody.Builder createTransactionCall(final long gas, final Bytes functionParameters) {
+        final var builder = ContractCallTransactionBody.newBuilder();
+
+        builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
+        builder.setGas(gas);
+        builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
+
+        return TransactionBody.newBuilder().setContractCall(builder);
     }
 }
