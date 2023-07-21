@@ -307,6 +307,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContarct, tokenEntityId, nftEntityId);
+        allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }

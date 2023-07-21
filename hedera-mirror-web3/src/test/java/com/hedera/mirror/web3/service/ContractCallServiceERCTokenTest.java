@@ -119,7 +119,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     public enum SupportedErcContractModificationFunctions {
-        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L});
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
+        DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
+        APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L});
 
         private final String name;
         private final Object[] functionParameters;
