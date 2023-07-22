@@ -22,7 +22,8 @@ import jakarta.inject.Named;
 @Named
 class UnknownDataTransactionHandler extends AbstractTransactionHandler {
 
-    UnknownDataTransactionHandler() {
-        super(TransactionType.UNKNOWN);
+    @Override
+    public TransactionType getType() {
+        return TransactionType.UNKNOWN;
     }
 }

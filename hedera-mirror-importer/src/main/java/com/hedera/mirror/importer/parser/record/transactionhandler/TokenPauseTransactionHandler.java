@@ -25,22 +25,23 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class TokenPauseTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenPauseTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENPAUSE);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenPause().getToken());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENPAUSE;
     }
 
     @Override

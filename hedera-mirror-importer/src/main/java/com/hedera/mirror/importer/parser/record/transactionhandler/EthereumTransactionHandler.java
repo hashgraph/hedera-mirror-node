@@ -29,24 +29,16 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class EthereumTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final EthereumTransactionParser ethereumTransactionParser;
-
-    EthereumTransactionHandler(
-            EntityListener entityListener,
-            EntityProperties entityProperties,
-            EthereumTransactionParser ethereumTransactionParser) {
-        super(TransactionType.ETHEREUMTRANSACTION);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-        this.ethereumTransactionParser = ethereumTransactionParser;
-    }
 
     /**
      * Attempts to extract the contract ID from the ethereumTransaction.
@@ -64,6 +56,11 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 : transactionRecord.getContractCallResult();
 
         return EntityId.of(contractFunctionResult.getContractID());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.ETHEREUMTRANSACTION;
     }
 
     @Override

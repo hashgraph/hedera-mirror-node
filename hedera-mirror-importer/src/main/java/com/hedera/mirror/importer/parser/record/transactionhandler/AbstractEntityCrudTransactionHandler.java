@@ -24,18 +24,18 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 abstract class AbstractEntityCrudTransactionHandler extends AbstractTransactionHandler {
 
     protected final EntityIdService entityIdService;
+
     protected final EntityListener entityListener;
 
-    AbstractEntityCrudTransactionHandler(
-            EntityIdService entityIdService, EntityListener entityListener, TransactionType type) {
-        super(type);
-        this.entityIdService = entityIdService;
-        this.entityListener = entityListener;
-    }
+    @Getter
+    private final TransactionType type;
 
     @Override
     protected final void updateEntity(Transaction transaction, RecordItem recordItem) {

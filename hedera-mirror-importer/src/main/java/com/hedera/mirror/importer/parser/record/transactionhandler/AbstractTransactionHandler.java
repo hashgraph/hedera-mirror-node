@@ -18,16 +18,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 abstract class AbstractTransactionHandler implements TransactionHandler {
-
-    @Getter
-    protected final TransactionType type;
 
     @Override
     public final void updateTransaction(Transaction transaction, RecordItem recordItem) {

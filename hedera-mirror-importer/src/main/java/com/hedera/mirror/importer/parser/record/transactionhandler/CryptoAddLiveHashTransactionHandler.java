@@ -26,18 +26,14 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class CryptoAddLiveHashTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-
-    CryptoAddLiveHashTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.CRYPTOADDLIVEHASH);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -46,6 +42,11 @@ class CryptoAddLiveHashTransactionHandler extends AbstractTransactionHandler {
                 .getCryptoAddLiveHash()
                 .getLiveHash()
                 .getAccountId());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTOADDLIVEHASH;
     }
 
     @Override

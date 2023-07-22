@@ -876,14 +876,14 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityTransaction() {
+    void onEntityTransactions() {
         // given
         var entityTransaction1 = domainBuilder.entityTransaction().get();
         var entityTransaction2 = domainBuilder.entityTransaction().get();
 
         // when
-        sqlEntityListener.onEntityTransaction(entityTransaction1);
-        sqlEntityListener.onEntityTransaction(entityTransaction2);
+        sqlEntityListener.onEntityTransactions(List.of(entityTransaction1));
+        sqlEntityListener.onEntityTransactions(List.of(entityTransaction2));
         completeFileAndCommit();
 
         // then

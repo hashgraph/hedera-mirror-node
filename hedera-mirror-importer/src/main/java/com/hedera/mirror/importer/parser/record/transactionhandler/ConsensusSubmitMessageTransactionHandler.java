@@ -27,18 +27,14 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-
-    ConsensusSubmitMessageTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.CONSENSUSSUBMITMESSAGE);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -46,6 +42,18 @@ class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandle
                 recordItem.getTransactionBody().getConsensusSubmitMessage().getTopicID());
     }
 
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CONSENSUSSUBMITMESSAGE;
+    }
+
+    /**
+     * Add common entity ids for a ConsensusSubmitMessage transaction. Note the main entity id (the topic id the message
+     * is submitted to) is skipped since it's already tracked in topic_message table
+     *
+     * @param transaction
+     * @param recordItem
+     */
     @Override
     protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
         recordItem.addEntityId(transaction.getNodeAccountId());

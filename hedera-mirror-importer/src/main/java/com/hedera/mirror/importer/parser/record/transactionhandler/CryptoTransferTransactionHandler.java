@@ -22,7 +22,8 @@ import jakarta.inject.Named;
 @Named
 class CryptoTransferTransactionHandler extends AbstractTransactionHandler {
 
-    CryptoTransferTransactionHandler() {
-        super(TransactionType.CRYPTOTRANSFER);
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTOTRANSFER;
     }
 }

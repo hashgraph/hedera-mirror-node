@@ -25,22 +25,23 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class TokenGrantKycTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenGrantKycTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENGRANTKYC);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenGrantKyc().getAccount());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENGRANTKYC;
     }
 
     @Override

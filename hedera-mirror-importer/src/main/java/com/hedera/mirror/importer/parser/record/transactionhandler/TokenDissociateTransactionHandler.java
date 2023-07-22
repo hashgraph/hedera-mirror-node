@@ -24,22 +24,23 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class TokenDissociateTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenDissociateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENDISSOCIATE);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenDissociate().getAccount());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENDISSOCIATE;
     }
 
     @Override

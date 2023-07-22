@@ -26,18 +26,18 @@ import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceIndexedCont
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class CryptoDeleteAllowanceTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final SyntheticContractLogService syntheticContractLogService;
 
-    CryptoDeleteAllowanceTransactionHandler(
-            EntityListener entityListener, SyntheticContractLogService syntheticContractLogService) {
-        super(TransactionType.CRYPTODELETEALLOWANCE);
-        this.entityListener = entityListener;
-        this.syntheticContractLogService = syntheticContractLogService;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTODELETEALLOWANCE;
     }
 
     @Override

@@ -155,7 +155,11 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         contractResultService.process(recordItem, transaction);
 
-        recordItem.getEntityTransactions().values().forEach(entityListener::onEntityTransaction);
+        var entityTransactions = recordItem.getEntityTransactions();
+        if (!entityTransactions.isEmpty()) {
+            entityListener.onEntityTransactions(entityTransactions.values());
+        }
+
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -664,7 +668,9 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertAssessedCustomFees(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            for (var protoAssessedCustomFee : recordItem.getTransactionRecord().getAssessedCustomFeesList()) {
+            var assessedCustomFeesList = recordItem.getTransactionRecord().getAssessedCustomFeesList();
+            for (int i = 0; i < assessedCustomFeesList.size(); i++) {
+                var protoAssessedCustomFee = assessedCustomFeesList.get(i);
                 var collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
                 // the effective payers must also appear in the *transfer lists of this transaction and the
                 // corresponding EntityIds should have been added to EntityListener, so skip it here.

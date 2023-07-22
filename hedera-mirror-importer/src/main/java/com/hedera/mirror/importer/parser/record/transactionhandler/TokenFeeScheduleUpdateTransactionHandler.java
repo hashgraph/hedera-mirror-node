@@ -34,24 +34,25 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenFeeScheduleUpdateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENFEESCHEDULEUPDATE);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(
                 recordItem.getTransactionBody().getTokenFeeScheduleUpdate().getTokenId());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENFEESCHEDULEUPDATE;
     }
 
     @Override

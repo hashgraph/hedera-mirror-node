@@ -44,9 +44,11 @@ import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityIdService entityIdService;
@@ -54,16 +56,9 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandle
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
 
-    CryptoApproveAllowanceTransactionHandler(
-            EntityIdService entityIdService,
-            EntityListener entityListener,
-            SyntheticContractLogService syntheticContractLogService,
-            SyntheticContractResultService syntheticContractResultService) {
-        super(TransactionType.CRYPTOAPPROVEALLOWANCE);
-        this.entityIdService = entityIdService;
-        this.entityListener = entityListener;
-        this.syntheticContractLogService = syntheticContractLogService;
-        this.syntheticContractResultService = syntheticContractResultService;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTOAPPROVEALLOWANCE;
     }
 
     @Override

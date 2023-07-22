@@ -25,22 +25,23 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class TokenFreezeTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenFreezeTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENFREEZE);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenFreeze().getAccount());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENFREEZE;
     }
 
     @Override

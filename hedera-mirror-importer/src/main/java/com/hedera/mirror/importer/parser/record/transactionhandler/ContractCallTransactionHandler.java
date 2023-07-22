@@ -24,16 +24,13 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hederahashgraph.api.proto.java.ContractID;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class ContractCallTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityIdService entityIdService;
-
-    ContractCallTransactionHandler(EntityIdService entityIdService) {
-        super(TransactionType.CONTRACTCALL);
-        this.entityIdService = entityIdService;
-    }
 
     /**
      * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
@@ -51,6 +48,11 @@ class ContractCallTransactionHandler extends AbstractTransactionHandler {
         ContractID contractIdReceipt =
                 recordItem.getTransactionRecord().getReceipt().getContractID();
         return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CONTRACTCALL;
     }
 
     @Override

@@ -24,12 +24,13 @@ import jakarta.inject.Named;
 @Named
 class FreezeTransactionHandler extends AbstractTransactionHandler {
 
-    FreezeTransactionHandler() {
-        super(TransactionType.FREEZE);
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getFreeze().getUpdateFile());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.FREEZE;
     }
 }

@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import jakarta.inject.Named;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.RequiredArgsConstructor;
@@ -120,8 +121,8 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onEntityTransaction(EntityTransaction entityTransaction) throws ImporterException {
-        onEach(EntityListener::onEntityTransaction, entityTransaction);
+    public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
+        onEach(EntityListener::onEntityTransactions, entityTransactions);
     }
 
     @Override

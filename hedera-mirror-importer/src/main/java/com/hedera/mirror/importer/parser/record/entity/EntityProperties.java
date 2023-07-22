@@ -25,7 +25,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -53,7 +52,7 @@ public class EntityProperties {
          */
         @NotNull
         private Set<EntityId> entityTransactionExclusion =
-                Set.copyOf(List.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT)));
+                Set.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT));
 
         private boolean entityTransactions = true;
 

@@ -24,8 +24,9 @@ import jakarta.inject.Named;
 @Named
 class CryptoDeleteLiveHashTransactionHandler extends AbstractTransactionHandler {
 
-    CryptoDeleteLiveHashTransactionHandler() {
-        super(TransactionType.CRYPTODELETELIVEHASH);
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTODELETELIVEHASH;
     }
 
     @Override

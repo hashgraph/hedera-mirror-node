@@ -24,12 +24,13 @@ import jakarta.inject.Named;
 @Named
 class ScheduleSignTransactionHandler extends AbstractTransactionHandler {
 
-    ScheduleSignTransactionHandler() {
-        super(TransactionType.SCHEDULESIGN);
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getScheduleSign().getScheduleID());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.SCHEDULESIGN;
     }
 }

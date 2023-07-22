@@ -21,20 +21,22 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 class FileAppendTransactionHandler extends AbstractTransactionHandler {
 
     private final FileDataHandler fileDataHandler;
 
-    FileAppendTransactionHandler(FileDataHandler fileDataHandler) {
-        super(TransactionType.FILEAPPEND);
-        this.fileDataHandler = fileDataHandler;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getFileAppend().getFileID());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.FILEAPPEND;
     }
 
     @Override

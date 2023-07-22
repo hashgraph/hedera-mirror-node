@@ -326,8 +326,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onEntityTransaction(EntityTransaction entityTransaction) throws ImporterException {
-        entityTransactions.add(entityTransaction);
+    public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
+        this.entityTransactions.addAll(entityTransactions);
     }
 
     @Override

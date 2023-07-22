@@ -30,23 +30,24 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class TokenMintTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    TokenMintTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(TransactionType.TOKENMINT);
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-    }
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenMint().getToken());
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENMINT;
     }
 
     @Override

@@ -46,6 +46,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
+import java.util.Collection;
 
 /**
  * Handlers for items parsed during processing of record stream.
@@ -76,7 +77,7 @@ public interface EntityListener {
 
     default void onEntity(Entity entity) throws ImporterException {}
 
-    default void onEntityTransaction(EntityTransaction entityTransaction) throws ImporterException {}
+    default void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {}
 
     default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {}
 

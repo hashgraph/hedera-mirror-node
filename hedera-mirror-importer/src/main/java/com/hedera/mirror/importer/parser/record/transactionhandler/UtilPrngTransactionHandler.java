@@ -24,16 +24,18 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class UtilPrngTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
 
-    UtilPrngTransactionHandler(EntityListener entityListener) {
-        super(TransactionType.UTILPRNG);
-        this.entityListener = entityListener;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.UTILPRNG;
     }
 
     @Override

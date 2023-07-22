@@ -22,7 +22,8 @@ import jakarta.inject.Named;
 @Named
 class UncheckedSubmitTransactionHandler extends AbstractTransactionHandler {
 
-    UncheckedSubmitTransactionHandler() {
-        super(TransactionType.UNCHECKEDSUBMIT);
+    @Override
+    public TransactionType getType() {
+        return TransactionType.UNCHECKEDSUBMIT;
     }
 }

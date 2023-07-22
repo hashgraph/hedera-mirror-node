@@ -27,24 +27,21 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
 
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
 
-    NodeStakeUpdateTransactionHandler(
-            ApplicationEventPublisher applicationEventPublisher,
-            ConsensusNodeService consensusNodeService,
-            EntityListener entityListener) {
-        super(TransactionType.NODESTAKEUPDATE);
-        this.applicationEventPublisher = applicationEventPublisher;
-        this.entityListener = entityListener;
-        this.consensusNodeService = consensusNodeService;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.NODESTAKEUPDATE;
     }
 
     @Override
