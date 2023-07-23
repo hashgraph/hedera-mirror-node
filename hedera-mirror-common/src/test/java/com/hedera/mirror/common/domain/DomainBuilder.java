@@ -341,8 +341,8 @@ public class DomainBuilder {
             cryptoAllowanceHistory() {
         var timestamp = timestamp();
         var builder = CryptoAllowanceHistory.builder()
-                .amount(10)
-                .amountGranted(100)
+                .amount(10L)
+                .amountGranted(100L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
