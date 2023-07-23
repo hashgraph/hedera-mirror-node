@@ -386,9 +386,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAllowance(TokenAllowance tokenAllowance) {
-        TokenAllowance merged =
-                tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeTokenAllowance);
-        tokenAllowances.add(merged);
+        var merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeTokenAllowance);
+        // Only add the merged object to the collection if it is a token allowance grant rather than
+        // just a debit to an existing grant.
+        if (merged == tokenAllowance) {
+            tokenAllowances.add(merged);
+        }
     }
 
     @Override
@@ -912,8 +915,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
         // Current is an allowance grant so will override all mutable fields
         if (current.isHistory()) {
-            previous.setTimestampUpper(current.getTimestampLower());
-            return current;
+            if (previous.isHistory()) {
+                previous.setTimestampUpper(current.getTimestampLower());
+                return current;
+            }
+
+            previous.setAmountGranted(current.getAmountGranted());
+            previous.setAmount(current.getAmount());
+            previous.setCreatedTimestamp(current.getCreatedTimestamp());
+            previous.setTimestampRange(current.getTimestampRange());
+            return previous;
         }
 
         // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.

@@ -2270,26 +2270,120 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .isEmpty();
     }
 
-    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void onTokenAllowanceWithApprovedTransfer(int commitIndex) {
+        // given
+        final var idColumns = "owner, spender, token_id";
+        var amountGranted = 1000L;
+        var amountTransferred = -100L;
+
+        var builder = domainBuilder.tokenAllowance();
+        var tokenAllowanceCreate = builder.customize(
+                        c -> c.amountGranted(amountGranted).amount(amountGranted))
+                .get();
+
+        // when
+        sqlEntityListener.onTokenAllowance(tokenAllowanceCreate);
+
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
+            assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        }
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        assertThat(entityRepository.count()).isZero();
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
+        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+    }
+
+    @Test
+    void onTokenAllowanceExistingWithApprovedTransfer() {
+        // given
+        final var idColumns = "owner, spender, token_id";
+        var amountGranted = 1000L;
+        var amountTransferred = -100L;
+
+        var builder = domainBuilder.tokenAllowance();
+        var tokenAllowanceCreate = builder.customize(
+                        c -> c.amountGranted(amountGranted).amount(amountGranted))
+                .persist();
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        assertThat(entityRepository.count()).isZero();
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
+        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+    }
+
+    // Partial mirror node scenario where the token allowance grant does not exist in
+    // the database. An approved transfer debit operation should have no affect and not be persisted.
+    @Test
+    void onTokenAllowanceAbsentWithApprovedTransfer() {
+        // given
+        final var idColumns = "owner, spender, token_id";
+        var amountTransferred = -100L;
+        var builder = domainBuilder.tokenAllowance();
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.count()).isZero();
+        assertThat(tokenAllowanceRepository.count()).isZero();
+        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2, 3, 4})
     @ParameterizedTest
     void onTokenAllowanceHistory(int commitIndex) {
         // given
-        final String idColumns = "payer_account_id, spender, token_id";
+        final var idColumns = "payer_account_id, spender, token_id";
+        final var transferAmount = -99L;
         var builder = domainBuilder.tokenAllowance();
-        TokenAllowance tokenAllowanceCreate = builder.get();
+        var tokenAllowanceCreate = builder.get();
 
-        TokenAllowance tokenAllowanceUpdate1 =
-                builder.customize(c -> c.amount(999L)).get();
+        var tokenAllowanceUpdate1 =
+                builder.customize(c -> c.amountGranted(999L).amount(999L)).get();
         tokenAllowanceUpdate1.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 1);
 
-        TokenAllowance tokenAllowanceUpdate2 =
-                builder.customize(c -> c.amount(0)).get();
+        var tokenAllowanceUpdate2 =
+                builder.customize(c -> c.amountGranted(0L).amount(0L)).get();
         tokenAllowanceUpdate2.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 2);
 
         // Expected merged objects
-        TokenAllowance mergedCreate = TestUtils.clone(tokenAllowanceCreate);
-        TokenAllowance mergedUpdate1 = TestUtils.merge(tokenAllowanceCreate, tokenAllowanceUpdate1);
-        TokenAllowance mergedUpdate2 = TestUtils.merge(mergedUpdate1, tokenAllowanceUpdate2);
+        var mergedCreate = TestUtils.clone(tokenAllowanceCreate);
+        var mergedUpdate1 = TestUtils.merge(tokenAllowanceCreate, tokenAllowanceUpdate1);
+        var mergedUpdate2 = TestUtils.merge(mergedUpdate1, tokenAllowanceUpdate2);
         mergedCreate.setTimestampUpper(tokenAllowanceUpdate1.getTimestampLower());
 
         // when
@@ -2302,6 +2396,31 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         sqlEntityListener.onTokenAllowance(tokenAllowanceUpdate1);
         if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
+            assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate);
+        }
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(transferAmount)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        /*
+         * When commitIndex == 3, only the above debit to the previous grant and the following new allowance
+         * grant are present in memory at the same time and both rows cannot be presented to the
+         * database for the upsert process. Therefore, the debit to the previous grant is
+         * not recorded prior to that grant moving to the history table and is therefore lost.
+         * Thus, it will not be reflected in assertions that follow.
+         */
+        if (commitIndex != 3) {
+            mergedUpdate1.setAmount(mergedUpdate1.getAmount() + transferAmount);
+        }
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
+        if (commitIndex > 3) {
             completeFileAndCommit();
             assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
             assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate);
