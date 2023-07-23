@@ -43,13 +43,13 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.ApproveDecodedNftInfo;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveResult;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -58,7 +58,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
@@ -92,6 +91,8 @@ import org.hyperledger.besu.evm.log.Log;
  *  6. Added getLogForNftAllowanceRevocation because we are not
  *     setting the spender address in the txn body when revoking nft allowance
  *  7. All the necessary fields used in body method are extracted from ApproveParams
+ *  8. Added {@link ApproveDecodedNftInfo} and decodeTokenIdAndSerialNum method in order to access tokenID from HtsPrecompiledContract and
+ *     avoid passing Store unnecessarily
  */
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private static final Function ERC_TOKEN_APPROVE_FUNCTION = new Function("approve(address,uint256)", BOOL);
@@ -132,13 +133,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         Address tokenAddress;
         Address senderAddress;
-        Store store;
+        Id ownerId;
         boolean isFungible;
         Builder transactionBody;
 
         if (bodyParams instanceof ApproveParams approveParams) {
             isFungible = approveParams.isFungible();
-            store = approveParams.store();
+            ownerId = approveParams.ownerId();
             tokenAddress = approveParams.tokenAddress();
             senderAddress = approveParams.senderAddress();
         } else {
@@ -156,16 +157,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
         } else {
-            final var tokenId = approveOp.tokenId();
-            final var serialNumber = approveOp.serialNumber();
-            final var ownerId = store.getUniqueToken(
-                            new NftId(
-                                    tokenId.getShardNum(),
-                                    tokenId.getRealmNum(),
-                                    tokenId.getTokenNum(),
-                                    serialNumber.longValue()),
-                            OnMissing.THROW)
-                    .getOwner();
             final var nominalOwnerId = ownerId != null ? ownerId : Id.DEFAULT;
             // Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
             // translate this approveAllowance into a deleteAllowance
@@ -345,6 +336,23 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
             return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, false, offset == 0);
         }
+    }
+
+    public static ApproveDecodedNftInfo decodeTokenIdAndSerialNum(final Bytes input, final TokenID impliedTokenId) {
+
+        final var offset = impliedTokenId.equals(TokenID.getDefaultInstance()) ? 1 : 0;
+        final Tuple decodedArguments;
+        final TokenID tokenId;
+
+        if (offset == 0) {
+            decodedArguments = decodeFunctionCall(input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
+            tokenId = impliedTokenId;
+        } else {
+            decodedArguments = decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
+        }
+        final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
+        return new ApproveDecodedNftInfo(tokenId, serialNumber);
     }
 
     private boolean isNftApprovalRevocation(final ApproveWrapper approveOp) {

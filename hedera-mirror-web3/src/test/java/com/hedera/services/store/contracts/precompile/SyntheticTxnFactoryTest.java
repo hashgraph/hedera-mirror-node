@@ -28,13 +28,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
@@ -352,21 +355,60 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
     }
 
+    @Test
+    void createsExpectedFreeze() {
+        final var freezeWrapper = TokenFreezeUnfreezeWrapper.forFreeze(fungible, a);
+        final var result = subject.createFreeze(freezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenFreeze().getToken());
+        assertEquals(a, txnBody.getTokenFreeze().getAccount());
+    }
+
+    @Test
+    void createsExpectedUnfreeze() {
+        final var unfreezeWrapper = TokenFreezeUnfreezeWrapper.forUnfreeze(fungible, a);
+        final var result = subject.createUnfreeze(unfreezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnfreeze().getToken());
+        assertEquals(a, txnBody.getTokenUnfreeze().getAccount());
+    }
+
+    @Test
+    void createsExpectedPause() {
+        final var pauseWrapper = new PauseWrapper(fungible);
+        final var result = subject.createPause(pauseWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenPause().getToken());
+    }
+
+    @Test
+    void createsExpectedUnpause() {
+        final var unpauseWrapper = new UnpauseWrapper(fungible);
+        final var result = subject.createUnpause(unpauseWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnpause().getToken());
+    }
+
     private static final long serialNo = 100;
     private static final long secondAmount = 200;
     private static final long newExpiry = 1_234_567L;
     private final EntityNum contractNum = EntityNum.fromLong(666);
     private final EntityNum accountNum = EntityNum.fromLong(1234);
-    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
-    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
-    public static final AccountID sender = IdUtils.asAccount("0.0.2");
-    public static final Id payerId = Id.fromGrpcAccount(payer);
-    public static final Id senderId = Id.fromGrpcAccount(sender);
     private static final AccountID a = IdUtils.asAccount("0.0.2");
     private static final AccountID b = IdUtils.asAccount("0.0.3");
     private static final AccountID c = IdUtils.asAccount("0.0.4");
 
     public static final TokenID token = IdUtils.asToken("0.0.1");
+    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
+    public static final AccountID sender = IdUtils.asAccount("0.0.2");
+
+    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
+    public static final Id payerId = Id.fromGrpcAccount(payer);
+    public static final Id senderId = Id.fromGrpcAccount(sender);
     private static final TokenID fungible = IdUtils.asToken("0.0.555");
     private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
     private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
