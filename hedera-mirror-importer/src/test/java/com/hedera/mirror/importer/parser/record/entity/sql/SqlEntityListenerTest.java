@@ -2306,7 +2306,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
-        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
     }
 
     @Test
