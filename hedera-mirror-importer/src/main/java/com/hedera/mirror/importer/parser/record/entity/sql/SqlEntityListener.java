@@ -246,7 +246,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
         var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeCryptoAllowance);
-        cryptoAllowances.add(merged);
+        if (merged == cryptoAllowance) {
+            // Only add the merged object to the collection if it is a crypto allowance grant rather than
+            // just a debit to an existing grant.
+            cryptoAllowances.add(merged);
+        }
     }
 
     @Override
@@ -562,8 +566,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
         // Current is an allowance grant so will override all mutable fields
         if (current.isHistory()) {
-            previous.setTimestampUpper(current.getTimestampLower());
-            return current;
+            if (previous.isHistory()) {
+                previous.setTimestampUpper(current.getTimestampLower());
+                return current;
+            }
+
+            previous.setAmountGranted(current.getAmountGranted());
+            previous.setAmount(current.getAmount());
+            previous.setCreatedTimestamp(current.getCreatedTimestamp());
+            previous.setTimestampRange(current.getTimestampRange());
+            return previous;
         }
 
         // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.

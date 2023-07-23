@@ -57,6 +57,7 @@ public class BatchUpserter extends BatchInserter {
         truncateSql = String.format("truncate table %s restart identity cascade", tableName);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
+        log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
         upsertMetric = Timer.builder("hedera.mirror.importer.parse.upsert")
                 .description("Time to insert transaction information from temp to final table")
                 .tag("table", finalTableName)

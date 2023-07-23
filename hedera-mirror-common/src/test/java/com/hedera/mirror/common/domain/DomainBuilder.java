@@ -327,8 +327,8 @@ public class DomainBuilder {
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
         var timestamp = timestamp();
         var builder = CryptoAllowance.builder()
-                .amount(10)
-                .amountGranted(100)
+                .amount(10L)
+                .amountGranted(100L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))

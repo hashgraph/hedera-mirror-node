@@ -422,26 +422,120 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(CryptoAllowance.class, "owner, spender")).isEmpty();
     }
 
-    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void onCryptoAllowanceWithApprovedTransfer(int commitIndex) {
+        // given
+        final var idColumns = "owner, spender";
+        var amountGranted = 1000L;
+        var amountTransferred = -100L;
+
+        var builder = domainBuilder.cryptoAllowance();
+        var cryptoAllowanceCreate = builder.customize(
+                        c -> c.amountGranted(amountGranted).amount(amountGranted))
+                .get();
+
+        // when
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceCreate);
+
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
+            assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        }
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        assertThat(entityRepository.count()).isZero();
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
+        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+    }
+
+    @Test
+    void onCryptoAllowanceExistingWithApprovedTransfer() {
+        // given
+        final var idColumns = "owner, spender";
+        var amountGranted = 1000L;
+        var amountTransferred = -100L;
+
+        var builder = domainBuilder.cryptoAllowance();
+        var cryptoAllowanceCreate = builder.customize(
+                        c -> c.amountGranted(amountGranted).amount(amountGranted))
+                .persist();
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        assertThat(entityRepository.count()).isZero();
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
+        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+    }
+
+    // Partial mirror node scenario where the crypto allowance grant does not exist in
+    // the database. An approved transfer debit operation should have no affect and not be persisted.
+    @Test
+    void onCryptoAllowanceAbsentWithApprovedTransfer() {
+        // given
+        final var idColumns = "owner, spender";
+        var amountTransferred = -100L;
+        var builder = domainBuilder.cryptoAllowance();
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.count()).isZero();
+        assertThat(cryptoAllowanceRepository.count()).isZero();
+        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2, 3, 4})
     @ParameterizedTest
     void onCryptoAllowanceHistory(int commitIndex) {
         // given
-        final String idColumns = "owner, spender";
+        final var idColumns = "owner, spender";
+        final var transferAmount = -99L;
         var builder = domainBuilder.cryptoAllowance();
-        CryptoAllowance cryptoAllowanceCreate = builder.get();
+        var cryptoAllowanceCreate = builder.get();
 
-        CryptoAllowance cryptoAllowanceUpdate1 =
-                builder.customize(c -> c.amount(999L)).get();
+        var cryptoAllowanceUpdate1 =
+                builder.customize(c -> c.amountGranted(999L).amount(999L)).get();
         cryptoAllowanceUpdate1.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 1);
 
-        CryptoAllowance cryptoAllowanceUpdate2 =
-                builder.customize(c -> c.amount(0L)).get();
+        var cryptoAllowanceUpdate2 =
+                builder.customize(c -> c.amountGranted(0L).amount(0L)).get();
         cryptoAllowanceUpdate2.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 2);
 
         // Expected merged objects
-        CryptoAllowance mergedCreate = TestUtils.clone(cryptoAllowanceCreate);
-        CryptoAllowance mergedUpdate1 = TestUtils.merge(cryptoAllowanceCreate, cryptoAllowanceUpdate1);
-        CryptoAllowance mergedUpdate2 = TestUtils.merge(mergedUpdate1, cryptoAllowanceUpdate2);
+        var mergedCreate = TestUtils.clone(cryptoAllowanceCreate);
+        var mergedUpdate1 = TestUtils.merge(cryptoAllowanceCreate, cryptoAllowanceUpdate1);
+        var mergedUpdate2 = TestUtils.merge(mergedUpdate1, cryptoAllowanceUpdate2);
         mergedCreate.setTimestampUpper(cryptoAllowanceUpdate1.getTimestampLower());
 
         // when
@@ -454,6 +548,31 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         sqlEntityListener.onCryptoAllowance(cryptoAllowanceUpdate1);
         if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
+            assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate);
+        }
+
+        // Approved transfer allowance debit as emitted by EntityRecordItemListener
+        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(transferAmount)
+                        .amountGranted(null)
+                        .createdTimestamp(null)
+                        .timestampRange(null))
+                .get();
+
+        /*
+         * When commitIndex == 3, only the above debit to the previous grant and the following new allowance
+         * grant are present in memory at the same time and both rows cannot be presented to the
+         * database for the upsert process. Therefore, the debit to the previous grant is
+         * not recorded prior to that grant moving to the history table and is therefore lost.
+         * Thus, it will not be reflected in assertions that follow.
+         */
+        if (commitIndex != 3) {
+            mergedUpdate1.setAmount(mergedUpdate1.getAmount() + transferAmount);
+        }
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
+        if (commitIndex > 3) {
             completeFileAndCommit();
             assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
             assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate);

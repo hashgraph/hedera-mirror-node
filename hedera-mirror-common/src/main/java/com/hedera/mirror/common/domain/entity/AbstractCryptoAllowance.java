@@ -40,7 +40,7 @@ public abstract class AbstractCryptoAllowance implements History {
     @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else coalesce(e_{0}, 0) + coalesce({0}, 0) end")
     private long amount;
 
-    private long amountGranted;
+    private Long amountGranted;
 
     @Column(updatable = false)
     private Long createdTimestamp;
