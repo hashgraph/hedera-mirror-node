@@ -56,8 +56,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(SupportedErcContractModificationFunctions.class)
-    void supportedErcModificationPrecompileOperationsTest(SupportedErcContractModificationFunctions ercFunction) {
+    @EnumSource(ErcContractModificationFunctions.class)
+    void supportedErcModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters =
@@ -118,12 +118,19 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
         DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
         APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
-        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
-        TRANSFER_WITH_ALIAS("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
-        TRANSFER_FROM_WITH_ALIAS(
-                "transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
         APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L});
+
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+    @RequiredArgsConstructor
+    public enum UnsupportedErcContractModificationFunctions {
+        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
+        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
+        TRANSFER_WITH_ALIAS("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
+        TRANSFER_FROM_WITH_ALIAS(
+                "transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L});
 
         private final String name;
         private final Object[] functionParameters;
