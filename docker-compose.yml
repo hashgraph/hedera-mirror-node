@@ -6,7 +6,7 @@ services:
       replicas: 0
     environment:
       PGDATA: /var/lib/postgresql/data
-      # These should all be changed from the default before running in production
+      # These should all be changed from the default before running in production test
       GRAPHQL_PASSWORD: mirror_graphql_pass
       GRPC_PASSWORD: mirror_grpc_pass
       IMPORTER_PASSWORD: mirror_importer_pass
