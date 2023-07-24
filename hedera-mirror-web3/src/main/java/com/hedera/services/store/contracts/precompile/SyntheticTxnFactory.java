@@ -22,18 +22,27 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -46,8 +55,14 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import jakarta.annotation.Nullable;
+import java.util.List;
+import java.util.Objects;
+import lombok.NonNull;
 
 public class SyntheticTxnFactory {
 
@@ -109,6 +124,67 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenDissociate(builder);
     }
 
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
+    public TransactionBody.Builder createFungibleApproval(
+            @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
+        return createNonfungibleApproval(approveWrapper, ownerId, null);
+    }
+
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
+    public TransactionBody.Builder createNonfungibleApproval(
+            final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
+        final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+        if (approveWrapper.isFungible()) {
+            var tokenAllowance = TokenAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setOwner(Objects.requireNonNull(ownerId).asGrpcAccount())
+                    .setSpender(approveWrapper.spender())
+                    .setAmount(approveWrapper.amount().longValueExact());
+            builder.addTokenAllowances(tokenAllowance.build());
+        } else {
+            final var op = NftAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setSpender(approveWrapper.spender())
+                    .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
+            if (ownerId != null) {
+                op.setOwner(ownerId.asGrpcAccount());
+                if (!ownerId.equals(operatorId)) {
+                    op.setDelegatingSpender(Objects.requireNonNull(operatorId).asGrpcAccount());
+                }
+            }
+            builder.addNftAllowances(op.build());
+        }
+        return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
+    }
+
+    /**
+     * Copied Logic type from hedera-services.
+     *
+     * Differences with the original:
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
+    public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
+        final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
+        builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()
+                        .setOwner(owner.asGrpcAccount())
+                        .setTokenId(approveWrapper.tokenId())
+                        .addAllSerialNumbers(
+                                List.of(approveWrapper.serialNumber().longValueExact()))
+                        .build()))
+                .build();
+        return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
+    }
+
     public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
         final var builder = TokenBurnTransactionBody.newBuilder();
 
@@ -158,6 +234,27 @@ public class SyntheticTxnFactory {
         builder.setAccount(grantRevokeKycWrapper.account());
 
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
+    }
+
+    public TransactionBody.Builder createUnpause(final UnpauseWrapper unpauseWrapper) {
+        final var builder = TokenUnpauseTransactionBody.newBuilder();
+        builder.setToken(unpauseWrapper.token());
+        return TransactionBody.newBuilder().setTokenUnpause(builder);
+    }
+
+    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
+        final var builder = TokenFreezeAccountTransactionBody.newBuilder();
+        builder.setToken(freezeWrapper.token());
+        builder.setAccount(freezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenFreeze(builder);
+    }
+
+    public TransactionBody.Builder createUnfreeze(
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> unFreezeWrapper) {
+        final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
+        builder.setToken(unFreezeWrapper.token());
+        builder.setAccount(unFreezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
 
     public TransactionBody.Builder createPause(final PauseWrapper pauseWrapper) {
