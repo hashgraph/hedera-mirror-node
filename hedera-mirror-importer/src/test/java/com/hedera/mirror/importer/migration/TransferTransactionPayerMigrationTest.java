@@ -684,7 +684,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
         private Long amount;
 
-        @Id
         private Long consensusTimestamp;
 
         private EntityId entityId;
