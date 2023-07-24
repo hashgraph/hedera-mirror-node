@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import com.google.common.collect.Range;
@@ -47,6 +48,12 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -56,9 +63,11 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -118,6 +127,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
+    protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
+    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
+    protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
     protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
@@ -149,6 +163,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenAssociateToAccount)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build()))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
@@ -185,7 +206,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
-                                            .build()))))
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build())))
             .build();
 
     @Autowired
@@ -820,5 +848,51 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
+    }
+
+    private static TokenCreateWrapper getFungibleToken() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 100_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleToken() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 100_000L));
+    }
+
+    private static FixedFeeWrapper getFixedFee() {
+        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
+    }
+
+    private static FractionalFeeWrapper getFractionalFee() {
+        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
+    }
+
+    private static RoyaltyFeeWrapper getRoyaltyFee() {
+        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
     }
 }
