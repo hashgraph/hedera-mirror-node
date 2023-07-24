@@ -17,6 +17,9 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreate;
@@ -38,41 +41,69 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.hapi.utils.fees.FeeObject;
+import com.hedera.services.jproto.JECDSASecp256k1Key;
+import com.hedera.services.jproto.JEd25519Key;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.CreateLogic;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -108,15 +139,11 @@ class TokenCreatePrecompileTest {
             "0x457339690000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
     private static final Bytes CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3 = Bytes.fromHexString(
             "0xabb54eb50000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
-    private static final Bytes FUNGIBLE_MINT_INPUT = Bytes.fromHexString(
-            "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
 
     @Mock
     private AssetsLoader assetLoader;
@@ -152,10 +179,32 @@ class TokenCreatePrecompileTest {
     private Store store;
 
     @Mock
-    private ExchangeRate exchangeRate;
+    private EvmInfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private OptionValidator validator;
+
+    @InjectMocks
+    private MirrorNodeEvmProperties evmProperties;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private Account account;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
+
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
 
     private TokenCreatePrecompile tokenCreatePrecompile;
-    private SyntheticTxnFactory syntheticTxnFactory;
+    private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
+    private HTSPrecompiledContract subject;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -165,9 +214,13 @@ class TokenCreatePrecompileTest {
 
         final var precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
-        syntheticTxnFactory = new SyntheticTxnFactory();
+        final var syntheticTxnFactory = new SyntheticTxnFactory();
         tokenCreatePrecompile =
-                new TokenCreatePrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, createLogic);
+                new TokenCreatePrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic);
+        final var precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
+
+        subject = new HTSPrecompiledContract(
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test
@@ -541,6 +594,372 @@ class TokenCreatePrecompileTest {
         assertEquals(AccountID.newBuilder().setAccountNum(2).build(), royaltyFeeWrapper.feeCollector());
     }
 
+    @Test
+    void gasAndValueRequirementCalculationWorksAsExpected() {
+        // given
+        givenMinFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var transactionBody =
+                TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
+
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        subject.prepareFields(frame);
+        subject.prepareComputation(CREATE_FUNGIBLE_NO_FEES_INPUT, a -> a);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+
+        // then
+        assertEquals(EXPECTED_GAS_PRICE, result);
+    }
+
+    @Test
+    void createFungibleHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
+                new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                                new byte[] {},
+                                new byte[] {},
+                                null)),
+                new TokenKeyWrapper(
+                        8,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[] {},
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreate(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper =
+                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                                null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreate(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFungibleWithFeesHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                1,
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreateWithFees(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleWithFeesHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreateWithFees(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFungibleV2HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
+                new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                                new byte[] {},
+                                new byte[] {},
+                                null)),
+                new TokenKeyWrapper(
+                        8,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[] {},
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreateV2(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT_V2);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFungibleV3HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
+                new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                                new byte[] {},
+                                new byte[] {},
+                                null)),
+                new TokenKeyWrapper(
+                        8,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[] {},
+                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreateV3(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT_V3);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFungibleWithFeesV2HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                1,
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreateWithFeesV2(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT_V2);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFungibleWithFeesV3HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                1,
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreateWithFeesV3(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT_V3);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleV2HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper =
+                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                                null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreateV2(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleV3HappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper =
+                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                        1,
+                        new KeyValueWrapper(
+                                false,
+                                null,
+                                new byte[] {},
+                                new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
+                                null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreateV3(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V3);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleV2WithFeesHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreateWithFeesV2(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2);
+        clearStaticContext();
+    }
+
+    @Test
+    void createNonFungibleV3WithFeesHappyPathWorks() {
+        // test-specific preparations
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+        tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
+        tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+        staticTokenCreatePrecompile
+                .when(() -> decodeNonFungibleCreateWithFeesV3(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3);
+        clearStaticContext();
+    }
+
+    @Test
+    void createFailurePath() {
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenMinFrameContext();
+        givenValidGasCalculation();
+
+        givenIfDelegateCall();
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                1, new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreate(eq(CREATE_FUNGIBLE_NO_FEES_INPUT), any()))
+                .thenReturn(tokenCreateWrapper);
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getRemainingGas()).willReturn(10_000_000L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        // when:
+        final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
+
+        // then:
+        assertNull(result.getOutput());
+        assertEquals(Optional.of(ExceptionalHaltReason.NONE), result.getHaltReason());
+
+        verify(createLogic, never())
+                .create(
+                        HTSTestsUtil.pendingChildConsTime.getEpochSecond(),
+                        HTSTestsUtil.senderAddress,
+                        validator,
+                        store,
+                        transactionBody.getTokenCreation());
+        clearStaticContext();
+    }
+
+    @Test
+    void createFailsWhenCreateChecksAreNotSuccessful() {
+        prepareStaticContext();
+        givenMinFrameContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenValidGasCalculation();
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
+                1, new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreate(eq(CREATE_FUNGIBLE_NO_FEES_INPUT), any()))
+                .thenReturn(tokenCreateWrapper);
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        givenIfDelegateCall();
+
+        // when:
+        final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
+
+        // then:
+        assertNull(result.getOutput());
+        assertEquals(Optional.of(ExceptionalHaltReason.NONE), result.getHaltReason());
+
+        verify(createLogic, never())
+                .create(
+                        HTSTestsUtil.pendingChildConsTime.getEpochSecond(),
+                        HTSTestsUtil.senderAddress,
+                        validator,
+                        store,
+                        transactionBody.getTokenCreation());
+        clearStaticContext();
+    }
+
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
         assertTrue(decodedInput.isFungible());
         assertEquals("MyToken", decodedInput.getName());
@@ -604,5 +1023,53 @@ class TokenCreatePrecompileTest {
                 AccountID.newBuilder().setAccountNum(4L).build(),
                 decodedInput.getExpiry().autoRenewAccount());
         assertEquals(0L, decodedInput.getExpiry().second());
+    }
+
+    private void givenMinFrameContext() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(account);
+        given(account.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+    }
+
+    private void prepareAndAssertCreateHappyPathSucceeds(Bytes pretendArguments) {
+        givenMinFrameContext();
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(encoder.encodeCreateSuccess(any())).willReturn(HTSTestsUtil.successResult);
+
+        // when:
+        given(frame.getRemainingGas()).willReturn(100_000L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+    }
+
+    private void givenValidGasCalculation() {
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
+
+        final var blockValuesMock = mock(BlockValues.class);
+        given(frame.getBlockValues()).willReturn(blockValuesMock);
+        given(blockValuesMock.getTimestamp()).willReturn(HTSTestsUtil.timestamp.getSeconds());
+    }
+
+    private void prepareStaticContext() {
+        staticTokenCreatePrecompile = mockStatic(TokenCreatePrecompile.class);
+    }
+
+    private void clearStaticContext() {
+        staticTokenCreatePrecompile.close();
     }
 }
