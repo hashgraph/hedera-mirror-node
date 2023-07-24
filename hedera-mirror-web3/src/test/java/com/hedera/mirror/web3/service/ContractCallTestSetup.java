@@ -32,7 +32,9 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.FixedFee;
+import com.hedera.mirror.common.domain.transaction.FractionalFee;
+import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -50,6 +52,7 @@ import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -199,10 +202,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     private void nftCustomFeePersist(EntityId senderEntityId, EntityId nftEntityId) {
         domainBuilder
                 .customFee()
-                .customize(f -> f.collectorAccountId(senderEntityId)
-                        .id(new CustomFee.Id(2L, nftEntityId))
-                        .royaltyDenominator(0L)
-                        .denominatingTokenId(nftEntityId))
+                //                .customize(f -> f.collectorAccountId(senderEntityId)
+                //                        .id(new CustomFee.Id(2L, nftEntityId))
+                //                        .royaltyDenominator(0L)
+                //                        .denominatingTokenId(nftEntityId))
                 .persist();
     }
 
@@ -578,33 +581,34 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         switch (feeCase) {
             case ROYALTY_FEE -> domainBuilder
                     .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .denominatingTokenId(tokenEntityId))
+                    .customize(f -> f.tokenId(tokenEntityId.getId())
+                            .createdTimestamp(timeStamp)
+                            .royaltyFees(List.of(RoyaltyFee.builder()
+                                    .collectorAccountId(collectorAccountId)
+                                    .fallbackFee(FixedFee.builder()
+                                            .denominatingTokenId(tokenEntityId)
+                                            .build())
+                                    .build())))
                     .persist();
             case FRACTIONAL_FEE -> domainBuilder
                     .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .denominatingTokenId(tokenEntityId))
+                    .customize(f -> f.tokenId(tokenEntityId.getId())
+                            .createdTimestamp(timeStamp)
+                            .fractionalFees(List.of(FractionalFee.builder()
+                                    .collectorAccountId(collectorAccountId)
+                                    .build())))
                     .persist();
             case FIXED_FEE -> domainBuilder
                     .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .amountDenominator(null)
-                            .royaltyNumerator(0L)
-                            .denominatingTokenId(tokenEntityId))
+                    .customize(f -> f.tokenId(tokenEntityId.getId())
+                            .createdTimestamp(timeStamp)
+                            .fixedFees(List.of(FixedFee.builder()
+                                    .denominatingTokenId(tokenEntityId)
+                                    .build())))
                     .persist();
             default -> domainBuilder
                     .customFee()
-                    .customize(f -> f.collectorAccountId(null)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .royaltyNumerator(0L)
-                            .denominatingTokenId(tokenEntityId))
+                    .customize(f -> f.tokenId(tokenEntityId.getId()).createdTimestamp(timeStamp))
                     .persist();
         }
     }

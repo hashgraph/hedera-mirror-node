@@ -18,8 +18,9 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.FixedFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,15 +32,14 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByTokenId() {
         var customFee1 = domainBuilder.customFee().persist();
-        var customFee2 = domainBuilder
+        var fixedFee = FixedFee.builder().amount(12L).build();
+        domainBuilder
                 .customFee()
-                .customize(c -> c.id(customFee1.getId()).amount(12L))
+                .customize(c -> c.tokenId(customFee1.getTokenId()).fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getId().getTokenId().getId();
+        final var tokenId = customFee1.getTokenId();
 
-        assertThat(customFeeRepository.findByTokenId(tokenId))
-                .hasSize(2)
-                .extracting(CustomFee::getAmount)
-                .containsExactlyInAnyOrder(customFee1.getAmount(), customFee2.getAmount());
+        var listAssert = assertThat(customFeeRepository.findByTokenId(tokenId)).hasSize(2);
+        listAssert.anySatisfy(fee -> fee.getFixedFees().get(0).equals(12L));
     }
 }
