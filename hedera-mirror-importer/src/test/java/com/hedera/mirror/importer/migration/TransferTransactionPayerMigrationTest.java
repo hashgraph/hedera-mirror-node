@@ -46,7 +46,11 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -663,7 +667,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     // custom class with shared attributes for all transfer classes prior to migration
     @Data
     @NoArgsConstructor
-    @AllArgsConstructor
+    @lombok.AllArgsConstructor
     private static class SharedTransfer {
         private long amount;
         private long consensusTimeStamp;
@@ -672,7 +676,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         private EntityId sender;
     }
 
-    @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+    @lombok.AllArgsConstructor(access = lombok.AccessLevel.PRIVATE) // For Builder
     @Builder
     @Data
     @NoArgsConstructor

@@ -208,23 +208,24 @@ public class EntityRecordItemListener implements RecordItemListener {
             return;
         }
         var body = recordItem.getTransactionBody();
+        if (!body.hasCryptoTransfer()) {
+            return;
+        }
         var transfers = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         for (var aa : transfers) {
-            if (aa.getAmount() != 0) {
-                var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
-                if (EntityId.isEmpty(entityId)) {
-                    log.error(
-                            RECOVERABLE_ERROR + "Invalid itemizedTransfer entity id at {}",
-                            recordItem.getConsensusTimestamp());
-                    continue;
-                }
-
-                var itemizedTransfer = new ItemizedTransfer();
-                itemizedTransfer.setAmount(aa.getAmount());
-                itemizedTransfer.setEntityId(entityId);
-                itemizedTransfer.setIsApproval(aa.getIsApproval());
-                transaction.addItemizedTransfer(itemizedTransfer);
+            var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
+            if (EntityId.isEmpty(entityId)) {
+                log.error(
+                        RECOVERABLE_ERROR + "Invalid itemizedTransfer entity id at {}",
+                        recordItem.getConsensusTimestamp());
+                continue;
             }
+
+            var itemizedTransfer = new ItemizedTransfer();
+            itemizedTransfer.setAmount(aa.getAmount());
+            itemizedTransfer.setEntityId(entityId);
+            itemizedTransfer.setIsApproval(aa.getIsApproval());
+            transaction.addItemizedTransfer(itemizedTransfer);
         }
     }
 

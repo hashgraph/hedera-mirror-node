@@ -16,9 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSENSUSSUBMITMESSAGE;
-import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULECREATE;
-import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
+import static com.hedera.mirror.common.domain.transaction.TransactionType.*;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;
@@ -49,7 +47,7 @@ public class EntityProperties {
 
         private boolean files = true;
 
-        private boolean itemizedTransfers = false;
+        private boolean itemizedTransfers = true;
 
         private boolean pendingReward = true;
 
