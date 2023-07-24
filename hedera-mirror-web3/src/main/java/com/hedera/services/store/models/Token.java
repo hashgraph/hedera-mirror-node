@@ -1673,6 +1673,10 @@ public class Token {
         return supplyKey;
     }
 
+    public boolean hasSupplyKey() {
+        return supplyKey != null;
+    }
+
     public Token setSupplyKey(JKey supplyKey) {
         return createNewTokenWithSupplyKey(this, supplyKey);
     }
@@ -1689,7 +1693,7 @@ public class Token {
         return kycKey != null;
     }
 
-    private boolean hasWipeKey() {
+    public boolean hasWipeKey() {
         return wipeKey != null;
     }
 

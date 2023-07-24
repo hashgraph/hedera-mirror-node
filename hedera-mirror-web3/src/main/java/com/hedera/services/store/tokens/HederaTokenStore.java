@@ -243,16 +243,16 @@ public class HederaTokenStore {
     }
 
     private ResponseCodeEnum setIsFrozen(final AccountID aId, final TokenID tId, final boolean value) {
-        final var tokenRelationship =
-                store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.DONT_THROW);
+        return sanityChecked(false, aId, null, tId, token -> {
+            if (!token.hasFreezeKey()) {
+                return TOKEN_HAS_NO_FREEZE_KEY;
+            }
 
-        if (tokenRelationship.isEmptyTokenRelationship()) {
-            return TOKEN_HAS_NO_FREEZE_KEY;
-        }
-
-        final var newTokenRelationship = tokenRelationship.setFrozen(value);
-        store.updateTokenRelationship(newTokenRelationship);
-        return OK;
+            final var tokenRelationship = store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.THROW);
+            final var newTokenRelationship = tokenRelationship.setKycGranted(value);
+            store.updateTokenRelationship(newTokenRelationship);
+            return OK;
+        });
     }
 
     public ResponseCodeEnum adjustBalance(final AccountID aId, final TokenID tId, final long adjustment) {
@@ -469,13 +469,8 @@ public class HederaTokenStore {
             checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
             checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
             checkKeyOfType(appliedValidity, token.hasPauseKey(), newPauseKey.isPresent(), TOKEN_HAS_NO_PAUSE_KEY);
-            checkKeyOfType(
-                    appliedValidity, !token.getWipeKey().isEmpty(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
-            checkKeyOfType(
-                    appliedValidity,
-                    !token.getSupplyKey().isEmpty(),
-                    newSupplyKey.isPresent(),
-                    TOKEN_HAS_NO_SUPPLY_KEY);
+            checkKeyOfType(appliedValidity, !token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
+            checkKeyOfType(appliedValidity, !token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
             checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
             checkKeyOfType(
                     appliedValidity,
@@ -576,9 +571,9 @@ public class HederaTokenStore {
             final AtomicReference<ResponseCodeEnum> appliedValidity,
             final TokenUpdateTransactionBody changes,
             final Token token) {
-        if (changes.hasAutoRenewAccount() || !token.getAutoRenewAccount().isEmptyAccount()) {
+        if (changes.hasAutoRenewAccount() || token.getAutoRenewAccount() != null) {
             final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
-            if ((changedAutoRenewPeriod != 0 || token.getAutoRenewAccount().isEmptyAccount())
+            if ((changedAutoRenewPeriod != 0 || token.getAutoRenewAccount() == null)
                     && !isValidAutoRenewPeriod(changedAutoRenewPeriod)) {
                 appliedValidity.set(INVALID_RENEWAL_PERIOD);
             }
@@ -618,7 +613,7 @@ public class HederaTokenStore {
     }
 
     private void updateAutoRenewPeriodIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
-        if (!token.getAutoRenewAccount().isEmptyAccount()) {
+        if (token.getAutoRenewAccount() != null) {
             final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
             if (changedAutoRenewPeriod > 0) {
                 token.setAutoRenewPeriod(changedAutoRenewPeriod);

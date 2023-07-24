@@ -28,13 +28,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -51,6 +55,8 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -58,7 +64,9 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.exceptions.MissingEntityException;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -70,8 +78,14 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import java.util.EnumSet;
 import java.util.function.Consumer;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,8 +94,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaTokenStoreTest {
+    private static final Key newKey =
+            Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();
     private static final int associatedTokensCount = 2;
     private static final int numPositiveBalances = 1;
+    public static final long CONSENSUS_NOW = 1_234_567L;
+    private static final long expiry = CONSENSUS_NOW + 1_234_567L;
     private static final long treasuryBalance = 50_000L;
     private static final TokenID misc = asToken("0.0.1");
     private static final TokenID nonfungible = asToken("0.0.2");
@@ -96,6 +114,14 @@ class HederaTokenStoreTest {
     private static final TokenRelationshipKey counterpartyNft = asTokenRelationshipKey(counterparty, nonfungible);
     private static final NftId aNft = new NftId(0, 0, 2, 1234);
     private static final NftId tNft = new NftId(0, 0, 2, 12345);
+    private static final String newSymbol = "REALLYSOM";
+    private static final String newMemo = "NEWMEMO";
+    private static final String newName = "NEWNAME";
+    private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
+    private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
+    private static final long newAutoRenewPeriod = 2_000_000L;
+    private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
+    private static final EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
     private StoreImpl store;
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private HederaTokenStore subject;
@@ -1083,7 +1109,7 @@ class HederaTokenStoreTest {
     @Test
     void grantingRejectsUnknowableToken() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setKycKey(null);
+        var token = new Token(Id.fromGrpcToken(misc));
         var tokenRelationship = new TokenRelationship(token, account, true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
@@ -1095,5 +1121,329 @@ class HederaTokenStoreTest {
         final var status = subject.grantKyc(treasury, misc);
 
         assertEquals(TOKEN_HAS_NO_KYC_KEY, status);
+    }
+
+    @Test
+    void unfreezingInvalidWithoutFreezeKey() {
+        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
+        var token = new Token(Id.fromGrpcToken(misc));
+        var tokenRelationship = new TokenRelationship(token, account, true);
+
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+                .willReturn(account);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+                .willReturn(tokenRelationship);
+
+        final var status = subject.unfreeze(treasury, misc);
+
+        assertEquals(TOKEN_HAS_NO_FREEZE_KEY, status);
+    }
+
+    @Test
+    void changingOwnerWildCardDoesTheExpectedWithTreasury() {
+        final long startTreasuryNfts = 1;
+        final long startCounterpartyNfts = 0;
+        final long startTreasuryTNfts = 1;
+        final long startCounterpartyTNfts = 0;
+
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0).setOwnedNfts(startTreasuryNfts);
+        var counterpartyAccount =
+                new Account(0L, Id.fromGrpcAccount(counterparty), 0).setOwnedNfts(startCounterpartyNfts);
+        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+        var treasuryRel = new TokenRelationship(token, treasuryAccount, false).setBalance(startTreasuryTNfts);
+        var counterpartyRel =
+                new TokenRelationship(token, counterpartyAccount, false).setBalance(startCounterpartyTNfts);
+
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+                .willReturn(counterpartyAccount);
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+                .willReturn(counterpartyAccount);
+
+        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(token);
+
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+                .willReturn(counterpartyRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(counterpartyRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+                .willReturn(treasuryRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(treasuryRel);
+
+        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+
+        final var updatedPrimaryTreasury = treasuryAccount.setOwnedNfts(0);
+        final var updatedCounterparty = counterpartyAccount.setOwnedNfts(1);
+        final var updatedTreasuryRel = treasuryRel.setBalance(startTreasuryTNfts - 1);
+        final var updatedCounterpartyRel = counterpartyRel.setBalance(startCounterpartyTNfts + 1);
+
+        assertEquals(OK, status);
+        verify(store).updateAccount(updatedPrimaryTreasury);
+        verify(store).updateAccount(updatedCounterparty);
+        verify(store).updateTokenRelationship(updatedTreasuryRel);
+        verify(store).updateTokenRelationship(updatedCounterpartyRel);
+    }
+
+    @Test
+    void changingOwnerWildCardRejectsFromFreezeAndKYC() {
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
+        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+        var treasuryRel = new TokenRelationship(token, treasuryAccount, false).setFrozen(true);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, false);
+
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+                .willReturn(counterpartyAccount);
+        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(treasuryRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+                .willReturn(treasuryRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(counterpartyRel);
+
+        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+
+        assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+    }
+
+    @Test
+    void changingOwnerWildCardRejectsToFreezeAndKYC() {
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
+        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+        var treasuryRel = new TokenRelationship(token, treasuryAccount, false);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, false).setFrozen(true);
+
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+                .willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+                .willReturn(counterpartyAccount);
+        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(treasuryRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+                .willReturn(treasuryRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+                .willReturn(counterpartyRel);
+        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+                .willReturn(counterpartyRel);
+
+        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+
+        assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsInvalidExpiry() {
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
+
+        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_EXPIRATION_TIME, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoCanExtendImmutableExpiry() {
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(OK, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsInvalidNewAutoRenew() {
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
+        final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsInvalidNewAutoRenewPeriod() {
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0L);
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setAutoRenewAccount(account);
+        final var op = updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+                .setAutoRenewPeriod(enduring(-1L))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_RENEWAL_PERIOD, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsMissingToken() {
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        final var op = updateWith(ALL_KEYS, misc, true, true, true);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_TOKEN_ID, outcome);
+    }
+
+    @Test
+    void updateRejectsInvalidExpiry() throws DecoderException {
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setAdminKey(JKey.mapKey(newKey));
+        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        assertEquals(INVALID_EXPIRATION_TIME, outcome);
+    }
+
+    @Test
+    void canExtendImmutableExpiry() {
+        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setType(TokenType.FUNGIBLE_COMMON);
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        assertEquals(OK, outcome);
+    }
+
+    private TokenUpdateTransactionBody updateWith(
+            final EnumSet<KeyType> keys,
+            final TokenID tokenId,
+            final boolean useNewSymbol,
+            final boolean useNewName,
+            final boolean useNewTreasury) {
+        return updateWith(keys, tokenId, useNewName, useNewSymbol, useNewTreasury, false, false);
+    }
+
+    private TokenUpdateTransactionBody updateWith(
+            final EnumSet<KeyType> keys,
+            final TokenID tokenId,
+            final boolean useNewSymbol,
+            final boolean useNewName,
+            final boolean useNewTreasury,
+            final boolean useNewAutoRenewAccount,
+            final boolean useNewAutoRenewPeriod) {
+        return updateWith(
+                keys,
+                tokenId,
+                useNewSymbol,
+                useNewName,
+                useNewTreasury,
+                useNewAutoRenewAccount,
+                useNewAutoRenewPeriod,
+                false,
+                false);
+    }
+
+    private TokenUpdateTransactionBody updateWith(
+            final EnumSet<KeyType> keys,
+            final TokenID tokenId,
+            final boolean useNewSymbol,
+            final boolean useNewName,
+            final boolean useNewTreasury,
+            final boolean useNewAutoRenewAccount,
+            final boolean useNewAutoRenewPeriod,
+            final boolean setInvalidKeys,
+            final boolean useNewMemo) {
+        final var invalidKey = Key.getDefaultInstance();
+        final var op = TokenUpdateTransactionBody.newBuilder().setToken(tokenId);
+        if (useNewSymbol) {
+            op.setSymbol(newSymbol);
+        }
+        if (useNewName) {
+            op.setName(newName);
+        }
+        if (useNewMemo) {
+            op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
+        }
+        if (useNewTreasury) {
+            op.setTreasury(newTreasury);
+        }
+        if (useNewAutoRenewAccount) {
+            op.setAutoRenewAccount(newAutoRenewAccount);
+        }
+        if (useNewAutoRenewPeriod) {
+            op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
+        }
+        for (final var key : keys) {
+            switch (key) {
+                case WIPE:
+                    op.setWipeKey(setInvalidKeys ? invalidKey : newKey);
+                    break;
+                case FREEZE:
+                    op.setFreezeKey(setInvalidKeys ? invalidKey : newKey);
+                    break;
+                case SUPPLY:
+                    op.setSupplyKey(setInvalidKeys ? invalidKey : newKey);
+                    break;
+                case KYC:
+                    op.setKycKey(setInvalidKeys ? invalidKey : newKey);
+                    break;
+                case ADMIN:
+                    op.setAdminKey(setInvalidKeys ? invalidKey : newKey);
+                    break;
+                case EMPTY_ADMIN:
+                    op.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
+                    break;
+            }
+        }
+        return op.build();
+    }
+
+    enum KeyType {
+        WIPE,
+        FREEZE,
+        SUPPLY,
+        KYC,
+        ADMIN,
+        EMPTY_ADMIN,
+        FEE_SCHEDULE,
+        PAUSE
+    }
+
+    private Duration enduring(final long secs) {
+        return Duration.newBuilder().setSeconds(secs).build();
     }
 }
