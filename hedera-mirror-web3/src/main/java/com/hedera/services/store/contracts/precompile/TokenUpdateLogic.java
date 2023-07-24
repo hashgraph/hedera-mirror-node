@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -61,15 +62,13 @@ import java.util.Optional;
 public class TokenUpdateLogic {
     private final OptionValidator validator;
     private final HederaTokenStore tokenStore;
-    boolean allowChangedTreasuryToOwnNfts;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     public TokenUpdateLogic(
-            final /*@AreTreasuryWildcardsEnabled*/ boolean allowChangedTreasuryToOwnNfts,
-            OptionValidator validator,
-            HederaTokenStore tokenStore) {
+            MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator, HederaTokenStore tokenStore) {
         this.validator = validator;
         this.tokenStore = tokenStore;
-        this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now, Store store) {
@@ -120,7 +119,7 @@ public class TokenUpdateLogic {
                 }
             }
             var existingTreasury = token.getTreasury().getId().asGrpcAccount();
-            if (!allowChangedTreasuryToOwnNfts && token.getType() == NON_FUNGIBLE_UNIQUE) {
+            if (!mirrorNodeEvmProperties.isAllowTreasuryToOwnNfts() && token.getType() == NON_FUNGIBLE_UNIQUE) {
                 var existingTreasuryBalance = getTokenBalance(existingTreasury, tokenID, store);
                 if (existingTreasuryBalance > 0L) {
                     abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
