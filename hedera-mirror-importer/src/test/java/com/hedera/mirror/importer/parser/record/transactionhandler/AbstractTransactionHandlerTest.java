@@ -93,6 +93,7 @@ import lombok.Builder;
 import lombok.Value;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -219,10 +220,18 @@ abstract class AbstractTransactionHandlerTest {
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
+        entityProperties.getPersist().setEntityTransactions(true);
+        recordItemBuilder.getPersistProperties().setEntityTransactions(true);
         transactionHandler = getTransactionHandler();
         when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(Optional.of(EntityId.EMPTY));
         when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0).build()))
                 .thenReturn(Optional.of(EntityId.EMPTY));
+    }
+
+    @AfterEach
+    void afterEach() {
+        entityProperties.getPersist().setEntityTransactions(false);
+        recordItemBuilder.getPersistProperties().setEntityTransactions(false);
     }
 
     @Test

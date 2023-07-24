@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -178,7 +177,6 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void updateTransactionDeclineReward(Boolean declineReward) {
-        RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
         RecordItem withDeclineValueSet = recordItemBuilder
                 .contractUpdate()
                 .transactionBody(body -> body.setDeclineReward(BoolValue.of(declineReward))

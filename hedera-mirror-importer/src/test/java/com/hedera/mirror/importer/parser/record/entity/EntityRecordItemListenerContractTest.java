@@ -88,6 +88,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.assertj.core.api.ObjectAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -111,10 +112,16 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @BeforeEach
     void before() {
         contractIds = new HashMap<>();
+        entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
         entityProperties.getPersist().setContracts(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @ParameterizedTest

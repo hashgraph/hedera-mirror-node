@@ -146,6 +146,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -177,6 +178,7 @@ public class RecordItemBuilder {
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
+    @Getter
     private final PersistProperties persistProperties = new PersistProperties();
 
     private Instant now = Instant.now();

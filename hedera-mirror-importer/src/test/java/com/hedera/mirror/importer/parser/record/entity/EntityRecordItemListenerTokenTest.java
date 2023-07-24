@@ -96,6 +96,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.ObjectAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -416,7 +417,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @BeforeEach
     void before() {
+        entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setTokens(true);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @ParameterizedTest(name = "{0}")

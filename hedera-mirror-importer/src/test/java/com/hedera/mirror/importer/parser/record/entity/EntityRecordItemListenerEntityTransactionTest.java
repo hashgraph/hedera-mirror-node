@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,9 +54,14 @@ import org.springframework.data.util.Version;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecordItemListenerTest {
 
+    @BeforeEach
+    void setup() {
+        entityProperties.getPersist().setEntityTransactions(true);
+    }
+
     @AfterEach
     void teardown() {
-        entityProperties.getPersist().setEntityTransactions(true);
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @ParameterizedTest(name = "{0}")

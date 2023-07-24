@@ -42,6 +42,7 @@ class PersistPropertiesTest {
             """)
     void shouldPersistEntityTransaction(String entityIdStr, boolean expected) {
         var persistProperties = new EntityProperties.PersistProperties();
+        persistProperties.setEntityTransactions(true);
         var entityId = entityIdStr != null ? EntityId.of(entityIdStr, EntityType.ACCOUNT) : null;
         assertThat(persistProperties.shouldPersistEntityTransaction(entityId)).isEqualTo(expected);
     }
@@ -64,6 +65,7 @@ class PersistPropertiesTest {
     @Test
     void shouldPersistEntityTransactionWithCustomExclusion() {
         var persistProperties = new EntityProperties.PersistProperties();
+        persistProperties.setEntityTransactions(true);
         persistProperties.setEntityTransactionExclusion(Set.of(EntityId.of(10, EntityType.ACCOUNT)));
         assertThat(persistProperties.shouldPersistEntityTransaction(null)).isFalse();
         assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.EMPTY))

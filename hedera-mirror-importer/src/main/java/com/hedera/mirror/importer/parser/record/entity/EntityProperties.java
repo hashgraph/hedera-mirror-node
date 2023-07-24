@@ -54,7 +54,7 @@ public class EntityProperties {
         private Set<EntityId> entityTransactionExclusion =
                 Set.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT));
 
-        private boolean entityTransactions = true;
+        private boolean entityTransactions = false;
 
         private boolean ethereumTransactions = true;
 
