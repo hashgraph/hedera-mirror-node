@@ -469,7 +469,6 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         var getBalanceOfResponse = mirrorClient.contractsCall(contractCallGetBalanceOf);
-
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
     }
 
