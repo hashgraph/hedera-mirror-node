@@ -16,26 +16,24 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
 
-    private final HederaEvmEntityAccess mirrorEntityAccess;
     private final Store store;
+    private final HederaEvmEntityAccess mirrorEntityAccess;
+    private final MirrorEvmContractAliases aliases;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
-        if (!account.isEmptyAccount()) {
+        if (aliases.isInUse(addressOrAlias)) {
             return addressOrAlias;
         }
 
@@ -48,15 +46,12 @@ public class AccountAccessorImpl implements AccountAccessor {
     }
 
     public Address getAddressOrAlias(final Address address) {
-        final ByteString alias;
-        if (!mirrorEntityAccess.isExtant(address)) {
+        // An EIP-1014 address is always canonical
+        if (!aliases.isMirror(address)) {
             return address;
         }
-        alias = mirrorEntityAccess.alias(address);
 
-        if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
-            return Address.wrap(Bytes.wrap(alias.toByteArray()));
-        }
-        return address;
+        final var account = store.getAccount(address, OnMissing.DONT_THROW);
+        return account.canonicalAddress();
     }
 }
