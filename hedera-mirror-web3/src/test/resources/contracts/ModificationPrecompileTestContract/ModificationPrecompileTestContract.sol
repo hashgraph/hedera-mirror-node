@@ -161,6 +161,15 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
+    function unfreezeTokenExternal(address token, address account) external
+    returns (int64 responseCode)
+    {
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
     function grantTokenKycExternal(address token, address account) external
     returns (int64 responseCode)
     {
@@ -296,7 +305,9 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function getBalanceOfWithDirectRedirect(address token, address account) external returns (bytes memory result) {
+    function getBalanceOfWithDirectRedirect(address token, address account) external
+    returns (bytes memory result)
+    {
         (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token redirect failed");

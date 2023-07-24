@@ -28,6 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -202,7 +203,25 @@ class DissociateLogicTest {
     @Test
     void verifyDecrementedAutoAssociations() {
         var newAccount = new Account(
-                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 0, 0, 0, false, null);
+                ByteString.EMPTY,
+                0L,
+                accountId,
+                9999999999L,
+                0L,
+                false,
+                0L,
+                0L,
+                null,
+                3,
+                null,
+                null,
+                null,
+                3,
+                0,
+                0,
+                0,
+                false,
+                null);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
@@ -220,7 +239,25 @@ class DissociateLogicTest {
     @Test
     void verifyUpdagtedNumPositiveBalance() {
         var newAccount = new Account(
-                0L, accountId, 9999999999L, 0L, false, 0L, 0L, null, 3, null, null, null, 3, 3, 0, 0, false, null);
+                ByteString.EMPTY,
+                0L,
+                accountId,
+                9999999999L,
+                0L,
+                false,
+                0L,
+                0L,
+                null,
+                3,
+                null,
+                null,
+                null,
+                3,
+                3,
+                0,
+                0,
+                false,
+                null);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =

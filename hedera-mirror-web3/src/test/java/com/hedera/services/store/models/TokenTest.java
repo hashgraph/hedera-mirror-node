@@ -54,6 +54,7 @@ class TokenTest {
     private final long defaultLongValue = 0;
     private final int defaultIntValue = 0;
     private Account treasuryAccount = new Account(
+            ByteString.EMPTY,
             0L,
             treasuryId,
             defaultLongValue,
@@ -73,6 +74,7 @@ class TokenTest {
             false,
             null);
     private Account nonTreasuryAccount = new Account(
+            ByteString.EMPTY,
             0L,
             nonTreasuryId,
             defaultLongValue,
