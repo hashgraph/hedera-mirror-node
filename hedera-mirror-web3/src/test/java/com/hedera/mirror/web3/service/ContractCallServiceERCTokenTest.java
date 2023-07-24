@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,8 +43,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void ercModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
+    @EnumSource(UnsupportedErcContractModificationFunctions.class)
+    void unsupportedErcModificationPrecompileOperationsTest(UnsupportedErcContractModificationFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters =
@@ -52,6 +53,22 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Precompile not supported for non-static frames");
+    }
+
+    @ParameterizedTest
+    @EnumSource(SupportedErcContractModificationFunctions.class)
+    void supportedErcModificationPrecompileOperationsTest(SupportedErcContractModificationFunctions ercFunction) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -98,12 +115,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     public enum ErcContractModificationFunctions {
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
+        DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
+        APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
         TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
         TRANSFER_WITH_ALIAS("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
         TRANSFER_FROM_WITH_ALIAS(
                 "transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, 2L}),
         APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L});
 
         private final String name;
