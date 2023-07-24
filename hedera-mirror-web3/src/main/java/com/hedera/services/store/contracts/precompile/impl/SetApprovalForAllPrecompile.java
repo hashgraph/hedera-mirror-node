@@ -105,7 +105,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
             senderAddress = approveForAllParams.senderAddress();
         }
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        // TODO assigning ownerId to sender might lead to security issues
+
         final var ownerId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
         final var setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         return syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, ownerId);
