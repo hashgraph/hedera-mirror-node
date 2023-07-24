@@ -300,7 +300,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
         final var frozenFungibleTokenEntityId =
                 fungibleTokenPersist(spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
-        final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
+        final var tokenTreasuryEntityId =
+                fungibleTokenPersist(treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L);
         final var nftEntityId = nftPersist(NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
@@ -391,8 +392,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(t -> t.tokenId(tokenEntityId.getId())
                         .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId(), ACCOUNT))
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .kycKey(new byte[0])
-                        .freezeDefault(false)
+                        .kycKey(key)
+                        .freezeDefault(true)
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)
@@ -534,7 +535,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .kycKey(key)
-                        .freezeDefault(false)
+                        .freezeDefault(true)
                         .feeScheduleKey(key)
                         .maxSupply(2000000000L)
                         .name("Hbars")
