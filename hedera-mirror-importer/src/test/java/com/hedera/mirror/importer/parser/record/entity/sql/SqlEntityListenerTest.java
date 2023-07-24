@@ -455,7 +455,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
         assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
@@ -484,7 +484,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
         assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
@@ -561,7 +561,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .get();
 
         /*
-         * When commitIndex == 3, only the above debit to the previous grant and the following new allowance
+         * When commitIndex == 3, the above debit to the previous grant and the following new allowance
          * grant are present in memory at the same time and both rows cannot be presented to the
          * database for the upsert process. Therefore, the debit to the previous grant is
          * not recorded prior to that grant moving to the history table and is therefore lost.
@@ -2303,7 +2303,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
         assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
@@ -2332,7 +2332,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred); // To compare after debit
+        tokenAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
         assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
@@ -2409,7 +2409,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .get();
 
         /*
-         * When commitIndex == 3, only the above debit to the previous grant and the following new allowance
+         * When commitIndex == 3, the above debit to the previous grant and the following new allowance
          * grant are present in memory at the same time and both rows cannot be presented to the
          * database for the upsert process. Therefore, the debit to the previous grant is
          * not recorded prior to that grant moving to the history table and is therefore lost.

@@ -207,7 +207,8 @@ public class EntityRecordItemListener implements RecordItemListener {
      * network+service fee (paid to treasury).
      */
     private void processNonFeeTransfers(long consensusTimestamp, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isNonFeeTransfers()) {
+        if (!(entityProperties.getPersist().isNonFeeTransfers()
+                || entityProperties.getPersist().isTrackAllowance())) {
             return;
         }
 
