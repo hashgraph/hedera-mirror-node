@@ -95,6 +95,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY =
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
+
+    protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -294,22 +296,34 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
-        final var tokenEntityId =
-                fungibleTokenPersist(ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
-        final var notFrozenFungibleTokenEntityId =
-                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
-        final var frozenFungibleTokenEntityId =
-                fungibleTokenPersist(spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
-        final var tokenTreasuryEntityId =
-                fungibleTokenPersist(treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L);
-        final var nftEntityId = nftPersist(NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO);
+
+        final var tokenEntityId = fungibleTokenPersist(
+                ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+        final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
+                spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.PAUSED);
+        final var frozenFungibleTokenEntityId = fungibleTokenPersist(
+                spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+        final var tokenTreasuryEntityId = fungibleTokenPersist(
+                treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.UNPAUSED);
+
+        final var nftEntityId = nftPersist(
+                NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
                 senderEntityId,
                 spenderEntityId,
                 ownerEntityId,
-                KEY_PROTO);
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED);
+        final var nftEntityId3 = nftPersist(
+                NFT_TRANSFER_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED);
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
+
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -321,9 +335,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(modificationContarct, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
 
@@ -370,7 +387,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private EntityId fungibleTokenPersist(
-            final EntityId treasuryId, final byte[] key, final Address tokenAddress, final long tokenExpiration) {
+            final EntityId treasuryId,
+            final byte[] key,
+            final Address tokenAddress,
+            final long tokenExpiration,
+            final TokenPauseStatusEnum pauseStatus) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
@@ -402,7 +423,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .decimals(12)
                         .wipeKey(key)
                         .freezeKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
+                        .pauseStatus(pauseStatus)
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR"))
@@ -511,7 +532,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final EntityId treasuryId,
-            final byte[] key) {
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus) {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
         final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId(), ACCOUNT);
@@ -542,7 +564,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(key)
                         .pauseKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
+                        .pauseStatus(pauseStatus)
                         .wipeKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
