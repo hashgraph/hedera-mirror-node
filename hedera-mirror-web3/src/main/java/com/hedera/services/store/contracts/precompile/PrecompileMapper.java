@@ -25,7 +25,6 @@ public class PrecompileMapper {
 
     public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private static final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
-
     private static final Set<Integer> precompileSelectors = Set.of(
             AbiConstants.ABI_ID_CRYPTO_TRANSFER,
             AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2,
