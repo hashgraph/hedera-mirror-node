@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static com.hedera.mirror.common.domain.transaction.TransactionType.*;
+import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSENSUSSUBMITMESSAGE;
+import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULECREATE;
+import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;

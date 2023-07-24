@@ -77,6 +77,7 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -104,6 +105,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -891,6 +893,11 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT))
                 .index(transactionIndex())
                 .initialBalance(10000000L)
+                .itemizedTransfer(Arrays.asList(ItemizedTransfer.builder()
+                        .amount(100L)
+                        .entityId(entityId(ACCOUNT))
+                        .isApproval(false)
+                        .build()))
                 .maxFee(100000000L)
                 .memo(bytes(10))
                 .nodeAccountId(entityId(ACCOUNT))

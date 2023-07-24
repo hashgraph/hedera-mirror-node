@@ -49,6 +49,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -91,6 +92,7 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -954,20 +956,29 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(0);
+                .returns(0, Transaction::getIndex)
+                .returns(
+                        getItemizedTransfer(
+                                firstTransaction.getItemizedTransfer().get(0).getEntityId()),
+                        Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(1);
+                .returns(1, Transaction::getIndex)
+                .returns(
+                        getItemizedTransfer(
+                                secondTransaction.getItemizedTransfer().get(0).getEntityId()),
+                        Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(2);
+                .returns(2, Transaction::getIndex)
+                .returns(
+                        getItemizedTransfer(
+                                thirdTransaction.getItemizedTransfer().get(0).getEntityId()),
+                        Transaction::getItemizedTransfer);
 
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }
@@ -2537,5 +2548,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setTimestampRange(timestampRange);
         tokenAccount.setTokenId(tokenId.getId());
         return tokenAccount;
+    }
+
+    private List<ItemizedTransfer> getItemizedTransfer(EntityId id) {
+        ItemizedTransfer transfer = new ItemizedTransfer();
+        transfer.setAmount(100L);
+        transfer.setEntityId(id);
+        transfer.setIsApproval(false);
+        return Arrays.asList(transfer);
     }
 }

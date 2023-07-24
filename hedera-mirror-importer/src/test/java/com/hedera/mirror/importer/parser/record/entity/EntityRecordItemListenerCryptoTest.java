@@ -1006,10 +1006,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .transaction(transaction)
                 .build());
 
+        Long consensusTimestamp = DomainUtils.convertToNanosMax(
+                record.getConsensusTimestamp().getSeconds(),
+                record.getConsensusTimestamp().getNanos());
+
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertCryptoTransfers(3),
+                () -> assertThat(transactionRepository.findById(consensusTimestamp))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
                 () -> assertTransactionAndRecord(transactionBody, record));
     }
 
@@ -1044,10 +1052,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .build();
         parseRecordItemAndCommit(recordItem);
 
+        Long consensusTimestamp = DomainUtils.convertToNanosMax(
+                record.getConsensusTimestamp().getSeconds(),
+                record.getConsensusTimestamp().getNanos());
+
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
+                () -> assertThat(transactionRepository.findById(consensusTimestamp))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
                 () -> assertThat(tokenTransferRepository.findAll())
                         .hasSize(1)
                         .first()
@@ -1206,6 +1222,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
                         .asList()
+                        .hasSize(1)
                         .allSatisfy(transfer -> {
                             assertThat(((ItemizedTransfer) transfer).getEntityId())
                                     .isEqualTo(contract.toEntityId());
