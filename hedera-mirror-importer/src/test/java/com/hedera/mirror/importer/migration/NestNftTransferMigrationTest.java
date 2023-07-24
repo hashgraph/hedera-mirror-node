@@ -20,22 +20,23 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.hedera.mirror.common.converter.EntityIdDeserializer;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -43,14 +44,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -65,29 +62,34 @@ import org.springframework.util.StreamUtils;
 @TestPropertySource(properties = "spring.flyway.target=1.80.1")
 class NestNftTransferMigrationTest extends IntegrationTest {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static final CollectionType NFT_TRANSFER_COLLECTION_TYPE =
+            OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, NftTransfer.class);
+
     private static final String REVERT_DDL = "alter table transaction drop column if exists nft_transfer";
 
-    private static final String ADD_ITEMIZED_TRANSFERS =
-            "alter table transaction add column if not exists itemized_transfer jsonb null";
-
-    private static final String REMOVE_ITEMIZED_TRANSFERS =
-            "alter table transaction drop column if exists itemized_transfer";
     private final @Owner JdbcTemplate jdbcTemplate;
 
-    private static final RowMapper<MigrationTransaction> ROW_MAPPER = nftRowMapper(MigrationTransaction.class);
+    private static final RowMapper<MigrationTransaction> ROW_MAPPER = rowMapper(MigrationTransaction.class);
 
     @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
     private final Resource sql;
 
+    static {
+        var module = new SimpleModule();
+        module.addDeserializer(EntityId.class, EntityIdDeserializer.INSTANCE);
+        OBJECT_MAPPER.registerModule(module);
+        OBJECT_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    }
+
     @BeforeEach
     void setup() {
-
         assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
     }
 
     @AfterEach
     void teardown() {
-
         jdbcTemplate.execute(REVERT_DDL);
     }
 
@@ -297,36 +299,11 @@ class NestNftTransferMigrationTest extends IntegrationTest {
                 tokenMintTx, cryptoTransferTx1, cryptoTransferTx2, tokenWipeTx, tokenUpdateTx, tokenDissociateTx);
     }
 
-    protected static <T> RowMapper<T> nftRowMapper(Class<T> entityClass) {
-        defaultConversionService.addConverter(PGobject.class, List.class, nftTransfers -> {
-            try {
-                JSONArray jsonarray = new JSONArray(nftTransfers.getValue());
-                List<MigrationNftTransfer> migrationTransfers = new ArrayList<>();
-
-                for (int i = 0; i < jsonarray.length(); i++) {
-                    JSONObject nftTransfer = jsonarray.getJSONObject(i);
-                    Instant now = Instant.now();
-                    MigrationNftTransfer migrationTransfer = new MigrationNftTransfer(
-                            DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()),
-                            nftTransfer.getBoolean("is_approval"),
-                            nftTransfer.optLong("receiver_account_id", 0),
-                            nftTransfer.optLong("sender_account_id", 0),
-                            nftTransfer.optLong("serial_number", 0),
-                            nftTransfer.optLong("token_id", 0));
-                    migrationTransfers.add(migrationTransfer);
-                }
-                return migrationTransfers;
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return rowMapper(entityClass);
-    }
-
     private void assertTransactions(Transaction... transactions) {
-        var migrationTransactions = jdbcTemplate.query("select * from transaction", ROW_MAPPER);
-
-        assertThat(toDomainTransaction(migrationTransactions))
+        var actualTransactions = jdbcTemplate.query("select * from transaction", ROW_MAPPER).stream()
+                .map(MigrationTransaction::toDomainTransaction)
+                .toList();
+        assertThat(actualTransactions)
                 .usingRecursiveFieldByFieldElementComparatorOnFields("consensus_timestamp", "nft_transfer")
                 .containsExactlyInAnyOrder(transactions);
     }
@@ -389,12 +366,6 @@ class NestNftTransferMigrationTest extends IntegrationTest {
         return null;
     }
 
-    private List<Transaction> toDomainTransaction(List<MigrationTransaction> transactions) {
-        return transactions.stream()
-                .map(MigrationTransaction::toDomainTransaction)
-                .toList();
-    }
-
     @AllArgsConstructor
     @Builder
     @Data
@@ -424,31 +395,17 @@ class NestNftTransferMigrationTest extends IntegrationTest {
     @Data
     public static class MigrationTransaction {
 
-        private Long consensusTimestamp;
+        private long consensusTimestamp;
+        private String nftTransfer;
 
-        private List<MigrationNftTransfer> nftTransfer;
-
-        private Integer nonce;
-
-        private Long payerAccountId;
-
-        private Integer result;
-
-        private boolean scheduled;
-
-        private Integer type;
-        private Long validStartNs;
-
+        @SneakyThrows
         public Transaction toDomainTransaction() {
+            List<NftTransfer> nftTransferList = nftTransfer != null
+                    ? OBJECT_MAPPER.readValue(this.nftTransfer, NFT_TRANSFER_COLLECTION_TYPE)
+                    : null;
             return Transaction.builder()
                     .consensusTimestamp(consensusTimestamp)
-                    .nonce(nonce)
-                    .nftTransfer(toDomainNftTransfers(nftTransfer))
-                    .payerAccountId(EntityId.of(payerAccountId, ACCOUNT))
-                    .result(ResponseCodeEnum.SUCCESS.getNumber())
-                    .scheduled(scheduled)
-                    .type(TransactionType.CRYPTOTRANSFER.getProtoId())
-                    .validStartNs(validStartNs)
+                    .nftTransfer(nftTransferList)
                     .build();
         }
     }

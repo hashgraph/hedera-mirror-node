@@ -60,22 +60,6 @@ public abstract class IntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = Map.of(Nft.class, "token_id, serial_number");
 
-    protected static final DefaultConversionService defaultConversionService = new DefaultConversionService();
-
-    static {
-        defaultConversionService.addConverter(
-                PGobject.class, Range.class, source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
-        defaultConversionService.addConverter(
-                Long.class, EntityId.class, EntityIdConverter.INSTANCE::convertToEntityAttribute);
-        defaultConversionService.addConverter(PgArray.class, List.class, array -> {
-            try {
-                return Arrays.asList((Object[]) array.getArray());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
     protected final Logger log = LogManager.getLogger(getClass());
 
     @Resource
@@ -107,6 +91,19 @@ public abstract class IntegrationTest {
     private boolean v1;
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(
+                PGobject.class, Range.class, source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
+        defaultConversionService.addConverter(
+                Long.class, EntityId.class, EntityIdConverter.INSTANCE::convertToEntityAttribute);
+        defaultConversionService.addConverter(PgArray.class, List.class, array -> {
+            try {
+                return Arrays.asList((Object[]) array.getArray());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         DataClassRowMapper<T> dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
