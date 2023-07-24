@@ -19,10 +19,22 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.*;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -454,6 +466,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         var getAllowanceResponse = mirrorClient.contractsCall(contractCallGetAllowance);
+
         assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(1000);
     }
 
@@ -469,6 +482,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .estimate(false)
                 .build();
         var getBalanceOfResponse = mirrorClient.contractsCall(contractCallGetBalanceOf);
+
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
     }
 
