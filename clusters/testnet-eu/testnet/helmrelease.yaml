@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.83.0'
+      version: '0.84.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -56,11 +56,5 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
-      config:
-        hedera:
-          mirror:
-            test:
-              acceptance:
-                operatorBalance: 75000000000
       enabled: true
 
