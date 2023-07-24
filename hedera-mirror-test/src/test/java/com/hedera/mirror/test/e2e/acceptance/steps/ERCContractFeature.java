@@ -16,35 +16,30 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.CustomFee;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.NftId;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.*;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.*;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -53,12 +48,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -92,6 +85,7 @@ public class ERCContractFeature extends AbstractFeature {
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;
+    private ExpandedAccountId ECDSAAccount;
     private FileId fileId;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
@@ -218,10 +212,10 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -240,12 +234,12 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(
-                                allowanceSpenderAccountId.getAccountId().toSolidityAddress()))
+                        allowanceSpenderAccountId.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -262,10 +256,10 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
@@ -283,12 +277,12 @@ public class ERCContractFeature extends AbstractFeature {
                 .data(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress())
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(
-                                spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()))
+                        spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -297,6 +291,7 @@ public class ERCContractFeature extends AbstractFeature {
 
         assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
     }
+
 
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token balance")
@@ -411,6 +406,82 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
+    public void isApprovedForAllWithAliasSecondContractCall() {
+        ECDSAAccount = accountClient.createNewECDSAAccount(1_000_000_000);
+        tokenClient.associate(ECDSAAccount, tokenIds.get(1));
+        var networkResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ECDSAAccount.getAccountId());
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+
+
+        var contractCallGetIsApproveForAll = ContractCallRequest.builder()
+                .data(IS_APPROVED_FOR_ALL_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(tokenClient
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress())
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getIsApproveForAllResponse = mirrorClient.contractsCall(contractCallGetIsApproveForAll);
+        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
+    }
+
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
+    public void allowanceAliasAccountsCall() {
+        tokenClient.associate(ECDSAAccount, tokenIds.get(0));
+        accountClient.approveToken(tokenIds.get(0), ECDSAAccount.getAccountId(), 1_000);
+        var networkResponse = tokenClient.transferFungibleToken(tokenIds.get(0), tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                ECDSAAccount.getAccountId(), 500);
+        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+
+        var contractCallGetAllowance = ContractCallRequest.builder()
+                .data(ALLOWANCE_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(tokenClient
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId().toSolidityAddress())
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getAllowanceResponse = mirrorClient.contractsCall(contractCallGetAllowance);
+        assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(1000);
+    }
+
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token balance with alias account")
+    public void balanceOfAliasAccountContractCall() {
+        var contractCallGetBalanceOf = ContractCallRequest.builder()
+                .data(BALANCE_OF_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getBalanceOfResponse = mirrorClient.contractsCall(contractCallGetBalanceOf);
+
+        assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
+    }
+
+    @Retryable(
+            value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyTx(String txId) {
+        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
+        assertNotNull(txResponse);
+    }
+
     private TokenId createNewToken(
             String symbol,
             int freezeStatus,
@@ -456,7 +527,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     private void persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;
