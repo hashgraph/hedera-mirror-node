@@ -33,7 +33,6 @@ import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
-import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -73,7 +72,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final EntityAddressSequencer entityAddressSequencer,
             final ContractRepository contractRepository,
             final ContractStateRepository contractStateRepository,
-            final EntityRepository entityRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper) {
         this.evmProperties = evmProperties;
@@ -101,11 +99,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final var store = new StoreImpl(databaseAccessors);
-        final var mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
-        final var tokenAccessor = new TokenAccessorImpl(evmProperties, store);
-        final var accountAccessor = new AccountAccessorImpl(mirrorEntityAccess, store);
-        final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
+        final var mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+        final var tokenAccessor = new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
+        final var accountAccessor = new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
+        final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
         final var worldState = new HederaEvmWorldState(
