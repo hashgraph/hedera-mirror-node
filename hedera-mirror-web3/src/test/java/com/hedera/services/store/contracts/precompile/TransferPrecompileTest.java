@@ -54,7 +54,12 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -253,7 +258,6 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(HTSTestsUtil.failResult, result);
@@ -304,12 +308,10 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
         final var result = subject.computeInternal(frame);
 
         // then:
         assertEquals(successResult, result);
-        ;
     }
 
     @Test
@@ -331,7 +333,6 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -357,7 +358,6 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -383,7 +383,7 @@ class TransferPrecompileTest {
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
-        ;
+
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -498,9 +498,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
+        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -518,9 +517,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
+        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -539,9 +537,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
+        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -559,9 +556,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
+        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -578,9 +574,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBodyBuilder.build());
+        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars

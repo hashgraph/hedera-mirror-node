@@ -69,7 +69,6 @@ import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -130,19 +129,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             new Function("transferNFT(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
-    protected CryptoTransferWrapper transferOp;
-    Address senderAddress;
-    private ImpliedTransfers impliedTransfers;
-    private int numLazyCreates;
-    private ResponseCodeEnum impliedValidity;
-
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final TransferLogic transferLogic;
 
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
-    private TransactionBody.Builder transactionBody;
 
     public TransferPrecompile(
             final PrecompilePricingUtils pricingUtils,
@@ -161,24 +153,24 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         if (bodyParams instanceof TransferParams transferParams) {
-            transferOp = switch (transferParams.functionId()) {
-                case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-                case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
-                case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
-                case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
-                case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
-                case ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
-                default -> null;};
+            final var transferOp =
+                    switch (transferParams.functionId()) {
+                        case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
+                        case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
+                        case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
+                        case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
+                        case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
+                        case ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
+                        default -> null;
+                    };
             Objects.requireNonNull(transferOp, "Unable to decode function input");
-            senderAddress = transferParams.sernderAddress();
 
-            transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
+            final var transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
             if (!transferOp.transferWrapper().hbarTransfers().isEmpty()) {
                 transactionBody.mergeFrom(
                         syntheticTxnFactory.createCryptoTransferForHbar(transferOp.transferWrapper()));
             }
 
-            extrapolateDetailsFromSyntheticTxn();
             return transactionBody;
         }
         return TransactionBody.newBuilder();
@@ -192,13 +184,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         initializeHederaTokenStore(store);
-        if (impliedValidity == null) {
-            extrapolateDetailsFromSyntheticTxn();
-        }
+        final var impliedValidity = extrapolateValidityDetailsFromSyntheticTxn(transactionBody);
         if (impliedValidity != OK) {
             throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
         final var changes = impliedTransfers.getAllBalanceChanges();
 
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
@@ -420,9 +411,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
-        Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
-        final boolean customFees = impliedTransfers != null;
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
+        final boolean customFees = !impliedTransfers.getAllBalanceChanges().isEmpty();
         // For fungible there are always at least two operations, so only charge half for each
         // operation
         final long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
@@ -437,9 +428,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES
                         : PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
                 consensusTime);
-        for (final var transfer : transferOp.tokenTransferWrappers()) {
-            accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
-            accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
+        final var cryptoTransfer = transactionBody.getCryptoTransfer();
+        for (final var transfer : cryptoTransfer.getTokenTransfersList()) {
+            // Fungible transfers are divided by 2, because we have 2 separate items for sender and receiver.
+            accumulatedCost += (transfer.getTransfersCount() / 2) * ftTxCost;
+            accumulatedCost += transfer.getNftTransfersCount() * nonFungibleTxCost;
         }
 
         // add the cost for transferring hbars
@@ -447,12 +440,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final long hbarTxCost =
                 pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
                         / 2;
-        accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
-        if (mirrorNodeEvmProperties.isLazyCreationEnabled() && numLazyCreates > 0) {
-            final var lazyCreationFee = pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
-                    + pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_UPDATE, consensusTime);
-            accumulatedCost += numLazyCreates * lazyCreationFee;
-        }
+        accumulatedCost += cryptoTransfer.getTransfers().getAccountAmountsCount() * hbarTxCost;
         return accumulatedCost;
     }
 
@@ -484,14 +472,17 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
     }
 
-    protected void extrapolateDetailsFromSyntheticTxn() {
-        Objects.requireNonNull(
-                transferOp, "`body` method should be called before `extrapolateDetailsFromSyntheticTxn`");
+    protected ImpliedTransfers extrapolateImpliedTransferDetailsFromSyntheticTxn(
+            final TransactionBody transactionBody) {
+        final var senderAccount = getSenderAccountId(transactionBody);
+        final var senderAddress = EntityIdUtils.asTypedEvmAddress(senderAccount);
+        final var explicitChanges = constructBalanceChanges(transactionBody, senderAddress);
+        return new ImpliedTransfers(explicitChanges);
+    }
 
+    private ResponseCodeEnum extrapolateValidityDetailsFromSyntheticTxn(final TransactionBody transactionBody) {
         final var op = transactionBody.getCryptoTransfer();
-        impliedValidity = validityWithCurrentProps(op);
-        final var explicitChanges = constructBalanceChanges();
-        impliedTransfers = new ImpliedTransfers(explicitChanges);
+        return validityWithCurrentProps(op);
     }
 
     private ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody transferOp) {
@@ -594,85 +585,38 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return false;
     }
 
-    private List<BalanceChange> constructBalanceChanges() {
-        Objects.requireNonNull(transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+    private List<BalanceChange> constructBalanceChanges(
+            final TransactionBody transactionBody, final Address senderAddress) {
         final List<BalanceChange> allChanges = new ArrayList<>();
         final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-        Set<AccountID> requestedLazyCreates = new HashSet<>();
-        for (final TokenTransferWrapper tokenTransferWrapper : transferOp.tokenTransferWrappers()) {
-            for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-                final var receiver = fungibleTransfer.receiver();
-                if (fungibleTransfer.sender() != null && receiver != null) {
-                    allChanges.addAll(List.of(
-                            BalanceChange.changingFtUnits(
-                                    Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-                                    fungibleTransfer.getDenomination(),
-                                    aaWith(receiver, fungibleTransfer.amount(), fungibleTransfer.isApproval()),
-                                    accountId),
-                            BalanceChange.changingFtUnits(
-                                    Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-                                    fungibleTransfer.getDenomination(),
-                                    aaWith(
-                                            fungibleTransfer.sender(),
-                                            -fungibleTransfer.amount(),
-                                            fungibleTransfer.isApproval()),
-                                    accountId)));
-                    if (!receiver.getAlias().isEmpty()) {
-                        requestedLazyCreates.add(receiver);
-                    }
-                } else if (fungibleTransfer.sender() == null) {
-                    allChanges.add(BalanceChange.changingFtUnits(
-                            Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-                            fungibleTransfer.getDenomination(),
-                            aaWith(receiver, fungibleTransfer.amount(), fungibleTransfer.isApproval()),
-                            accountId));
-                    if (!receiver.getAlias().isEmpty()) {
-                        requestedLazyCreates.add(receiver);
-                    }
-                } else {
-                    allChanges.add(BalanceChange.changingFtUnits(
-                            Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-                            fungibleTransfer.getDenomination(),
-                            aaWith(
-                                    fungibleTransfer.sender(),
-                                    -fungibleTransfer.amount(),
-                                    fungibleTransfer.isApproval()),
-                            accountId));
-                }
-            }
-            for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
-                final var asGrpc = nftExchange.asGrpc();
-                final var receiverAccountID = asGrpc.getReceiverAccountID();
-                if (!receiverAccountID.getAlias().isEmpty()) {
-                    requestedLazyCreates.add(receiverAccountID);
-                }
-                allChanges.add(BalanceChange.changingNftOwnership(
-                        Id.fromGrpcToken(nftExchange.getTokenType()), nftExchange.getTokenType(), asGrpc, accountId));
-            }
+        final var transferOp = transactionBody.getCryptoTransfer();
+        for (final TokenTransferList tokenTransferList : transferOp.getTokenTransfersList()) {
+            final var token = tokenTransferList.getToken();
+            tokenTransferList
+                    .getTransfersList()
+                    .forEach(aa -> allChanges.add(
+                            BalanceChange.changingFtUnits(Id.fromGrpcToken(token), token, aa, accountId)));
+            tokenTransferList
+                    .getNftTransfersList()
+                    .forEach(nft -> allChanges.add(
+                            BalanceChange.changingNftOwnership(Id.fromGrpcToken(token), token, nft, accountId)));
         }
 
-        for (final var hbarTransfer : transferOp.transferWrapper().hbarTransfers()) {
-            if (hbarTransfer.sender() != null) {
-                allChanges.add(BalanceChange.changingHbar(
-                        aaWith(hbarTransfer.sender(), -hbarTransfer.amount(), hbarTransfer.isApproval()), accountId));
-            } else if (hbarTransfer.receiver() != null) {
-                final var receiver = hbarTransfer.receiver();
-                if (!receiver.getAlias().isEmpty()) {
-                    requestedLazyCreates.add(receiver);
-                }
-                allChanges.add(BalanceChange.changingHbar(
-                        aaWith(receiver, hbarTransfer.amount(), hbarTransfer.isApproval()), accountId));
-            }
+        for (final var hbarTransfer : transferOp.getTransfers().getAccountAmountsList()) {
+            allChanges.add(BalanceChange.changingHbar(hbarTransfer, accountId));
         }
-        numLazyCreates = requestedLazyCreates.size();
+
         return allChanges;
     }
 
-    private AccountAmount aaWith(final AccountID account, final long amount, final boolean isApproval) {
-        return AccountAmount.newBuilder()
-                .setAccountID(account)
-                .setAmount(amount)
-                .setIsApproval(isApproval)
-                .build();
+    private AccountID getSenderAccountId(final TransactionBody transactionBody) {
+        final var transferOp = transactionBody.getCryptoTransfer();
+        if (transferOp.getTransfers().getAccountAmountsCount() > 0) {
+            return transferOp.getTransfers().getAccountAmounts(0).getAccountID();
+        } else if (transferOp.getTokenTransfers(0).getTransfersCount() > 0) {
+            return transferOp.getTokenTransfers(0).getTransfers(0).getAccountID();
+        } else {
+            return transferOp.getTokenTransfers(0).getNftTransfers(0).getSenderAccountID();
+        }
     }
 }
