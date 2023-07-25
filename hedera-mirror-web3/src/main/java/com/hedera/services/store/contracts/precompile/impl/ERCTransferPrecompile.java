@@ -25,14 +25,12 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -58,6 +56,7 @@ import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
@@ -90,7 +89,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
     private static final ABIType<Tuple> HAPI_TRANSFER_FROM_DECODER =
             TypeFactory.create("(bytes32,bytes32,bytes32,uint256)");
 
-    private TokenID tokenID;
     private final EncodingFacade encoder;
 
     public ERCTransferPrecompile(
@@ -115,43 +113,40 @@ public class ERCTransferPrecompile extends TransferPrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         if (bodyParams instanceof ERCTransferParams transferParams) {
-            senderAddress = transferParams.sernderAddress();
-            tokenID = transferParams.tokenID();
-            transferOp = switch (transferParams.functionId()) {
-                case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
-                        input, tokenID, senderAddress, aliasResolver);
-                case AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
-                        AbiConstants.ABI_ID_TRANSFER_FROM,
-                        AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
-                    final var operatorID = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
-                    yield decodeERCTransferFrom(
-                            input, tokenID, transferParams.tokenAccessor(), operatorID, aliasResolver);
-                }
-                default -> null;};
+            final var senderAddress = transferParams.sernderAddress();
+            final var tokenID = transferParams.tokenID();
+            final var transferOp =
+                    switch (transferParams.functionId()) {
+                        case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
+                                input, tokenID, senderAddress, aliasResolver);
+                        case AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
+                                AbiConstants.ABI_ID_TRANSFER_FROM,
+                                AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
+                            final var operatorID = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+                            yield decodeERCTransferFrom(
+                                    input, tokenID, transferParams.tokenAccessor(), operatorID, aliasResolver);
+                        }
+                        default -> null;
+                    };
             Objects.requireNonNull(transferOp, "Unable to decode function input");
 
-            transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
-            extrapolateDetailsFromSyntheticTxn();
-            return transactionBody;
+            return syntheticTxnFactory.createCryptoTransfer(transferOp.tokenTransferWrappers());
         }
         return TransactionBody.newBuilder();
     }
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        Objects.requireNonNull(transferOp, "`body` method should be called before `run`");
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var cryptoTransfer = transactionBody.getCryptoTransfer();
         final var transfer = cryptoTransfer.getTokenTransfersList().get(0);
         final var tokenAddress = EntityIdUtils.asTypedEvmAddress(transfer.getToken());
         final var token = store.getToken(tokenAddress, OnMissing.THROW);
+        final var tokenID = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         final var isFungible = TokenType.FUNGIBLE_COMMON.equals(token.getType());
         if (!isFungible) {
-            final var nftExchange =
-                    transferOp.tokenTransferWrappers().get(0).nftExchanges().get(0);
-
-            final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());
-            store.getUniqueToken(nftId, OnMissing.THROW);
+            final var nftTransfer = transfer.getNftTransfers(0);
+            store.getUniqueToken(NftId.fromGrpc(tokenID, nftTransfer.getSerialNumber()), OnMissing.THROW);
         }
         try {
             super.run(frame, transactionBody);
@@ -160,11 +155,16 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
 
         if (isFungible) {
-            frame.addLog(getLogForFungibleTransfer(tokenAddress, store));
+            frame.addLogs(getLogForFungibleTransfer(tokenAddress, cryptoTransfer));
         } else {
-            frame.addLog(getLogForNftExchange(tokenAddress, store));
+            frame.addLogs(getLogForNftExchange(tokenAddress, cryptoTransfer));
         }
-        return new TokenTransferResult(isFungible, tokenID);
+        TokenID ercTokenID = null;
+        final var functionId = frame.getInputData().slice(24).getInt(0);
+        if (AbiConstants.ABI_ID_ERC_TRANSFER_FROM == functionId || AbiConstants.ABI_ID_ERC_TRANSFER == functionId) {
+            ercTokenID = tokenID;
+        }
+        return new TokenTransferResult(isFungible, ercTokenID);
     }
 
     public static CryptoTransferWrapper decodeERCTransfer(
@@ -246,44 +246,39 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
     }
 
-    private Log getLogForFungibleTransfer(final Address logger, final Store store) {
-        final var fungibleTransfers = transferOp.tokenTransferWrappers().get(0).fungibleTransfers();
-        Address sender = null;
-        Address receiver = null;
-        BigInteger amount = BigInteger.ZERO;
-        for (final var fungibleTransfer : fungibleTransfers) {
-            if (fungibleTransfer.sender() != null) {
-                sender = EntityIdUtils.asTypedEvmAddress(fungibleTransfer.sender());
-            }
-            if (fungibleTransfer.receiver() != null) {
-                receiver = EntityIdUtils.asTypedEvmAddress(fungibleTransfer.receiver());
-                amount = BigInteger.valueOf(fungibleTransfer.amount());
+    private List<Log> getLogForFungibleTransfer(final Address logger, final CryptoTransferTransactionBody transferOp) {
+        final var transferLists = transferOp.getTokenTransfersList();
+        List<Log> logs = new ArrayList<>();
+        for (final var transfers : transferLists) {
+            for (final var fungibleTransfer : transfers.getTransfersList()) {
+                logs.add(EncodingFacade.LogBuilder.logBuilder()
+                        .forLogger(logger)
+                        .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                        .forIndexedArgument(EntityIdUtils.asTypedEvmAddress(fungibleTransfer.getAccountID()))
+                        .forDataItem(String.valueOf((fungibleTransfer.getAmount())))
+                        .build());
             }
         }
 
-        return EncodingFacade.LogBuilder.logBuilder()
-                .forLogger(logger)
-                .forEventSignature(AbiConstants.TRANSFER_EVENT)
-                .forIndexedArgument(sender)
-                .forIndexedArgument(receiver)
-                .forDataItem(amount)
-                .build();
+        return logs;
     }
 
-    private Log getLogForNftExchange(final Address logger, final Store store) {
-        final var nftExchanges = transferOp.tokenTransferWrappers().get(0).nftExchanges();
-        final var nftExchange = nftExchanges.get(0).asGrpc();
-        final var sender = store.getAccount(asTypedEvmAddress(nftExchange.getSenderAccountID()), OnMissing.THROW);
-        final var receiver = store.getAccount(asTypedEvmAddress(nftExchange.getReceiverAccountID()), OnMissing.THROW);
-        final var serialNumber = nftExchange.getSerialNumber();
+    private List<Log> getLogForNftExchange(final Address logger, final CryptoTransferTransactionBody transferOp) {
 
-        return EncodingFacade.LogBuilder.logBuilder()
-                .forLogger(logger)
-                .forEventSignature(AbiConstants.TRANSFER_EVENT)
-                .forIndexedArgument(sender)
-                .forIndexedArgument(receiver)
-                .forIndexedArgument(serialNumber)
-                .build();
+        final var transferList = transferOp.getTokenTransfersList();
+        List<Log> logs = new ArrayList<>();
+        for (final var transfers : transferList) {
+            for (final var nftTransfer : transfers.getNftTransfersList()) {
+                logs.add(EncodingFacade.LogBuilder.logBuilder()
+                        .forLogger(logger)
+                        .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                        .forIndexedArgument(EntityIdUtils.asTypedEvmAddress(nftTransfer.getSenderAccountID()))
+                        .forIndexedArgument(EntityIdUtils.asTypedEvmAddress(nftTransfer.getReceiverAccountID()))
+                        .forIndexedArgument(nftTransfer.getSerialNumber())
+                        .build());
+            }
+        }
+        return logs;
     }
 
     @Override
