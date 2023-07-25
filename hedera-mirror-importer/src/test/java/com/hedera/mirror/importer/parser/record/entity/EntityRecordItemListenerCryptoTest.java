@@ -1001,20 +1001,17 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
-        parseRecordItemAndCommit(RecordItem.builder()
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
-
-        Long consensusTimestamp = DomainUtils.convertToNanosMax(
-                record.getConsensusTimestamp().getSeconds(),
-                record.getConsensusTimestamp().getNanos());
+                .build();
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertCryptoTransfers(3),
-                () -> assertThat(transactionRepository.findById(consensusTimestamp))
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
                         .isNull(),
@@ -1052,15 +1049,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .build();
         parseRecordItemAndCommit(recordItem);
 
-        Long consensusTimestamp = DomainUtils.convertToNanosMax(
-                record.getConsensusTimestamp().getSeconds(),
-                record.getConsensusTimestamp().getNanos());
-
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
-                () -> assertThat(transactionRepository.findById(consensusTimestamp))
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
                         .isNull(),
