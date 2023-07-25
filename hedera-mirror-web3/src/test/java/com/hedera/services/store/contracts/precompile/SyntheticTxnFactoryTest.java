@@ -34,6 +34,7 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,7 +43,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.security.InvalidKeyException;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -50,6 +53,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
+    private static final long serialNo = 100;
+    private static final long secondAmount = 200;
+    private static final long newExpiry = 1_234_567L;
+    private final EntityNum contractNum = EntityNum.fromLong(666);
+    private final EntityNum accountNum = EntityNum.fromLong(1234);
+    private static final AccountID a = IdUtils.asAccount("0.0.2");
+    private static final AccountID b = IdUtils.asAccount("0.0.3");
+    private static final AccountID c = IdUtils.asAccount("0.0.4");
+    private static final TokenID fungible = IdUtils.asToken("0.0.555");
+    private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
+    private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    private static final List<ByteString> newMetadata =
+            List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
+    private static final long valueInTinyBars = 123;
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+
     private SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
     @Test
@@ -257,18 +276,19 @@ class SyntheticTxnFactoryTest {
         assertEquals(fungible, txnBody.getTokenPause().getToken());
     }
 
-    private static final long serialNo = 100;
-    private static final long secondAmount = 200;
-    private static final long newExpiry = 1_234_567L;
-    private final EntityNum contractNum = EntityNum.fromLong(666);
-    private final EntityNum accountNum = EntityNum.fromLong(1234);
-    private static final AccountID a = IdUtils.asAccount("0.0.2");
-    private static final AccountID b = IdUtils.asAccount("0.0.3");
-    private static final AccountID c = IdUtils.asAccount("0.0.4");
-    private static final TokenID fungible = IdUtils.asToken("0.0.555");
-    private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
-    private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-    private static final List<ByteString> newMetadata =
-            List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-    private static final long valueInTinyBars = 123;
+    @Test
+    void createsExpectedTransactionCall() {
+        final var result = subject.createTransactionCall(1, Bytes.of(1));
+        final var txnBody = result.build();
+
+        assertTrue(result.hasContractCall());
+        assertEquals(1, txnBody.getContractCall().getGas());
+        assertEquals(
+                EntityIdUtils.contractIdFromEvmAddress(
+                        Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
+                txnBody.getContractCall().getContractID());
+        assertEquals(
+                ByteString.copyFrom(Bytes.of(1).toArray()),
+                txnBody.getContractCall().getFunctionParameters());
+    }
 }
