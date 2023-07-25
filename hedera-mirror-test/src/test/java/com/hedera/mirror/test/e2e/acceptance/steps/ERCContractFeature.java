@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.BOB;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -421,10 +422,10 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
     public void isApprovedForAllWithAliasSecondContractCall() {
-        ECDSAAccount = accountClient.createNewECDSAAccount(1_000_000_000);
+        ECDSAAccount = accountClient.createNewAccount(0, BOB);
         tokenClient.associate(ECDSAAccount, tokenIds.get(1));
-        var networkResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ECDSAAccount.getAccountId());
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ECDSAAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
 
         var contractCallGetIsApproveForAll = ContractCallRequest.builder()
@@ -449,9 +450,9 @@ public class ERCContractFeature extends AbstractFeature {
     public void allowanceAliasAccountsCall() {
         tokenClient.associate(ECDSAAccount, tokenIds.get(0));
         accountClient.approveToken(tokenIds.get(0), ECDSAAccount.getAccountId(), 1_000);
-        var networkResponse = tokenClient.transferFungibleToken(tokenIds.get(0), tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+        networkTransactionResponse = tokenClient.transferFungibleToken(tokenIds.get(0), tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 ECDSAAccount.getAccountId(), 500);
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var contractCallGetAllowance = ContractCallRequest.builder()
                 .data(ALLOWANCE_SELECTOR
@@ -484,15 +485,6 @@ public class ERCContractFeature extends AbstractFeature {
         var getBalanceOfResponse = mirrorClient.contractsCall(contractCallGetBalanceOf);
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
-    }
-
-    @Retryable(
-            value = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyTx(String txId) {
-        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
-        assertNotNull(txResponse);
     }
 
     private TokenId createNewToken(

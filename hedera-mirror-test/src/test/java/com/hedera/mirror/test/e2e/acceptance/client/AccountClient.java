@@ -28,6 +28,7 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.proto.Key;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -161,7 +162,9 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance) {
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
+        // By default, use ALICE's key type if not specified->ED25519
+        Key.KeyCase keyType = AccountNameEnum.ALICE.keyType;
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null, keyType);
     }
 
     public ExpandedAccountId createNewECDSAAccount(long initialBalance) {
@@ -173,15 +176,26 @@ public class AccountClient extends AbstractNetworkClient {
         return new ExpandedAccountId(accountInfo.getAccount(), newAccountPrivateKey.toString());
     }
 
-    private ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null);
+    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
+        // Get the keyType from the enum
+        Key.KeyCase keyType = accountNameEnum.keyType;
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
     }
 
     private ExpandedAccountId createCryptoAccount(
-            Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo) {
-        // 1. Generate a Ed25519 private, public key pair
-        PrivateKey privateKey = PrivateKey.generateED25519();
-        PublicKey publicKey = privateKey.getPublicKey();
+            Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo, Key.KeyCase keyType) {
+        // Depending on keyType, generate an Ed25519 or ECDSA private, public key pair
+        PrivateKey privateKey;
+        PublicKey publicKey;
+        if (keyType == Key.KeyCase.ED25519) {
+            privateKey = PrivateKey.generateED25519();
+            publicKey = privateKey.getPublicKey();
+        } else if (keyType == Key.KeyCase.ECDSA_SECP256K1) {
+            privateKey = PrivateKey.generateECDSA();
+            publicKey = privateKey.getPublicKey();
+        } else {
+            throw new IllegalArgumentException("Unsupported key type: " + keyType);
+        }
 
         log.trace("Private key = {}", privateKey);
         log.trace("Public key = {}", publicKey);
@@ -264,12 +278,13 @@ public class AccountClient extends AbstractNetworkClient {
 
     @RequiredArgsConstructor
     public enum AccountNameEnum {
-        ALICE(false),
-        BOB(false),
-        CAROL(true),
-        DAVE(true);
+        ALICE(false, Key.KeyCase.ED25519),
+        BOB(false, Key.KeyCase.ECDSA_SECP256K1),
+        CAROL(true, Key.KeyCase.ED25519),
+        DAVE(true, Key.KeyCase.ED25519);
 
         private final boolean receiverSigRequired;
+        private final Key.KeyCase keyType;
 
         @Override
         public String toString() {
