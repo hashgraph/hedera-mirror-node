@@ -55,6 +55,7 @@ import static org.mockito.Mockito.when;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
@@ -407,8 +408,8 @@ class TransferPrecompileTest {
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
-        final var nonLongZeroAlias =
-                wrapUnsafely(java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
+        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
+                java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
 
         assertEquals(2, fungibleTransfers.size());
         assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
