@@ -46,7 +46,6 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
@@ -130,7 +129,7 @@ public class TokenUpdatePrecompileTest {
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private final TransactionBody transactionBody = TransactionBody.newBuilder()
-            .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder())
+            .setTokenUpdate(TokenUpdateTransactionBody.newBuilder())
             .build();
 
     private HTSPrecompiledContract subject;
@@ -147,8 +146,8 @@ public class TokenUpdatePrecompileTest {
 
         tokenUpdatePrecompileStatic = Mockito.mockStatic(TokenUpdatePrecompile.class);
 
-        TokenUpdatePrecompile tokenUpdatePrecompile = new TokenUpdatePrecompile(pricingUtils, updateLogic,
-                syntheticTxnFactory);
+        TokenUpdatePrecompile tokenUpdatePrecompile =
+                new TokenUpdatePrecompile(pricingUtils, updateLogic, syntheticTxnFactory);
 
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
 
