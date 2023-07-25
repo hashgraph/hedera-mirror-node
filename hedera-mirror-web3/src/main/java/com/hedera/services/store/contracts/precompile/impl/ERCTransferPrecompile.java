@@ -71,6 +71,14 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+/**
+ * Copied Precompile from hedera-services. Differences with the original:
+ * 1. Stateless logic
+ * 2. Use abstraction for the state by introducing {@link Store} interface.
+ * 3. Post body logic relies on `CryptoTransferTransactionBody` rather than `CryptoTransferWrapper`.
+ * 4. Reworked Log methods to add item for any transfer.
+ * 5. Provided implementation for getFunctionSelectors() from {@link Precompile} interface.
+ */
 public class ERCTransferPrecompile extends TransferPrecompile {
 
     private static final Function ERC_TRANSFER_FUNCTION = new Function("transfer(address,uint256)", BOOL);
