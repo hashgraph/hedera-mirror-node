@@ -16,10 +16,6 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.EntityIdDeserializer;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -35,8 +31,6 @@ public class ItemizedTransfer {
 
     private Long amount;
 
-    @JsonDeserialize(using = EntityIdDeserializer.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     private Boolean isApproval;

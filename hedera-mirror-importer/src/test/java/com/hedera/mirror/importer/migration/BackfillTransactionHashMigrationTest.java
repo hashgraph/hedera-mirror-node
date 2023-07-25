@@ -94,16 +94,19 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         // given
         domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP - 1))
+                .customize(
+                        t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP - 1).itemizedTransfer(null))
                 .persist();
         var expectedTransactionHashes = Stream.of(
                         domainBuilder
                                 .transaction()
-                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP)
+                                        .itemizedTransfer(null))
                                 .persist(),
                         domainBuilder
                                 .transaction()
-                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1))
+                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
+                                        .itemizedTransfer(null))
                                 .persist())
                 .filter(t -> persistTransactionHash)
                 .map(Transaction::toTransactionHash)
@@ -124,12 +127,14 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var expected = Stream.of(
                         domainBuilder
                                 .transaction()
-                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP)
+                                        .itemizedTransfer(null))
                                 .persist(),
                         domainBuilder
                                 .transaction()
                                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
-                                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
+                                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())
+                                        .itemizedTransfer(null))
                                 .persist())
                 .map(Transaction::toTransactionHash)
                 .toList();
@@ -146,12 +151,13 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         // given
         var cryptoTransfer = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP).itemizedTransfer(null))
                 .persist();
         domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
-                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
+                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())
+                        .itemizedTransfer(null))
                 .persist();
         var expected = cryptoTransfer.toTransactionHash();
 
@@ -170,12 +176,13 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 .setTransactionHashTypes(EnumSet.complementOf(EnumSet.of(TransactionType.CRYPTOTRANSFER)));
         domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP).itemizedTransfer(null))
                 .persist();
         var consensusSubmitMessage = domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
-                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
+                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())
+                        .itemizedTransfer(null))
                 .persist();
         var expected = consensusSubmitMessage.toTransactionHash();
 
@@ -189,7 +196,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenStartTimestampNotSet() {
         // given
-        domainBuilder.transaction().persist();
+        domainBuilder.transaction().customize(t -> t.itemizedTransfer(null)).persist();
         migrationProperties.getParams().clear();
 
         // when
@@ -209,7 +216,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 .put("STARTTIMESTAMP", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP).itemizedTransfer(null))
                 .persist();
         var expected = transaction.toTransactionHash();
 
@@ -226,7 +233,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         persistTransactionHash();
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP).itemizedTransfer(null))
                 .persist();
         var expected = transaction.toTransactionHash();
 

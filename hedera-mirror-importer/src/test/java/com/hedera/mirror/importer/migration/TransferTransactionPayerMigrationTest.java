@@ -40,7 +40,6 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import jakarta.persistence.Id;
 import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
